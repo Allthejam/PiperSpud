@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { RouteAssessment, GisToolMode, HazardObservation, RouteStop, StopType } from '@/types/route';
+import { initialMockRoutes } from '@/lib/mockData';
 import { getAllRoutes, saveRoute, deleteRoute as deleteRouteApi, resetMockData as resetMockDataApi } from '@/lib/firestore';
 import { calculateTotalRouteDistanceKm, calculateEstimatedRunningTime } from '@/lib/calculations';
 
@@ -75,8 +76,9 @@ interface RouteContextType {
 const RouteContext = createContext<RouteContextType | undefined>(undefined);
 
 export function RouteProvider({ children }: { children: ReactNode }) {
-  const [routes, setRoutes] = useState<RouteAssessment[]>([]);
-  const [currentRouteId, setCurrentRouteId] = useState<string>('');
+  // Pre-seed with mock routes for instant synchronous rendering
+  const [routes, setRoutes] = useState<RouteAssessment[]>(initialMockRoutes);
+  const [currentRouteId, setCurrentRouteId] = useState<string>(initialMockRoutes[0]?.id || '');
   const [activeTab, setActiveTab] = useState<ActiveTab>('map');
   const [gisToolMode, setGisToolMode] = useState<GisToolMode>('browse');
   const [tileLayer, setTileLayer] = useState<'osm' | 'satellite'>('osm');
@@ -102,19 +104,22 @@ export function RouteProvider({ children }: { children: ReactNode }) {
     onConfirm: () => {},
   });
 
-  // Initial load
+  // Client hydration from LocalStorage / Firestore
   useEffect(() => {
     async function load() {
       const data = await getAllRoutes();
-      setRoutes(data);
-      if (data.length > 0) {
-        setCurrentRouteId(data[0].id);
+      if (data && data.length > 0) {
+        setRoutes(data);
+        setCurrentRouteId((prev) => {
+          if (data.some((r) => r.id === prev)) return prev;
+          return data[0].id;
+        });
       }
     }
     load();
   }, []);
 
-  const currentRoute = routes.find((r) => r.id === currentRouteId) || (routes.length > 0 ? routes[0] : null);
+  const currentRoute = routes.find((r) => r.id === currentRouteId) || routes[0] || null;
 
   const showToast = (msg: string) => {
     setToastMessage(msg);

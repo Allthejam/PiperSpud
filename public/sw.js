@@ -1,10 +1,6 @@
-// Service Worker with Network-First Strategy for live updates
-const CACHE_NAME = 'stagecoach-rra-v4';
+﻿const CACHE_NAME = 'stagecoach-rra-next-v5';
 const ASSETS_TO_CACHE = [
   '/',
-  '/index.html',
-  '/styles.css',
-  '/app.js',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png'
@@ -30,7 +26,7 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Network-First: try network first so user always gets latest updates immediately
+  if (event.request.method !== 'GET') return;
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
@@ -43,10 +39,9 @@ self.addEventListener('fetch', (event) => {
         return networkResponse;
       })
       .catch(() => {
-        // If offline, fallback to cache
         return caches.match(event.request).then((cached) => {
           if (cached) return cached;
-          if (event.request.mode === 'navigate') return caches.match('/index.html');
+          if (event.request.mode === 'navigate') return caches.match('/');
         });
       })
   );
