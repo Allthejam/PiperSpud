@@ -2,228 +2,307 @@
 
 export const initialMockRoutes: RouteAssessment[] = [
   {
-    id: 'SC-RRA-007-MAN',
-    routeNumber: '7',
-    routeTitle: 'Manchester Piccadilly - Ashton-under-Lyne Interchange',
-    depot: 'Hyde Road Depot (Greater Manchester)',
-    operatingCompany: 'Stagecoach Manchester',
-    assessorName: 'David H. (Senior RRA Lead)',
-    assessmentDate: '2026-03-15',
-    reviewDate: '2027-03-15',
+    id: 'route-133',
+    routeNumber: '133',
+    routeTitle: 'Grantown-on-Spey – Advie – Cromdale Circular',
+    depot: 'Aviemore / Inverness Depot',
+    operatingCompany: 'Stagecoach Highlands',
+    assessorName: 'C. Bell (Senior Route Assessor)',
+    assessmentDate: '2026-04-13',
+    reviewDate: '2027-04-13',
     status: 'Approved',
-    totalDistanceKm: 10.45,
-    estimatedRunningTimeMin: 42,
-    averageSpeedKph: 21,
+    totalDistanceKm: 28.4,
+    estimatedRunningTimeMin: 52,
+    averageSpeedKph: 35,
     pathCoordinates: [
-      [53.4774, -2.2309], // Piccadilly Rail Station
-      [53.4795, -2.2212], // Pin Mill Brow
-      [53.4811, -2.2045], // Every Street / Pollard St
-      [53.4830, -2.1890], // Ashton Old Road / Pottery Lane
-      [53.4822, -2.1650], // Openshaw High Street
-      [53.4845, -2.1380], // Higher Openshaw / Fairfield
-      [53.4870, -2.1120], // Audenshaw Snipe Retail Park
-      [53.4900, -2.0945], // Ashton Moss
-      [53.4905, -2.0880]  // Ashton Interchange Bus Station
+      [57.3295, -3.6062], // Craig Maclean Sports Centre
+      [57.3380, -3.5950], // Grantown Square & High Street
+      [57.3520, -3.5650], // Castle Grant Railway Arch
+      [57.3700, -3.5200], // Cottartown & Dulicht Bridge
+      [57.3910, -3.4650], // Cromdale Corridor
+      [57.4100, -3.4200], // Advie Village Hall Turn
+      [57.3850, -3.4400], // Speyside Way Relief
+      [57.3550, -3.5100], // B9102 Return Loop
+      [57.3350, -3.5700], // Speybridge Roundabout
+      [57.3295, -3.6062]  // Craig Maclean Sports Centre (Finish)
     ],
     stops: [
       {
-        id: 'stop-1',
-        name: 'Manchester Piccadilly (Stand D)',
+        id: 's1',
+        name: 'Craig Maclean Sports Centre (Depot Start)',
         stopType: 'bus_stop',
-        lat: 53.4774,
-        lng: -2.2309,
-        dwellMinutes: 2,
-        notes: 'High passenger boarding volume / timing point.',
+        lat: 57.3295,
+        lng: -3.6062,
+        dwellMinutes: 1,
+        notes: 'Depot start terminal & passenger boarding',
         order: 1
       },
       {
-        id: 'stop-2',
-        name: 'Every Street Tram Crossing',
-        stopType: 'junction',
-        lat: 53.4811,
-        lng: -2.2045,
-        dwellMinutes: 0.5,
-        notes: 'Metrolink level tram tracks interface. Caution on wet rails.',
+        id: 's2',
+        name: 'Grantown High Street (The Square)',
+        stopType: 'bus_stop',
+        lat: 57.3325,
+        lng: -3.6015,
+        dwellMinutes: 1.5,
+        notes: 'Town center main stop, high passenger volume',
         order: 2
       },
       {
-        id: 'stop-3',
-        name: 'Openshaw St Peter’s Church (Temp Stop)',
-        stopType: 'popup_stop',
-        lat: 53.4822,
-        lng: -2.1650,
-        dwellMinutes: 1,
-        notes: 'Temporary stop for gas main replacement diversion.',
+        id: 's3',
+        name: 'Speybridge Critical Roundabout',
+        stopType: 'junction',
+        lat: 57.3410,
+        lng: -3.5890,
+        dwellMinutes: 0.5,
+        notes: 'Tight turning swept radius, yield hold point on A95/B9102',
         order: 3
       },
       {
-        id: 'stop-4',
-        name: 'Snipe Commercial Park Roadworks',
+        id: 's4',
+        name: 'Dulicht Bridge Culvert Works',
         stopType: 'roadworks',
-        lat: 53.4870,
-        lng: -2.1120,
-        dwellMinutes: 1,
-        notes: 'Long-term roundabout junction remodeling (2025-2027).',
+        lat: 57.3560,
+        lng: -3.5550,
+        dwellMinutes: 1.5,
+        notes: 'Major bridge reinforcement contraflow & 3-way lights active 2026-2028',
         order: 4
       },
       {
-        id: 'stop-5',
-        name: 'Ashton-under-Lyne Interchange',
+        id: 's5',
+        name: 'Cromdale Pop-up Shelter (Diversion Stop)',
+        stopType: 'popup_stop',
+        lat: 57.3710,
+        lng: -3.5150,
+        dwellMinutes: 1,
+        notes: 'Pop-up temporary stop replacing closed church stop due to pipe repairs',
+        order: 5
+      },
+      {
+        id: 's6',
+        name: 'Advie Village Hall Turnaround',
         stopType: 'bus_stop',
-        lat: 53.4905,
-        lng: -2.0880,
+        lat: 57.4100,
+        lng: -3.4200,
+        dwellMinutes: 2,
+        notes: 'Rural turnaround loop at Advie hall',
+        order: 6
+      },
+      {
+        id: 's7',
+        name: 'Speyside Way Relief Checkpoint',
+        stopType: 'other',
+        lat: 57.3850,
+        lng: -3.4400,
+        dwellMinutes: 1,
+        notes: 'Driver intermediate timing point & passenger hail point',
+        order: 7
+      },
+      {
+        id: 's8',
+        name: 'Craig Maclean Sports Centre (Finish Stand)',
+        stopType: 'bus_stop',
+        lat: 57.3295,
+        lng: -3.6062,
+        dwellMinutes: 1,
+        notes: 'Terminal finish stand and driver debrief',
+        order: 8
+      }
+    ],
+    hazards: [
+      {
+        id: 'h1',
+        title: 'Castle Grant Railway Arch (Low Bridge & Haunch)',
+        category: 'Low Bridge',
+        lat: 57.3485,
+        lng: -3.5750,
+        locationName: 'Castle Grant Arch / A95 Approach',
+        severity: 5,
+        likelihood: 4,
+        initialScore: 20,
+        residualSeverity: 2,
+        residualLikelihood: 2,
+        residualScore: 4,
+        controlMeasures: '1. Strict vehicle restriction: ALL Double Deck vehicles prohibited.\n2. Solo & Midi single decks permitted with center-lane arch navigation.\n3. Driver hazard alert card in cab.\n4. Warning beacon alert configured on Ticket Machine (ETM).',
+        speedLimitMph: 20,
+        vehicleRestrictions: ['Double Deck High Prohibited (<4.10m)', 'Double Deck Low Prohibited'],
+        assessorNotes: 'Low arched stone railway bridge signed at 16ft central clearance. Arch haunch reduces clearance below 4.10m on nearside.',
+        photos: ['https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80'],
+        timestamp: '2026-04-13T09:15:00Z'
+      },
+      {
+        id: 'h2',
+        title: 'B9102 Cottartown Pine & Birch Tree Strike Zone',
+        category: 'Tree Strike / Overhanging Foliage',
+        lat: 57.3620,
+        lng: -3.5400,
+        locationName: 'B9102 Cottartown to Cromdale Corridor',
+        severity: 4,
+        likelihood: 4,
+        initialScore: 16,
+        residualSeverity: 2,
+        residualLikelihood: 2,
+        residualScore: 4,
+        controlMeasures: '1. Fitted reinforced nearside mirror deflector guard brackets on dedicated fleet.\n2. Speed reduction to 25mph on blind wooded sections.\n3. Section 154 Highways Act tree-cutting notice served to Forestry Estate.',
+        speedLimitMph: 25,
+        vehicleRestrictions: ['Double Deck Prohibited (Overhanging Canopy)'],
+        assessorNotes: 'Overhanging pine and birch branches protruding into near-side sweep between Cottartown and Cromdale.',
+        photos: ['https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&auto=format&fit=crop&q=80'],
+        timestamp: '2026-04-13T10:30:00Z'
+      },
+      {
+        id: 'h3',
+        title: 'Advie Single Track Soft Verges & Deep Culverts',
+        category: 'Blind Corner / Narrow Carriageway',
+        lat: 57.3980,
+        lng: -3.4500,
+        locationName: 'Advie Rural Link Road',
+        severity: 4,
+        likelihood: 3,
+        initialScore: 12,
+        residualSeverity: 2,
+        residualLikelihood: 2,
+        residualScore: 4,
+        controlMeasures: '1. Strict anti-verge drop policy: Drivers instructed NEVER to yield onto unpaved verges.\n2. Mandatory use of designated tarmac intervisible passing places.\n3. Maximum speed capped at 20 mph.',
+        speedLimitMph: 20,
+        assessorNotes: 'Single-track unclassified road with unstable, unreinforced soft peat verges bordering 1.2m deep drainage ditches.',
+        photos: ['https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80'],
+        timestamp: '2026-04-13T11:45:00Z'
+      },
+      {
+        id: 'h4',
+        title: 'Grantown High Street Primary School & Pinch Point',
+        category: 'School Zone / Pedestrian Density',
+        lat: 57.3330,
+        lng: -3.5990,
+        locationName: 'Grantown High Street / South Street',
+        severity: 4,
+        likelihood: 3,
+        initialScore: 12,
+        residualSeverity: 2,
+        residualLikelihood: 1,
+        residualScore: 2,
+        controlMeasures: '1. 15 mph defensive driving speed ceiling during bell times (08:15-09:00 & 15:00-15:45).\n2. Mandatory horn warning tap if visibility masked by delivery lorries.\n3. Door interlocking protocol verified at stop.',
+        speedLimitMph: 15,
+        assessorNotes: 'Heavy pedestrian congestion, school children crossing between parked delivery vans during peak school run.',
+        photos: ['https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=800&auto=format&fit=crop&q=80'],
+        timestamp: '2026-04-13T13:00:00Z'
+      }
+    ],
+    vehicleRestrictions: {
+      maxVehicleHeightM: 4.10,
+      doubleDeckerAllowed: false,
+      coachAllowed: false,
+      evAllowed: true,
+      minTurningRadiusM: 10.5,
+      maxAxleWeightTonnes: 12.0,
+      notes: 'Castle Grant Arch haunch (<4.10m) and single-track B9102 strictly PROHIBIT Double Deckers. ADL Enviro200 Midi (8.9m) & Optare Solo approved.'
+    },
+    governance: {
+      assessorName: 'C. Bell',
+      assessorRole: 'Senior Route Risk Assessor',
+      assessorSignature: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60"><text x="10" y="35" font-family="cursive" font-size="24" fill="%23002D62">C. Bell</text></svg>',
+      assessorDate: '2026-04-13',
+      managerName: 'M. MacMillan',
+      managerRole: 'Operations Manager (Highlands)',
+      managerSignature: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60"><text x="10" y="35" font-family="cursive" font-size="24" fill="%23002D62">M. MacMillan</text></svg>',
+      managerDate: '2026-04-14',
+      status: 'APPROVED',
+      reviewComments: 'Annual review complete. Castle Grant archway clearance restrictions reaffirmed. Highland Council sign survey logged #HC-2026-088.'
+    },
+    createdAt: '2026-04-13T08:00:00Z',
+    updatedAt: '2026-04-14T15:30:00Z'
+  },
+  {
+    id: 'route-11',
+    routeNumber: '11',
+    routeTitle: 'Inverness Bus Station – Inverness Airport – Nairn',
+    depot: 'Inverness Depot (Seafield)',
+    operatingCompany: 'Stagecoach Highlands',
+    assessorName: 'D. Fraser (Route Risk Lead)',
+    assessmentDate: '2026-03-20',
+    reviewDate: '2027-03-20',
+    status: 'Approved',
+    totalDistanceKm: 27.5,
+    estimatedRunningTimeMin: 48,
+    averageSpeedKph: 38,
+    pathCoordinates: [
+      [57.4815, -4.2255], // Inverness Bus Station
+      [57.4850, -4.2000], // Millburn Academy
+      [57.4930, -4.1300], // Inverness Retail Park / A96
+      [57.5350, -4.0500], // Inverness Airport Terminal
+      [57.5850, -3.8750]  // Nairn Bus Station
+    ],
+    stops: [
+      {
+        id: 's11-1',
+        name: 'Inverness Bus Station (Stance 4)',
+        stopType: 'bus_stop',
+        lat: 57.4815,
+        lng: -4.2255,
         dwellMinutes: 3,
-        notes: 'Terminus layover & crew relief point.',
+        notes: 'Main departure stance and luggage loading',
+        order: 1
+      },
+      {
+        id: 's11-2',
+        name: 'Millburn Academy',
+        stopType: 'bus_stop',
+        lat: 57.4850,
+        lng: -4.2000,
+        dwellMinutes: 1,
+        notes: 'School & commuter interchange',
+        order: 2
+      },
+      {
+        id: 's11-3',
+        name: 'Inverness Retail Park (Tesco Extra)',
+        stopType: 'bus_stop',
+        lat: 57.4930,
+        lng: -4.1300,
+        dwellMinutes: 1.5,
+        notes: 'High passenger boarding point on A96',
+        order: 3
+      },
+      {
+        id: 's11-4',
+        name: 'Inverness Airport Terminal Stance',
+        stopType: 'bus_stop',
+        lat: 57.5350,
+        lng: -4.0500,
+        dwellMinutes: 3,
+        notes: 'Terminal forecourt loop with baggage dwell',
+        order: 4
+      },
+      {
+        id: 's11-5',
+        name: 'Nairn Bus Station Terminal',
+        stopType: 'bus_stop',
+        lat: 57.5850,
+        lng: -3.8750,
+        dwellMinutes: 2,
+        notes: 'Terminus layover bay',
         order: 5
       }
     ],
     hazards: [
       {
-        id: 'haz-1',
-        title: 'Bridge Clearance Height Check (Fairfield Railway Arch)',
-        category: 'Low Bridge',
-        lat: 53.4845,
-        lng: -2.1380,
-        locationName: 'Ashton Old Rd / Fairfield Arch',
-        severity: 5,
-        likelihood: 3,
-        initialScore: 15,
-        residualSeverity: 4,
-        residualLikelihood: 1,
-        residualScore: 4,
-        controlMeasures: 'Vehicle height strictly restricted to 4.30m. Laser height gauge active at depot exit. Mandatory center carriageway arch alignment sign.',
-        speedLimitMph: 20,
-        vehicleRestrictions: ['Standard Double Deck Max 4.30m', 'High-bridge Alexander Dennis Enviro400 prohibited'],
-        assessorNotes: 'Arch is arched at sides (3.9m curb clearance). Drivers must straddle center marking.',
-        timestamp: '2026-03-15T09:30:00Z'
-      },
-      {
-        id: 'haz-2',
-        title: 'High-Risk Tree Canopy Strike Corridor',
-        category: 'Tree Strike / Overhanging Foliage',
-        lat: 53.4822,
-        lng: -2.1650,
-        locationName: 'Openshaw Eastern Approach',
-        severity: 4,
-        likelihood: 4,
-        initialScore: 16,
-        residualSeverity: 3,
-        residualLikelihood: 2,
-        residualScore: 6,
-        controlMeasures: 'Council tree lopping logged ref #TR-9941. Speed reduced to 15 mph in spring/summer leafing season.',
-        speedLimitMph: 15,
-        assessorNotes: 'Overhanging oak branch on nearside curb strikes double deck windscreen.',
-        timestamp: '2026-03-15T10:15:00Z'
-      },
-      {
-        id: 'haz-3',
-        title: 'Primary School Crossing & Congested Parent Drop-Off',
-        category: 'School Zone / Pedestrian Density',
-        lat: 53.4811,
-        lng: -2.2045,
-        locationName: 'Pollard Street Junction',
-        severity: 4,
-        likelihood: 4,
-        initialScore: 16,
-        residualSeverity: 3,
-        residualLikelihood: 2,
-        residualScore: 6,
-        controlMeasures: 'Mandatory 15 mph advisory 08:15-09:00 and 15:00-15:45. Left-turn blind spot camera check mandatory.',
-        speedLimitMph: 15,
-        assessorNotes: 'High volume of crossing children between parked parent SUVs.',
-        timestamp: '2026-03-15T11:00:00Z'
-      }
-    ],
-    vehicleRestrictions: {
-      maxVehicleHeightM: 4.30,
-      doubleDeckerAllowed: true,
-      coachAllowed: true,
-      evAllowed: true,
-      minTurningRadiusM: 12.5,
-      maxAxleWeightTonnes: 18.0,
-      notes: 'Standard E400 MMC double deckers cleared. High-spec 4.5m sightseeing open-top prohibited.'
-    },
-    governance: {
-      assessorName: 'David H.',
-      assessorRole: 'Senior Route Risk Assessor',
-      assessorSignature: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60"><text x="10" y="35" font-family="cursive" font-size="24" fill="%23002D62">David H.</text></svg>',
-      assessorDate: '2026-03-15',
-      managerName: 'Sarah Jenkins',
-      managerRole: 'Head of Operations & Safety',
-      managerSignature: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60"><text x="10" y="35" font-family="cursive" font-size="24" fill="%23002D62">S. Jenkins</text></svg>',
-      managerDate: '2026-03-16',
-      status: 'APPROVED',
-      reviewComments: 'Annual review complete. Tree trimming request filed with council.'
-    },
-    createdAt: '2026-03-15T08:00:00Z',
-    updatedAt: '2026-03-16T14:20:00Z'
-  },
-  {
-    id: 'SC-RRA-X4-CAM',
-    routeNumber: 'X4',
-    routeTitle: 'Cambridge City Centre - St Neots - Northampton Express',
-    depot: 'Cowley Road Depot (Stagecoach East)',
-    operatingCompany: 'Stagecoach East',
-    assessorName: 'Michael Brown',
-    assessmentDate: '2026-02-10',
-    reviewDate: '2027-02-10',
-    status: 'Approved',
-    totalDistanceKm: 68.2,
-    estimatedRunningTimeMin: 95,
-    averageSpeedKph: 45,
-    pathCoordinates: [
-      [52.2053, 0.1218],
-      [52.2201, -0.0102],
-      [52.2310, -0.1500],
-      [52.2280, -0.2650],
-      [52.2405, -0.9027]
-    ],
-    stops: [
-      {
-        id: 'x4-stop-1',
-        name: 'Cambridge Drummer St Bus Station',
-        stopType: 'bus_stop',
-        lat: 52.2053,
-        lng: 0.1218,
-        dwellMinutes: 5,
-        order: 1
-      },
-      {
-        id: 'x4-stop-2',
-        name: 'St Neots Market Square',
-        stopType: 'bus_stop',
-        lat: 52.2280,
-        lng: -0.2650,
-        dwellMinutes: 2,
-        order: 2
-      },
-      {
-        id: 'x4-stop-3',
-        name: 'Northampton North Gate Interchange',
-        stopType: 'bus_stop',
-        lat: 52.2405,
-        lng: -0.9027,
-        dwellMinutes: 5,
-        order: 3
-      }
-    ],
-    hazards: [
-      {
-        id: 'x4-haz-1',
-        title: 'Single-Lane Bridge Signal Delay',
-        category: 'Traffic Congestion / Unsignalised Junction',
-        lat: 52.2280,
-        lng: -0.2650,
-        locationName: 'St Neots River Ouse Bridge',
+        id: 'h11-1',
+        title: 'Airport Terminal Turning Loop & Pedestrian Island',
+        category: 'Tight Turning Radius',
+        lat: 57.5340,
+        lng: -4.0520,
+        locationName: 'Inverness Airport Terminal Forecourt',
         severity: 3,
         likelihood: 3,
         initialScore: 9,
         residualSeverity: 2,
-        residualLikelihood: 2,
-        residualScore: 4,
-        controlMeasures: 'Defensive following distance, give-way priority adherence.',
-        speedLimitMph: 20,
-        timestamp: '2026-02-10T10:00:00Z'
+        residualLikelihood: 1,
+        residualScore: 2,
+        controlMeasures: '1. Max speed 10mph in terminal loop.\n2. Hazard 4-way flashers when reversing or maneuvering at stand.',
+        speedLimitMph: 10,
+        assessorNotes: 'Tight radius loop with luggage trolleys and passengers walking across transit lanes.',
+        photos: ['https://images.unsplash.com/photo-1542296332-2e4473faf563?w=800&auto=format&fit=crop&q=80'],
+        timestamp: '2026-03-20T10:00:00Z'
       }
     ],
     vehicleRestrictions: {
@@ -231,18 +310,130 @@ export const initialMockRoutes: RouteAssessment[] = [
       doubleDeckerAllowed: true,
       coachAllowed: true,
       evAllowed: true,
-      notes: 'Express coaches and double-deckers cleared.'
+      minTurningRadiusM: 12.5,
+      maxAxleWeightTonnes: 18.0,
+      notes: 'Full clearance on A96 corridor. Double Deckers and Yutong E10/E12 Electric Fleet approved for airport charging bays.'
     },
     governance: {
-      assessorName: 'Michael Brown',
-      assessorRole: 'RRA Inspector',
-      assessorDate: '2026-02-10',
-      managerName: 'Eleanor Vance',
-      managerRole: 'Safety Director',
-      managerDate: '2026-02-12',
-      status: 'APPROVED'
+      assessorName: 'D. Fraser',
+      assessorRole: 'Route Risk Lead',
+      assessorSignature: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60"><text x="10" y="35" font-family="cursive" font-size="24" fill="%23002D62">D. Fraser</text></svg>',
+      assessorDate: '2026-03-20',
+      managerName: 'M. MacMillan',
+      managerRole: 'Operations Manager',
+      managerSignature: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60"><text x="10" y="35" font-family="cursive" font-size="24" fill="%23002D62">M. MacMillan</text></svg>',
+      managerDate: '2026-03-22',
+      status: 'APPROVED',
+      reviewComments: 'Route cleared for full double-decker express fleet.'
     },
-    createdAt: '2026-02-10T08:00:00Z',
-    updatedAt: '2026-02-12T10:00:00Z'
+    createdAt: '2026-03-20T08:00:00Z',
+    updatedAt: '2026-03-22T11:00:00Z'
+  },
+  {
+    id: 'route-55',
+    routeNumber: '55',
+    routeTitle: 'Aviemore – Coylumbridge – Cairngorm Mountain Base',
+    depot: 'Aviemore Outstation',
+    operatingCompany: 'Stagecoach Highlands',
+    assessorName: 'C. Bell (Route Assessor)',
+    assessmentDate: '2026-01-15',
+    reviewDate: '2027-01-15',
+    status: 'Approved',
+    totalDistanceKm: 17.8,
+    estimatedRunningTimeMin: 35,
+    averageSpeedKph: 32,
+    pathCoordinates: [
+      [57.1880, -3.8290], // Aviemore Rail Station
+      [57.1750, -3.7850], // Coylumbridge Hotel
+      [57.1550, -3.7200], // Loch Morlich Beach
+      [57.1340, -3.6740]  // Cairngorm Mountain Ski Centre
+    ],
+    stops: [
+      {
+        id: 's55-1',
+        name: 'Aviemore Rail Station Interchange',
+        stopType: 'bus_stop',
+        lat: 57.1880,
+        lng: -3.8290,
+        dwellMinutes: 2,
+        notes: 'Rail interchange and ski gear passenger boarding',
+        order: 1
+      },
+      {
+        id: 's55-2',
+        name: 'Coylumbridge Hotel & Caravan Park',
+        stopType: 'bus_stop',
+        lat: 57.1750,
+        lng: -3.7850,
+        dwellMinutes: 1,
+        notes: 'Tourist hotel pick-up stop',
+        order: 2
+      },
+      {
+        id: 's55-3',
+        name: 'Loch Morlich Watersports Beach',
+        stopType: 'bus_stop',
+        lat: 57.1550,
+        lng: -3.7200,
+        dwellMinutes: 1.5,
+        notes: 'Loch visitor car park stop',
+        order: 3
+      },
+      {
+        id: 's55-4',
+        name: 'Cairngorm Mountain Ski Centre Base',
+        stopType: 'bus_stop',
+        lat: 57.1340,
+        lng: -3.6740,
+        dwellMinutes: 3,
+        notes: 'High altitude ski center terminus layover (640m elevation)',
+        order: 4
+      }
+    ],
+    hazards: [
+      {
+        id: 'h55-1',
+        title: 'Cairngorm Ski Road 1:6 Gradient & Black Ice Crest',
+        category: 'Steep Gradient / Poor Camber',
+        lat: 57.1420,
+        lng: -3.6900,
+        locationName: 'Cairngorm Mountain Ski Road Upper Hairpins',
+        severity: 5,
+        likelihood: 4,
+        initialScore: 20,
+        residualSeverity: 3,
+        residualLikelihood: 2,
+        residualScore: 6,
+        controlMeasures: '1. Daily winter road inspection with Mountain Ranger station.\n2. Mandatory retarder check before mountain descent.\n3. Speed restricted to 20 mph under adverse weather.\n4. Snow chain protocol in force during Met Office amber snow warnings.',
+        speedLimitMph: 20,
+        vehicleRestrictions: ['Double Deck Prohibited (Crosswinds & Center of Gravity)', 'Fitted Winter Tyres Mandatory'],
+        assessorNotes: 'Steep winding ascent with frequent winter black ice, drift snow, and heavy tourist traffic.',
+        photos: ['https://images.unsplash.com/photo-1517824806704-9040b037703b?w=800&auto=format&fit=crop&q=80'],
+        timestamp: '2026-01-15T09:00:00Z'
+      }
+    ],
+    vehicleRestrictions: {
+      maxVehicleHeightM: 3.80,
+      doubleDeckerAllowed: false,
+      coachAllowed: false,
+      evAllowed: false,
+      minTurningRadiusM: 10.0,
+      maxAxleWeightTonnes: 12.0,
+      notes: 'Severe mountain crosswinds and 1:6 ice gradients PROHIBIT Double Deckers. ADL Enviro200 Midi (8.9m) & Optare Solo with winter tyres cleared.'
+    },
+    governance: {
+      assessorName: 'C. Bell',
+      assessorRole: 'Senior Route Assessor',
+      assessorSignature: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60"><text x="10" y="35" font-family="cursive" font-size="24" fill="%23002D62">C. Bell</text></svg>',
+      assessorDate: '2026-01-15',
+      managerName: 'M. MacMillan',
+      managerRole: 'Operations Manager',
+      managerSignature: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60"><text x="10" y="35" font-family="cursive" font-size="24" fill="%23002D62">M. MacMillan</text></svg>',
+      managerDate: '2026-01-16',
+      status: 'APPROVED',
+      reviewComments: 'Winter mountain protocols verified. Council gritting priority 1 active.'
+    },
+    createdAt: '2026-01-15T07:30:00Z',
+    updatedAt: '2026-01-16T12:00:00Z'
   }
 ];

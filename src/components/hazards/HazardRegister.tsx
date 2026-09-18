@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from 'react';
 import { useRouteContext } from '@/context/RouteContext';
@@ -48,7 +48,7 @@ export default function HazardRegister() {
 
   const handleAddManualHazard = () => {
     // Default coordinate to center of route or first stop
-    const defaultCoord: [number, number] = currentRoute.pathCoordinates[0] || [53.4808, -2.2426];
+    const defaultCoord: [number, number] = currentRoute.pathCoordinates[0] || [57.3295, -3.6062];
     setPendingCoords(defaultCoord);
     setIsAddHazardModalOpen(true);
   };

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useRef } from 'react';
 import { useRouteContext } from '@/context/RouteContext';
@@ -46,8 +46,8 @@ export default function LeafletMap() {
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current || !L) return;
 
-    // Default center (Manchester / UK)
-    const initialCenter: [number, number] = currentRoute?.pathCoordinates[0] || [53.4808, -2.2426];
+    // Default center (Grantown-on-Spey / Highlands)
+    const initialCenter: [number, number] = currentRoute?.pathCoordinates[0] || [57.3295, -3.6062];
     
     const map = L.map(mapContainerRef.current, {
       center: initialCenter,

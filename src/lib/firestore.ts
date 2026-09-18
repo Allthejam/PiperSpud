@@ -11,7 +11,7 @@ import {
 import { RouteAssessment } from '@/types/route';
 import { initialMockRoutes } from './mockData';
 
-const LOCAL_STORAGE_KEY = 'stagecoach_rra_routes_v2';
+const LOCAL_STORAGE_KEY = 'stagecoach_rra_highlands_v3';
 
 /**
  * Get all routes (from Firestore if configured, or LocalStorage)
@@ -44,7 +44,7 @@ export async function getAllRoutes(): Promise<RouteAssessment[]> {
     console.error('Error loading routes from LocalStorage:', e);
   }
 
-  // Seed default mock routes
+  // Seed default Highlands mock routes
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(initialMockRoutes));
   return initialMockRoutes;
 }
@@ -105,7 +105,7 @@ export async function deleteRoute(routeId: string): Promise<void> {
 }
 
 /**
- * Reset data back to default corporate mock routes
+ * Reset data back to default Scottish Highlands corporate mock routes
  */
 export function resetMockData(): RouteAssessment[] {
   if (typeof window !== 'undefined') {
