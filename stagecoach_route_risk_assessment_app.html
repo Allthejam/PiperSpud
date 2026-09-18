@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stagecoach Bus Operations - Route Risk Assessment (Service 133)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            stagecoach: {
+              navy: '#002855',
+              dark: '#001a3a',
+              blue: '#00539B',
+              orange: '#EB680B',
+              amber: '#F59E0B',
+              red: '#DC2626',
+              lightBg: '#F3F6FA'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbars & smooth transitions */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .matrix-cell { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+    .hazard-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .hazard-card:hover { transform: translateY(-2px); }
+
+    /* Print-specific styles for formal Stagecoach documentation */
+    @media print {
+      body { background: white !important; color: #0f172a !important; font-size: 11pt; }
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      .hazard-card { break-inside: avoid; border: 1px solid #cbd5e1 !important; box-shadow: none !important; margin-bottom: 1.5rem; }
+      .page-break { page-break-after: always; }
+      header { position: static !important; }
+      main { padding: 0 !important; max-width: 100% !important; }
+    }
+  </style>
+</head>
+<body class="bg-stagecoach-lightBg text-slate-800 font-sans antialiased min-h-screen flex flex-col selection:bg-stagecoach-orange selection:text-white">
+
+  <!-- Top Corporate Navbar -->
+  <header class="sticky top-0 z-40 bg-stagecoach-navy text-white shadow-lg border-b-4 border-stagecoach-orange no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 sm:h-20">
+        <!-- Logo & Title -->
+        <div class="flex items-center space-x-3 sm:space-x-4">
+          <div class="bg-white p-1.5 sm:p-2 rounded-lg shadow-sm flex items-center justify-center">
+            <svg class="w-7 h-7 sm:w-8 h-8 text-stagecoach-navy" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-extrabold tracking-wider text-base sm:text-lg uppercase">Stagecoach</span>
+              <span class="bg-stagecoach-orange text-xs font-bold uppercase px-2 py-0.5 rounded tracking-wide text-white">Highlands</span>
+            </div>
+            <p class="text-xs sm:text-sm text-slate-300 font-medium">Route Risk Assessment (RRA) System &bull; <span class="text-amber-300 font-semibold">Service 133</span></p>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
+          <button id="addHazardBtn" class="flex items-center space-x-1.5 bg-stagecoach-orange hover:bg-orange-600 text-white font-medium text-xs sm:text-sm px-3.5 py-2 rounded-lg shadow transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <span>Log Hazard</span>
+          </button>
+          <button id="printBtn" class="flex items-center space-x-1.5 bg-slate-700 hover:bg-slate-600 text-white font-medium text-xs sm:text-sm px-3 py-2 rounded-lg transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            <span class="hidden md:inline">Print / PDF Report</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="bg-stagecoach-dark border-t border-slate-700/60 px-4 sm:px-6 lg:px-8">
+      <div class="max-w-7xl mx-auto flex space-x-1 sm:space-x-4 overflow-x-auto text-xs sm:text-sm py-2">
+        <button data-tab="hazards" class="tab-btn active px-3 py-1.5 rounded-md font-semibold text-white bg-stagecoach-blue/50 flex items-center space-x-1.5 whitespace-nowrap">
+          <span>Hazard Register (<span id="hazardCountBadge">10</span>)</span>
+        </button>
+        <button data-tab="matrix" class="tab-btn px-3 py-1.5 rounded-md font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition whitespace-nowrap">
+          <span>5×5 Matrix Heatmap</span>
+        </button>
+        <button data-tab="fleet" class="tab-btn px-3 py-1.5 rounded-md font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition whitespace-nowrap">
+          <span>Vehicle Class Compatibility</span>
+        </button>
+        <button data-tab="drivercard" class="tab-btn px-3 py-1.5 rounded-md font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition whitespace-nowrap">
+          <span>Driver Cab Flashcard</span>
+        </button>
+        <button data-tab="audit" class="tab-btn px-3 py-1.5 rounded-md font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition whitespace-nowrap">
+          <span>Governance & Sign-Off</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex-1">
+    
+    <!-- Printable Header (Visible only when printing) -->
+    <div class="hidden print-only mb-6 border-b-2 border-slate-800 pb-4">
+      <div class="flex justify-between items-start">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">STAGECOACH BUS OPERATIONS — ROUTE RISK ASSESSMENT</h1>
+          <p class="text-sm font-semibold text-slate-700">Service 133: Grantown-on-Spey – Advie – Cromdale Circular</p>
+          <p class="text-xs text-slate-500">Document Ref: RRA-133-AVIEMORE-2026 | OpCo: Stagecoach Highlands (Aviemore Outstation)</p>
+        </div>
+        <div class="text-right text-xs">
+          <p class="font-bold">Annual Survey Date: 2026-04-13</p>
+          <p>Assessor: C. Bell | Approver: M. MacMillan</p>
+          <p class="text-red-700 font-extrabold uppercase mt-1">Vehicle Notice: Optare Solo / SWB Evora ONLY</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Route Profile & Critical Restrictions Banner -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-5 mb-6">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <!-- Route Specs -->
+        <div class="space-y-1.5">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-lg sm:text-xl font-bold text-stagecoach-navy">Service 133 (Grantown Circular)</span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">Rev 2.0 (April 2026 Survey)</span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
+              <svg class="w-3.5 h-3.5 mr-1 text-amber-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+              Bridge Critical: 16'0" (4.87m) Arch
+            </span>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-600">
+            <strong class="text-slate-800">Depot:</strong> Aviemore / Inverness &bull; 
+            <strong class="text-slate-800">Route:</strong> Craig Maclean Centre $\leftrightarrow$ Advie Loop via B9102 & A95 &bull; 
+            <strong class="text-slate-800">Surveyors:</strong> C. Bell (Author), M. MacMillan (Approver)
+          </p>
+        </div>
+
+        <!-- Quick Summary Badges -->
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <div class="bg-red-50 border border-red-200 text-red-800 rounded-lg px-3 py-1.5 flex items-center space-x-2 font-medium">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse"></span>
+            <span>Double Deckers: <strong>PROHIBITED</strong></span>
+          </div>
+          <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg px-3 py-1.5 flex items-center space-x-2 font-medium">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+            <span>Permitted: <strong>Solo / SWB Evora</strong></span>
+          </div>
+          <div class="bg-slate-100 border border-slate-200 text-slate-700 rounded-lg px-3 py-1.5">
+            Avg Residual Risk: <strong id="avgResidualScore" class="text-stagecoach-blue font-bold text-sm">4.3</strong> / 25
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 1: HAZARD REGISTER -->
+    <div id="tab-hazards" class="tab-content block space-y-6">
+      <!-- Filter Bar -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3 no-print">
+        <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <span class="text-xs font-semibold uppercase text-slate-500 mr-1">Filter Hazards:</span>
+          <button data-filter="all" class="filter-btn active px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-white transition">All (<span class="filter-count-all">10</span>)</button>
+          <button data-filter="High" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 transition">High Initial Risk (10+)</button>
+          <button data-filter="Bridge" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 hover:bg-purple-200 transition">Bridges & Arches</button>
+          <button data-filter="Rural" class="filter-btn px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition">Single Track & Verges</button>
+        </div>
+        <div class="text-xs text-slate-500 italic">
+          Tip: You can paste, drag-and-drop, or click to attach actual site survey photos into any hazard record!
+        </div>
+      </div>
+
+      <!-- Hazards Grid Container -->
+      <div id="hazardsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Cards generated dynamically via JavaScript -->
+      </div>
+    </div>
+
+    <!-- TAB 2: 5x5 RISK MATRIX HEATMAP -->
+    <div id="tab-matrix" class="tab-content hidden space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-slate-200 mb-6 gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-stagecoach-navy">Stagecoach 5×5 Transit Risk Heatmap</h2>
+            <p class="text-sm text-slate-500">Formula: <strong class="font-mono text-slate-700">Risk (R) = Severity (S) × Likelihood (L)</strong>. Shows Initial ($R_i$) vs Residual ($R_r$) distribution.</p>
+          </div>
+          <div class="flex items-center space-x-3 text-xs">
+            <span class="inline-flex items-center px-2.5 py-1 rounded bg-red-100 text-red-800 font-bold">17–25: Extreme</span>
+            <span class="inline-flex items-center px-2.5 py-1 rounded bg-amber-100 text-amber-800 font-bold">10–16: High</span>
+            <span class="inline-flex items-center px-2.5 py-1 rounded bg-yellow-100 text-yellow-800 font-bold">5–9: Medium</span>
+            <span class="inline-flex items-center px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 font-bold">1–4: Low</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <!-- The Matrix Table -->
+          <div class="lg:col-span-8 overflow-x-auto">
+            <table class="w-full border-collapse text-center select-none">
+              <thead>
+                <tr>
+                  <th class="p-2 text-xs font-bold text-slate-400 uppercase w-24">Severity $\downarrow$ \ Likelihood $\rightarrow$</th>
+                  <th class="p-2 text-xs font-bold text-slate-700">1: Rare</th>
+                  <th class="p-2 text-xs font-bold text-slate-700">2: Unlikely</th>
+                  <th class="p-2 text-xs font-bold text-slate-700">3: Possible</th>
+                  <th class="p-2 text-xs font-bold text-slate-700">4: Likely</th>
+                  <th class="p-2 text-xs font-bold text-slate-700">5: Almost Certain</th>
+                </tr>
+              </thead>
+              <tbody id="matrixTableBody" class="font-mono text-sm">
+                <!-- Built dynamically via JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Matrix Legend / Explanatory Sidebar -->
+          <div class="lg:col-span-4 bg-slate-50 rounded-xl p-4 border border-slate-200 text-xs space-y-3">
+            <h3 class="font-bold text-slate-800 uppercase text-xs tracking-wider">Operational Action Thresholds</h3>
+            <div class="p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-900">
+              <span class="font-bold">EXTREME (17–25): ROUTE PROHIBITED</span>
+              <p class="text-[11px] mt-0.5 text-red-700">Immediate road ban. No vehicle permitted until statutory engineering controls or diversions in place.</p>
+            </div>
+            <div class="p-2.5 rounded-lg bg-amber-50 border border-amber-300 text-amber-900">
+              <span class="font-bold">HIGH (10–16): RESTRICTED ACCESS</span>
+              <p class="text-[11px] mt-0.5 text-amber-700">Mandatory vehicle size locks (e.g. Solo/SWB only). Council tree cutting/signage escalation. ETM driver warning alerts.</p>
+            </div>
+            <div class="p-2.5 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-900">
+              <span class="font-bold">MEDIUM (5–9): CAUTION ZONE</span>
+              <p class="text-[11px] mt-0.5 text-yellow-800">Mandated route learning, defensive driving line, reduced speeds (15–20 mph), primary lane road position.</p>
+            </div>
+            <div class="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900">
+              <span class="font-bold">LOW (1–4): STANDARD OPERATION</span>
+              <p class="text-[11px] mt-0.5 text-emerald-800">General Highway Code compliance and standard Stagecoach Defensive Driving Rules.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: FLEET COMPATIBILITY -->
+    <div id="tab-fleet" class="tab-content hidden space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div class="max-w-3xl mb-6">
+          <h2 class="text-xl font-bold text-stagecoach-navy">Vehicle Fleet Route Compatibility Check</h2>
+          <p class="text-sm text-slate-500">Validates operational suitability for Service 133 against structural bridges, hairpin sweep radiuses, grounding gradients, and single-track passing places.</p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <th class="py-3 px-4">Vehicle Category</th>
+                <th class="py-3 px-4">Depot Fleet Examples</th>
+                <th class="py-3 px-4">Operating Height / Length</th>
+                <th class="py-3 px-4 text-center">Route Status</th>
+                <th class="py-3 px-4">Specific Hazard Engineering Constraint</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+              <tr class="bg-red-50/50 hover:bg-red-50 transition">
+                <td class="py-3.5 px-4 font-bold text-slate-800">Double Deck (High)</td>
+                <td class="py-3.5 px-4 text-slate-600">Alexander Dennis Enviro400 / Scania Omnicity</td>
+                <td class="py-3.5 px-4 font-mono text-xs">4.30m – 4.40m (14'3" - 14'5") / 11.5m</td>
+                <td class="py-3.5 px-4 text-center">
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-extrabold bg-red-600 text-white shadow-sm">STRICTLY BANNED</span>
+                </td>
+                <td class="py-3.5 px-4 text-xs text-red-700">
+                  <strong>CRITICAL BRIDGE STRIKE RISK:</strong> Castle Grant Railway Arch Bridge signed at 16'0" (4.87m) has reduced haunch kerbside clearance under 4.10m. Instant decapitation hazard.
+                </td>
+              </tr>
+              <tr class="bg-red-50/30 hover:bg-red-50 transition">
+                <td class="py-3.5 px-4 font-bold text-slate-800">Double Deck (Low Height)</td>
+                <td class="py-3.5 px-4 text-slate-600">ADL Enviro400 Low Height Variant</td>
+                <td class="py-3.5 px-4 font-mono text-xs">4.15m (13'7") / 10.9m</td>
+                <td class="py-3.5 px-4 text-center">
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-extrabold bg-red-600 text-white shadow-sm">STRICTLY BANNED</span>
+                </td>
+                <td class="py-3.5 px-4 text-xs text-red-700">
+                  Inadequate safety clearance margin through Castle Grant arch; high roll-angle risk on Cottartown single track cambers and overhanging mature oak/pine branches.
+                </td>
+              </tr>
+              <tr class="bg-amber-50/40 hover:bg-amber-50 transition">
+                <td class="py-3.5 px-4 font-bold text-slate-800">Standard Single Deck (Full Length)</td>
+                <td class="py-3.5 px-4 text-slate-600">ADL Enviro200 MMC (11.8m) / Volvo B8RLE</td>
+                <td class="py-3.5 px-4 font-mono text-xs">3.15m / 11.8m - 12.0m</td>
+                <td class="py-3.5 px-4 text-center">
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500 text-white">PROHIBITED</span>
+                </td>
+                <td class="py-3.5 px-4 text-xs text-amber-800">
+                  <strong>SWEPT PATH & REAR GROUNDING:</strong> Tail-swing will strike parapets at Lettoch Bridge and Braes of Castle Grant hairpin. Rear chassis will ground out on severe crests.
+                </td>
+              </tr>
+              <tr class="bg-emerald-50/40 hover:bg-emerald-50 transition">
+                <td class="py-3.5 px-4 font-bold text-slate-800">Midi / Short Wheelbase (SWB)</td>
+                <td class="py-3.5 px-4 text-slate-600 font-semibold text-emerald-800">Optare Solo (8.8m) / MCV Evora SWB (9.7m)</td>
+                <td class="py-3.5 px-4 font-mono text-xs">2.95m / 8.8m – 9.7m</td>
+                <td class="py-3.5 px-4 text-center">
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-sm">FULLY AUTHORIZED</span>
+                </td>
+                <td class="py-3.5 px-4 text-xs text-emerald-800">
+                  <strong>DEFAULT OPERATING TYPE:</strong> Approved for all single-track sections, tight bridge geometries, and hairpin turns subject to mandatory driver precautions.
+                </td>
+              </tr>
+              <tr class="hover:bg-slate-50 transition">
+                <td class="py-3.5 px-4 font-bold text-slate-800">Electric Vehicle (Battery Pods)</td>
+                <td class="py-3.5 px-4 text-slate-600">Yutong E9 / BYD-ADL E200 EV (Short)</td>
+                <td class="py-3.5 px-4 font-mono text-xs">3.35m (Roof Pods) / 9.5m</td>
+                <td class="py-3.5 px-4 text-center">
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-yellow-400 text-slate-900">RESTRICTED SURVEY</span>
+                </td>
+                <td class="py-3.5 px-4 text-xs text-slate-600">
+                  Requires specific physical laser survey of roof battery pods against Advie & Lettoch bridge overhanging boughs prior to trial deployment.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: DRIVER FLASHCARD -->
+    <div id="tab-drivercard" class="tab-content hidden space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-200 mb-6 gap-3">
+          <div>
+            <h2 class="text-xl font-bold text-stagecoach-navy">Stagecoach Driver Cab Route Card — Service 133</h2>
+            <p class="text-xs sm:text-sm text-slate-500">Depot Notice Board & Cab Handout format. Clear operational imperatives for line drivers.</p>
+          </div>
+          <button onclick="window.print()" class="bg-stagecoach-blue hover:bg-blue-700 text-white px-3.5 py-2 rounded-lg text-xs font-bold shadow flex items-center space-x-1.5 no-print">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            <span>Print Driver Card</span>
+          </button>
+        </div>
+
+        <!-- Printable Flashcard Container -->
+        <div class="border-2 border-slate-800 rounded-lg p-5 bg-white space-y-4 font-sans">
+          <div class="bg-stagecoach-navy text-white p-3 rounded flex justify-between items-center">
+            <div>
+              <h3 class="font-extrabold text-lg uppercase tracking-wider">SERVICE 133: GRANTOWN CIRCULAR</h3>
+              <p class="text-xs text-amber-300 font-medium">AUTHORISED VEHICLES: OPTARE SOLO / SHORT WHEELBASE EVORA ONLY</p>
+            </div>
+            <div class="text-right">
+              <span class="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded">DOUBLE DECKERS STRICTLY BANNED</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div class="border border-slate-300 rounded p-3 bg-amber-50/50">
+              <h4 class="font-bold text-slate-900 border-b border-amber-300 pb-1 mb-2 uppercase flex items-center">
+                <span class="w-2.5 h-2.5 bg-amber-500 rounded-full mr-2"></span>
+                1. Castle Grant Railway Arch (16'0" / 4.87m)
+              </h4>
+              <p class="text-slate-700 leading-relaxed font-medium">Masonry arch bridge. Clearance tapers sharply towards near-side kerbs. Approach at <strong>maximum 15 mph</strong>. Position vehicle into centre road arch if traffic allows. Anticipate high HGVs taking road centre.</p>
+            </div>
+
+            <div class="border border-slate-300 rounded p-3 bg-red-50/50">
+              <h4 class="font-bold text-slate-900 border-b border-red-300 pb-1 mb-2 uppercase flex items-center">
+                <span class="w-2.5 h-2.5 bg-red-500 rounded-full mr-2"></span>
+                2. Cottartown to Tomvaich Single-Track
+              </h4>
+              <p class="text-slate-700 leading-relaxed font-medium"><strong>NEVER drop wheels onto soft grass verges.</strong> Deep ditches alongside. Stop in primary paved position; force oncoming cars into passing places. Watch for wandering farm livestock.</p>
+            </div>
+
+            <div class="border border-slate-300 rounded p-3 bg-blue-50/50">
+              <h4 class="font-bold text-slate-900 border-b border-blue-300 pb-1 mb-2 uppercase flex items-center">
+                <span class="w-2.5 h-2.5 bg-blue-500 rounded-full mr-2"></span>
+                3. Braes of Castle Grant Hairpin
+              </h4>
+              <p class="text-slate-700 leading-relaxed font-medium">Severe gradient & acute bend. First gear crawling speed (< 8 mph). Position away from offside edge. Watch for winter low-sun blinding on crest and rear tail-swing on barriers.</p>
+            </div>
+
+            <div class="border border-slate-300 rounded p-3 bg-emerald-50/50">
+              <h4 class="font-bold text-slate-900 border-b border-emerald-300 pb-1 mb-2 uppercase flex items-center">
+                <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full mr-2"></span>
+                4. Advie Spey Bridge & A95 Fast Trunk
+              </h4>
+              <p class="text-slate-700 leading-relaxed font-medium">Bridge has deep gullies on both parapets and blind approaches. At A95 junction, come to a complete halt; ensure 300m clearance in both directions before pulling onto 60 mph trunk road.</p>
+            </div>
+          </div>
+
+          <div class="border-t border-slate-300 pt-3 text-[11px] text-slate-600 flex justify-between items-center">
+            <span>Stagecoach Highlands Safety Dept &bull; Emergency Control: <strong>01463 233371</strong></span>
+            <span>Issue: April 2026 (Rev 2.0)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: GOVERNANCE & SIGN-OFF -->
+    <div id="tab-audit" class="tab-content hidden space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div class="mb-6">
+          <h2 class="text-xl font-bold text-stagecoach-navy">Governance, Approvals & Statutory Audit Register</h2>
+          <p class="text-sm text-slate-500">Formal sign-off register compliant with DVSA, Health and Safety at Work Act 1974, and Stagecoach Transit Safety Standards.</p>
+        </div>
+
+        <!-- Approvals Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <!-- Route Survey Team -->
+          <div class="border border-slate-200 rounded-lg p-4 bg-slate-50">
+            <h3 class="font-bold text-slate-800 text-sm border-b pb-2 mb-3">1. Route Assessment Survey Team</h3>
+            <div class="space-y-3 text-xs">
+              <div class="flex justify-between items-center py-1 border-b border-slate-200">
+                <span class="font-medium text-slate-600">Lead Route Surveyor:</span>
+                <span class="font-bold text-slate-900">C. Bell (Driving Instructor)</span>
+              </div>
+              <div class="flex justify-between items-center py-1 border-b border-slate-200">
+                <span class="font-medium text-slate-600">Survey Date:</span>
+                <span class="font-mono text-slate-900">13-04-2026</span>
+              </div>
+              <div class="flex justify-between items-center py-1 border-b border-slate-200">
+                <span class="font-medium text-slate-600">Assessor Signature:</span>
+                <span class="inline-flex items-center text-emerald-700 font-semibold">
+                  <svg class="w-4 h-4 mr-1 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  Digitally Signed & Validated
+                </span>
+              </div>
+              <div class="flex justify-between items-center py-1">
+                <span class="font-medium text-slate-600">Survey Method:</span>
+                <span class="text-slate-800">Physical driven run + calibrated laser gauge</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Operations Management Sign-Off -->
+          <div class="border border-slate-200 rounded-lg p-4 bg-slate-50">
+            <h3 class="font-bold text-slate-800 text-sm border-b pb-2 mb-3">2. Depot Management & Union Endorsement</h3>
+            <div class="space-y-3 text-xs">
+              <div class="flex justify-between items-center py-1 border-b border-slate-200">
+                <span class="font-medium text-slate-600">Authorising Manager:</span>
+                <span class="font-bold text-slate-900">M. MacMillan (Operations Manager)</span>
+              </div>
+              <div class="flex justify-between items-center py-1 border-b border-slate-200">
+                <span class="font-medium text-slate-600">Approval Status:</span>
+                <span class="px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-800">APPROVED WITH RESTRICTIONS</span>
+              </div>
+              <div class="flex justify-between items-center py-1 border-b border-slate-200">
+                <span class="font-medium text-slate-600">Unite Safety Representative:</span>
+                <span class="font-medium text-slate-800">Endorsed for Driver Welfare</span>
+              </div>
+              <div class="flex justify-between items-center py-1">
+                <span class="font-medium text-slate-600">Next Mandatory Review:</span>
+                <span class="font-mono text-slate-900 font-bold">April 2027 (Annual)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statutory Escalation Notice Tracker -->
+        <div class="border border-slate-200 rounded-lg p-4">
+          <h3 class="font-bold text-slate-800 text-sm mb-2">Statutory Highways & Council Notifications</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-100 text-slate-600 uppercase">
+                <tr>
+                  <th class="p-2">Hazard Ref</th>
+                  <th class="p-2">Local Authority / Body</th>
+                  <th class="p-2">Section Notice</th>
+                  <th class="p-2">Action Requested</th>
+                  <th class="p-2">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200">
+                <tr>
+                  <td class="p-2 font-bold">#01 (Castle Grant)</td>
+                  <td class="p-2">Network Rail / Highland Council</td>
+                  <td class="p-2 font-mono">NR-STR-4992</td>
+                  <td class="p-2">Verify high-visibility chevron paint on arch portal haunches</td>
+                  <td class="p-2"><span class="px-2 py-0.5 rounded bg-yellow-100 text-yellow-800">Inspection Scheduled</span></td>
+                </tr>
+                <tr>
+                  <td class="p-2 font-bold">#04 (Tomvaich Verge)</td>
+                  <td class="p-2">Highland Council Roads Dept</td>
+                  <td class="p-2 font-mono">HC-RDS-10442</td>
+                  <td class="p-2">Carriageway edge reconstruction & asphalt shoulder repair</td>
+                  <td class="p-2"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">Work Order Issued</span></td>
+                </tr>
+                <tr>
+                  <td class="p-2 font-bold">#07 (Advie Bridge)</td>
+                  <td class="p-2">Highland Forestry & Estates</td>
+                  <td class="p-2 font-mono">SEC-154-HA80</td>
+                  <td class="p-2">Section 154 notice for tree canopy trim back to 5.2m clearance</td>
+                  <td class="p-2"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">Completed May 2026</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL: ADD / EDIT HAZARD -->
+  <div id="hazardModal" class="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-200">
+      <div class="bg-stagecoach-navy text-white px-6 py-4 flex justify-between items-center sticky top-0 z-10">
+        <h3 id="modalTitle" class="font-bold text-lg">Add Roadway Hazard</h3>
+        <button id="closeModalBtn" class="text-slate-300 hover:text-white p-1 rounded-lg">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="hazardForm" class="p-6 space-y-4">
+        <input type="hidden" id="hazardId" />
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Location / Roadway Section *</label>
+            <input type="text" id="hazardLocation" required placeholder="e.g., Castle Grant Overbridge, A939" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-stagecoach-blue outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Hazard Category *</label>
+            <select id="hazardCategory" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-stagecoach-blue outline-none">
+              <option value="Bridge">Low Bridge / Overpass</option>
+              <option value="Road Edge">Soft Verge / Narrow Track</option>
+              <option value="Swept Path">Tight Junction / Hairpin Turn</option>
+              <option value="School Zone">School Zone / Pedestrians</option>
+              <option value="Trees">Foliage / Low Canopy</option>
+              <option value="Wildlife">Wildlife Conservation Area</option>
+              <option value="Weather">Weather / Ice & Snow Gradient</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">What3Words / GPS Coordinates</label>
+            <input type="text" id="hazardCoordinates" placeholder="e.g., ///bounces.rooftop.skewed" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-stagecoach-blue outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Specific Vehicle Restrictions</label>
+            <input type="text" id="hazardVehicles" placeholder="e.g., Optare Solo Only. Double Decks Banned" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-stagecoach-blue outline-none" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Detailed Hazard Description & Observations *</label>
+          <textarea id="hazardDescription" required rows="2" placeholder="Describe road curvature, width constraints, sighting distances..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-stagecoach-blue outline-none"></textarea>
+        </div>
+
+        <!-- Risk Matrix Scoring Calculators -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-700">Quantitative Risk Evaluation (5×5 Matrix)</h4>
+          
+          <!-- Initial Risk -->
+          <div>
+            <span class="text-xs font-bold text-red-700 block mb-2">1. Initial Risk (Unmitigated Baseline)</span>
+            <div class="grid grid-cols-3 gap-3 items-center">
+              <div>
+                <label class="block text-[10px] text-slate-500 font-semibold mb-0.5">Initial Severity (1-5)</label>
+                <select id="modalSi" class="w-full p-1.5 border rounded text-xs">
+                  <option value="1">1 - Negligible</option>
+                  <option value="2">2 - Minor</option>
+                  <option value="3">3 - Moderate</option>
+                  <option value="4">4 - Major</option>
+                  <option value="5">5 - Catastrophic</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-500 font-semibold mb-0.5">Initial Likelihood (1-5)</label>
+                <select id="modalLi" class="w-full p-1.5 border rounded text-xs">
+                  <option value="1">1 - Rare</option>
+                  <option value="2">2 - Unlikely</option>
+                  <option value="3">3 - Possible</option>
+                  <option value="4">4 - Likely</option>
+                  <option value="5">5 - Almost Certain</option>
+                </select>
+              </div>
+              <div class="text-center">
+                <span class="text-[10px] text-slate-500 block font-semibold">Initial Score (Ri)</span>
+                <span id="modalRiBadge" class="inline-block px-3 py-1 rounded font-bold text-xs font-mono bg-red-100 text-red-800">15</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mitigations -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Hierarchy of Control Mitigations *</label>
+            <textarea id="hazardMitigations" required rows="2" placeholder="e.g., Elimination: DD vehicle lock. Engineering: Kerb realign. Admin: 15 mph limit." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-stagecoach-blue outline-none"></textarea>
+          </div>
+
+          <!-- Residual Risk -->
+          <div>
+            <span class="text-xs font-bold text-emerald-700 block mb-2">2. Residual Risk (After Operational Controls)</span>
+            <div class="grid grid-cols-3 gap-3 items-center">
+              <div>
+                <label class="block text-[10px] text-slate-500 font-semibold mb-0.5">Residual Severity (1-5)</label>
+                <select id="modalSr" class="w-full p-1.5 border rounded text-xs">
+                  <option value="1">1 - Negligible</option>
+                  <option value="2">2 - Minor</option>
+                  <option value="3">3 - Moderate</option>
+                  <option value="4">4 - Major</option>
+                  <option value="5">5 - Catastrophic</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-500 font-semibold mb-0.5">Residual Likelihood (1-5)</label>
+                <select id="modalLr" class="w-full p-1.5 border rounded text-xs">
+                  <option value="1">1 - Rare</option>
+                  <option value="2">2 - Unlikely</option>
+                  <option value="3">3 - Possible</option>
+                  <option value="4">4 - Likely</option>
+                  <option value="5">5 - Almost Certain</option>
+                </select>
+              </div>
+              <div class="text-center">
+                <span class="text-[10px] text-slate-500 block font-semibold">Residual Score (Rr)</span>
+                <span id="modalRrBadge" class="inline-block px-3 py-1 rounded font-bold text-xs font-mono bg-emerald-100 text-emerald-800">4</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Direct Driver Cab Instruction *</label>
+          <input type="text" id="hazardInstruction" required placeholder="e.g., Max 15mph. Position in centre of arch. Watch nearside clearance." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-stagecoach-blue outline-none" />
+        </div>
+
+        <div class="flex justify-end space-x-3 pt-3 border-t border-slate-200">
+          <button type="button" id="cancelModalBtn" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition font-medium">Cancel</button>
+          <button type="submit" class="px-5 py-2 text-sm bg-stagecoach-navy hover:bg-stagecoach-dark text-white rounded-lg transition font-bold shadow">Save Hazard Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <script>
+    // --- PRE-LOADED DATA MODEL FOR SERVICE 133 (DERIVED FROM PDF & FRAMEWORK) ---
+    const initialHazards = [
+      {
+        id: 1,
+        title: "Structural Overhead Arch — Castle Grant Overbridge (A939)",
+        location: "A939 Castle Grant approach, north of Grantown-on-Spey",
+        coordinates: "///bounces.rooftop.skewed",
+        category: "Bridge",
+        vehicles: "Double Deck STRICTLY BANNED. Max Height 4.87m (16'0\")",
+        description: "Masonry stone arch railway overbridge. Clearance is 16'0\" (4.87m) only in dead centre, dropping significantly down to ~3.7m at kerb haunches. Blind curve approach in both directions with overhanging foliage.",
+        si: 5, li: 3, ri: 15,
+        mitigations: "Elimination: Electronic Ticket Machine lockout preventing DD allocation. Engineering: Arch centreline alignment marker. Operational: Approach at max 15 mph. Take road centre under arch when clear.",
+        sr: 4, lr: 1, rr: 4,
+        instruction: "STRICT SINGLE DECK ONLY. Approach at 15 mph. Take road centre under arch if safe from opposing HGVs.",
+        customImage: null,
+        diagramType: "bridge"
+      },
+      {
+        id: 2,
+        title: "School Zone & Turning Area — Craig Maclean Centre & Grammar School",
+        location: "Craig Maclean Leisure Centre / Grantown Grammar School",
+        coordinates: "///prowess.snooping.tweed",
+        category: "School Zone",
+        vehicles: "Solo / SWB Evora Approved",
+        description: "High volume of school pupils, parents dropping off in private cars, school contract coaches manoeuvring. Pedestrians crossing between parked vehicles; severely limited sightlines at bell times.",
+        si: 4, li: 4, ri: 16,
+        mitigations: "Operational: Mandatory 10 mph advisory speed zone. Foot-over-brake protocol. Timetable coordination to avoid turning conflicts with full-sized school coaches.",
+        sr: 3, lr: 1, rr: 3,
+        instruction: "10 mph speed cap. Cover service brake past school gate. Watch for children stepping out from behind parked buses.",
+        customImage: null,
+        diagramType: "school"
+      },
+      {
+        id: 3,
+        title: "Urban Pinch Points — Heathfield Road / South Street / Forest Road",
+        location: "Grantown Residential Corridor (Heathfield Rd / South St)",
+        coordinates: "///repaired.refreshed.gasp",
+        category: "Swept Path",
+        vehicles: "Optare Solo / SWB Preferred",
+        description: "Narrow residential street lined with stone boundary walls and parked cars on both sides. Multiple blind mini-junctions and zebra crossings with tight kerb radii.",
+        si: 3, li: 4, ri: 12,
+        mitigations: "Defensive Driving: Reduce speed to 15 mph; anticipate doors opening and pedestrians stepping out. Mirror clearance priority over speed.",
+        sr: 2, lr: 2, rr: 4,
+        instruction: "15 mph limit. Keep vehicle central where safe. Yield to oncoming larger vehicles at designated passing gaps.",
+        customImage: null,
+        diagramType: "urban"
+      },
+      {
+        id: 4,
+        title: "Rural Single-Track & Soft Verges — Cottartown to Tomvaich",
+        location: "Unclassified Rural Link between Cottartown and Tomvaich",
+        coordinates: "///twinkling.hazards.rustic",
+        category: "Road Edge",
+        vehicles: "Max Width 2.50m (Optare Solo Only)",
+        description: "Single-track country lane with passing places. Deep, unreinforced drainage ditches on both sides with steep drop-offs. Subsided soft grass verges. Blind summits and crests.",
+        si: 4, li: 3, ri: 12,
+        mitigations: "Strict Operational Directive: Under no circumstances allow near-side wheels to leave the tarmac. Primary road positioning; stop and let opposing cars reverse or pass.",
+        sr: 3, lr: 1, rr: 3,
+        instruction: "NEVER drop wheels onto soft verges. Stop in primary lane position and compel oncoming vehicles to use passing bays.",
+        customImage: null,
+        diagramType: "verge"
+      },
+      {
+        id: 5,
+        title: "Severe Gradients & Hairpin Sweep — Braes of Castle Grant",
+        location: "Braes of Castle Grant incline & hairpin",
+        coordinates: "///steeples.overhang.climbs",
+        category: "Swept Path",
+        vehicles: "Short Wheelbase Only (Overhang Grounding Risk)",
+        description: "Severe uphill and downhill gradient with an acute hairpin turn on a blind corner. Low sun angle causes intense glare in winter. Tail-swing hazard against stone walls; rear overhang grounding threat.",
+        si: 4, li: 3, ri: 12,
+        mitigations: "Low Gear Selection: Descend in 1st gear crawling speed (<8 mph). Late-apex sweep line. Active winter traction assessment (grit check before ascent).",
+        sr: 3, lr: 1, rr: 3,
+        instruction: "Descend in 1st gear (<8 mph). Use sunglasses / sun visor on ascent. Watch rear overhang against barriers.",
+        customImage: null,
+        diagramType: "hairpin"
+      },
+      {
+        id: 6,
+        title: "Blind Approach & Narrow Masonry Bridge — Lettoch Bridge",
+        location: "B9102 Lettoch Bridge",
+        coordinates: "///bridges.ripples.glen",
+        category: "Bridge",
+        vehicles: "Short Wheelbase Midi Only",
+        description: "Extremely narrow single-lane bridge with blind corner approach from both directions. Overhanging willow and birch foliage. Heavy timber and stone parapets with zero verge clearance.",
+        si: 3, li: 4, ri: 12,
+        mitigations: "Audible Warning: Sound horn on approach if foliage obstructs forward view. Speed capped at 10 mph. Section 154 notice logged for tree trimming.",
+        sr: 2, lr: 2, rr: 4,
+        instruction: "10 mph approach. Sound horn if blind. Ensure bridge is completely clear before entering deck.",
+        customImage: null,
+        diagramType: "bridge"
+      },
+      {
+        id: 7,
+        title: "Deep Gully & Blind Alignment — Advie Spey Bridge",
+        location: "Advie Bridge crossing River Spey (B9102)",
+        coordinates: "///glorious.rivers.rapids",
+        category: "Bridge",
+        vehicles: "Max Gross Weight 18t / Solo Preferred",
+        description: "Deep natural river gully on both sides of parapet. Blind approach from south. Pedestrians frequently walk across road deck without separate footway.",
+        si: 4, li: 3, ri: 12,
+        mitigations: "Speed Management: 10 mph on bridge span. Give right-of-way to oncoming vehicles already committed. Watch for pedestrians walking dogs on road deck.",
+        sr: 3, lr: 1, rr: 3,
+        instruction: "Crawl across at 10 mph. Give way to traffic already on bridge. Watch for pedestrians on road deck.",
+        customImage: null,
+        diagramType: "bridge"
+      },
+      {
+        id: 8,
+        title: "Fast Trunk Road Blind Merge — Advie / A95 Junction",
+        location: "B9102 junction merging onto A95 Trunk Road",
+        coordinates: "///speedway.junction.speyside",
+        category: "Swept Path",
+        vehicles: "All Permitted Vehicles",
+        description: "T-junction emerging onto high-speed A95 corridor (60 mph national limit). Limited sight distance looking north due to embankment and mature pine tree line.",
+        si: 5, li: 2, ri: 10,
+        mitigations: "Complete Stop Protocol: Bus must come to a dead stop at give-way line. Driver must verify a minimum 300m gap in fast trunk traffic before initiating pull-out.",
+        sr: 4, lr: 1, rr: 4,
+        instruction: "FULL DEAD STOP at give-way line. Verify 300m clear gap before pulling out onto 60 mph A95.",
+        customImage: null,
+        diagramType: "junction"
+      },
+      {
+        id: 9,
+        title: "Signal Controlled Narrow Bridge — Cromdale Village",
+        location: "A95 Cromdale Historic Single-Lane Bridge",
+        coordinates: "///signals.granite.parapet",
+        category: "Bridge",
+        vehicles: "Standard Vehicles",
+        description: "Traffic light shuttle operation over historic narrow river bridge. Queueing HGVs and distillery tankers. Tight turn off bridge into village street.",
+        si: 3, li: 3, ri: 9,
+        mitigations: "Stop Line Adherence: Do not cross amber lights. Ensure rear overhang is fully clear of the junction stop line before vehicle stops.",
+        sr: 2, lr: 1, rr: 2,
+        instruction: "Do not contest amber lights. Allow plenty of clearance for oncoming distillery tankers.",
+        customImage: null,
+        diagramType: "signals"
+      },
+      {
+        id: 10,
+        title: "Cairngorms Wildlife Conservation & Red Squirrel Crossing",
+        location: "Throughout B9102 woodland and Anagach Woods corridor",
+        coordinates: "///wildlife.canopy.pines",
+        category: "Wildlife",
+        vehicles: "All Vehicles",
+        description: "Designated native red squirrel and roe deer crossing corridor. Wildlife suddenly darting across carriageway, particularly at dawn and dusk.",
+        si: 2, li: 4, ri: 8,
+        mitigations: "Driver Briefing: Maintain smooth progressive braking; avoid violent emergency swerves that could destabilize bus or throw standing passengers.",
+        sr: 2, lr: 2, rr: 4,
+        instruction: "Maintain scan of road verges. Do not swerve violently; apply controlled progressive braking.",
+        customImage: null,
+        diagramType: "wildlife"
+      }
+    ];
+
+    // State management
+    let hazards = [...initialHazards];
+    let currentFilter = 'all';
+
+    // --- STREAMING_CHUNK:Risk Calculation & Color Helpers ---
+    function getRiskBand(score) {
+      if (score >= 17) return { text: 'Extreme', bg: 'bg-red-700', border: 'border-red-800', textCol: 'text-white', badgeCol: 'bg-red-700 text-white' };
+      if (score >= 10) return { text: 'High', bg: 'bg-red-500', border: 'border-red-600', textCol: 'text-white', badgeCol: 'bg-red-100 text-red-800 border-red-300' };
+      if (score >= 5) return { text: 'Medium', bg: 'bg-amber-400', border: 'border-amber-500', textCol: 'text-slate-900', badgeCol: 'bg-amber-100 text-amber-900 border-amber-300' };
+      return { text: 'Low', bg: 'bg-emerald-500', border: 'border-emerald-600', textCol: 'text-white', badgeCol: 'bg-emerald-100 text-emerald-800 border-emerald-300' };
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `px-4 py-2.5 rounded-lg shadow-lg text-xs font-bold text-white transition-all transform duration-300 translate-y-2 opacity-0 flex items-center space-x-2 ${
+        type === 'success' ? 'bg-emerald-600' : type === 'warning' ? 'bg-amber-600' : 'bg-stagecoach-navy'
+      }`;
+      toast.innerHTML = `
+        <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+        </svg>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
+    }
+
+    // --- STREAMING_CHUNK:SVG Diagram Generators for Visual Context ---
+    function generateSvgDiagram(type, title) {
+      if (type === 'bridge') {
+        return `
+          <svg class="w-full h-full object-cover" viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="400" height="200" fill="#1e293b"/>
+            <!-- Stone Arch Bridge Outline -->
+            <path d="M 40 200 L 40 100 C 40 30, 360 30, 360 100 L 360 200 Z" fill="#334155" stroke="#64748b" stroke-width="4"/>
+            <!-- Roadway -->
+            <rect x="80" y="150" width="240" height="50" fill="#475569"/>
+            <line x1="200" y1="150" x2="200" y2="200" stroke="#f1f5f9" stroke-width="3" stroke-dasharray="6 6"/>
+            <!-- Height Clearance Gauge -->
+            <line x1="200" y1="65" x2="200" y2="150" stroke="#fbbf24" stroke-width="2"/>
+            <polygon points="200,60 196,70 204,70" fill="#fbbf24"/>
+            <polygon points="200,155 196,145 204,145" fill="#fbbf24"/>
+            <rect x="155" y="90" width="90" height="26" rx="4" fill="#0f172a" stroke="#fbbf24" stroke-width="1.5"/>
+            <text x="200" y="108" fill="#fbbf24" font-size="12" font-family="sans-serif" font-weight="bold" text-anchor="middle">16' 0" (4.87m)</text>
+            <text x="200" y="185" fill="#94a3b8" font-size="11" font-family="sans-serif" text-anchor="middle">ARCH CLEARANCE PROFILE</text>
+          </svg>
+        `;
+      }
+      if (type === 'verge') {
+        return `
+          <svg class="w-full h-full object-cover" viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="400" height="200" fill="#064e3b"/>
+            <!-- Deep Ditch Sides -->
+            <path d="M 0 110 L 90 140 L 90 200 L 0 200 Z" fill="#022c22"/>
+            <path d="M 400 110 L 310 140 L 310 200 L 400 200 Z" fill="#022c22"/>
+            <!-- Paved Single Track -->
+            <polygon points="90,140 310,140 330,200 70,200" fill="#334155"/>
+            <line x1="90" y1="140" x2="70" y2="200" stroke="#ef4444" stroke-width="3" stroke-dasharray="4 4"/>
+            <line x1="310" y1="140" x2="330" y2="200" stroke="#ef4444" stroke-width="3" stroke-dasharray="4 4"/>
+            <rect x="120" y="30" width="160" height="28" rx="4" fill="#0f172a" stroke="#ef4444" stroke-width="1.5"/>
+            <text x="200" y="49" fill="#fca5a5" font-size="12" font-family="sans-serif" font-weight="bold" text-anchor="middle">SOFT UNSTABLE VERGE</text>
+            <text x="200" y="180" fill="#f8fafc" font-size="11" font-family="sans-serif" font-weight="bold" text-anchor="middle">NO OVERTAKING ON DITCHES</text>
+          </svg>
+        `;
+      }
+      if (type === 'hairpin') {
+        return `
+          <svg class="w-full h-full object-cover" viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="400" height="200" fill="#1e293b"/>
+            <!-- Acute Hairpin Turn -->
+            <path d="M 60 200 C 60 80, 200 40, 340 40 C 340 100, 160 110, 160 200" fill="none" stroke="#475569" stroke-width="40"/>
+            <path d="M 60 200 C 60 80, 200 40, 340 40 C 340 100, 160 110, 160 200" fill="none" stroke="#fbbf24" stroke-width="2" stroke-dasharray="6 6"/>
+            <!-- Grounding warning -->
+            <rect x="90" y="130" width="220" height="26" rx="4" fill="#0f172a" stroke="#f97316" stroke-width="1.5"/>
+            <text x="200" y="148" fill="#f97316" font-size="11" font-family="sans-serif" font-weight="bold" text-anchor="middle">SEVERE GRADIENT & SWEPT TAIL</text>
+          </svg>
+        `;
+      }
+      // Default / General
+      return `
+        <svg class="w-full h-full object-cover" viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="400" height="200" fill="#0f172a"/>
+          <circle cx="200" cy="90" r="45" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+          <path d="M 200 65 L 200 95 L 220 105" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+          <text x="200" y="160" fill="#94a3b8" font-size="12" font-family="sans-serif" font-weight="bold" text-anchor="middle">${title.substring(0, 30)}</text>
+        </svg>
+      `;
+    }
+
+    // --- STREAMING_CHUNK:Rendering Hazard Cards and DOM Updates ---
+    function renderHazards() {
+      const grid = document.getElementById('hazardsGrid');
+      grid.innerHTML = '';
+
+      const filtered = hazards.filter(h => {
+        if (currentFilter === 'all') return true;
+        if (currentFilter === 'High') return h.ri >= 10;
+        if (currentFilter === 'Bridge') return h.category === 'Bridge';
+        if (currentFilter === 'Rural') return h.category === 'Road Edge' || h.category === 'Trees';
+        return true;
+      });
+
+      filtered.forEach(h => {
+        const riBand = getRiskBand(h.ri);
+        const rrBand = getRiskBand(h.rr);
+
+        const card = document.createElement('div');
+        card.className = 'hazard-card bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col justify-between';
+        
+        // Image display: either custom uploaded Base64 or interactive SVG diagram
+        const imageContent = h.customImage 
+          ? `<img src="${h.customImage}" alt="${h.title}" class="w-full h-48 sm:h-52 object-cover" />`
+          : generateSvgDiagram(h.diagramType, h.title);
+
+        card.innerHTML = `
+          <div>
+            <!-- Image & Photo Upload Overlay -->
+            <div class="relative group bg-slate-900 h-48 sm:h-52 overflow-hidden flex items-center justify-center">
+              ${imageContent}
+
+              <!-- Image Action Overlay -->
+              <div class="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2 p-2 no-print">
+                <label class="cursor-pointer bg-white/90 hover:bg-white text-slate-800 text-xs font-bold px-3 py-2 rounded-lg shadow-md flex items-center space-x-1 transition">
+                  <svg class="w-4 h-4 text-stagecoach-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  <span>Upload Photo</span>
+                  <input type="file" accept="image/*" class="hidden image-input" data-id="${h.id}" />
+                </label>
+                ${h.customImage ? `
+                  <button class="remove-image-btn bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-md transition" data-id="${h.id}">
+                    Remove
+                  </button>
+                ` : ''}
+              </div>
+
+              <!-- Top badges on image -->
+              <div class="absolute top-3 left-3 flex flex-wrap gap-1.5 pointer-events-none">
+                <span class="bg-stagecoach-navy/90 backdrop-blur-sm text-white text-[11px] font-bold px-2.5 py-1 rounded shadow">
+                  Record #${h.id.toString().padStart(2, '0')}
+                </span>
+                <span class="bg-slate-900/80 backdrop-blur-sm text-amber-300 text-[11px] font-bold px-2 py-1 rounded shadow">
+                  ${h.category}
+                </span>
+              </div>
+
+              <!-- Risk Score Badges Top Right -->
+              <div class="absolute top-3 right-3 flex items-center space-x-1.5 pointer-events-none">
+                <span class="px-2 py-0.5 rounded text-xs font-mono font-bold bg-white text-slate-800 shadow">
+                  Initial: <strong class="${riBand.badgeCol} px-1 rounded">${h.ri}</strong>
+                </span>
+                <span class="px-2 py-0.5 rounded text-xs font-mono font-bold bg-white text-slate-800 shadow">
+                  Residual: <strong class="${rrBand.badgeCol} px-1 rounded">${h.rr}</strong>
+                </span>
+              </div>
+            </div>
+
+            <!-- Card Content Body -->
+            <div class="p-4 sm:p-5 space-y-3">
+              <div>
+                <h3 class="font-bold text-slate-900 text-base leading-snug">${h.title}</h3>
+                <div class="flex flex-wrap items-center gap-x-2 text-xs text-slate-500 mt-1">
+                  <span>📍 ${h.location}</span>
+                  <span class="font-mono text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">${h.coordinates}</span>
+                </div>
+              </div>
+
+              <!-- Vehicle Suitability Callout -->
+              <div class="bg-amber-50 border-l-4 border-amber-500 p-2.5 rounded-r text-xs">
+                <strong class="text-amber-950 font-bold block mb-0.5">Vehicle Operating Envelope:</strong>
+                <span class="text-amber-900">${h.vehicles}</span>
+              </div>
+
+              <!-- Engineering Description -->
+              <p class="text-xs text-slate-600 leading-relaxed">${h.description}</p>
+
+              <!-- Controls Table -->
+              <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 text-xs space-y-2">
+                <div>
+                  <span class="font-bold text-slate-700 uppercase text-[10px] tracking-wider block">Hierarchy Mitigations:</span>
+                  <p class="text-slate-600 mt-0.5">${h.mitigations}</p>
+                </div>
+                <div class="pt-2 border-t border-slate-200">
+                  <span class="font-bold text-stagecoach-blue uppercase text-[10px] tracking-wider block">Cab Route Card Instruction:</span>
+                  <p class="text-slate-900 font-semibold italic mt-0.5">"${h.instruction}"</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card Footer Actions -->
+          <div class="px-4 sm:px-5 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between no-print">
+            <div class="flex items-center space-x-2 text-xs text-slate-500">
+              <span>Risk: </span>
+              <span class="font-bold ${riBand.badgeCol} px-1.5 py-0.5 rounded text-[11px]">S${h.si} × L${h.li} = ${h.ri}</span>
+              <span>&rarr;</span>
+              <span class="font-bold ${rrBand.badgeCol} px-1.5 py-0.5 rounded text-[11px]">S${h.sr} × L${h.lr} = ${h.rr}</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button class="edit-hazard-btn text-xs font-semibold text-stagecoach-blue hover:text-blue-800 p-1" data-id="${h.id}">
+                Edit
+              </button>
+              <button class="delete-hazard-btn text-xs font-semibold text-red-600 hover:text-red-800 p-1" data-id="${h.id}">
+                Delete
+              </button>
+            </div>
+          </div>
+        `;
+
+        grid.appendChild(card);
+      });
+
+      // Update summary counts
+      document.getElementById('hazardCountBadge').textContent = hazards.length;
+      document.querySelector('.filter-count-all').textContent = hazards.length;
+
+      // Update average residual risk
+      const avg = (hazards.reduce((acc, curr) => acc + curr.rr, 0) / (hazards.length || 1)).toFixed(1);
+      document.getElementById('avgResidualScore').textContent = avg;
+
+      attachCardEventListeners();
+      renderMatrix();
+    }
+
+    // --- STREAMING_CHUNK:Interactive 5x5 Matrix Rendering ---
+    function renderMatrix() {
+      const tbody = document.getElementById('matrixTableBody');
+      tbody.innerHTML = '';
+
+      // Likelihood labels across 1..5, Severity down 5..1
+      const severities = [5, 4, 3, 2, 1];
+      const likelihoods = [1, 2, 3, 4, 5];
+
+      severities.forEach(s => {
+        const tr = document.createElement('tr');
+        
+        // Header cell for Severity
+        const th = document.createElement('td');
+        th.className = 'p-2.5 font-bold text-xs text-slate-700 bg-slate-100 text-left border border-slate-200';
+        th.innerHTML = `S${s}: <span class="font-normal text-[11px] text-slate-500">${
+          s === 5 ? 'Catastrophic' : s === 4 ? 'Major' : s === 3 ? 'Moderate' : s === 2 ? 'Minor' : 'Negligible'
+        }</span>`;
+        tr.appendChild(th);
+
+        likelihoods.forEach(l => {
+          const score = s * l;
+          const band = getRiskBand(score);
+
+          // Find hazards with matching Initial Risk
+          const matchingInitial = hazards.filter(h => h.si === s && h.li === l);
+          const matchingResidual = hazards.filter(h => h.sr === s && h.lr === l);
+
+          const td = document.createElement('td');
+          td.className = `matrix-cell p-2 border border-slate-200 relative cursor-pointer hover:ring-2 hover:ring-stagecoach-navy ${band.bg} ${band.textCol}`;
+          
+          td.innerHTML = `
+            <div class="font-extrabold text-sm">${score}</div>
+            <div class="flex items-center justify-center space-x-1 mt-1">
+              ${matchingInitial.length > 0 ? `
+                <span class="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-slate-900 text-white shadow" title="${matchingInitial.map(h => '#' + h.id).join(', ')} Initial">
+                  Ri:${matchingInitial.length}
+                </span>
+              ` : ''}
+              ${matchingResidual.length > 0 ? `
+                <span class="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-white text-slate-900 shadow" title="${matchingResidual.map(h => '#' + h.id).join(', ')} Residual">
+                  Rr:${matchingResidual.length}
+                </span>
+              ` : ''}
+            </div>
+          `;
+
+          td.addEventListener('click', () => {
+            const list = [...matchingInitial, ...matchingResidual];
+            if (list.length > 0) {
+              showToast(`Score ${score} has: ${matchingInitial.length} Initial & ${matchingResidual.length} Residual hazards`, 'info');
+            } else {
+              showToast(`Score ${score} currently has no assigned hazards.`, 'info');
+            }
+          });
+
+          tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    // --- STREAMING_CHUNK:Image Upload, Paste & File Handlers ---
+    function attachCardEventListeners() {
+      // Photo File Input handlers
+      document.querySelectorAll('.image-input').forEach(input => {
+        input.addEventListener('change', function (e) {
+          const file = e.target.files[0];
+          const hazardId = parseInt(this.getAttribute('data-id'));
+          if (file) {
+            if (!file.type.startsWith('image/')) {
+              showToast('Please select a valid image file (JPEG/PNG/WEBP).', 'warning');
+              return;
+            }
+            const reader = new FileReader();
+            reader.onload = function (event) {
+              const h = hazards.find(item => item.id === hazardId);
+              if (h) {
+                h.customImage = event.target.result;
+                renderHazards();
+                showToast(`Survey image updated for Hazard #${hazardId}`, 'success');
+              }
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+      });
+
+      // Remove image handler
+      document.querySelectorAll('.remove-image-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+          const hazardId = parseInt(this.getAttribute('data-id'));
+          const h = hazards.find(item => item.id === hazardId);
+          if (h) {
+            h.customImage = null;
+            renderHazards();
+            showToast(`Image removed from Hazard #${hazardId}`, 'info');
+          }
+        });
+      });
+
+      // Edit Button handler
+      document.querySelectorAll('.edit-hazard-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+          const hazardId = parseInt(this.getAttribute('data-id'));
+          openEditModal(hazardId);
+        });
+      });
+
+      // Delete Button handler
+      document.querySelectorAll('.delete-hazard-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+          const hazardId = parseInt(this.getAttribute('data-id'));
+          hazards = hazards.filter(h => h.id !== hazardId);
+          renderHazards();
+          showToast(`Hazard #${hazardId} deleted`, 'info');
+        });
+      });
+    }
+
+    // --- STREAMING_CHUNK:Tab Navigation & Filter Handlers ---
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          b.classList.remove('active', 'bg-stagecoach-blue/50', 'text-white');
+          b.classList.add('text-slate-300');
+        });
+        this.classList.add('active', 'bg-stagecoach-blue/50', 'text-white');
+        this.classList.remove('text-slate-300');
+
+        const tabKey = this.getAttribute('data-tab');
+        document.querySelectorAll('.tab-content').forEach(content => {
+          content.classList.add('hidden');
+          content.classList.remove('block');
+        });
+        const target = document.getElementById(`tab-${tabKey}`);
+        if (target) {
+          target.classList.remove('hidden');
+          target.classList.add('block');
+        }
+      });
+    });
+
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.filter-btn').forEach(b => {
+          b.classList.remove('active', 'bg-slate-800', 'text-white');
+          b.classList.add('bg-slate-100', 'text-slate-700');
+        });
+        this.classList.add('active', 'bg-slate-800', 'text-white');
+        this.classList.remove('bg-slate-100', 'text-slate-700');
+
+        currentFilter = this.getAttribute('data-filter');
+        renderHazards();
+      });
+    });
+
+    // --- STREAMING_CHUNK:Modal Form Logic and Live Score Recalculation ---
+    const modal = document.getElementById('hazardModal');
+    const form = document.getElementById('hazardForm');
+
+    function updateModalScoreBadges() {
+      const si = parseInt(document.getElementById('modalSi').value);
+      const li = parseInt(document.getElementById('modalLi').value);
+      const ri = si * li;
+      const riBand = getRiskBand(ri);
+      const riBadge = document.getElementById('modalRiBadge');
+      riBadge.textContent = `${ri} (${riBand.text})`;
+      riBadge.className = `inline-block px-3 py-1 rounded font-bold text-xs font-mono ${riBand.badgeCol}`;
+
+      const sr = parseInt(document.getElementById('modalSr').value);
+      const lr = parseInt(document.getElementById('modalLr').value);
+      const rr = sr * lr;
+      const rrBand = getRiskBand(rr);
+      const rrBadge = document.getElementById('modalRrBadge');
+      rrBadge.textContent = `${rr} (${rrBand.text})`;
+      rrBadge.className = `inline-block px-3 py-1 rounded font-bold text-xs font-mono ${rrBand.badgeCol}`;
+    }
+
+    ['modalSi', 'modalLi', 'modalSr', 'modalLr'].forEach(id => {
+      document.getElementById(id).addEventListener('change', updateModalScoreBadges);
+    });
+
+    document.getElementById('addHazardBtn').addEventListener('click', () => {
+      document.getElementById('modalTitle').textContent = 'Log New Route Hazard';
+      form.reset();
+      document.getElementById('hazardId').value = '';
+      updateModalScoreBadges();
+      modal.classList.remove('hidden');
+    });
+
+    function openEditModal(id) {
+      const h = hazards.find(item => item.id === id);
+      if (!h) return;
+
+      document.getElementById('modalTitle').textContent = `Edit Hazard Record #${h.id}`;
+      document.getElementById('hazardId').value = h.id;
+      document.getElementById('hazardLocation').value = h.location;
+      document.getElementById('hazardCategory').value = h.category;
+      document.getElementById('hazardCoordinates').value = h.coordinates;
+      document.getElementById('hazardVehicles').value = h.vehicles;
+      document.getElementById('hazardDescription').value = h.description;
+      document.getElementById('hazardMitigations').value = h.mitigations;
+      document.getElementById('hazardInstruction').value = h.instruction;
+      document.getElementById('modalSi').value = h.si;
+      document.getElementById('modalLi').value = h.li;
+      document.getElementById('modalSr').value = h.sr;
+      document.getElementById('modalLr').value = h.lr;
+      updateModalScoreBadges();
+      modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      modal.classList.add('hidden');
+    }
+
+    document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+    document.getElementById('cancelModalBtn').addEventListener('click', closeModal);
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const idVal = document.getElementById('hazardId').value;
+      const si = parseInt(document.getElementById('modalSi').value);
+      const li = parseInt(document.getElementById('modalLi').value);
+      const sr = parseInt(document.getElementById('modalSr').value);
+      const lr = parseInt(document.getElementById('modalLr').value);
+
+      if (idVal) {
+        // Edit
+        const id = parseInt(idVal);
+        const index = hazards.findIndex(item => item.id === id);
+        if (index !== -1) {
+          hazards[index] = {
+            ...hazards[index],
+            location: document.getElementById('hazardLocation').value,
+            category: document.getElementById('hazardCategory').value,
+            coordinates: document.getElementById('hazardCoordinates').value,
+            vehicles: document.getElementById('hazardVehicles').value,
+            description: document.getElementById('hazardDescription').value,
+            mitigations: document.getElementById('hazardMitigations').value,
+            instruction: document.getElementById('hazardInstruction').value,
+            si, li, ri: si * li,
+            sr, lr, rr: sr * lr
+          };
+          showToast(`Hazard #${id} successfully updated`, 'success');
+        }
+      } else {
+        // Create new
+        const newId = hazards.length > 0 ? Math.max(...hazards.map(h => h.id)) + 1 : 1;
+        const newHazard = {
+          id: newId,
+          title: document.getElementById('hazardLocation').value,
+          location: document.getElementById('hazardLocation').value,
+          category: document.getElementById('hazardCategory').value,
+          coordinates: document.getElementById('hazardCoordinates').value || "///survey.point.highland",
+          vehicles: document.getElementById('hazardVehicles').value || "Optare Solo / SWB Only",
+          description: document.getElementById('hazardDescription').value,
+          mitigations: document.getElementById('hazardMitigations').value,
+          instruction: document.getElementById('hazardInstruction').value,
+          si, li, ri: si * li,
+          sr, lr, rr: sr * lr,
+          customImage: null,
+          diagramType: document.getElementById('hazardCategory').value.toLowerCase().includes('bridge') ? 'bridge' : 'verge'
+        };
+        hazards.push(newHazard);
+        showToast(`Hazard #${newId} logged into register`, 'success');
+      }
+
+      closeModal();
+      renderHazards();
+    });
+
+    // --- STREAMING_CHUNK:Drag & Drop / Clipboard Global Pasting ---
+    window.addEventListener('paste', e => {
+      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      for (let item of items) {
+        if (item.type.indexOf('image') === 0) {
+          const blob = item.getAsFile();
+          const reader = new FileReader();
+          reader.onload = function (event) {
+            // Attach to the first hazard lacking an image
+            const target = hazards.find(h => !h.customImage) || hazards[0];
+            if (target) {
+              target.customImage = event.target.result;
+              renderHazards();
+              showToast(`Pasted image attached to Hazard #${target.id}`, 'success');
+            }
+          };
+          reader.readAsDataURL(blob);
+          break;
+        }
+      }
+    });
+
+    // Print button
+    document.getElementById('printBtn').addEventListener('click', () => {
+      window.print();
+    });
+
+    // --- STREAMING_CHUNK:App Initialization on Load ---
+    window.addEventListener('DOMContentLoaded', () => {
+      renderHazards();
+    });
+  </script>
+</body>
+</html>
