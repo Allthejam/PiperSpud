@@ -389,21 +389,21 @@ export default function LeafletMap() {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-stagecoach-blue font-black text-xs uppercase">
-                  Service ${currentRoute?.routeNumber}
+                  Service {currentRoute?.routeNumber}
                 </span>
                 <h2 className="text-lg sm:text-xl font-black text-slate-900">
-                  ${currentRoute?.routeTitle}
+                  {currentRoute?.routeTitle}
                 </h2>
               </div>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                <strong>Depot:</strong> ${currentRoute?.depot} • <strong>OpCo:</strong> ${currentRoute?.operatingCompany} • <strong>Surveyor:</strong> ${currentRoute?.assessorName}
+                <strong>Depot:</strong> {currentRoute?.depot} • <strong>OpCo:</strong> {currentRoute?.operatingCompany} • <strong>Surveyor:</strong> {currentRoute?.assessorName}
               </p>
             </div>
 
             <div className="flex items-center space-x-2">
               <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold flex items-center space-x-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span>RRA ${currentRoute?.status?.toUpperCase()}</span>
+                <span>RRA {currentRoute?.status?.toUpperCase()}</span>
               </span>
             </div>
           </div>
@@ -412,27 +412,27 @@ export default function LeafletMap() {
           <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-center">
             <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
               <span className="text-[11px] text-slate-500 font-medium block">Route Distance</span>
-              <strong className="text-sm font-black text-stagecoach-navy">${currentRoute?.totalDistanceKm} km</strong>
+              <strong className="text-sm font-black text-stagecoach-navy">{currentRoute?.totalDistanceKm} km</strong>
             </div>
             <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
               <span className="text-[11px] text-slate-500 font-medium block">Driving Time</span>
-              <strong className="text-sm font-black text-stagecoach-blue">${totalDriveMin} min</strong>
+              <strong className="text-sm font-black text-stagecoach-blue">{totalDriveMin} min</strong>
             </div>
             <div className="bg-amber-50 p-2.5 rounded-xl border border-amber-200">
               <span className="text-[11px] text-amber-800 font-medium block">Total Dwell Time</span>
-              <strong className="text-sm font-black text-amber-700">${totalDwellMin} min</strong>
+              <strong className="text-sm font-black text-amber-700">{totalDwellMin} min</strong>
             </div>
             <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-200">
               <span className="text-[11px] text-emerald-800 font-medium block">Total Cycle Time</span>
-              <strong className="text-sm font-black text-emerald-700">${currentRoute?.estimatedRunningTimeMin} min</strong>
+              <strong className="text-sm font-black text-emerald-700">{currentRoute?.estimatedRunningTimeMin} min</strong>
             </div>
             <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
               <span className="text-[11px] text-slate-500 font-medium block">Bus Stops / Points</span>
-              <strong className="text-sm font-black text-slate-700">${currentRoute?.stops.length}</strong>
+              <strong className="text-sm font-black text-slate-700">{currentRoute?.stops.length}</strong>
             </div>
             <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
               <span className="text-[11px] text-slate-500 font-medium block">Active Hazards</span>
-              <strong className="text-sm font-black text-red-600">${currentRoute?.hazards.length}</strong>
+              <strong className="text-sm font-black text-red-600">{currentRoute?.hazards.length}</strong>
             </div>
           </div>
         </div>
@@ -450,7 +450,7 @@ export default function LeafletMap() {
                   GIS Drawing Tools
                 </span>
                 <span className="text-[10px] bg-blue-100 text-stagecoach-blue font-bold px-2 py-0.5 rounded-full capitalize">
-                  ${gisToolMode.replace('_', ' ')}
+                  {gisToolMode.replace('_', ' ')}
                 </span>
               </div>
 
@@ -693,17 +693,17 @@ export default function LeafletMap() {
               }`}>
                 <div>
                   <span className="text-[9px] text-slate-400 block uppercase font-mono">Distance</span>
-                  <strong className="font-black text-amber-400">${currentRoute?.totalDistanceKm} km</strong>
+                  <strong className="font-black text-amber-400">{currentRoute?.totalDistanceKm} km</strong>
                 </div>
                 <div className="h-6 w-px bg-slate-700"></div>
                 <div>
                   <span className="text-[9px] text-slate-400 block uppercase font-mono">Nodes</span>
-                  <strong className="font-black text-white">${currentRoute?.pathCoordinates.length || 0}</strong>
+                  <strong className="font-black text-white">{currentRoute?.pathCoordinates.length || 0}</strong>
                 </div>
                 <div className="h-6 w-px bg-slate-700"></div>
                 <div>
                   <span className="text-[9px] text-slate-400 block uppercase font-mono">Stops</span>
-                  <strong className="font-black text-blue-400">${currentRoute?.stops.length || 0}</strong>
+                  <strong className="font-black text-blue-400">{currentRoute?.stops.length || 0}</strong>
                 </div>
               </div>
 
