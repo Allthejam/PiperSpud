@@ -19,7 +19,8 @@ import {
   Copy, 
   Save, 
   Smartphone, 
-  Monitor 
+  Monitor,
+  Upload 
 } from 'lucide-react';
 import { EditableCmsBlock } from '@/types/spud';
 
@@ -128,6 +129,19 @@ export const VisualPencilOverlay: React.FC = () => {
       setSeoCanonical(config.canonicalUrl);
       setSeoOgImage(config.ogImage);
       setSeoSchemaType(config.schemaType);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setImageUrl(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -313,14 +327,25 @@ export const VisualPencilOverlay: React.FC = () => {
                     />
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <label className="cursor-pointer px-3.5 py-2 rounded-lg bg-gold-gradient text-tartan-dark text-xs font-extrabold flex items-center gap-2 shadow-md hover:brightness-110 transition-all">
+                      <Upload className="w-4 h-4" />
+                      <span>Upload Photo from Device</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                    </label>
+
                     <button
                       type="button"
                       onClick={handleSimulateCamera}
-                      className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium flex items-center gap-2 border border-slate-700"
+                      className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium flex items-center gap-2 border border-slate-700 transition-all"
                     >
                       <Camera className="w-4 h-4 text-tartan-gold" />
-                      <span>Choose High-Res Bagpipe Photo</span>
+                      <span>Choose Sample Piping Photo</span>
                     </button>
                   </div>
 

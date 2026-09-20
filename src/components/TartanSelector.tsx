@@ -6,6 +6,7 @@ import { Sparkles, Check, Info, Shirt } from 'lucide-react';
 import { EditableElement } from './EditableElement';
 
 interface TartanStyle {
+  id: string;
   name: HighlandDressOption;
   title: string;
   tagline: string;
@@ -18,6 +19,7 @@ interface TartanStyle {
 export const TartanSelector: React.FC = () => {
   const tartans: TartanStyle[] = [
     {
+      id: 'no1',
       name: 'Full No. 1 Dress (Feather Bonnet & Plaid)',
       title: 'Full Ceremonial Number 1 Military Dress',
       tagline: 'The ultimate royal and castle spectacle',
@@ -27,6 +29,7 @@ export const TartanSelector: React.FC = () => {
       imageUrl: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=600&q=80'
     },
     {
+      id: 'royal-stewart',
       name: 'Royal Stewart Tartan (Traditional Red)',
       title: 'Royal Stewart Highland Dress',
       tagline: 'The iconic traditional Scottish monarch tartan',
@@ -36,6 +39,7 @@ export const TartanSelector: React.FC = () => {
       imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&q=80'
     },
     {
+      id: 'black-watch',
       name: 'Black Watch Tartan (Military Green/Blue)',
       title: 'Black Watch Government Tartan',
       tagline: 'Subtle, distinguished military elegance',
@@ -45,6 +49,7 @@ export const TartanSelector: React.FC = () => {
       imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&q=80'
     },
     {
+      id: 'modern-tweed',
       name: 'Modern Day Highland Tweed Jacket',
       title: 'Contemporary Highland Day Tweed',
       tagline: 'Modern Scottish chic for rustic and outdoor weddings',
@@ -54,6 +59,7 @@ export const TartanSelector: React.FC = () => {
       imageUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&q=80'
     },
     {
+      id: 'isle-of-skye',
       name: 'Isle of Skye Tartan (Purple/Heather/Green)',
       title: 'Isle of Skye Misty Tartan',
       tagline: 'Inspired by the purple heather & sea mists',
@@ -106,11 +112,11 @@ export const TartanSelector: React.FC = () => {
           {/* Tartan Selection List */}
           <div className="lg:col-span-5 space-y-3">
             {tartans.map((tartan) => {
-              const isSelected = selectedTartan.name === tartan.name;
+              const isSelected = selectedTartan.id === tartan.id;
 
               return (
                 <div
-                  key={tartan.name}
+                  key={tartan.id}
                   onClick={() => setSelectedTartan(tartan)}
                   className={`p-4 rounded-2xl cursor-pointer transition-all border flex items-center justify-between gap-4 ${
                     isSelected
@@ -130,11 +136,23 @@ export const TartanSelector: React.FC = () => {
                           />
                         ))}
                       </div>
-                      <h4 className={`text-sm font-bold font-serif ${isSelected ? 'text-tartan-gold' : 'text-white'}`}>
-                        {tartan.title}
-                      </h4>
+                      <EditableElement
+                        id={`tartan-${tartan.id}-list-title`}
+                        tag="span"
+                        defaultContent={tartan.title}
+                        className={`text-sm font-bold font-serif ${isSelected ? 'text-tartan-gold' : 'text-white'}`}
+                        label={`${tartan.title} List Title`}
+                        section="attire"
+                      />
                     </div>
-                    <p className="text-xs text-gray-400">{tartan.tagline}</p>
+                    <EditableElement
+                      id={`tartan-${tartan.id}-list-tagline`}
+                      tag="p"
+                      defaultContent={tartan.tagline}
+                      className="text-xs text-gray-400"
+                      label={`${tartan.title} List Tagline`}
+                      section="attire"
+                    />
                   </div>
 
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border ${
@@ -150,40 +168,91 @@ export const TartanSelector: React.FC = () => {
           {/* Large Preview Showcase Card */}
           <div className="lg:col-span-7 bg-tartan-card rounded-3xl p-6 sm:p-8 border border-tartan-accent/40 shadow-2xl relative overflow-hidden">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
+              
+              {/* Left Side: Uploadable & Editable Photo */}
               <div className="relative rounded-2xl overflow-hidden border border-tartan-border shadow-inner group">
-                <img
-                  src={selectedTartan.imageUrl}
-                  alt={selectedTartan.title}
+                <EditableElement
+                  id={`tartan-${selectedTartan.id}-photo`}
+                  isImage={true}
+                  defaultImageUrl={selectedTartan.imageUrl}
+                  defaultAlt={`Spud the Piper in ${selectedTartan.title}`}
                   className="w-full h-72 sm:h-80 object-cover group-hover:scale-105 transition-transform duration-500"
+                  label={`${selectedTartan.title} Photo`}
+                  section="attire"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-4">
-                  <span className="text-xs font-bold text-white bg-tartan-red/90 px-3 py-1 rounded-full border border-red-400">
-                    {selectedTartan.name}
+                <div className="absolute bottom-2 left-2 z-20 pointer-events-none">
+                  <span className="text-xs font-bold text-white bg-tartan-red/90 px-3 py-1 rounded-full border border-red-400 shadow-md">
+                    <EditableElement
+                      id={`tartan-${selectedTartan.id}-badge`}
+                      tag="span"
+                      defaultContent={selectedTartan.name}
+                      label={`${selectedTartan.title} Badge`}
+                      section="attire"
+                    />
                   </span>
                 </div>
               </div>
 
+              {/* Right Side: Details & Copy */}
               <div className="space-y-4">
                 <div className="inline-block px-2.5 py-1 rounded-md bg-tartan-navy text-tartan-gold text-xs font-semibold border border-tartan-accent/30">
-                  Ideal Matching
+                  <EditableElement
+                    id={`tartan-${selectedTartan.id}-tag-label`}
+                    tag="span"
+                    defaultContent="Ideal Matching"
+                    label={`${selectedTartan.title} Tag Label`}
+                    section="attire"
+                  />
                 </div>
-                <h3 className="text-2xl font-bold text-white font-serif">{selectedTartan.title}</h3>
-                <p className="text-xs text-gray-300 leading-relaxed">{selectedTartan.description}</p>
+                
+                <EditableElement
+                  id={`tartan-${selectedTartan.id}-title`}
+                  tag="h3"
+                  defaultContent={selectedTartan.title}
+                  className="text-2xl font-bold text-white font-serif"
+                  label={`${selectedTartan.title} Heading`}
+                  section="attire"
+                />
+
+                <EditableElement
+                  id={`tartan-${selectedTartan.id}-desc`}
+                  tag="p"
+                  defaultContent={selectedTartan.description}
+                  className="text-xs text-gray-300 leading-relaxed"
+                  label={`${selectedTartan.title} Description`}
+                  section="attire"
+                />
 
                 <div className="pt-2">
-                  <p className="text-xs text-tartan-gold font-bold uppercase tracking-wider mb-1">Recommended For:</p>
-                  <p className="text-xs text-white font-medium bg-tartan-dark/80 p-2.5 rounded-lg border border-tartan-border/60">
-                    {selectedTartan.bestFor}
-                  </p>
+                  <EditableElement
+                    id={`tartan-${selectedTartan.id}-rec-header`}
+                    tag="p"
+                    defaultContent="Recommended For:"
+                    className="text-xs text-tartan-gold font-bold uppercase tracking-wider mb-1"
+                    label={`${selectedTartan.title} Recommended Header`}
+                    section="attire"
+                  />
+                  <EditableElement
+                    id={`tartan-${selectedTartan.id}-bestfor`}
+                    tag="p"
+                    defaultContent={selectedTartan.bestFor}
+                    className="text-xs text-white font-medium bg-tartan-dark/80 p-2.5 rounded-lg border border-tartan-border/60"
+                    label={`${selectedTartan.title} Recommended For`}
+                    section="attire"
+                  />
                 </div>
 
-                <a
-                  href="#booking"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs tracking-wider uppercase shadow-md hover:brightness-110 transition-all mt-2"
-                >
-                  <span>Select this Attire in Booking Form</span>
-                </a>
+                <EditableElement
+                  id={`tartan-${selectedTartan.id}-btn`}
+                  tag="a"
+                  defaultContent="Select this Attire in Booking Form"
+                  defaultLinkUrl="#booking"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs tracking-wider uppercase shadow-md hover:brightness-110 transition-all mt-2 text-center"
+                  label={`${selectedTartan.title} Action Button`}
+                  section="attire"
+                />
               </div>
+
             </div>
           </div>
 
