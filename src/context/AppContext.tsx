@@ -22,12 +22,14 @@ import {
   initialNotifications, 
   initialCmsBlocks, 
   initialTunes, 
-  initialSeoConfig,
-  initialSeoPages,
-  initialForumCategories,
-  initialSocialLinks
+  initialSeoConfig, 
+  initialSeoPages, 
+  initialForumCategories, 
+  initialSocialLinks 
 } from '@/lib/initialData';
 import { bagpipeSynth } from '@/lib/bagpipeSynth';
+import { db } from '@/lib/firebase';
+import { collection, doc, onSnapshot, setDoc, deleteDoc } from 'firebase/firestore';
 
 interface AppContextType {
   isMounted: boolean;
@@ -249,6 +251,106 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []);
 
+  // Realtime Cloud Firestore sync listeners with automatic fallback
+  useEffect(() => {
+    if (!db) return;
+
+    let unsubBookings = () => {};
+    let unsubReviews = () => {};
+    let unsubSocial = () => {};
+    let unsubForum = () => {};
+    let unsubSocialLinks = () => {};
+    let unsubCms = () => {};
+
+    try {
+      unsubBookings = onSnapshot(collection(db, 'bookings'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteBookings: BookingEvent[] = [];
+          snapshot.forEach((d) => remoteBookings.push(d.data() as BookingEvent));
+          if (remoteBookings.length > 0) {
+            setBookings(remoteBookings);
+          }
+        }
+      }, (err) => console.log('Firestore bookings listener:', err.message));
+
+      unsubReviews = onSnapshot(collection(db, 'reviews'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteReviews: Review[] = [];
+          snapshot.forEach((d) => remoteReviews.push(d.data() as Review));
+          if (remoteReviews.length > 0) {
+            setReviews(remoteReviews);
+          }
+        }
+      }, (err) => console.log('Firestore reviews listener:', err.message));
+
+      unsubSocial = onSnapshot(collection(db, 'social_posts'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remotePosts: SocialPost[] = [];
+          snapshot.forEach((d) => remotePosts.push(d.data() as SocialPost));
+          if (remotePosts.length > 0) {
+            setSocialPosts(remotePosts);
+          }
+        }
+      }, (err) => console.log('Firestore social_posts listener:', err.message));
+
+      unsubForum = onSnapshot(collection(db, 'forum_categories'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteCats: ForumCategoryItem[] = [];
+          snapshot.forEach((d) => remoteCats.push(d.data() as ForumCategoryItem));
+          if (remoteCats.length > 0) {
+            setForumCategories(remoteCats);
+          }
+        }
+      }, (err) => console.log('Firestore forum_categories listener:', err.message));
+
+      unsubSocialLinks = onSnapshot(doc(db, 'settings', 'social_links'), (snap) => {
+        if (snap.exists()) {
+          setSocialLinks(snap.data() as SocialMediaLinks);
+        }
+      }, (err) => console.log('Firestore social_links listener:', err.message));
+
+      unsubCms = onSnapshot(collection(db, 'cms_blocks'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteCms: EditableCmsBlock[] = [];
+          snapshot.forEach((d) => remoteCms.push(d.data() as EditableCmsBlock));
+          if (remoteCms.length > 0) {
+            setCmsBlocks(remoteCms);
+          }
+        }
+      }, (err) => console.log('Firestore cms_blocks listener:', err.message));
+    } catch (e) {
+      console.warn('Firebase Firestore initialization:', e);
+    }
+
+    return () => {
+      unsubBookings();
+      unsubReviews();
+      unsubSocial();
+      unsubForum();
+      unsubSocialLinks();
+      unsubCms();
+    };
+  }, []);
+
+  // Helper function to sync a document to Cloud Firestore
+  const syncToFirestore = async (colName: string, docId: string, data: any) => {
+    if (!db) return;
+    try {
+      await setDoc(doc(db, colName, docId), JSON.parse(JSON.stringify(data)), { merge: true });
+    } catch (err) {
+      console.warn(`Firestore sync (${colName}/${docId}):`, err);
+    }
+  };
+
+  const deleteFromFirestore = async (colName: string, docId: string) => {
+    if (!db) return;
+    try {
+      await deleteDoc(doc(db, colName, docId));
+    } catch (err) {
+      console.warn(`Firestore delete (${colName}/${docId}):`, err);
+    }
+  };
+
   // Sync state changes to localStorage
   useEffect(() => {
     try {
@@ -344,19 +446,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     imageUrl?: string, 
     tag?: EditableCmsBlock['tag']
   ) => {
+    let updatedBlock: EditableCmsBlock | null = null;
     setCmsBlocks(prev => {
       const exists = prev.find(b => b.id === id);
       if (exists) {
-        return prev.map(b => b.id === id ? { 
-          ...b, 
-          content, 
-          altText: altText !== undefined ? altText : b.altText, 
-          imageUrl: imageUrl !== undefined ? imageUrl : b.imageUrl, 
-          tag: tag || b.tag,
-          lastUpdated: new Date().toISOString() 
-        } : b);
+        return prev.map(b => {
+          if (b.id === id) {
+            updatedBlock = { 
+              ...b, 
+              content, 
+              altText: altText !== undefined ? altText : b.altText, 
+              imageUrl: imageUrl !== undefined ? imageUrl : b.imageUrl, 
+              tag: tag || b.tag,
+              lastUpdated: new Date().toISOString() 
+            };
+            return updatedBlock;
+          }
+          return b;
+        });
       } else {
-        return [...prev, {
+        updatedBlock = {
           id,
           page: 'home',
           section: 'custom',
@@ -366,9 +475,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           altText,
           imageUrl,
           lastUpdated: new Date().toISOString()
-        }];
+        };
+        return [...prev, updatedBlock];
       }
     });
+
+    if (updatedBlock) {
+      syncToFirestore('cms_blocks', id, updatedBlock);
+    }
   };
 
   const getCmsContent = (id: string, defaultVal: string): string => {
@@ -403,6 +517,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setBookings(prev => [newBooking, ...prev]);
+    syncToFirestore('bookings', id, newBooking);
 
     // Trigger notification for Spud
     addNotification({
@@ -422,7 +537,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setBookings(prev => prev.map(b => {
       if (b.id === id) {
         const history = b.brevoEmailHistory || [];
-        return {
+        const updated: BookingEvent = {
           ...b,
           status: 'approved' as BookingStatus,
           approvedAt: new Date().toISOString(),
@@ -437,6 +552,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
           ]
         };
+        syncToFirestore('bookings', id, updated);
+        return updated;
       }
       return b;
     }));
@@ -463,14 +580,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const rejectBooking = (id: string) => {
-    setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'cancelled' as BookingStatus } : b));
+    setBookings(prev => prev.map(b => {
+      if (b.id === id) {
+        const updated = { ...b, status: 'cancelled' as BookingStatus };
+        syncToFirestore('bookings', id, updated);
+        return updated;
+      }
+      return b;
+    }));
   };
 
   const markDepositPaid = (id: string, paypalOrderId: string = `PP-TX-${Date.now().toString().slice(-6)}`) => {
     setBookings(prev => prev.map(b => {
       if (b.id === id) {
         const history = b.brevoEmailHistory || [];
-        return {
+        const updated: BookingEvent = {
           ...b,
           status: 'deposit_paid' as BookingStatus,
           depositPaidAt: new Date().toISOString(),
@@ -484,6 +608,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
           ]
         };
+        syncToFirestore('bookings', id, updated);
+        return updated;
       }
       return b;
     }));
@@ -502,6 +628,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteBooking = (id: string) => {
     setBookings(prev => prev.filter(b => b.id !== id));
+    deleteFromFirestore('bookings', id);
   };
 
   // Review handlers
@@ -514,6 +641,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isFeatured: false
     };
     setReviews(prev => [newRev, ...prev]);
+    syncToFirestore('reviews', newRev.id, newRev);
 
     addNotification({
       type: 'new_review',
@@ -525,15 +653,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const approveReview = (id: string) => {
-    setReviews(prev => prev.map(r => r.id === id ? { ...r, status: 'approved' } : r));
+    setReviews(prev => prev.map(r => {
+      if (r.id === id) {
+        const updated = { ...r, status: 'approved' as const };
+        syncToFirestore('reviews', id, updated);
+        return updated;
+      }
+      return r;
+    }));
   };
 
   const rejectReview = (id: string) => {
-    setReviews(prev => prev.map(r => r.id === id ? { ...r, status: 'rejected' } : r));
+    setReviews(prev => prev.map(r => {
+      if (r.id === id) {
+        const updated = { ...r, status: 'rejected' as const };
+        syncToFirestore('reviews', id, updated);
+        return updated;
+      }
+      return r;
+    }));
   };
 
   const toggleFeatureReview = (id: string) => {
-    setReviews(prev => prev.map(r => r.id === id ? { ...r, isFeatured: !r.isFeatured } : r));
+    setReviews(prev => prev.map(r => {
+      if (r.id === id) {
+        const updated = { ...r, isFeatured: !r.isFeatured };
+        syncToFirestore('reviews', id, updated);
+        return updated;
+      }
+      return r;
+    }));
   };
 
   // Social handlers
@@ -573,6 +722,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       timestamp: 'Just now'
     };
     setSocialPosts(prev => [newPost, ...prev]);
+    syncToFirestore('social_posts', newPost.id, newPost);
 
     addNotification({
       type: 'new_review',
@@ -587,11 +737,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSocialPosts(prev => prev.map(post => {
       if (post.id === id) {
         const isLiked = post.likedByMe;
-        return {
+        const updated = {
           ...post,
           likes: isLiked ? post.likes - 1 : post.likes + 1,
           likedByMe: !isLiked
         };
+        syncToFirestore('social_posts', id, updated);
+        return updated;
       }
       return post;
     }));
@@ -605,7 +757,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ) => {
     setSocialPosts(prev => prev.map(post => {
       if (post.id === postId) {
-        return {
+        const updated = {
           ...post,
           comments: [
             ...post.comments,
@@ -618,17 +770,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
           ]
         };
+        syncToFirestore('social_posts', postId, updated);
+        return updated;
       }
       return post;
     }));
   };
 
   const togglePinPost = (id: string) => {
-    setSocialPosts(prev => prev.map(p => p.id === id ? { ...p, isPinned: !p.isPinned } : p));
+    setSocialPosts(prev => prev.map(p => {
+      if (p.id === id) {
+        const updated = { ...p, isPinned: !p.isPinned };
+        syncToFirestore('social_posts', id, updated);
+        return updated;
+      }
+      return p;
+    }));
   };
 
   const deleteSocialPost = (id: string) => {
     setSocialPosts(prev => prev.filter(p => p.id !== id));
+    deleteFromFirestore('social_posts', id);
   };
 
   // Forum Category Management (Controlled by Spud from Back Office)
@@ -644,6 +806,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString()
     };
     setForumCategories(prev => [...prev, newCat]);
+    syncToFirestore('forum_categories', newCat.id, newCat);
 
     addNotification({
       type: 'new_review',
@@ -655,15 +818,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteForumCategory = (id: string) => {
     setForumCategories(prev => prev.filter(c => c.id !== id));
+    deleteFromFirestore('forum_categories', id);
   };
 
   const editForumCategory = (id: string, updated: Partial<ForumCategoryItem>) => {
-    setForumCategories(prev => prev.map(c => c.id === id ? { ...c, ...updated } : c));
+    setForumCategories(prev => prev.map(c => {
+      if (c.id === id) {
+        const fullUpdated = { ...c, ...updated };
+        syncToFirestore('forum_categories', id, fullUpdated);
+        return fullUpdated;
+      }
+      return c;
+    }));
   };
 
   // Social Links Management (Controlled by Spud from Back Office)
   const updateSocialLinks = (newLinks: Partial<SocialMediaLinks>) => {
-    setSocialLinks(prev => ({ ...prev, ...newLinks }));
+    setSocialLinks(prev => {
+      const full = { ...prev, ...newLinks };
+      syncToFirestore('settings', 'social_links', full);
+      return full;
+    });
     addNotification({
       type: 'new_review',
       title: 'Social Links Updated',

@@ -49,6 +49,7 @@ import {
 } from 'lucide-react';
 import { SocialPost, ForumCategoryItem } from '@/types/spud';
 import { EmojiBar } from '@/components/EmojiBar';
+import { uploadToStorage } from '@/lib/firebase';
 
 const getCategoryIcon = (iconName?: string) => {
   switch (iconName) {
@@ -132,6 +133,7 @@ export const SocialHub: React.FC = () => {
   const [composerAuthorRole, setComposerAuthorRole] = useState<string>('Bride/Groom');
   const [customRoleText, setCustomRoleText] = useState('');
   const [isComposerExpanded, setIsComposerExpanded] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   // Forum Modal
   const [isForumModalOpen, setIsForumModalOpen] = useState(false);
@@ -206,16 +208,28 @@ export const SocialHub: React.FC = () => {
       });
   }, [socialPosts, selectedForumTopic, searchQuery]);
 
-  // Handle Image File Selection
-  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle Image File Selection with Firebase Storage & base64 fallback
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setComposerImage(reader.result as string);
-        setIsComposerExpanded(true);
-      };
-      reader.readAsDataURL(file);
+      setIsComposerExpanded(true);
+      setIsUploadingImage(true);
+
+      try {
+        // Attempt cloud upload to Firebase Storage
+        const cloudUrl = await uploadToStorage(file, 'social_uploads');
+        setComposerImage(cloudUrl);
+      } catch (uploadErr) {
+        console.warn('Firebase Storage upload, falling back to local data URL:', uploadErr);
+        // Fallback to local FileReader data URL
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setComposerImage(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        setIsUploadingImage(false);
+      }
     }
   };
 
