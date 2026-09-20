@@ -79,26 +79,50 @@ export const PiperToTheStars: React.FC = () => {
             </div>
           </div>
 
-          {/* Card 2: 15+ Years Global Experience */}
+          {/* Card 2: 15+ Years Global Experience / Master Musician */}
           <div className="bg-tartan-dark/80 rounded-2xl p-6 border border-tartan-accent/40 bg-gradient-to-b from-tartan-card to-tartan-dark flex flex-col justify-between hover:border-tartan-accent transition-all shadow-xl">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="px-3 py-1 rounded-full bg-tartan-accent/20 text-tartan-gold text-xs font-bold border border-tartan-accent/50">
-                  Master Musician
-                </span>
+                <EditableElement
+                  id="stars-master-badge"
+                  tag="span"
+                  defaultContent="Master Musician"
+                  className="px-3 py-1 rounded-full bg-tartan-accent/20 text-tartan-gold text-xs font-bold border border-tartan-accent/50 inline-block"
+                  label="Master Musician Badge"
+                  section="stars"
+                />
                 <Award className="w-5 h-5 text-tartan-gold" />
               </div>
 
-              <h3 className="text-3xl font-extrabold text-tartan-gold font-serif">15+ Years</h3>
+              <EditableElement
+                id="stars-master-title"
+                tag="h3"
+                defaultContent="15+ Years"
+                className="text-3xl font-extrabold text-tartan-gold font-serif"
+                label="Master Musician Experience Title"
+                section="stars"
+              />
               
-              <p className="text-sm text-gray-300 leading-relaxed">
-                Performing across Scotland, the UK, Europe, America, and worldwide. Mastery of traditional laments, jigs, reels, and modern Celtic anthems.
-              </p>
+              <EditableElement
+                id="stars-master-desc"
+                tag="p"
+                defaultContent="Performing across Scotland, the UK, Europe, America, and worldwide. Mastery of traditional laments, jigs, reels, and modern Celtic anthems."
+                className="text-sm text-gray-300 leading-relaxed"
+                label="Master Musician Description"
+                section="stars"
+              />
             </div>
 
             <div className="mt-6 pt-4 border-t border-tartan-border/60 flex items-center gap-2 text-xs text-tartan-goldLight font-semibold">
               <MapPin className="w-4 h-4 text-tartan-gold" />
-              <span>Available Scotland & Worldwide Travel</span>
+              <EditableElement
+                id="stars-master-footer"
+                tag="span"
+                defaultContent="Available Scotland & Worldwide Travel"
+                className="text-xs text-tartan-goldLight font-semibold"
+                label="Master Musician Footer Location"
+                section="stars"
+              />
             </div>
           </div>
 
@@ -106,9 +130,14 @@ export const PiperToTheStars: React.FC = () => {
           <div className="bg-tartan-dark/80 rounded-2xl p-6 border border-tartan-border/80 flex flex-col justify-between hover:border-tartan-accent/60 transition-all shadow-lg">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="px-3 py-1 rounded-full bg-green-950/80 text-green-300 text-xs font-bold border border-green-800">
-                  Traditional Dress
-                </span>
+                <EditableElement
+                  id="stars-regalia-badge"
+                  tag="span"
+                  defaultContent="Traditional Dress"
+                  className="px-3 py-1 rounded-full bg-green-950/80 text-green-300 text-xs font-bold border border-green-800 inline-block"
+                  label="Regalia Badge"
+                  section="stars"
+                />
                 <Sparkles className="w-5 h-5 text-green-400" />
               </div>
 
@@ -133,7 +162,14 @@ export const PiperToTheStars: React.FC = () => {
 
             <div className="mt-6 pt-4 border-t border-tartan-border/60 flex items-center gap-2 text-xs text-tartan-gold font-semibold">
               <CheckCircle className="w-4 h-4 text-tartan-gold" />
-              <span>Tailored Attire for Every Occasion</span>
+              <EditableElement
+                id="stars-regalia-footer"
+                tag="span"
+                defaultContent="Tailored Attire for Every Occasion"
+                className="text-xs text-tartan-gold font-semibold"
+                label="Regalia Footer Note"
+                section="stars"
+              />
             </div>
           </div>
 

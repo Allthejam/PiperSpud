@@ -97,19 +97,43 @@ export const AboutSection: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs text-white">
               <div className="flex items-center gap-2.5 bg-tartan-navy/80 p-3 rounded-xl border border-tartan-border">
                 <CheckCircle2 className="w-4 h-4 text-tartan-gold shrink-0" />
-                <span>Full Military No. 1 Dress & Custom Tartans</span>
+                <EditableElement
+                  id="about-pillar-dress"
+                  tag="span"
+                  defaultContent="Full Military No. 1 Dress & Custom Tartans"
+                  label="Quality Pillar 1 (Dress)"
+                  section="about"
+                />
               </div>
               <div className="flex items-center gap-2.5 bg-tartan-navy/80 p-3 rounded-xl border border-tartan-border">
                 <CheckCircle2 className="w-4 h-4 text-tartan-gold shrink-0" />
-                <span>Global & Destination Travel Available</span>
+                <EditableElement
+                  id="about-pillar-travel"
+                  tag="span"
+                  defaultContent="Global & Destination Travel Available"
+                  label="Quality Pillar 2 (Travel)"
+                  section="about"
+                />
               </div>
               <div className="flex items-center gap-2.5 bg-tartan-navy/80 p-3 rounded-xl border border-tartan-border">
                 <CheckCircle2 className="w-4 h-4 text-tartan-gold shrink-0" />
-                <span>Extensive Repertoire & Custom Requests</span>
+                <EditableElement
+                  id="about-pillar-repertoire"
+                  tag="span"
+                  defaultContent="Extensive Repertoire & Custom Requests"
+                  label="Quality Pillar 3 (Repertoire)"
+                  section="about"
+                />
               </div>
               <div className="flex items-center gap-2.5 bg-tartan-navy/80 p-3 rounded-xl border border-tartan-border">
                 <CheckCircle2 className="w-4 h-4 text-tartan-gold shrink-0" />
-                <span>Fully Insured & Professional Master Musician</span>
+                <EditableElement
+                  id="about-pillar-musician"
+                  tag="span"
+                  defaultContent="Fully Insured & Professional Master Musician"
+                  label="Quality Pillar 4 (Master Musician)"
+                  section="about"
+                />
               </div>
             </div>
 
