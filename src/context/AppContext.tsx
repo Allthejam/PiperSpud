@@ -269,6 +269,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubForum = () => {};
     let unsubSocialLinks = () => {};
     let unsubCms = () => {};
+    let unsubSeo = () => {};
 
     try {
       unsubBookings = onSnapshot(collection(db, 'bookings'), (snapshot) => {
@@ -326,6 +327,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
       }, (err) => console.log('Firestore cms_blocks listener:', err.message));
+
+      unsubSeo = onSnapshot(collection(db, 'seo_pages'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteSeo: SeoPageConfig[] = [];
+          snapshot.forEach((d) => remoteSeo.push(d.data() as SeoPageConfig));
+          if (remoteSeo.length > 0) {
+            setSeoPages(prev => {
+              const merged = [...prev];
+              remoteSeo.forEach(r => {
+                const idx = merged.findIndex(p => p.pageId === r.pageId);
+                if (idx >= 0) merged[idx] = r;
+                else merged.push(r);
+              });
+              const homeSeo = merged.find(p => p.pageId === 'home');
+              if (homeSeo) setSeoConfig(homeSeo);
+              return merged;
+            });
+          }
+        }
+      }, (err) => console.log('Firestore seo_pages listener:', err.message));
     } catch (e) {
       console.warn('Firebase Firestore initialization:', e);
     }
@@ -337,6 +358,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubForum();
       unsubSocialLinks();
       unsubCms();
+      unsubSeo();
     };
   }, []);
 
@@ -960,20 +982,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updatePageSeo = (pageId: string, newConfig: Partial<SeoPageConfig>) => {
-    setSeoPages(prev => prev.map(p => {
-      if (p.pageId === pageId) {
-        const updated = { ...p, ...newConfig };
-        if (pageId === 'home') {
-          setSeoConfig(updated);
+    setSeoPages(prev => {
+      const updatedList = prev.map(p => {
+        if (p.pageId === pageId) {
+          const updated = { ...p, ...newConfig };
+          if (pageId === 'home') {
+            setSeoConfig(updated);
+          }
+          // Persist directly to Firebase Cloud Firestore
+          syncToFirestore('seo_pages', pageId, updated);
+          return updated;
         }
-        return updated;
-      }
-      return p;
-    }));
+        return p;
+      });
+      return updatedList;
+    });
   };
 
   const updateSeoConfig = (newConfig: Partial<SeoPageConfig>) => {
-    setSeoConfig(prev => ({ ...prev, ...newConfig }));
     updatePageSeo('home', newConfig);
   };
 

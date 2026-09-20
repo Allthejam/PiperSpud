@@ -713,9 +713,9 @@ export const VisualPencilOverlay: React.FC = () => {
             <div className="bg-tartan-navy px-6 py-4 border-t border-tartan-border flex items-center justify-between">
               <div className="text-xs text-gray-400">
                 {isSavedSuccess && (
-                  <span className="text-green-400 font-bold flex items-center gap-1">
-                    <Check className="w-4 h-4" />
-                    Saved {selectedPageId.toUpperCase()} SEO configuration!
+                  <span className="text-emerald-400 font-bold flex items-center gap-1.5 animate-pulse">
+                    <Check className="w-4 h-4 text-emerald-400" />
+                    <span>Saved {selectedPageId.toUpperCase()} to Cloud Firestore Database & Synced!</span>
                   </span>
                 )}
               </div>
