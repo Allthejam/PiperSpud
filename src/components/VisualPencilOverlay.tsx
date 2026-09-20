@@ -365,6 +365,7 @@ export const VisualPencilOverlay: React.FC = () => {
                       <option value="h6">H6 Tag (Small Heading)</option>
                       <option value="p">P Tag (Paragraph / Body Copy)</option>
                       <option value="span">Span Tag (Inline Text / Badge)</option>
+                      <option value="div">Div Tag (Block Container / Stat Number)</option>
                       <option value="a">A Tag (Hyperlink / Action Link)</option>
                       <option value="blockquote">Blockquote (Testimonial Quote)</option>
                       <option value="button">Button (Call To Action Link/Button)</option>

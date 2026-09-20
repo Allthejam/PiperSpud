@@ -14,6 +14,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { Review } from '@/types/spud';
+import { EditableElement } from './EditableElement';
 
 export const ReviewsSection: React.FC = () => {
   const { reviews, submitReview, socialLinks } = useApp();
@@ -62,15 +63,31 @@ export const ReviewsSection: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
           <div className="space-y-3 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-tartan-accent/15 border border-tartan-accent/40 text-tartan-gold text-xs font-semibold">
-              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-              <span>Verified Client Testimonials</span>
+              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 shrink-0" />
+              <EditableElement
+                id="reviews-header-badge"
+                tag="span"
+                defaultContent="Verified Client Testimonials"
+                label="Reviews Header Badge"
+                section="reviews"
+              />
             </div>
-            <h2 className="text-3xl sm:text-5xl font-extrabold text-white font-serif tracking-tight">
-              Loved by Couples & Families Worldwide
-            </h2>
-            <p className="text-sm sm:text-base text-gray-300">
-              Read genuine reviews from wedding couples, castle venues, and event planners who experienced Spud\'s bagpipe magic firsthand.
-            </p>
+            <EditableElement
+              id="reviews-header-title"
+              tag="h2"
+              defaultContent="Loved by Couples & Families Worldwide"
+              className="text-3xl sm:text-5xl font-extrabold text-white font-serif tracking-tight"
+              label="Reviews Header Title"
+              section="reviews"
+            />
+            <EditableElement
+              id="reviews-header-desc"
+              tag="p"
+              defaultContent="Read genuine reviews from wedding couples, castle venues, and event planners who experienced Spud's bagpipe magic firsthand."
+              className="text-sm sm:text-base text-gray-300"
+              label="Reviews Header Description"
+              section="reviews"
+            />
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
@@ -99,13 +116,13 @@ export const ReviewsSection: React.FC = () => {
         {/* Trustpilot Banner Bar */}
         <div className="mb-10 p-4 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-tartan-card to-emerald-950/30 border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-[#00b67a]/20 border border-[#00b67a]/40 text-[#00b67a]">
+            <div className="p-2.5 rounded-xl bg-[#00b67a]/20 border border-[#00b67a]/40 text-[#00b67a] shrink-0">
               <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
                 <path d="M12 0l3.708 7.514 8.292 1.206-6 5.849 1.416 8.257L12 18.927l-7.416 3.9 1.416-8.257-6-5.849 8.292-1.206z"/>
               </svg>
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-bold text-white text-sm">Trustpilot Rating:</span>
                 <span className="text-emerald-400 font-extrabold text-sm">5.0 / 5.0 (Excellent)</span>
                 <div className="flex text-[#00b67a] text-xs">★★★★★</div>

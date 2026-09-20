@@ -8,7 +8,7 @@ import { EditableCmsBlock } from '@/types/spud';
 interface EditableElementProps {
   id: string;
   defaultContent?: string;
-  tag?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span' | 'button' | 'a' | 'blockquote';
+  tag?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span' | 'button' | 'a' | 'blockquote' | 'div';
   className?: string;
   label?: string;
   section?: string;

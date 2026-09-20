@@ -26,27 +26,89 @@ export const AboutSection: React.FC = () => {
               />
               <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-6 text-white">
                 <div className="flex items-center gap-2 text-tartan-gold text-xs font-bold uppercase tracking-wider mb-1">
-                  <Award className="w-4 h-4" />
-                  <span>Voted Best Scottish Entertainer</span>
+                  <Award className="w-4 h-4 shrink-0" />
+                  <EditableElement
+                    id="about-overlay-badge"
+                    tag="span"
+                    defaultContent="Voted Best Scottish Entertainer"
+                    label="About Overlay Badge"
+                    section="about"
+                  />
                 </div>
-                <h3 className="text-xl font-bold font-serif">Spud the Piper</h3>
-                <p className="text-xs text-gray-300">Providing masterclass piping for over 15 years globally</p>
+                <EditableElement
+                  id="about-overlay-title"
+                  tag="h3"
+                  defaultContent="Spud the Piper"
+                  className="text-xl font-bold font-serif"
+                  label="About Overlay Title"
+                  section="about"
+                />
+                <EditableElement
+                  id="about-overlay-desc"
+                  tag="p"
+                  defaultContent="Providing masterclass piping for over 15 years globally"
+                  className="text-xs text-gray-300"
+                  label="About Overlay Subtitle"
+                  section="about"
+                />
               </div>
             </div>
 
             {/* Experience Stats Row */}
             <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="bg-tartan-dark/90 p-4 rounded-2xl border border-tartan-border">
-                <div className="text-2xl font-extrabold text-tartan-gold font-serif">15+</div>
-                <div className="text-[11px] text-gray-400 font-semibold uppercase mt-0.5">Years Piping</div>
+              <div className="bg-tartan-dark/90 p-4 rounded-2xl border border-tartan-border flex flex-col items-center justify-center">
+                <EditableElement
+                  id="about-stat-years-num"
+                  tag="div"
+                  defaultContent="15+"
+                  className="text-2xl font-extrabold text-tartan-gold font-serif"
+                  label="Years Piping Number"
+                  section="about"
+                />
+                <EditableElement
+                  id="about-stat-years-label"
+                  tag="div"
+                  defaultContent="Years Piping"
+                  className="text-[11px] text-gray-400 font-semibold uppercase mt-0.5"
+                  label="Years Piping Label"
+                  section="about"
+                />
               </div>
-              <div className="bg-tartan-dark/90 p-4 rounded-2xl border border-tartan-border">
-                <div className="text-2xl font-extrabold text-tartan-gold font-serif">1,200+</div>
-                <div className="text-[11px] text-gray-400 font-semibold uppercase mt-0.5">Weddings</div>
+              <div className="bg-tartan-dark/90 p-4 rounded-2xl border border-tartan-border flex flex-col items-center justify-center">
+                <EditableElement
+                  id="about-stat-weddings-num"
+                  tag="div"
+                  defaultContent="1,200+"
+                  className="text-2xl font-extrabold text-tartan-gold font-serif"
+                  label="Weddings Number"
+                  section="about"
+                />
+                <EditableElement
+                  id="about-stat-weddings-label"
+                  tag="div"
+                  defaultContent="Weddings"
+                  className="text-[11px] text-gray-400 font-semibold uppercase mt-0.5"
+                  label="Weddings Label"
+                  section="about"
+                />
               </div>
-              <div className="bg-tartan-dark/90 p-4 rounded-2xl border border-tartan-border">
-                <div className="text-2xl font-extrabold text-tartan-gold font-serif">100%</div>
-                <div className="text-[11px] text-gray-400 font-semibold uppercase mt-0.5">5-Star Rated</div>
+              <div className="bg-tartan-dark/90 p-4 rounded-2xl border border-tartan-border flex flex-col items-center justify-center">
+                <EditableElement
+                  id="about-stat-rating-num"
+                  tag="div"
+                  defaultContent="100%"
+                  className="text-2xl font-extrabold text-tartan-gold font-serif"
+                  label="5-Star Rating Number"
+                  section="about"
+                />
+                <EditableElement
+                  id="about-stat-rating-label"
+                  tag="div"
+                  defaultContent="5-Star Rated"
+                  className="text-[11px] text-gray-400 font-semibold uppercase mt-0.5"
+                  label="5-Star Rating Label"
+                  section="about"
+                />
               </div>
             </div>
           </div>
@@ -54,8 +116,14 @@ export const AboutSection: React.FC = () => {
           {/* Right Column: Bio Copy */}
           <div className="lg:col-span-7 space-y-6">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-tartan-accent/15 border border-tartan-accent/40 text-tartan-gold text-xs font-semibold">
-              <Sparkles className="w-4 h-4" />
-              <span>Meet Spud the Piper</span>
+              <Sparkles className="w-4 h-4 shrink-0" />
+              <EditableElement
+                id="about-header-badge"
+                tag="span"
+                defaultContent="Meet Spud the Piper"
+                label="About Header Badge"
+                section="about"
+              />
             </div>
 
             <EditableElement
@@ -137,21 +205,25 @@ export const AboutSection: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-4 flex items-center gap-4">
-              <a
-                href="#booking"
-                className="px-6 py-3.5 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs tracking-wider uppercase shadow-xl hover:brightness-110 transition-all"
-              >
-                Check Spud\'s Diary Availability
-              </a>
-              <a
-                href="https://www.facebook.com/spudthepiper/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-5 py-3.5 rounded-xl bg-tartan-dark hover:bg-slate-800 text-white text-xs font-bold border border-tartan-border transition-all flex items-center gap-2"
-              >
-                <span>Watch on Facebook Live</span>
-              </a>
+            <div className="pt-4 flex items-center gap-4 flex-wrap">
+              <EditableElement
+                id="about-btn-diary"
+                tag="a"
+                defaultContent="Check Spud's Diary Availability"
+                defaultLinkUrl="#booking"
+                className="px-6 py-3.5 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs tracking-wider uppercase shadow-xl hover:brightness-110 transition-all inline-block text-center"
+                label="About Diary Availability Button"
+                section="about"
+              />
+              <EditableElement
+                id="about-btn-facebook"
+                tag="a"
+                defaultContent="Watch on Facebook Live"
+                defaultLinkUrl="https://www.facebook.com/spudthepiper/"
+                className="px-5 py-3.5 rounded-xl bg-tartan-dark hover:bg-slate-800 text-white text-xs font-bold border border-tartan-border transition-all flex items-center justify-center gap-2"
+                label="About Facebook Live Button"
+                section="about"
+              />
             </div>
 
           </div>

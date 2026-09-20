@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useApp } from '@/context/AppContext';
+import { EditableElement } from './EditableElement';
 import { Phone, Mail, Heart, Award, ShieldCheck, Sparkles, Scale, Cookie, FileText } from 'lucide-react';
 
 export const Footer: React.FC = () => {
@@ -96,15 +97,25 @@ export const Footer: React.FC = () => {
                 Spud The Piper
               </span>
             </Link>
-            <p className="text-gray-400 leading-relaxed text-xs max-w-sm">
-              Scotland\'s multiple award-winning Highland Bagpiper for weddings, funerals, castle galas, Burns suppers, and private events globally.
-            </p>
+            <EditableElement
+              id="footer-brand-desc"
+              tag="p"
+              defaultContent="Scotland's multiple award-winning Highland Bagpiper for weddings, funerals, castle galas, Burns suppers, and private events globally."
+              className="text-gray-400 leading-relaxed text-xs max-w-sm"
+              label="Footer Brand Description"
+              section="footer"
+            />
 
             {/* Official Social Media Links + Call & Email */}
             <div className="space-y-2.5 pt-2">
-              <div className="text-[11px] font-bold text-tartan-gold uppercase tracking-wider">
-                Official Social Channels & Contact:
-              </div>
+              <EditableElement
+                id="footer-social-header"
+                tag="div"
+                defaultContent="Official Social Channels & Contact:"
+                className="text-[11px] font-bold text-tartan-gold uppercase tracking-wider"
+                label="Footer Social Header"
+                section="footer"
+              />
               <div className="flex items-center gap-2 flex-wrap text-gray-300">
                 {socialChannels.map((item) => (
                   <a
