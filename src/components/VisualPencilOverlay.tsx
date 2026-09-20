@@ -20,7 +20,10 @@ import {
   Save, 
   Smartphone, 
   Monitor,
-  Upload 
+  Upload,
+  Database,
+  Cloud,
+  RefreshCw 
 } from 'lucide-react';
 import { EditableCmsBlock } from '@/types/spud';
 
@@ -40,6 +43,8 @@ export const VisualPencilOverlay: React.FC = () => {
     activeSeoDrawerPageId,
     openSeoDrawer,
     closeSeoDrawer,
+    isSyncingFirestore,
+    syncAllToFirestore,
     logoutAdmin 
   } = useApp();
 
@@ -103,9 +108,9 @@ export const VisualPencilOverlay: React.FC = () => {
     setEditingBlock(null);
   };
 
-  const handleSavePageSeo = (e?: React.FormEvent) => {
+  const handleSavePageSeo = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    updatePageSeo(selectedPageId, {
+    await updatePageSeo(selectedPageId, {
       title: seoTitle,
       metaDescription: seoDesc,
       keywords: seoKeywords.split(',').map(k => k.trim()).filter(Boolean),
@@ -115,7 +120,7 @@ export const VisualPencilOverlay: React.FC = () => {
       schemaType: seoSchemaType
     });
     setIsSavedSuccess(true);
-    setTimeout(() => setIsSavedSuccess(false), 2000);
+    setTimeout(() => setIsSavedSuccess(false), 3000);
   };
 
   const handlePageSelect = (pageId: string) => {
@@ -241,6 +246,17 @@ export const VisualPencilOverlay: React.FC = () => {
           >
             <Search className="w-3.5 h-3.5 text-blue-300" />
             <span>SEO & Schema Studio</span>
+          </button>
+
+          {/* Cloud Database Sync */}
+          <button
+            onClick={() => syncAllToFirestore()}
+            disabled={isSyncingFirestore}
+            className="px-3 py-1.5 rounded-md bg-emerald-950/80 hover:bg-emerald-900 text-emerald-200 border border-emerald-600 font-semibold flex items-center gap-1.5 transition-all text-xs shadow disabled:opacity-50"
+            title="Push all collections (SEO pages, tunes, blocks) directly to Firebase Cloud Firestore"
+          >
+            <Cloud className={`w-3.5 h-3.5 text-emerald-400 ${isSyncingFirestore ? 'animate-spin' : ''}`} />
+            <span>{isSyncingFirestore ? 'Syncing...' : 'Sync to Firebase'}</span>
           </button>
 
           <a
@@ -720,11 +736,21 @@ export const VisualPencilOverlay: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => syncAllToFirestore()}
+                  disabled={isSyncingFirestore}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-900 text-emerald-200 border border-emerald-600 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50"
+                  title="Upload all 14 pages to Firebase Firestore seo_pages collection"
+                >
+                  <Cloud className={`w-3.5 h-3.5 text-emerald-400 ${isSyncingFirestore ? 'animate-spin' : ''}`} />
+                  <span>{isSyncingFirestore ? 'Syncing...' : 'Sync All 14 Pages to Cloud'}</span>
+                </button>
                 <button
                   type="button"
                   onClick={closeSeoDrawer}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-gray-300 text-xs font-semibold"
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-gray-300 text-xs font-semibold"
                 >
                   Close
                 </button>

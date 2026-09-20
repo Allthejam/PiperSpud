@@ -110,7 +110,7 @@ export interface ChatMessage {
 
 export interface NotificationItem {
   id: string;
-  type: 'booking_request' | 'deposit_paid' | 'new_review' | 'chat_message' | 'gig_reminder' | 'tune_added';
+  type: 'booking_request' | 'deposit_paid' | 'new_review' | 'chat_message' | 'gig_reminder' | 'tune_added' | 'system';
   title: string;
   message: string;
   timestamp: string;

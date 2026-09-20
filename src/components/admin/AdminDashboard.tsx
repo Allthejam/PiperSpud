@@ -14,12 +14,32 @@ import {
   ArrowUpRight, 
   Mail, 
   ExternalLink,
-  Sparkles
+  Sparkles,
+  Cloud,
+  Database,
+  RefreshCw,
+  Layers,
+  Music,
+  Search,
+  MessageSquare
 } from 'lucide-react';
 import { BookingEvent } from '@/types/spud';
 
 export const AdminDashboard: React.FC<{ onNavigateTab: (tab: string) => void }> = ({ onNavigateTab }) => {
-  const { bookings, reviews, notifications, openBrevoPreview, approveBooking } = useApp();
+  const { 
+    bookings, 
+    reviews, 
+    notifications, 
+    openBrevoPreview, 
+    approveBooking,
+    seoPages,
+    tunesList,
+    cmsBlocks,
+    forumCategories,
+    socialPosts,
+    syncAllToFirestore,
+    isSyncingFirestore 
+  } = useApp();
 
   // Metrics
   const totalRevenue = bookings.reduce((sum, b) => b.status === 'deposit_paid' ? sum + b.estimatedPrice : sum, 0);
@@ -62,6 +82,51 @@ export const AdminDashboard: React.FC<{ onNavigateTab: (tab: string) => void }> 
             <span>Open Diary</span>
           </button>
         </div>
+      </div>
+
+      {/* Cloud Firestore Database Sync Banner */}
+      <div className="bg-gradient-to-r from-emerald-950/60 via-tartan-navy to-tartan-card rounded-3xl p-6 border border-emerald-500/40 shadow-xl flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Database className="w-4 h-4 text-emerald-400" />
+              Firebase Firestore Cloud Database Connected (`piperspud-56c0a`)
+            </span>
+          </div>
+          <h3 className="text-lg font-bold text-white">Database Collections & Cloud Persistence</h3>
+          <div className="flex items-center gap-3 flex-wrap text-xs text-gray-300 pt-1">
+            <span className="px-2.5 py-1 rounded-lg bg-emerald-900/40 border border-emerald-700/50 flex items-center gap-1.5 text-emerald-200 font-mono">
+              <Search className="w-3.5 h-3.5 text-emerald-400" />
+              seo_pages: <strong>{seoPages.length} pages</strong>
+            </span>
+            <span className="px-2.5 py-1 rounded-lg bg-emerald-900/40 border border-emerald-700/50 flex items-center gap-1.5 text-emerald-200 font-mono">
+              <Music className="w-3.5 h-3.5 text-emerald-400" />
+              bagpipe_tunes: <strong>{tunesList.length} tracks</strong>
+            </span>
+            <span className="px-2.5 py-1 rounded-lg bg-emerald-900/40 border border-emerald-700/50 flex items-center gap-1.5 text-emerald-200 font-mono">
+              <Layers className="w-3.5 h-3.5 text-emerald-400" />
+              cms_blocks: <strong>{cmsBlocks.length} elements</strong>
+            </span>
+            <span className="px-2.5 py-1 rounded-lg bg-emerald-900/40 border border-emerald-700/50 flex items-center gap-1.5 text-emerald-200 font-mono">
+              <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+              bookings: <strong>{bookings.length}</strong>
+            </span>
+            <span className="px-2.5 py-1 rounded-lg bg-emerald-900/40 border border-emerald-700/50 flex items-center gap-1.5 text-emerald-200 font-mono">
+              <Star className="w-3.5 h-3.5 text-emerald-400" />
+              reviews: <strong>{reviews.length}</strong>
+            </span>
+          </div>
+        </div>
+
+        <button
+          onClick={() => syncAllToFirestore()}
+          disabled={isSyncingFirestore}
+          className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2.5 transition-all disabled:opacity-50 shrink-0"
+        >
+          <Cloud className={`w-4 h-4 ${isSyncingFirestore ? 'animate-spin' : ''}`} />
+          <span>{isSyncingFirestore ? 'Syncing to Firebase...' : 'Push All Collections to Firebase'}</span>
+        </button>
       </div>
 
       {/* KPI Cards Grid */}

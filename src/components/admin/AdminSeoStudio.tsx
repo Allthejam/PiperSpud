@@ -13,11 +13,12 @@ import {
   Save,
   Copy,
   Smartphone,
-  Monitor
+  Monitor,
+  Cloud
 } from 'lucide-react';
 
 export const AdminSeoStudio: React.FC = () => {
-  const { seoPages, getSeoForPage, updatePageSeo } = useApp();
+  const { seoPages, getSeoForPage, updatePageSeo, syncAllToFirestore, isSyncingFirestore } = useApp();
 
   const [selectedPageId, setSelectedPageId] = useState('home');
   const [title, setTitle] = useState('');
@@ -43,9 +44,9 @@ export const AdminSeoStudio: React.FC = () => {
     }
   }, [selectedPageId, getSeoForPage]);
 
-  const handleSaveSeo = (e: React.FormEvent) => {
+  const handleSaveSeo = async (e: React.FormEvent) => {
     e.preventDefault();
-    updatePageSeo(selectedPageId, {
+    await updatePageSeo(selectedPageId, {
       title,
       metaDescription: metaDesc,
       keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
@@ -55,7 +56,7 @@ export const AdminSeoStudio: React.FC = () => {
       schemaType
     });
     setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 2500);
+    setTimeout(() => setIsSaved(false), 3000);
   };
 
   const handlePageSelect = (pageId: string) => {
@@ -136,13 +137,26 @@ export const AdminSeoStudio: React.FC = () => {
           <p className="text-xs text-gray-400">Manage page meta tags, OpenGraph social previews, H1 hierarchy, and Schema.org rich snippets for all website routes</p>
         </div>
 
-        <button
-          onClick={handleSaveSeo}
-          className="px-5 py-2.5 bg-gold-gradient text-tartan-dark font-extrabold text-xs rounded-xl shadow-lg hover:brightness-110 flex items-center gap-2"
-        >
-          <Save className="w-4 h-4" />
-          <span>{isSaved ? `Saved ${selectedPageId.toUpperCase()} SEO!` : `Save ${selectedPageId.toUpperCase()} SEO`}</span>
-        </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            type="button"
+            onClick={() => syncAllToFirestore()}
+            disabled={isSyncingFirestore}
+            className="px-4 py-2.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 text-emerald-200 border border-emerald-600 text-xs font-semibold flex items-center gap-2 transition-all disabled:opacity-50 shadow"
+            title="Upload all 14 pages directly to Firebase Firestore seo_pages collection"
+          >
+            <Cloud className={`w-4 h-4 text-emerald-400 ${isSyncingFirestore ? 'animate-spin' : ''}`} />
+            <span>{isSyncingFirestore ? 'Syncing to Cloud...' : 'Sync All 14 Pages to Firebase'}</span>
+          </button>
+
+          <button
+            onClick={handleSaveSeo}
+            className="px-5 py-2.5 bg-gold-gradient text-tartan-dark font-extrabold text-xs rounded-xl shadow-lg hover:brightness-110 flex items-center gap-2"
+          >
+            <Save className="w-4 h-4" />
+            <span>{isSaved ? `Saved ${selectedPageId.toUpperCase()} to Firebase!` : `Save ${selectedPageId.toUpperCase()} SEO`}</span>
+          </button>
+        </div>
       </div>
 
       {/* Page Tabs */}
