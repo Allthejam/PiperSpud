@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
@@ -6,22 +6,24 @@ import { usePathname } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { 
   Phone, 
-  Mail,
+  Mail, 
   Volume2, 
   VolumeX, 
   Menu, 
-  X,
-  Calendar,
-  ChevronDown,
-  Sparkles,
-  Shield,
-  HelpCircle,
-  Star,
-  Shirt,
-  Music,
-  Users,
-  Compass,
-  Info
+  X, 
+  Calendar, 
+  ChevronDown, 
+  Sparkles, 
+  Shield, 
+  HelpCircle, 
+  Star, 
+  Shirt, 
+  Music, 
+  Users, 
+  Compass, 
+  Info,
+  Smartphone,
+  Download
 } from 'lucide-react';
 
 interface NavItem {
@@ -38,11 +40,11 @@ interface NavItem {
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
   const { 
-    isMounted,
+    isMounted, 
     isAdminLoggedIn, 
     currentPlayingTune, 
     stopTune, 
-    playTune
+    playTune 
   } = useApp();
 
   const isRealAdmin = isMounted && isAdminLoggedIn;
@@ -79,6 +81,7 @@ export const Navbar: React.FC = () => {
       children: [
         { label: 'Welcome / Home', href: '/', desc: 'Main Highland Overview & Hero', icon: Compass },
         { label: 'About Spud', href: '/about', desc: '40+ Years of Piping Heritage', icon: Info },
+        { label: 'How to Install App (PWA)', href: '/install', desc: '1-Tap Offline Bagpipe Music on Phone & PC', icon: Smartphone },
       ]
     },
     {
@@ -113,20 +116,20 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      {/* 1. TOP NARROW UTILITY BAR */}
-      <div className={`bg-tartan-navy/95 border-b border-tartan-border/60 text-gray-300 text-xs py-1.5 transition-all ${isRealAdmin ? 'mt-10' : ''}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between flex-wrap gap-2">
+      {/* 1. TOP UTILITY HEADER BAR */}
+      <div className={`bg-tartan-dark border-b border-tartan-border/60 py-1.5 px-4 text-xs font-sans transition-all duration-300 ${isRealAdmin ? 'mt-10' : ''}`}>
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           
-          {/* Direct Phone & Email Links */}
-          <div className="flex items-center gap-2 sm:gap-4 text-[12px] font-medium">
+          {/* Left Direct Contact Quick Links */}
+          <div className="flex items-center space-x-4 sm:space-x-6 text-[11px]">
             <a 
               href="tel:07793491367" 
-              className="flex items-center gap-1.5 text-gray-300 hover:text-tartan-gold transition-colors"
+              className="flex items-center gap-1.5 text-gray-300 hover:text-tartan-gold transition-colors font-medium"
             >
               <Phone className="w-3 h-3 text-tartan-gold" />
-              <span>Tel: <strong className="text-tartan-gold font-bold">07793 491367</strong></span>
+              <span>Call / WhatsApp: <strong className="text-white font-bold">07793 491367</strong></span>
             </a>
-
+            
             <span className="text-slate-600 select-none">|</span>
 
             <a 
@@ -138,11 +141,17 @@ export const Navbar: React.FC = () => {
             </a>
           </div>
 
-          {/* Right Tagline */}
-          <div className="hidden md:flex items-center gap-2 text-[11px] text-tartan-goldLight tracking-wide">
+          {/* Right Tagline & PWA App Link */}
+          <div className="hidden md:flex items-center gap-3 text-[11px] text-tartan-goldLight tracking-wide">
             <span>🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland&apos;s Premier Highland Bagpiper</span>
             <span className="text-slate-600">•</span>
-            <span>Available UK & Worldwide</span>
+            <Link 
+              href="/install"
+              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-tartan-accent/20 hover:bg-tartan-accent/30 text-tartan-gold font-bold border border-tartan-accent/40 transition-all hover:scale-105"
+            >
+              <Smartphone className="w-3 h-3 text-tartan-gold" />
+              <span>📲 Install App</span>
+            </Link>
           </div>
 
         </div>
@@ -206,14 +215,10 @@ export const Navbar: React.FC = () => {
                         <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
                       </button>
 
-                      {/* Dropdown Menu Box */}
+                      {/* Dropdown Menu */}
                       {isOpen && (
-                        <div 
-                          className="absolute left-0 top-full pt-2 w-72 z-50 animate-in fade-in slide-in-from-top-2 duration-150"
-                          onMouseEnter={() => handleMouseEnter(item.label)}
-                          onMouseLeave={handleMouseLeave}
-                        >
-                          <div className="bg-tartan-card border border-tartan-accent/50 rounded-2xl p-2 shadow-2xl backdrop-blur-xl space-y-1">
+                        <div className="absolute top-full left-0 w-64 pt-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                          <div className="bg-tartan-card border border-tartan-accent/50 rounded-2xl p-2 shadow-2xl backdrop-blur-xl">
                             {item.children?.map((sub) => {
                               const isSubActive = pathname === sub.href;
                               const Icon = sub.icon || Sparkles;
@@ -222,24 +227,23 @@ export const Navbar: React.FC = () => {
                                 <Link
                                   key={sub.href}
                                   href={sub.href}
-                                  onClick={() => setActiveDropdown(null)}
-                                  className={`p-2.5 rounded-xl flex items-start gap-3 transition-colors ${
+                                  className={`flex items-start gap-3 p-2.5 rounded-xl transition-all group ${
                                     isSubActive
-                                      ? 'bg-tartan-gold text-tartan-dark font-bold shadow-md'
-                                      : 'hover:bg-tartan-navy text-gray-200 hover:text-white'
+                                      ? 'bg-tartan-accent/30 text-tartan-gold font-bold'
+                                      : 'hover:bg-tartan-navy text-gray-300 hover:text-white'
                                   }`}
                                 >
-                                  <div className={`p-1.5 rounded-lg ${isSubActive ? 'bg-tartan-dark text-tartan-gold' : 'bg-tartan-navy text-tartan-gold'}`}>
+                                  <div className="p-2 rounded-lg bg-tartan-navy border border-tartan-border group-hover:border-tartan-accent text-tartan-gold">
                                     <Icon className="w-4 h-4" />
                                   </div>
-                                  <div className="space-y-0.5">
-                                    <div className="text-xs font-bold leading-tight">
+                                  <div>
+                                    <div className="text-xs font-bold text-white group-hover:text-tartan-gold">
                                       {sub.label}
                                     </div>
                                     {sub.desc && (
-                                      <p className={`text-[10px] leading-tight ${isSubActive ? 'text-tartan-dark/80 font-medium' : 'text-gray-400'}`}>
+                                      <div className="text-[11px] text-gray-400 group-hover:text-gray-300 leading-tight">
                                         {sub.desc}
-                                      </p>
+                                      </div>
                                     )}
                                   </div>
                                 </Link>
@@ -384,6 +388,18 @@ export const Navbar: React.FC = () => {
                 </Link>
               );
             })}
+
+            {/* Mobile PWA Install Link */}
+            <div className="pt-2">
+              <Link
+                href="/install"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="w-full py-2.5 px-3 bg-tartan-navy hover:bg-slate-700 text-tartan-gold border border-tartan-accent/40 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow"
+              >
+                <Smartphone className="w-4 h-4 text-tartan-gold" />
+                <span>📲 How to Install App on Phone</span>
+              </Link>
+            </div>
 
             <div className="pt-3 border-t border-tartan-border flex items-center justify-between gap-3">
               <a

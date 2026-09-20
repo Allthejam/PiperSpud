@@ -1,12 +1,17 @@
-{
+﻿{
+  "id": "/",
   "name": "Spud the Piper | Scottish Highland Bagpiper",
-  "short_name": "Spud the Piper",
-  "description": "Award-Winning Scottish Highland Bagpiper for Weddings, Funerals, Castle Events & Tuition. Live Diary, Brevo & PayPal Bookings.",
+  "short_name": "Spud Piper",
+  "description": "Scotland's premier award-winning Highland Bagpiper for weddings, funerals, castle galas & tuition. Interactive live diary, audio jukebox & online booking.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "window-controls-overlay", "minimal-ui"],
   "background_color": "#070E1B",
   "theme_color": "#0C1B33",
   "orientation": "any",
+  "categories": ["music", "entertainment", "lifestyle", "business"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icon-192.png",
@@ -23,19 +28,24 @@
   ],
   "shortcuts": [
     {
-      "name": "Book Spud the Piper",
-      "url": "/#booking",
-      "description": "Check live diary and book a bagpiper"
+      "name": "Live Diary & Booking",
+      "url": "/booking",
+      "description": "Check Spud's availability and book instantly"
     },
     {
       "name": "Bagpipe Tune Jukebox",
-      "url": "/#tunes",
+      "url": "/tunes",
       "description": "Listen to authentic bagpipe sound samples"
     },
     {
-      "name": "Spud's Admin Back Office",
-      "url": "/admin",
-      "description": "Admin diary and booking approvals"
+      "name": "Highland Attire Studio",
+      "url": "/attire",
+      "description": "Preview Feather Bonnet, Royal Stewart & Highland Dress"
+    },
+    {
+      "name": "Install Guide",
+      "url": "/install",
+      "description": "How to install Spud the Piper on mobile & desktop"
     }
   ]
 }

@@ -693,6 +693,18 @@ export const initialSeoPages: SeoPageConfig[] = [
     ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
     h1: 'Booking, Deposits & Rescheduling Terms',
     schemaType: 'WebPage'
+  },
+  {
+    pageId: 'install',
+    pageName: 'How to Install App (PWA)',
+    path: '/install',
+    title: 'How to Install Spud the Piper App | Mobile & Desktop PWA Guide',
+    metaDescription: 'Step-by-step instructions for installing Spud the Piper on iOS Safari, Android Chrome, and Desktop PC/Mac for 1-tap offline sound samples and diary bookings.',
+    keywords: ['Install Spud the Piper', 'Spud the Piper App', 'Scottish Bagpiper PWA', 'Download Bagpiper App'],
+    canonicalUrl: 'https://www.spudthepiper.co.uk/install',
+    ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
+    h1: 'How to Install Spud the Piper App',
+    schemaType: 'WebPage, SoftwareApplication'
   }
 ];
 

@@ -1,13 +1,31 @@
-'use client';
+﻿'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useApp } from '@/context/AppContext';
 import { EditableElement } from './EditableElement';
-import { Phone, Mail, Heart, Award, ShieldCheck, Sparkles, Scale, Cookie, FileText } from 'lucide-react';
+import { PwaInstallModal } from './PwaInstallModal';
+import { 
+  Phone, 
+  Mail, 
+  Heart, 
+  Award, 
+  ShieldCheck, 
+  Sparkles, 
+  Scale, 
+  Cookie, 
+  FileText,
+  Smartphone,
+  Download,
+  HelpCircle,
+  CheckCircle2,
+  Zap,
+  Music
+} from 'lucide-react';
 
 export const Footer: React.FC = () => {
   const { socialLinks } = useApp();
+  const [isPwaModalOpen, setIsPwaModalOpen] = useState(false);
 
   const socialChannels = [
     {
@@ -83,184 +101,200 @@ export const Footer: React.FC = () => {
   ];
 
   return (
-    <footer className="bg-tartan-dark border-t border-tartan-border/80 text-gray-400 text-xs mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
-          
-          {/* Col 1: Brand, Bio & Social Channels */}
-          <div className="lg:col-span-2 space-y-4">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-tartan-accent to-amber-700 flex items-center justify-center text-tartan-dark font-serif font-bold text-lg shadow-md">
-                S
-              </div>
-              <span className="text-xl font-bold text-white font-serif tracking-tight uppercase">
-                Spud The Piper
-              </span>
-            </Link>
-            <EditableElement
-              id="footer-brand-desc"
-              tag="p"
-              defaultContent="Scotland's multiple award-winning Highland Bagpiper for weddings, funerals, castle galas, Burns suppers, and private events globally."
-              className="text-gray-400 leading-relaxed text-xs max-w-sm"
-              label="Footer Brand Description"
-              section="footer"
-            />
-
-            {/* Official Social Media Links + Call & Email */}
-            <div className="space-y-2.5 pt-2">
+    <>
+      <footer className="bg-tartan-dark border-t border-tartan-border/80 text-gray-400 text-xs mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+            
+            {/* Col 1: Brand, Bio & Social Channels */}
+            <div className="lg:col-span-2 space-y-4">
+              <Link href="/" className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-tartan-accent to-amber-700 flex items-center justify-center text-tartan-dark font-serif font-bold text-lg shadow-md">
+                  S
+                </div>
+                <span className="text-xl font-bold text-white font-serif tracking-tight uppercase">
+                  Spud The Piper
+                </span>
+              </Link>
               <EditableElement
-                id="footer-social-header"
-                tag="div"
-                defaultContent="Official Social Channels & Contact:"
-                className="text-[11px] font-bold text-tartan-gold uppercase tracking-wider"
-                label="Footer Social Header"
+                id="footer-brand-desc"
+                tag="p"
+                defaultContent="Scotland's multiple award-winning Highland Bagpiper for weddings, funerals, castle galas, Burns suppers, and private events globally."
+                className="text-gray-400 leading-relaxed text-xs max-w-sm"
+                label="Footer Brand Description"
                 section="footer"
               />
-              <div className="flex items-center gap-2 flex-wrap text-gray-300">
-                {socialChannels.map((item) => (
+
+              {/* Official Social Media Links + Call & Email */}
+              <div className="space-y-2.5 pt-2">
+                <EditableElement
+                  id="footer-social-header"
+                  tag="div"
+                  defaultContent="Official Social Channels & Contact:"
+                  className="text-[11px] font-bold text-tartan-gold uppercase tracking-wider"
+                  label="Footer Social Header"
+                  section="footer"
+                />
+                <div className="flex items-center gap-2 flex-wrap text-gray-300">
+                  {socialChannels.map((item) => (
+                    <a
+                      key={item.name}
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`group p-2.5 rounded-xl bg-tartan-card ${item.hoverColor} text-gray-300 border border-tartan-border hover:border-tartan-accent/50 transition-all shadow hover:scale-110 active:scale-95`}
+                      title={`Follow Spud on ${item.name}`}
+                    >
+                      {item.icon}
+                    </a>
+                  ))}
+
                   <a
-                    key={item.name}
-                    href={item.url}
+                    href="tel:07793491367"
+                    className="p-2.5 rounded-xl bg-tartan-card hover:bg-green-600 hover:text-white text-green-400 border border-tartan-border hover:border-green-500 transition-all shadow hover:scale-110 active:scale-95"
+                    title="Call Spud directly"
+                  >
+                    <Phone className="w-4 h-4" />
+                  </a>
+
+                  <a
+                    href="mailto:spud@spudthepiper.co.uk"
+                    className="p-2.5 rounded-xl bg-tartan-card hover:bg-amber-600 hover:text-white text-amber-400 border border-tartan-border hover:border-amber-500 transition-all shadow hover:scale-110 active:scale-95"
+                    title="Email Spud"
+                  >
+                    <Mail className="w-4 h-4" />
+                  </a>
+                </div>
+
+                {/* Trustpilot Review Badge in Footer */}
+                <div className="pt-2">
+                  <a
+                    href={socialLinks?.trustpilot || 'https://www.trustpilot.com/review/spudthepiper.co.uk'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`group p-2.5 rounded-xl bg-tartan-card ${item.hoverColor} text-gray-300 border border-tartan-border hover:border-tartan-accent/50 transition-all shadow hover:scale-110 active:scale-95`}
-                    title={`Follow Spud on ${item.name}`}
+                    className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 hover:border-emerald-500 text-xs transition-all text-white group shadow hover:bg-emerald-950/70"
                   >
-                    {item.icon}
+                    <div className="flex items-center gap-1.5 font-bold text-white text-xs">
+                      <svg className="w-4 h-4 fill-[#00b67a]" viewBox="0 0 24 24">
+                        <path d="M12 0l3.708 7.514 8.292 1.206-6 5.849 1.416 8.257L12 18.927l-7.416 3.9 1.416-8.257-6-5.849 8.292-1.206z"/>
+                      </svg>
+                      <span>Trustpilot</span>
+                    </div>
+                    <span className="text-gray-400 text-[10px]">|</span>
+                    <div className="flex items-center text-[#00b67a] text-xs">
+                      ★★★★★
+                    </div>
+                    <span className="text-[11px] text-emerald-400 font-bold">5.0 / 5.0</span>
+                    <span className="text-[10px] text-gray-400 group-hover:text-emerald-300 transition-colors">Verified Reviews →</span>
                   </a>
-                ))}
-
-                <a
-                  href="tel:07793491367"
-                  className="p-2.5 rounded-xl bg-tartan-card hover:bg-green-600 hover:text-white text-green-400 border border-tartan-border hover:border-green-500 transition-all shadow hover:scale-110 active:scale-95"
-                  title="Call Spud directly"
-                >
-                  <Phone className="w-4 h-4" />
-                </a>
-
-                <a
-                  href="mailto:spud@spudthepiper.co.uk"
-                  className="p-2.5 rounded-xl bg-tartan-card hover:bg-amber-600 hover:text-white text-amber-400 border border-tartan-border hover:border-amber-500 transition-all shadow hover:scale-110 active:scale-95"
-                  title="Email Spud"
-                >
-                  <Mail className="w-4 h-4" />
-                </a>
-              </div>
-
-              {/* Trustpilot Review Badge in Footer */}
-              <div className="pt-2">
-                <a
-                  href={socialLinks?.trustpilot || 'https://www.trustpilot.com/review/spudthepiper.co.uk'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 hover:border-emerald-500 text-xs transition-all text-white group shadow hover:bg-emerald-950/70"
-                >
-                  <div className="flex items-center gap-1.5 font-bold text-white text-xs">
-                    <svg className="w-4 h-4 fill-[#00b67a]" viewBox="0 0 24 24">
-                      <path d="M12 0l3.708 7.514 8.292 1.206-6 5.849 1.416 8.257L12 18.927l-7.416 3.9 1.416-8.257-6-5.849 8.292-1.206z"/>
-                    </svg>
-                    <span>Trustpilot</span>
-                  </div>
-                  <span className="text-gray-400 text-[10px]">|</span>
-                  <div className="flex items-center text-[#00b67a] text-xs">
-                    ★★★★★
-                  </div>
-                  <span className="text-[11px] text-emerald-400 font-bold">5.0 / 5.0</span>
-                  <span className="text-[10px] text-gray-400 group-hover:text-emerald-300 transition-colors">Verified Reviews →</span>
-                </a>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Col 2: Multi-Page Navigation */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-bold text-white font-serif uppercase tracking-wider">Navigation</h4>
-            <ul className="space-y-2 text-xs">
-              <li><Link href="/" className="hover:text-tartan-gold transition-colors">Home Page</Link></li>
-              <li><Link href="/about" className="hover:text-tartan-gold transition-colors">About Spud & Awards</Link></li>
-              <li><Link href="/services" className="hover:text-tartan-gold transition-colors">Services & Packages</Link></li>
-              <li><Link href="/tunes" className="hover:text-tartan-gold transition-colors">Bagpipe Tune Jukebox</Link></li>
-              <li><Link href="/attire" className="hover:text-tartan-gold transition-colors">Tartan & Attire Studio</Link></li>
-              <li><Link href="/booking" className="hover:text-tartan-gold transition-colors">Live Diary & Booking</Link></li>
-              <li><Link href="/social" className="hover:text-tartan-gold transition-colors">Social Wall & Stream</Link></li>
-              <li><Link href="/reviews" className="hover:text-tartan-gold transition-colors">Client Reviews</Link></li>
-              <li><Link href="/faq" className="hover:text-tartan-gold transition-colors">FAQ</Link></li>
-              <li><Link href="/contact" className="hover:text-tartan-gold transition-colors">Contact Us</Link></li>
-            </ul>
-          </div>
+            {/* Col 2: Multi-Page Navigation */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-bold text-white font-serif uppercase tracking-wider">Navigation</h4>
+              <ul className="space-y-2 text-xs">
+                <li><Link href="/" className="hover:text-tartan-gold transition-colors">Home Page</Link></li>
+                <li><Link href="/about" className="hover:text-tartan-gold transition-colors">About Spud & Awards</Link></li>
+                <li><Link href="/services" className="hover:text-tartan-gold transition-colors">Services & Packages</Link></li>
+                <li><Link href="/tunes" className="hover:text-tartan-gold transition-colors">Bagpipe Tune Jukebox</Link></li>
+                <li><Link href="/attire" className="hover:text-tartan-gold transition-colors">Tartan & Attire Studio</Link></li>
+                <li><Link href="/booking" className="hover:text-tartan-gold transition-colors">Live Diary & Booking</Link></li>
+                <li><Link href="/social" className="hover:text-tartan-gold transition-colors">Social Wall & Stream</Link></li>
+                <li><Link href="/reviews" className="hover:text-tartan-gold transition-colors">Client Reviews</Link></li>
+                <li><Link href="/faq" className="hover:text-tartan-gold transition-colors">FAQ</Link></li>
+                <li><Link href="/contact" className="hover:text-tartan-gold transition-colors">Contact Us</Link></li>
+              </ul>
+            </div>
 
-          {/* Col 3: Piping Services */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-bold text-white font-serif uppercase tracking-wider">Piping Services</h4>
-            <ul className="space-y-2 text-xs">
-              <li><Link href="/services" className="hover:text-gray-200">Scottish Castle Weddings</Link></li>
-              <li><Link href="/services" className="hover:text-gray-200">Top Table Pipe-In & Ceilidh</Link></li>
-              <li><Link href="/services" className="hover:text-gray-200">Funerals & Memorial Laments</Link></li>
-              <li><Link href="/services" className="hover:text-gray-200">Burns Suppers & Hogmanay</Link></li>
-              <li><Link href="/services" className="hover:text-gray-200">Corporate & Castle Galas</Link></li>
-              <li><Link href="/services" className="hover:text-gray-200">Private 1-on-1 Bagpipe Lessons</Link></li>
-            </ul>
-          </div>
+            {/* Col 3: Piping Services */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-bold text-white font-serif uppercase tracking-wider">Piping Services</h4>
+              <ul className="space-y-2 text-xs">
+                <li><Link href="/services" className="hover:text-gray-200">Scottish Castle Weddings</Link></li>
+                <li><Link href="/services" className="hover:text-gray-200">Top Table Pipe-In & Ceilidh</Link></li>
+                <li><Link href="/services" className="hover:text-gray-200">Funerals & Memorial Laments</Link></li>
+                <li><Link href="/services" className="hover:text-gray-200">Burns Suppers & Hogmanay</Link></li>
+                <li><Link href="/services" className="hover:text-gray-200">Corporate & Castle Galas</Link></li>
+                <li><Link href="/services" className="hover:text-gray-200">Private 1-on-1 Bagpipe Lessons</Link></li>
+              </ul>
+            </div>
 
-          {/* Col 4: Legal & Policies */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-bold text-white font-serif uppercase tracking-wider flex items-center gap-1.5 text-tartan-gold">
-              <Scale className="w-4 h-4" />
-              <span>Legal & Policies</span>
-            </h4>
-            <ul className="space-y-2 text-xs">
-              <li>
-                <Link href="/terms" className="hover:text-tartan-gold transition-colors flex items-center gap-1">
-                  <span>Terms & Conditions</span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/privacy" className="hover:text-tartan-gold transition-colors flex items-center gap-1">
-                  <span>Privacy Policy (GDPR)</span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/cookies" className="hover:text-tartan-gold transition-colors flex items-center gap-1">
-                  <span>Cookie Policy</span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/booking-policy" className="hover:text-tartan-gold transition-colors flex items-center gap-1">
-                  <span>Booking & Deposit Policy</span>
-                </Link>
-              </li>
-            </ul>
+            {/* Col 4: Progressive Web App (PWA) & Install Guide */}
+            <div className="space-y-3 bg-gradient-to-b from-tartan-card to-tartan-dark p-4 rounded-2xl border border-tartan-accent/40 shadow-xl">
+              <div className="flex items-center gap-1.5 text-tartan-gold">
+                <Smartphone className="w-4 h-4" />
+                <h4 className="text-xs font-bold text-white font-serif uppercase tracking-wider">
+                  Mobile App (PWA)
+                </h4>
+              </div>
 
-            <div className="pt-2">
-              <p className="text-[11px] text-gray-400">
-                <strong className="text-tartan-gold">Tel:</strong> 07793 491367<br />
-                <strong className="text-tartan-gold">Email:</strong> spud@spudthepiper.co.uk
+              <p className="text-[11px] text-gray-300 leading-relaxed">
+                Install Spud the Piper on your iPhone, iPad, Android or PC for 1-tap offline sound samples & fast diary booking.
               </p>
+
+              <div className="pt-1 space-y-2">
+                <button
+                  onClick={() => setIsPwaModalOpen(true)}
+                  className="w-full py-2 px-3 rounded-xl bg-gold-gradient text-tartan-dark text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-md hover:brightness-110 active:scale-95 transition-all"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>How to Install App</span>
+                </button>
+
+                <Link
+                  href="/install"
+                  className="w-full py-1.5 px-3 rounded-xl bg-tartan-navy hover:bg-slate-700 text-gray-200 border border-tartan-border text-[11px] font-semibold flex items-center justify-center gap-1 transition-all"
+                >
+                  <HelpCircle className="w-3 h-3 text-tartan-gold" />
+                  <span>Full Step-by-Step Guide →</span>
+                </Link>
+              </div>
+
+              <div className="pt-1 border-t border-slate-800 text-[10px] text-gray-400 flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3 text-emerald-400 shrink-0" />
+                <span>Zero app store downloads needed</span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="mt-12 pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-gray-400">
+            <p>© {new Date().getFullYear()} Spud the Piper. All Rights Reserved. Scotland.</p>
+            
+            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+              <button
+                onClick={() => setIsPwaModalOpen(true)}
+                className="text-tartan-gold hover:underline font-bold flex items-center gap-1"
+              >
+                <Smartphone className="w-3.5 h-3.5 text-tartan-gold" />
+                <span>How to Install</span>
+              </button>
+              <span>•</span>
+              <Link href="/terms" className="hover:underline">Terms</Link>
+              <span>•</span>
+              <Link href="/privacy" className="hover:underline">Privacy</Link>
+              <span>•</span>
+              <Link href="/cookies" className="hover:underline">Cookies</Link>
+              <span>•</span>
+              <Link href="/booking-policy" className="hover:underline">Deposits</Link>
+              <span>•</span>
+              <Link href="/admin" className="text-tartan-gold hover:underline font-semibold flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Admin Back Office</span>
+              </Link>
             </div>
           </div>
-
         </div>
+      </footer>
 
-        {/* Bottom Bar */}
-        <div className="mt-12 pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-gray-400">
-          <p>© {new Date().getFullYear()} Spud the Piper. All Rights Reserved. Scotland.</p>
-          
-          <div className="flex items-center gap-4 flex-wrap">
-            <Link href="/terms" className="hover:underline">Terms</Link>
-            <span>•</span>
-            <Link href="/privacy" className="hover:underline">Privacy</Link>
-            <span>•</span>
-            <Link href="/cookies" className="hover:underline">Cookies</Link>
-            <span>•</span>
-            <Link href="/booking-policy" className="hover:underline">Deposits</Link>
-            <span>•</span>
-            <Link href="/admin" className="text-tartan-gold hover:underline font-semibold flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Admin Back Office</span>
-            </Link>
-          </div>
-        </div>
-      </div>
-    </footer>
+      {/* PWA Install Guide Modal */}
+      <PwaInstallModal
+        isOpen={isPwaModalOpen}
+        onClose={() => setIsPwaModalOpen(false)}
+      />
+    </>
   );
 };
