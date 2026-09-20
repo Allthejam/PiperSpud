@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { HighlandDressOption } from '@/types/spud';
 import { Sparkles, Check, Info, Shirt } from 'lucide-react';
+import { EditableElement } from './EditableElement';
 
 interface TartanStyle {
   name: HighlandDressOption;
@@ -72,15 +73,31 @@ export const TartanSelector: React.FC = () => {
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-12">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-tartan-accent/15 border border-tartan-accent/40 text-tartan-gold text-xs font-semibold">
-            <Shirt className="w-4 h-4" />
-            <span>Highland Dress & Tartan Studio</span>
+            <Shirt className="w-4 h-4 shrink-0" />
+            <EditableElement
+              id="tartan-header-badge"
+              tag="span"
+              defaultContent="Highland Dress & Tartan Studio"
+              label="Tartan Header Badge"
+              section="attire"
+            />
           </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-white font-serif tracking-tight">
-            Customize Spud\'s Attire for Your Occasion
-          </h2>
-          <p className="text-base text-gray-300">
-            Every event is unique. Select your preferred Highland dress to perfectly complement your wedding colors, bridal theme, or ceremony atmosphere.
-          </p>
+          <EditableElement
+            id="tartan-header-title"
+            tag="h2"
+            defaultContent="Customize Spud's Attire for Your Occasion"
+            className="text-3xl sm:text-5xl font-extrabold text-white font-serif tracking-tight"
+            label="Tartan Header Title"
+            section="attire"
+          />
+          <EditableElement
+            id="tartan-header-desc"
+            tag="p"
+            defaultContent="Every event is unique. Select your preferred Highland dress to perfectly complement your wedding colors, bridal theme, or ceremony atmosphere."
+            className="text-base text-gray-300"
+            label="Tartan Header Description"
+            section="attire"
+          />
         </div>
 
         {/* Interactive Layout */}

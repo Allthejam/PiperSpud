@@ -131,15 +131,31 @@ export const ServicesSection: React.FC = () => {
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-tartan-accent/15 border border-tartan-accent/40 text-tartan-gold text-xs font-semibold">
-            <Castle className="w-4 h-4" />
-            <span>Professional Piping Packages</span>
+            <Castle className="w-4 h-4 shrink-0" />
+            <EditableElement
+              id="services-header-badge"
+              tag="span"
+              defaultContent="Professional Piping Packages"
+              label="Services Header Badge"
+              section="services"
+            />
           </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-white font-serif tracking-tight">
-            Bagpiping Services Tailored for Every Occasion
-          </h2>
-          <p className="text-base text-gray-300">
-            From intimate mountain elopements to 500-guest castle galas, discover the perfect musical package for your event. Transparent pricing, instant booking, and guaranteed excellence.
-          </p>
+          <EditableElement
+            id="services-header-title"
+            tag="h2"
+            defaultContent="Bagpiping Services Tailored for Every Occasion"
+            className="text-3xl sm:text-5xl font-extrabold text-white font-serif tracking-tight"
+            label="Services Header Title"
+            section="services"
+          />
+          <EditableElement
+            id="services-header-desc"
+            tag="p"
+            defaultContent="From intimate mountain elopements to 500-guest castle galas, discover the perfect musical package for your event. Transparent pricing, instant booking, and guaranteed excellence."
+            className="text-base text-gray-300"
+            label="Services Header Description"
+            section="services"
+          />
         </div>
 
         {/* Services Grid */}

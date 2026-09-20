@@ -12,6 +12,7 @@ import {
   Share2,
   Calendar
 } from 'lucide-react';
+import { EditableElement } from './EditableElement';
 
 export const ContactSection: React.FC = () => {
   const [name, setName] = useState('');
@@ -41,15 +42,31 @@ export const ContactSection: React.FC = () => {
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-tartan-accent/15 border border-tartan-accent/40 text-tartan-gold text-xs font-semibold">
-            <Mail className="w-4 h-4" />
-            <span>Get In Touch with Spud</span>
+            <Mail className="w-4 h-4 shrink-0" />
+            <EditableElement
+              id="contact-header-badge"
+              tag="span"
+              defaultContent="Get In Touch with Spud"
+              label="Contact Header Badge"
+              section="contact"
+            />
           </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-white font-serif tracking-tight">
-            Let\'s Plan Your Unforgettable Bagpipe Performance
-          </h2>
-          <p className="text-base text-gray-300">
-            Have an inquiry or special request? Reach out to Spud directly via phone, WhatsApp, or the contact form below.
-          </p>
+          <EditableElement
+            id="contact-header-title"
+            tag="h2"
+            defaultContent="Let's Plan Your Unforgettable Bagpipe Performance"
+            className="text-3xl sm:text-5xl font-extrabold text-white font-serif tracking-tight"
+            label="Contact Header Title"
+            section="contact"
+          />
+          <EditableElement
+            id="contact-header-desc"
+            tag="p"
+            defaultContent="Have an inquiry or special request? Reach out to Spud directly via phone, WhatsApp, or the contact form below."
+            className="text-base text-gray-300"
+            label="Contact Header Description"
+            section="contact"
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">

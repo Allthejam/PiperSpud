@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { HelpCircle, ChevronDown, ChevronUp, Sparkles, MessageCircle, Phone } from 'lucide-react';
+import { EditableElement } from './EditableElement';
 
 interface FaqItem {
   question: string;
@@ -58,15 +59,31 @@ export const FaqSection: React.FC = () => {
         {/* Header */}
         <div className="text-center space-y-4 mb-12">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-tartan-accent/15 border border-tartan-accent/40 text-tartan-gold text-xs font-semibold">
-            <HelpCircle className="w-4 h-4" />
-            <span>Got Questions?</span>
+            <HelpCircle className="w-4 h-4 shrink-0" />
+            <EditableElement
+              id="faq-header-badge"
+              tag="span"
+              defaultContent="Got Questions?"
+              label="FAQ Header Badge"
+              section="faq"
+            />
           </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-white font-serif tracking-tight">
-            Frequently Asked Questions
-          </h2>
-          <p className="text-sm sm:text-base text-gray-300">
-            Everything you need to know about booking Spud the Piper, payment workflows, travel radius, and custom musical arrangements.
-          </p>
+          <EditableElement
+            id="faq-header-title"
+            tag="h2"
+            defaultContent="Frequently Asked Questions"
+            className="text-3xl sm:text-5xl font-extrabold text-white font-serif tracking-tight"
+            label="FAQ Header Title"
+            section="faq"
+          />
+          <EditableElement
+            id="faq-header-desc"
+            tag="p"
+            defaultContent="Everything you need to know about booking Spud the Piper, payment workflows, travel radius, and custom musical arrangements."
+            className="text-sm sm:text-base text-gray-300"
+            label="FAQ Header Description"
+            section="faq"
+          />
         </div>
 
         {/* FAQ Search Bar */}

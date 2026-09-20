@@ -46,6 +46,8 @@ export const VisualPencilOverlay: React.FC = () => {
   const [textContent, setTextContent] = useState('');
   const [altText, setAltText] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
+  const [buttonColor, setButtonColor] = useState('');
   const [tagType, setTagType] = useState<EditableCmsBlock['tag']>('p');
 
   // Page SEO Studio Modal State
@@ -69,6 +71,8 @@ export const VisualPencilOverlay: React.FC = () => {
       setTextContent(editingBlock.content || '');
       setAltText(editingBlock.altText || '');
       setImageUrl(editingBlock.imageUrl || '');
+      setLinkUrl(editingBlock.linkUrl || '');
+      setButtonColor(editingBlock.buttonColor || '');
       setTagType(editingBlock.tag || 'p');
     }
   }, [editingBlock]);
@@ -94,7 +98,7 @@ export const VisualPencilOverlay: React.FC = () => {
 
   const handleSaveElement = () => {
     if (!editingBlock) return;
-    updateCmsBlock(editingBlock.id, textContent, altText, imageUrl, tagType);
+    updateCmsBlock(editingBlock.id, textContent, altText, imageUrl, tagType, linkUrl, buttonColor);
     setEditingBlock(null);
   };
 
@@ -360,6 +364,8 @@ export const VisualPencilOverlay: React.FC = () => {
                       <option value="h5">H5 Tag (Minor Heading)</option>
                       <option value="h6">H6 Tag (Small Heading)</option>
                       <option value="p">P Tag (Paragraph / Body Copy)</option>
+                      <option value="span">Span Tag (Inline Text / Badge)</option>
+                      <option value="a">A Tag (Hyperlink / Action Link)</option>
                       <option value="blockquote">Blockquote (Testimonial Quote)</option>
                       <option value="button">Button (Call To Action Link/Button)</option>
                     </select>
@@ -370,12 +376,59 @@ export const VisualPencilOverlay: React.FC = () => {
                       Element Text Content
                     </label>
                     <textarea
-                      rows={5}
+                      rows={4}
                       value={textContent}
                       onChange={(e) => setTextContent(e.target.value)}
                       className="w-full bg-tartan-dark border border-tartan-border rounded-lg p-3 text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent text-sm"
                       placeholder="Enter copy..."
                     />
+                  </div>
+
+                  {/* Link Mapping Destination */}
+                  <div>
+                    <label className="block text-xs font-semibold text-tartan-gold mb-1.5 flex items-center justify-between">
+                      <span>Action Link / URL Mapping (Optional)</span>
+                      <span className="text-[10px] text-gray-400">e.g. #booking, /services, tel:07793491367</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={linkUrl}
+                      onChange={(e) => setLinkUrl(e.target.value)}
+                      placeholder="e.g. #booking, /tunes, https://facebook.com/spudthepiper/, tel:07793491367"
+                      className="w-full bg-tartan-dark border border-tartan-border rounded-lg px-3.5 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent text-xs"
+                    />
+                  </div>
+
+                  {/* Button Color & Styling Preset */}
+                  <div>
+                    <label className="block text-xs font-semibold text-tartan-gold mb-1.5">
+                      Button / Highlight Color Scheme
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { label: 'Gold Gradient', val: 'bg-gold-gradient text-tartan-dark font-extrabold' },
+                        { label: 'Royal Blue', val: 'bg-blue-600 hover:bg-blue-500 text-white font-bold' },
+                        { label: 'Tartan Navy', val: 'bg-tartan-navy hover:bg-slate-700 text-white font-bold' },
+                        { label: 'Emerald Green', val: 'bg-emerald-600 hover:bg-emerald-500 text-white font-bold' },
+                        { label: 'Crimson Tartan', val: 'bg-red-700 hover:bg-red-600 text-white font-bold' },
+                        { label: 'Dark Slate Glass', val: 'bg-slate-900/90 text-gray-200 border border-slate-700 font-bold' },
+                        { label: 'Gold Outline', val: 'border border-tartan-accent text-tartan-gold bg-transparent font-bold' },
+                        { label: 'Default / None', val: '' }
+                      ].map(preset => (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => setButtonColor(preset.val)}
+                          className={`p-2 rounded-lg text-[11px] text-center border transition-all ${
+                            buttonColor === preset.val
+                              ? 'border-tartan-gold ring-2 ring-tartan-gold/50 bg-tartan-dark font-bold text-white'
+                              : 'border-tartan-border bg-tartan-navy/60 text-gray-300 hover:border-gray-500'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </>
               )}

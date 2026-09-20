@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Music, Play, Square, Volume2, Sparkles, Filter, Check } from 'lucide-react';
 import { BagpipeTune } from '@/types/spud';
+import { EditableElement } from './EditableElement';
 
 export const TuneSampler: React.FC = () => {
   const { tunesList, currentPlayingTune, playTune, stopTune } = useApp();
@@ -22,15 +23,31 @@ export const TuneSampler: React.FC = () => {
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-12">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-tartan-accent/15 border border-tartan-accent/40 text-tartan-gold text-xs font-semibold">
-            <Music className="w-4 h-4" />
-            <span>Interactive Bagpipe Jukebox</span>
+            <Music className="w-4 h-4 shrink-0" />
+            <EditableElement
+              id="tunes-header-badge"
+              tag="span"
+              defaultContent="Interactive Bagpipe Jukebox"
+              label="Tunes Header Badge"
+              section="tunes"
+            />
           </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-white font-serif tracking-tight">
-            Listen to the Authentic Sound of the Highlands
-          </h2>
-          <p className="text-base text-gray-300">
-            Preview iconic bagpipe tunes synthesized in real-time. Choose your favorite processional, celebratory march, or solemn lament for your special occasion.
-          </p>
+          <EditableElement
+            id="tunes-header-title"
+            tag="h2"
+            defaultContent="Listen to the Authentic Sound of the Highlands"
+            className="text-3xl sm:text-5xl font-extrabold text-white font-serif tracking-tight"
+            label="Tunes Header Title"
+            section="tunes"
+          />
+          <EditableElement
+            id="tunes-header-desc"
+            tag="p"
+            defaultContent="Preview iconic bagpipe tunes synthesized in real-time. Choose your favorite processional, celebratory march, or solemn lament for your special occasion."
+            className="text-base text-gray-300"
+            label="Tunes Header Description"
+            section="tunes"
+          />
         </div>
 
         {/* Category Filters */}

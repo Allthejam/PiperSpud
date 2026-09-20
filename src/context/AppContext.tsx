@@ -44,7 +44,15 @@ interface AppContextType {
   cmsBlocks: EditableCmsBlock[];
   editingBlock: EditableCmsBlock | null;
   setEditingBlock: (block: EditableCmsBlock | null) => void;
-  updateCmsBlock: (id: string, content: string, altText?: string, imageUrl?: string, tag?: EditableCmsBlock['tag']) => void;
+  updateCmsBlock: (
+    id: string, 
+    content: string, 
+    altText?: string, 
+    imageUrl?: string, 
+    tag?: EditableCmsBlock['tag'],
+    linkUrl?: string,
+    buttonColor?: string
+  ) => void;
   getCmsContent: (id: string, defaultVal: string) => string;
 
   // Bookings & Diary
@@ -444,7 +452,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     content: string, 
     altText?: string, 
     imageUrl?: string, 
-    tag?: EditableCmsBlock['tag']
+    tag?: EditableCmsBlock['tag'],
+    linkUrl?: string,
+    buttonColor?: string
   ) => {
     let updatedBlock: EditableCmsBlock | null = null;
     setCmsBlocks(prev => {
@@ -458,6 +468,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               altText: altText !== undefined ? altText : b.altText, 
               imageUrl: imageUrl !== undefined ? imageUrl : b.imageUrl, 
               tag: tag || b.tag,
+              linkUrl: linkUrl !== undefined ? linkUrl : b.linkUrl,
+              buttonColor: buttonColor !== undefined ? buttonColor : b.buttonColor,
               lastUpdated: new Date().toISOString() 
             };
             return updatedBlock;
@@ -474,6 +486,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           content,
           altText,
           imageUrl,
+          linkUrl,
+          buttonColor,
           lastUpdated: new Date().toISOString()
         };
         return [...prev, updatedBlock];

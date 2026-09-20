@@ -8,13 +8,15 @@ import { EditableCmsBlock } from '@/types/spud';
 interface EditableElementProps {
   id: string;
   defaultContent?: string;
-  tag?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span' | 'button';
+  tag?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span' | 'button' | 'a' | 'blockquote';
   className?: string;
   label?: string;
   section?: string;
   isImage?: boolean;
   defaultImageUrl?: string;
   defaultAlt?: string;
+  defaultLinkUrl?: string;
+  defaultButtonColor?: string;
   children?: React.ReactNode;
 }
 
@@ -28,6 +30,8 @@ export const EditableElement: React.FC<EditableElementProps> = ({
   isImage = false,
   defaultImageUrl,
   defaultAlt = 'Spud the Piper',
+  defaultLinkUrl,
+  defaultButtonColor,
   children,
 }) => {
   const { isMounted, isVisualEditMode, cmsBlocks, setEditingBlock } = useApp();
@@ -37,6 +41,8 @@ export const EditableElement: React.FC<EditableElementProps> = ({
   const content = block ? block.content : defaultContent;
   const imageUrl = block?.imageUrl || defaultImageUrl;
   const altText = block?.altText || defaultAlt;
+  const linkUrl = block?.linkUrl || defaultLinkUrl;
+  const buttonColor = block?.buttonColor || defaultButtonColor;
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -50,7 +56,9 @@ export const EditableElement: React.FC<EditableElementProps> = ({
       label: label || id,
       content,
       altText,
-      imageUrl
+      imageUrl,
+      linkUrl,
+      buttonColor
     };
 
     setEditingBlock(currentBlock);
@@ -77,23 +85,38 @@ export const EditableElement: React.FC<EditableElementProps> = ({
   const activeTag = (block?.tag && block.tag !== 'image' ? block.tag : tag) as keyof JSX.IntrinsicElements;
   const Tag = activeTag || 'p';
 
+  const isInline = tag === 'span' || tag === 'a';
+  const colorClass = buttonColor ? buttonColor : '';
+  const finalClassName = `${className} ${colorClass}`.trim();
+
   return (
-    <div className={`relative group ${canEdit ? 'ring-2 ring-tartan-gold/70 ring-dashed rounded-lg p-1.5 my-1 inline-block w-full bg-tartan-navy/10' : ''}`}>
+    <span className={`relative group ${isInline ? 'inline-block' : 'block w-full'} ${canEdit ? 'ring-2 ring-tartan-gold/70 ring-dashed rounded-lg p-1 my-0.5 bg-tartan-navy/20' : ''}`}>
       {canEdit && (
-        <div className="absolute -top-3.5 right-1 z-30 flex items-center gap-1">
+        <span className="absolute -top-3 right-0 z-30 inline-flex items-center gap-1">
           <button
+            type="button"
             onClick={handleEditClick}
-            className="bg-tartan-gold text-tartan-dark px-2.5 py-0.5 rounded-full text-[11px] font-extrabold flex items-center gap-1 shadow-lg hover:bg-yellow-400 transition-all opacity-90 hover:opacity-100 ring-1 ring-tartan-dark"
-            title={`Edit Element, Tag & SEO (<${String(activeTag).toUpperCase()}>)`}
+            className="bg-tartan-gold text-tartan-dark px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 shadow-lg hover:bg-yellow-400 transition-all opacity-90 hover:opacity-100 ring-1 ring-tartan-dark"
+            title={`Edit Element, Tag, Link & Color (<${String(activeTag).toUpperCase()}>)`}
           >
-            <Edit3 className="w-3 h-3" />
+            <Edit3 className="w-2.5 h-2.5" />
             <span className="uppercase font-mono">&lt;{String(activeTag)}&gt;</span>
           </button>
-        </div>
+        </span>
       )}
-      <Tag className={className}>
-        {children || content}
-      </Tag>
-    </div>
+      {activeTag === 'a' ? (
+        <a href={linkUrl || '#'} className={finalClassName} onClick={linkUrl?.startsWith('#') ? (e) => {
+          e.preventDefault();
+          const target = document.getElementById(linkUrl.replace('#', ''));
+          if (target) target.scrollIntoView({ behavior: 'smooth' });
+        } : undefined}>
+          {children || content}
+        </a>
+      ) : (
+        <Tag className={finalClassName}>
+          {children || content}
+        </Tag>
+      )}
+    </span>
   );
 };

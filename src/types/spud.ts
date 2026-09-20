@@ -123,11 +123,13 @@ export interface EditableCmsBlock {
   id: string;
   page: string;
   section: string;
-  tag: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span' | 'button' | 'image' | 'blockquote';
+  tag: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span' | 'button' | 'image' | 'blockquote' | 'a';
   label: string;
   content: string;
   altText?: string;
   imageUrl?: string;
+  linkUrl?: string;
+  buttonColor?: string;
   lastUpdated?: string;
 }
 

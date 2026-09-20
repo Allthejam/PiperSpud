@@ -38,9 +38,23 @@ export const HeroSection: React.FC = () => {
           <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
             {/* Award Badge Pill */}
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-tartan-accent/15 border border-tartan-accent/40 text-tartan-gold text-xs font-semibold shadow-inner">
-              <Award className="w-4 h-4 text-tartan-gold" />
-              <span>Multiple Scottish Wedding Industry Award Winner</span>
-              <span className="hidden sm:inline text-tartan-goldLight">• 15+ Years Worldwide</span>
+              <Award className="w-4 h-4 text-tartan-gold shrink-0" />
+              <EditableElement
+                id="hero-award-main"
+                tag="span"
+                defaultContent="Multiple Scottish Wedding Industry Award Winner"
+                label="Hero Award Badge Title"
+                section="hero"
+              />
+              <span className="hidden sm:inline text-tartan-goldLight">
+                <EditableElement
+                  id="hero-award-sub"
+                  tag="span"
+                  defaultContent="• 15+ Years Worldwide"
+                  label="Hero Award Badge Subtitle"
+                  section="hero"
+                />
+              </span>
             </div>
 
             {/* Main H1 Title & Subheader (Editable by pencil) */}
@@ -77,15 +91,33 @@ export const HeroSection: React.FC = () => {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2 text-xs text-gray-200">
               <div className="flex items-center gap-2 bg-tartan-card/80 p-2.5 rounded-lg border border-tartan-border/60">
                 <CheckCircle2 className="w-4 h-4 text-tartan-gold shrink-0" />
-                <span>Piper to the Stars</span>
+                <EditableElement
+                  id="hero-badge-1"
+                  tag="span"
+                  defaultContent="Piper to the Stars"
+                  label="Hero Highlight 1"
+                  section="hero"
+                />
               </div>
               <div className="flex items-center gap-2 bg-tartan-card/80 p-2.5 rounded-lg border border-tartan-border/60">
                 <CheckCircle2 className="w-4 h-4 text-tartan-gold shrink-0" />
-                <span>Full No. 1 Dress & Tartans</span>
+                <EditableElement
+                  id="hero-badge-2"
+                  tag="span"
+                  defaultContent="Full No. 1 Dress & Tartans"
+                  label="Hero Highlight 2"
+                  section="hero"
+                />
               </div>
               <div className="flex items-center gap-2 bg-tartan-card/80 p-2.5 rounded-lg border border-tartan-border/60">
                 <CheckCircle2 className="w-4 h-4 text-tartan-gold shrink-0" />
-                <span>Instant Online Booking</span>
+                <EditableElement
+                  id="hero-badge-3"
+                  tag="span"
+                  defaultContent="Instant Online Booking"
+                  label="Hero Highlight 3"
+                  section="hero"
+                />
               </div>
             </div>
 
@@ -95,8 +127,14 @@ export const HeroSection: React.FC = () => {
                 onClick={() => scrollToSection('booking')}
                 className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-sm tracking-wider uppercase shadow-2xl hover:shadow-yellow-500/30 transition-all hover:scale-105 flex items-center justify-center gap-2"
               >
-                <Calendar className="w-5 h-5" />
-                <span>Check Dates & Book Online</span>
+                <Calendar className="w-5 h-5 shrink-0" />
+                <EditableElement
+                  id="hero-btn-book"
+                  tag="span"
+                  defaultContent="Check Dates & Book Online"
+                  label="Hero Booking Button Text"
+                  section="hero"
+                />
               </button>
 
               <button
@@ -115,24 +153,42 @@ export const HeroSection: React.FC = () => {
               >
                 {currentPlayingTune ? (
                   <>
-                    <Volume2 className="w-5 h-5 animate-pulse" />
+                    <Volume2 className="w-5 h-5 animate-pulse shrink-0" />
                     <span>Stop Sample ({currentPlayingTune})</span>
                   </>
                 ) : (
                   <>
-                    <Play className="w-5 h-5 text-tartan-gold fill-tartan-gold" />
-                    <span>Listen to Bagpipe Sample</span>
+                    <Play className="w-5 h-5 text-tartan-gold fill-tartan-gold shrink-0" />
+                    <EditableElement
+                      id="hero-btn-sample"
+                      tag="span"
+                      defaultContent="Listen to Bagpipe Sample"
+                      label="Hero Audio Button Text"
+                      section="hero"
+                    />
                   </>
                 )}
               </button>
             </div>
 
             {/* Phone Quick Inquiry */}
-            <div className="pt-2 flex items-center justify-center lg:justify-start gap-4 text-xs text-gray-400">
-              <span>Prefer to speak directly?</span>
+            <div className="pt-2 flex items-center justify-center lg:justify-start gap-3 text-xs text-gray-400">
+              <EditableElement
+                id="hero-phone-prompt"
+                tag="span"
+                defaultContent="Prefer to speak directly?"
+                label="Hero Phone Prompt"
+                section="hero"
+              />
               <a href="tel:07793491367" className="text-tartan-gold font-bold hover:underline flex items-center gap-1">
-                <Phone className="w-3.5 h-3.5" />
-                <span>07793 491367</span>
+                <Phone className="w-3.5 h-3.5 shrink-0" />
+                <EditableElement
+                  id="hero-phone-number"
+                  tag="span"
+                  defaultContent="07793 491367"
+                  label="Hero Phone Number"
+                  section="hero"
+                />
               </a>
             </div>
           </div>
@@ -162,13 +218,26 @@ export const HeroSection: React.FC = () => {
                         <Star key={i} className="w-4 h-4 fill-yellow-400" />
                       ))}
                     </div>
-                    <p className="text-[11px] text-gray-300 font-medium mt-0.5">5.0 Star Rated (120+ Reviews)</p>
+                    <EditableElement
+                      id="hero-rating-text"
+                      tag="p"
+                      defaultContent="5.0 Star Rated (120+ Reviews)"
+                      className="text-[11px] text-gray-300 font-medium mt-0.5"
+                      label="Hero Rating Text"
+                      section="hero"
+                    />
                   </div>
                   <button
                     onClick={() => scrollToSection('reviews')}
                     className="px-3 py-1.5 bg-tartan-accent/20 hover:bg-tartan-accent/30 text-tartan-gold text-xs font-bold rounded-lg border border-tartan-accent/40"
                   >
-                    Read Reviews
+                    <EditableElement
+                      id="hero-rating-btn"
+                      tag="span"
+                      defaultContent="Read Reviews"
+                      label="Hero Reviews Button Text"
+                      section="hero"
+                    />
                   </button>
                 </div>
               </div>
@@ -182,8 +251,22 @@ export const HeroSection: React.FC = () => {
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                 </span>
                 <div>
-                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">Facebook Live Streams</h4>
-                  <p className="text-[11px] text-blue-200">Every Tuesday & Friday • 6:00 - 6:30 PM</p>
+                  <EditableElement
+                    id="hero-stream-title"
+                    tag="h4"
+                    defaultContent="Facebook Live Streams"
+                    className="text-xs font-bold text-white uppercase tracking-wider"
+                    label="Live Stream Banner Title"
+                    section="hero"
+                  />
+                  <EditableElement
+                    id="hero-stream-time"
+                    tag="p"
+                    defaultContent="Every Tuesday & Friday • 6:00 - 6:30 PM"
+                    className="text-[11px] text-blue-200"
+                    label="Live Stream Schedule"
+                    section="hero"
+                  />
                 </div>
               </div>
               <a
@@ -192,7 +275,14 @@ export const HeroSection: React.FC = () => {
                 rel="noopener noreferrer"
                 className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shrink-0 shadow"
               >
-                Join Stream
+                <EditableElement
+                  id="hero-stream-btn"
+                  tag="span"
+                  defaultContent="Join Stream"
+                  defaultLinkUrl="https://www.facebook.com/spudthepiper/"
+                  label="Live Stream Button Text & Link"
+                  section="hero"
+                />
               </a>
             </div>
           </div>
