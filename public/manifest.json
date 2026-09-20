@@ -1,11 +1,11 @@
 {
-  "name": "Stagecoach Route Risk Assessment & Mapping",
-  "short_name": "Stagecoach RRA",
-  "description": "Transit Route Risk Assessment, GPS Tracking, Dwell Timing & Vehicle Compatibility Platform",
+  "name": "Spud the Piper | Scottish Highland Bagpiper",
+  "short_name": "Spud the Piper",
+  "description": "Award-Winning Scottish Highland Bagpiper for Weddings, Funerals, Castle Events & Tuition. Live Diary, Brevo & PayPal Bookings.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#002855",
-  "theme_color": "#002855",
+  "background_color": "#070E1B",
+  "theme_color": "#0C1B33",
   "orientation": "any",
   "icons": [
     {
@@ -19,6 +19,23 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Book Spud the Piper",
+      "url": "/#booking",
+      "description": "Check live diary and book a bagpiper"
+    },
+    {
+      "name": "Bagpipe Tune Jukebox",
+      "url": "/#tunes",
+      "description": "Listen to authentic bagpipe sound samples"
+    },
+    {
+      "name": "Spud's Admin Back Office",
+      "url": "/admin",
+      "description": "Admin diary and booking approvals"
     }
   ]
 }

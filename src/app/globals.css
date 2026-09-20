@@ -1,55 +1,44 @@
-﻿@import "leaflet/dist/leaflet.css";
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --stagecoach-blue: #002D62;
-  --stagecoach-amber: #FF6600;
-  --stagecoach-navy: #0A192F;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
 }
 
 body {
-  color: #0f172a;
-  background: #f8fafc;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
+  background-color: #070E1B;
+  color: #F8FAFC;
+  font-family: var(--font-sans);
+  overflow-x: hidden;
 }
 
-input, textarea, select {
-  user-select: text;
+/* Custom Scottish Tartan Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-/* Custom Marker CSS */
-.custom-stop-marker, .custom-hazard-marker {
-  background: transparent !important;
-  border: none !important;
+::-webkit-scrollbar-track {
+  background: #0C1B33;
 }
 
-/* Hide scrollbar for clean horizontal scrolls */
-.scrollbar-none::-webkit-scrollbar {
+::-webkit-scrollbar-thumb {
+  background: #D4AF37;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #F3C954;
+}
+
+.no-scrollbar::-webkit-scrollbar {
   display: none;
 }
-.scrollbar-none {
+.no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
-}
-
-/* Print Media Styles for Official A4 Dossier */
-@media print {
-  body {
-    background: #ffffff !important;
-    color: #000000 !important;
-  }
-  header, nav, button, .no-print {
-    display: none !important;
-  }
-  .print-only {
-    display: block !important;
-  }
-  .page-break {
-    page-break-after: always;
-  }
 }

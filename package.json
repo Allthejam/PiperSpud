@@ -1,12 +1,12 @@
 {
-  "name": "stagecoach-rra-mapping-app",
+  "name": "spud-the-piper-pwa",
   "version": "1.0.0",
-  "description": "Stagecoach Route Risk Assessment & GPS Mapping Platform",
+  "description": "Spud the Piper - Official Progressive Web App, Live Diary & Automated Booking Platform",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3001",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3001",
     "lint": "next lint"
   },
   "dependencies": {
