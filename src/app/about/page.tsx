@@ -8,6 +8,7 @@ import { Footer } from '@/components/Footer';
 import { LiveChatWidget } from '@/components/LiveChatWidget';
 import { VisualPencilOverlay } from '@/components/VisualPencilOverlay';
 import { EditableElement } from '@/components/EditableElement';
+import { SpudHeritageLogo } from '@/components/SpudHeritageLogo';
 import Link from 'next/link';
 import { Calendar, Music, ArrowRight, Award, ShieldCheck, Heart } from 'lucide-react';
 
@@ -20,9 +21,13 @@ export default function AboutPage() {
       {/* Page Header Banner */}
       <div className="bg-gradient-to-b from-tartan-card via-tartan-navy to-tartan-dark py-14 border-b border-tartan-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-3">
+          <div className="mx-auto w-20 h-20 mb-1">
+            <SpudHeritageLogo variant="icon" size="custom" className="w-full h-full" />
+          </div>
+
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-tartan-accent/15 border border-tartan-accent/40 text-tartan-gold text-xs font-semibold">
             <Award className="w-4 h-4" />
-            <span>Over 15 Years of Masterclass Piping</span>
+            <span>Scottish Bagpiper • Est. 1999 • Over 25 Years of Piping</span>
           </div>
           <EditableElement
             id="about-page-h1"

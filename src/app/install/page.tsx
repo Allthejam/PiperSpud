@@ -22,6 +22,7 @@ import {
   ArrowLeft,
   ChevronRight
 } from 'lucide-react';
+import { SpudHeritageLogo } from '@/components/SpudHeritageLogo';
 
 export default function InstallPage() {
   const [activeTab, setActiveTab] = useState<'ios' | 'android' | 'desktop'>('ios');
@@ -93,9 +94,13 @@ export default function InstallPage() {
         
         {/* Page Breadcrumb & Title */}
         <div className="space-y-4 text-center">
+          <div className="mx-auto w-24 h-24 mb-2">
+            <SpudHeritageLogo variant="icon" size="custom" className="w-full h-full" />
+          </div>
+
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-tartan-card border border-tartan-accent/50 text-tartan-gold text-xs font-bold shadow-lg">
             <Sparkles className="w-3.5 h-3.5 text-tartan-gold" />
-            <span>Progressive Web App (PWA) Guide</span>
+            <span>Official Progressive Web App (PWA) • Est. 1999</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-extrabold text-white font-serif tracking-tight">

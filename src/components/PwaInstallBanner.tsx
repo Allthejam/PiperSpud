@@ -1,8 +1,9 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Download, Smartphone, X, Sparkles, HelpCircle } from 'lucide-react';
 import { PwaInstallModal } from './PwaInstallModal';
+import { SpudHeritageLogo } from './SpudHeritageLogo';
 
 export const PwaInstallBanner: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -79,10 +80,8 @@ export const PwaInstallBanner: React.FC = () => {
     <>
       <div className="fixed bottom-20 sm:bottom-6 right-4 z-40 max-w-sm w-[calc(100%-2rem)] sm:w-auto bg-gradient-to-r from-tartan-dark via-tartan-card to-tartan-navy p-3.5 sm:p-4 rounded-2xl border border-tartan-accent/60 shadow-2xl animate-in slide-in-from-bottom duration-300">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gold-gradient p-0.5 shadow-md shrink-0 flex items-center justify-center">
-            <div className="w-full h-full bg-tartan-dark rounded-[10px] flex items-center justify-center text-tartan-gold font-serif font-bold text-sm">
-              S
-            </div>
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-tartan-card via-tartan-navy to-tartan-dark p-1 border border-tartan-accent/60 shadow-md shrink-0 flex items-center justify-center">
+            <SpudHeritageLogo variant="icon" size="custom" className="w-8 h-8" />
           </div>
 
           <div className="flex-1 min-w-0 pr-1">

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
@@ -25,6 +25,8 @@ import {
   Smartphone,
   Download
 } from 'lucide-react';
+
+import { SpudHeritageLogo } from '@/components/SpudHeritageLogo';
 
 interface NavItem {
   label: string;
@@ -164,10 +166,8 @@ export const Navbar: React.FC = () => {
             
             {/* Logo / Brand */}
             <Link href="/" className="flex items-center gap-3 cursor-pointer group shrink-0">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-tartan-accent via-yellow-500 to-amber-700 p-0.5 shadow-lg flex items-center justify-center group-hover:scale-105 transition-transform">
-                <div className="w-full h-full bg-tartan-dark rounded-full flex items-center justify-center">
-                  <span className="text-lg font-bold font-serif text-tartan-gold">S</span>
-                </div>
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-tartan-card via-tartan-navy to-tartan-dark p-1 border border-tartan-accent/60 shadow-lg flex items-center justify-center group-hover:scale-105 group-hover:border-tartan-gold transition-all">
+                <SpudHeritageLogo variant="icon" size="custom" className="w-9 h-9" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -178,9 +178,11 @@ export const Navbar: React.FC = () => {
                     Scotland
                   </span>
                 </div>
-                <p className="text-[10px] text-tartan-gold tracking-widest uppercase font-semibold">
-                  Highland Bagpiper For Hire
-                </p>
+                <div className="flex items-center gap-1.5 text-[10px] text-tartan-gold tracking-widest uppercase font-semibold">
+                  <span>Highland Bagpiper</span>
+                  <span className="text-slate-500">•</span>
+                  <span className="font-serif italic font-normal text-tartan-goldLight capitalize tracking-normal">Est. 1999</span>
+                </div>
               </div>
             </Link>
 

@@ -1,10 +1,11 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useApp } from '@/context/AppContext';
 import { EditableElement } from './EditableElement';
 import { PwaInstallModal } from './PwaInstallModal';
+import { SpudHeritageLogo } from './SpudHeritageLogo';
 import { 
   Phone, 
   Mail, 
@@ -108,13 +109,18 @@ export const Footer: React.FC = () => {
             
             {/* Col 1: Brand, Bio & Social Channels */}
             <div className="lg:col-span-2 space-y-4">
-              <Link href="/" className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-tartan-accent to-amber-700 flex items-center justify-center text-tartan-dark font-serif font-bold text-lg shadow-md">
-                  S
+              <Link href="/" className="inline-flex items-center gap-3.5 group">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-tartan-card via-tartan-navy to-tartan-dark p-1.5 border border-tartan-accent/60 shadow-xl flex items-center justify-center group-hover:scale-105 group-hover:border-tartan-gold transition-all">
+                  <SpudHeritageLogo variant="icon" size="custom" className="w-9 h-9" />
                 </div>
-                <span className="text-xl font-bold text-white font-serif tracking-tight uppercase">
-                  Spud The Piper
-                </span>
+                <div>
+                  <span className="text-xl font-bold text-white font-serif tracking-tight uppercase block leading-tight">
+                    Spud The Piper
+                  </span>
+                  <span className="text-[10px] text-tartan-gold font-serif italic tracking-wider">
+                    Official Scottish Heritage • Est. 1999
+                  </span>
+                </div>
               </Link>
               <EditableElement
                 id="footer-brand-desc"

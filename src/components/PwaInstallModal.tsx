@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { 
@@ -19,6 +19,7 @@ import {
   Layers,
   ArrowRight
 } from 'lucide-react';
+import { SpudHeritageLogo } from './SpudHeritageLogo';
 
 interface PwaInstallModalProps {
   isOpen: boolean;
@@ -84,10 +85,8 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
         {/* Header Banner */}
         <div className="bg-gradient-to-r from-tartan-dark via-tartan-navy to-tartan-card p-6 border-b border-tartan-border flex items-start justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gold-gradient p-0.5 shadow-lg flex items-center justify-center shrink-0">
-              <div className="w-full h-full bg-tartan-dark rounded-[14px] flex items-center justify-center font-serif font-extrabold text-tartan-gold text-xl">
-                S
-              </div>
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-tartan-card via-tartan-navy to-tartan-dark p-1.5 border border-tartan-accent/60 shadow-xl flex items-center justify-center shrink-0">
+              <SpudHeritageLogo variant="icon" size="custom" className="w-9 h-9" />
             </div>
             <div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-tartan-accent/20 border border-tartan-accent/40 text-tartan-gold text-[10px] font-bold uppercase tracking-wider mb-1">

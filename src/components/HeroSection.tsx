@@ -14,6 +14,7 @@ import {
   ShieldCheck, 
   Sparkles 
 } from 'lucide-react';
+import { SpudHeritageLogo } from './SpudHeritageLogo';
 
 export const HeroSection: React.FC = () => {
   const { playTune, currentPlayingTune, stopTune } = useApp();
@@ -209,6 +210,21 @@ export const HeroSection: React.FC = () => {
                   className="w-full h-96 object-cover object-center"
                   section="hero"
                 />
+
+                {/* Floating Heritage Seal */}
+                <div className="absolute top-3 right-3 bg-tartan-dark/90 backdrop-blur-md rounded-2xl p-2 px-3 border border-tartan-accent/50 shadow-xl flex items-center gap-2">
+                  <div className="w-7 h-7 shrink-0">
+                    <SpudHeritageLogo variant="icon" size="custom" className="w-7 h-7" />
+                  </div>
+                  <div>
+                    <span className="block text-[9px] font-bold text-tartan-gold uppercase tracking-wider">
+                      Master Piper
+                    </span>
+                    <span className="block text-[10px] text-white font-serif italic font-bold">
+                      Est. 1999
+                    </span>
+                  </div>
+                </div>
 
                 {/* Floating Rating Overlay */}
                 <div className="absolute bottom-3 left-3 right-3 bg-tartan-dark/90 backdrop-blur-md rounded-xl p-3 border border-tartan-accent/30 flex items-center justify-between">
