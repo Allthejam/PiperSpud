@@ -110,7 +110,7 @@ export interface ChatMessage {
 
 export interface NotificationItem {
   id: string;
-  type: 'booking_request' | 'deposit_paid' | 'new_review' | 'chat_message' | 'gig_reminder';
+  type: 'booking_request' | 'deposit_paid' | 'new_review' | 'chat_message' | 'gig_reminder' | 'tune_added';
   title: string;
   message: string;
   timestamp: string;
@@ -139,7 +139,8 @@ export interface BagpipeTune {
   category: 'Wedding' | 'Lament / Funeral' | 'Celebration / March' | 'Traditional Scottish';
   description: string;
   duration: string;
-  audioNotes: number[]; // frequencies or midi steps for WebAudio bagpipe synth
+  audioNotes?: number[]; // frequencies or midi steps for WebAudio bagpipe synth
+  audioUrl?: string; // High-res MP3/WAV/audio recording URL or uploaded base64
 }
 
 export interface SeoPageConfig {

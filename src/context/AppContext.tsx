@@ -104,11 +104,14 @@ interface AppContextType {
   markChatAsRead: () => void;
   unreadChatCount: number;
 
-  // Audio Bagpipe Player
+  // Audio Bagpipe Player & Tune Manager
   currentPlayingTune: string | null;
-  playTune: (title: string) => void;
+  playTune: (titleOrId: string) => void;
   stopTune: () => void;
   tunesList: BagpipeTune[];
+  addTune: (tune: Omit<BagpipeTune, 'id'>) => void;
+  updateTune: (id: string, updated: Partial<BagpipeTune>) => void;
+  deleteTune: (id: string) => void;
 
   // Notifications
   notifications: NotificationItem[];
@@ -171,8 +174,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [seoConfig, setSeoConfig] = useState<SeoPageConfig>(initialSeoConfig);
   const [activeSeoDrawerPageId, setActiveSeoDrawerPageId] = useState<string | null>(null);
 
-  // Audio player state
+  // Audio player state & Tunes
+  const [tunesList, setTunesList] = useState<BagpipeTune[]>(initialTunes);
   const [currentPlayingTune, setCurrentPlayingTune] = useState<string | null>(null);
+  const audioPlayerRef = React.useRef<HTMLAudioElement | null>(null);
 
   // Modal states
   const [activeBrevoEmail, setActiveBrevoEmail] = useState<{
@@ -238,6 +243,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } catch (e) {}
       }
 
+      const savedTunes = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}tunes`);
+      if (savedTunes) {
+        try {
+          setTunesList(JSON.parse(savedTunes));
+        } catch (e) {}
+      }
+
       const savedChat = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}chat`);
       if (savedChat) setChatMessages(JSON.parse(savedChat));
 
@@ -270,6 +282,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubSocialLinks = () => {};
     let unsubCms = () => {};
     let unsubSeo = () => {};
+    let unsubTunes = () => {};
 
     try {
       unsubBookings = onSnapshot(collection(db, 'bookings'), (snapshot) => {
@@ -347,6 +360,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
       }, (err) => console.log('Firestore seo_pages listener:', err.message));
+
+      unsubTunes = onSnapshot(collection(db, 'bagpipe_tunes'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteTunes: BagpipeTune[] = [];
+          snapshot.forEach((d) => remoteTunes.push(d.data() as BagpipeTune));
+          if (remoteTunes.length > 0) {
+            setTunesList(prev => {
+              const merged = [...prev];
+              remoteTunes.forEach(r => {
+                const idx = merged.findIndex(t => t.id === r.id);
+                if (idx >= 0) merged[idx] = r;
+                else merged.push(r);
+              });
+              return merged;
+            });
+          }
+        }
+      }, (err) => console.log('Firestore bagpipe_tunes listener:', err.message));
     } catch (e) {
       console.warn('Firebase Firestore initialization:', e);
     }
@@ -359,6 +390,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubSocialLinks();
       unsubCms();
       unsubSeo();
+      unsubTunes();
     };
   }, []);
 
@@ -944,25 +976,109 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setChatMessages(prev => prev.map(m => ({ ...m, isRead: true })));
   };
 
-  // Audio Tune Player
-  const playTune = (title: string) => {
-    if (bagpipeSynth) {
-      if (currentPlayingTune === title) {
-        stopTune();
-        return;
+  // Audio Tune Player & Manager
+  const playTune = (titleOrId: string) => {
+    if (currentPlayingTune === titleOrId) {
+      stopTune();
+      return;
+    }
+
+    stopTune();
+
+    const tune = tunesList.find(t => t.title === titleOrId || t.id === titleOrId);
+
+    if (tune && tune.audioUrl) {
+      try {
+        if (!audioPlayerRef.current) {
+          audioPlayerRef.current = new Audio();
+        }
+        audioPlayerRef.current.src = tune.audioUrl;
+        audioPlayerRef.current.onended = () => {
+          setCurrentPlayingTune(null);
+        };
+        audioPlayerRef.current.onerror = () => {
+          console.warn('Custom audio playback error, falling back to synthesizer');
+          if (bagpipeSynth) {
+            bagpipeSynth.playTune(tune.title, () => setCurrentPlayingTune(null));
+          }
+        };
+        audioPlayerRef.current.play();
+        setCurrentPlayingTune(tune.title);
+      } catch (e) {
+        if (bagpipeSynth) {
+          bagpipeSynth.playTune(tune.title, () => setCurrentPlayingTune(null));
+          setCurrentPlayingTune(tune.title);
+        }
       }
-      bagpipeSynth.playTune(title, () => {
+    } else if (bagpipeSynth) {
+      bagpipeSynth.playTune(tune ? tune.title : titleOrId, () => {
         setCurrentPlayingTune(null);
       });
-      setCurrentPlayingTune(title);
+      setCurrentPlayingTune(tune ? tune.title : titleOrId);
     }
   };
 
   const stopTune = () => {
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.pause();
+      audioPlayerRef.current.currentTime = 0;
+    }
     if (bagpipeSynth) {
       bagpipeSynth.stop();
     }
     setCurrentPlayingTune(null);
+  };
+
+  const addTune = (newTuneData: Omit<BagpipeTune, 'id'>) => {
+    const newTune: BagpipeTune = {
+      ...newTuneData,
+      id: `tune-${Date.now()}`
+    };
+    setTunesList(prev => {
+      const updated = [newTune, ...prev];
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}tunes`, JSON.stringify(updated));
+      return updated;
+    });
+    syncToFirestore('bagpipe_tunes', newTune.id, newTune);
+    addNotification({
+      type: 'tune_added',
+      title: 'New Bagpipe Tune Added',
+      message: `"${newTune.title}" was added to Spud's Jukebox!`,
+      actionUrl: '/tunes'
+    });
+  };
+
+  const updateTune = (id: string, updated: Partial<BagpipeTune>) => {
+    setTunesList(prev => {
+      const updatedList = prev.map(t => {
+        if (t.id === id) {
+          const u = { ...t, ...updated };
+          syncToFirestore('bagpipe_tunes', id, u);
+          return u;
+        }
+        return t;
+      });
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}tunes`, JSON.stringify(updatedList));
+      return updatedList;
+    });
+  };
+
+  const deleteTune = async (id: string) => {
+    if (currentPlayingTune) {
+      stopTune();
+    }
+    setTunesList(prev => {
+      const updatedList = prev.filter(t => t.id !== id);
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}tunes`, JSON.stringify(updatedList));
+      return updatedList;
+    });
+    if (db) {
+      try {
+        await deleteDoc(doc(db, 'bagpipe_tunes', id));
+      } catch (e) {
+        console.warn('Firestore delete tune error:', e);
+      }
+    }
   };
 
   // Notifications
@@ -1084,7 +1200,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       currentPlayingTune,
       playTune,
       stopTune,
-      tunesList: initialTunes,
+      tunesList,
+      addTune,
+      updateTune,
+      deleteTune,
       notifications,
       unreadNotifCount,
       markNotifAsRead,
