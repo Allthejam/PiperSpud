@@ -51,7 +51,11 @@ interface AppContextType {
     imageUrl?: string, 
     tag?: EditableCmsBlock['tag'],
     linkUrl?: string,
-    buttonColor?: string
+    buttonColor?: string,
+    imageFit?: EditableCmsBlock['imageFit'],
+    imagePositionX?: number,
+    imagePositionY?: number,
+    imageScale?: number
   ) => void;
   getCmsContent: (id: string, defaultVal: string) => string;
 
@@ -519,7 +523,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     imageUrl?: string, 
     tag?: EditableCmsBlock['tag'],
     linkUrl?: string,
-    buttonColor?: string
+    buttonColor?: string,
+    imageFit?: EditableCmsBlock['imageFit'],
+    imagePositionX?: number,
+    imagePositionY?: number,
+    imageScale?: number
   ) => {
     let updatedBlock: EditableCmsBlock | null = null;
     setCmsBlocks(prev => {
@@ -535,6 +543,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               tag: tag || b.tag,
               linkUrl: linkUrl !== undefined ? linkUrl : b.linkUrl,
               buttonColor: buttonColor !== undefined ? buttonColor : b.buttonColor,
+              imageFit: imageFit !== undefined ? imageFit : b.imageFit,
+              imagePositionX: imagePositionX !== undefined ? imagePositionX : b.imagePositionX,
+              imagePositionY: imagePositionY !== undefined ? imagePositionY : b.imagePositionY,
+              imageScale: imageScale !== undefined ? imageScale : b.imageScale,
               lastUpdated: new Date().toISOString() 
             };
             return updatedBlock;
@@ -553,6 +565,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           imageUrl,
           linkUrl,
           buttonColor,
+          imageFit: imageFit || 'cover',
+          imagePositionX: imagePositionX !== undefined ? imagePositionX : 50,
+          imagePositionY: imagePositionY !== undefined ? imagePositionY : 50,
+          imageScale: imageScale !== undefined ? imageScale : 1.0,
           lastUpdated: new Date().toISOString()
         };
         return [...prev, updatedBlock];

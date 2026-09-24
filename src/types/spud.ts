@@ -130,6 +130,10 @@ export interface EditableCmsBlock {
   imageUrl?: string;
   linkUrl?: string;
   buttonColor?: string;
+  imageFit?: 'cover' | 'contain' | 'fill' | 'none';
+  imagePositionX?: number; // 0 to 100 (%) default 50
+  imagePositionY?: number; // 0 to 100 (%) default 50
+  imageScale?: number; // 0.5 to 3.0 (default 1.0)
   lastUpdated?: string;
 }
 

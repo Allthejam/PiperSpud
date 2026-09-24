@@ -65,19 +65,37 @@ export const EditableElement: React.FC<EditableElementProps> = ({
   };
 
   if (isImage) {
+    const fit = block?.imageFit || 'cover';
+    const posX = block?.imagePositionX !== undefined ? block.imagePositionX : 50;
+    const posY = block?.imagePositionY !== undefined ? block.imagePositionY : 50;
+    const scale = block?.imageScale !== undefined ? block.imageScale : 1.0;
+
     return (
-      <div className={`relative group ${canEdit ? 'ring-2 ring-tartan-gold ring-dashed rounded-lg p-1' : ''}`}>
+      <div className={`relative group overflow-hidden ${canEdit ? 'ring-2 ring-tartan-gold ring-dashed rounded-lg p-1' : ''}`}>
         {canEdit && (
           <button
             onClick={handleEditClick}
             className="absolute top-2 right-2 z-30 bg-tartan-gold text-tartan-dark px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg hover:bg-yellow-400 transition-all scale-95 group-hover:scale-105"
-            title="Edit Image, Alt Tag & SEO"
+            title="Edit Image, Framing, Fit & Position"
           >
             <ImageIcon className="w-3.5 h-3.5" />
-            <span>Edit Image</span>
+            <span>Edit & Frame Image</span>
           </button>
         )}
-        <img src={imageUrl || defaultImageUrl} alt={altText} className={className} />
+        <div className="w-full h-full overflow-hidden flex items-center justify-center">
+          <img 
+            src={imageUrl || defaultImageUrl} 
+            alt={altText} 
+            className={className} 
+            style={{
+              objectFit: fit as any,
+              objectPosition: `${posX}% ${posY}%`,
+              transform: scale !== 1 ? `scale(${scale})` : undefined,
+              transformOrigin: `${posX}% ${posY}%`,
+              transition: 'transform 0.15s ease, object-position 0.15s ease'
+            }}
+          />
+        </div>
       </div>
     );
   }

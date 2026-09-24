@@ -23,7 +23,15 @@ import {
   Upload,
   Database,
   Cloud,
-  RefreshCw 
+  RefreshCw,
+  Move,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Maximize2,
+  Sliders,
+  Eye,
+  Grid
 } from 'lucide-react';
 import { EditableCmsBlock } from '@/types/spud';
 
@@ -56,6 +64,14 @@ export const VisualPencilOverlay: React.FC = () => {
   const [buttonColor, setButtonColor] = useState('');
   const [tagType, setTagType] = useState<EditableCmsBlock['tag']>('p');
 
+  // Image Framing, Panning & Zoom State
+  const [imageFit, setImageFit] = useState<'cover' | 'contain' | 'fill' | 'none'>('cover');
+  const [imagePositionX, setImagePositionX] = useState<number>(50);
+  const [imagePositionY, setImagePositionY] = useState<number>(50);
+  const [imageScale, setImageScale] = useState<number>(1.0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number; startPosX: number; startPosY: number } | null>(null);
+
   // Page SEO Studio Modal State
   const [selectedPageId, setSelectedPageId] = useState<string>('home');
   const [seoTitle, setSeoTitle] = useState('');
@@ -80,8 +96,57 @@ export const VisualPencilOverlay: React.FC = () => {
       setLinkUrl(editingBlock.linkUrl || '');
       setButtonColor(editingBlock.buttonColor || '');
       setTagType(editingBlock.tag || 'p');
+      setImageFit(editingBlock.imageFit || 'cover');
+      setImagePositionX(editingBlock.imagePositionX !== undefined ? editingBlock.imagePositionX : 50);
+      setImagePositionY(editingBlock.imagePositionY !== undefined ? editingBlock.imagePositionY : 50);
+      setImageScale(editingBlock.imageScale !== undefined ? editingBlock.imageScale : 1.0);
     }
   }, [editingBlock]);
+
+  // Interactive Pan & Drag Handlers for Image Preview
+  const handlePreviewMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX,
+      y: e.clientY,
+      startPosX: imagePositionX,
+      startPosY: imagePositionY,
+    });
+  };
+
+  const handlePreviewMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging || !dragStart) return;
+    const deltaX = e.clientX - dragStart.x;
+    const deltaY = e.clientY - dragStart.y;
+    // Dragging shifts the position smoothly
+    const newPosX = Math.max(0, Math.min(100, Math.round(dragStart.startPosX - (deltaX / 2.5))));
+    const newPosY = Math.max(0, Math.min(100, Math.round(dragStart.startPosY - (deltaY / 2.5))));
+    setImagePositionX(newPosX);
+    setImagePositionY(newPosY);
+  };
+
+  const handlePreviewMouseUp = () => {
+    setIsDragging(false);
+    setDragStart(null);
+  };
+
+  const handlePreviewWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const zoomDelta = e.deltaY < 0 ? 0.08 : -0.08;
+    setImageScale(prev => Math.max(0.5, Math.min(3.0, Number((prev + zoomDelta).toFixed(2)))));
+  };
+
+  const handlePresetPosition = (posX: number, posY: number) => {
+    setImagePositionX(posX);
+    setImagePositionY(posY);
+  };
+
+  const handleResetFraming = () => {
+    setImageFit('cover');
+    setImagePositionX(50);
+    setImagePositionY(50);
+    setImageScale(1.0);
+  };
 
   // When SEO modal is triggered, initialize selected page and form fields
   useEffect(() => {
@@ -104,7 +169,19 @@ export const VisualPencilOverlay: React.FC = () => {
 
   const handleSaveElement = () => {
     if (!editingBlock) return;
-    updateCmsBlock(editingBlock.id, textContent, altText, imageUrl, tagType, linkUrl, buttonColor);
+    updateCmsBlock(
+      editingBlock.id, 
+      textContent, 
+      altText, 
+      imageUrl, 
+      tagType, 
+      linkUrl, 
+      buttonColor,
+      imageFit,
+      imagePositionX,
+      imagePositionY,
+      imageScale
+    );
     setEditingBlock(null);
   };
 
@@ -366,9 +443,232 @@ export const VisualPencilOverlay: React.FC = () => {
                   </div>
 
                   {imageUrl && (
-                    <div className="mt-2 p-2 rounded-lg bg-tartan-dark border border-tartan-border/60">
-                      <p className="text-xs text-tartan-muted mb-1 font-semibold">Image Preview:</p>
-                      <img src={imageUrl} alt="Preview" className="w-full h-40 object-cover rounded-md" />
+                    <div className="space-y-4 p-4 rounded-xl bg-tartan-dark/95 border border-tartan-border">
+                      {/* Header with quick tip */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Move className="w-4 h-4 text-tartan-gold" />
+                          <span className="text-xs font-bold text-white">Interactive Framing, Pan & Zoom Studio</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleResetFraming}
+                          className="text-[11px] text-tartan-gold hover:text-yellow-300 font-semibold flex items-center gap-1 transition-colors"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          <span>Reset</span>
+                        </button>
+                      </div>
+
+                      {/* 1. Interactive Preview Canvas with Mouse Drag and Scroll Zoom */}
+                      <div 
+                        onMouseDown={handlePreviewMouseDown}
+                        onMouseMove={handlePreviewMouseMove}
+                        onMouseUp={handlePreviewMouseUp}
+                        onMouseLeave={handlePreviewMouseUp}
+                        onWheel={handlePreviewWheel}
+                        className={`relative w-full h-56 rounded-xl overflow-hidden bg-slate-950 border-2 ${isDragging ? 'border-tartan-gold cursor-grabbing' : 'border-tartan-accent/60 cursor-grab'} select-none flex items-center justify-center`}
+                        title="Click and drag to slide image position. Scroll mouse wheel to zoom in/out."
+                      >
+                        {/* Center Guides */}
+                        <div className="absolute inset-0 pointer-events-none border border-white/10 grid grid-cols-3 grid-rows-3 z-10 opacity-30">
+                          <div className="border-r border-b border-white/10"></div>
+                          <div className="border-r border-b border-white/10"></div>
+                          <div className="border-b border-white/10"></div>
+                          <div className="border-r border-b border-white/10"></div>
+                          <div className="border-r border-b border-white/10"></div>
+                          <div className="border-b border-white/10"></div>
+                          <div className="border-r border-white/10"></div>
+                          <div className="border-r border-white/10"></div>
+                          <div></div>
+                        </div>
+
+                        {/* Image Layer */}
+                        <img 
+                          src={imageUrl} 
+                          alt="Framing Preview" 
+                          draggable={false}
+                          className="w-full h-full pointer-events-none transition-transform duration-75"
+                          style={{
+                            objectFit: imageFit as any,
+                            objectPosition: `${imagePositionX}% ${imagePositionY}%`,
+                            transform: `scale(${imageScale})`,
+                            transformOrigin: `${imagePositionX}% ${imagePositionY}%`
+                          }}
+                        />
+
+                        {/* Drag / Zoom Overlay Badge */}
+                        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between gap-2 pointer-events-none z-20">
+                          <div className="px-2.5 py-1 rounded-md bg-black/80 backdrop-blur-md text-white text-[10px] font-semibold border border-white/20 flex items-center gap-1.5 shadow-lg">
+                            <Move className="w-3 h-3 text-tartan-gold" />
+                            <span>Drag to Slide • Scroll to Zoom</span>
+                          </div>
+
+                          <div className="px-2.5 py-1 rounded-md bg-black/80 backdrop-blur-md text-tartan-gold text-[10px] font-mono font-bold border border-tartan-accent/40 shadow-lg">
+                            Zoom: {Math.round(imageScale * 100)}% • Pos: {imagePositionX}%, {imagePositionY}%
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 2. Fit Mode Selector */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-300 uppercase tracking-wider mb-1.5">
+                          Frame Fit Mode
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setImageFit('cover')}
+                            className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                              imageFit === 'cover'
+                                ? 'bg-gold-gradient text-tartan-dark shadow-md'
+                                : 'bg-slate-800 text-gray-300 hover:bg-slate-700 hover:text-white border border-slate-700'
+                            }`}
+                          >
+                            <Maximize2 className="w-3.5 h-3.5" />
+                            <span>Fill Frame (Cover)</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setImageFit('contain')}
+                            className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                              imageFit === 'contain'
+                                ? 'bg-gold-gradient text-tartan-dark shadow-md'
+                                : 'bg-slate-800 text-gray-300 hover:bg-slate-700 hover:text-white border border-slate-700'
+                            }`}
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Best Fit (Entire Photo)</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setImageFit('fill')}
+                            className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                              imageFit === 'fill'
+                                ? 'bg-gold-gradient text-tartan-dark shadow-md'
+                                : 'bg-slate-800 text-gray-300 hover:bg-slate-700 hover:text-white border border-slate-700'
+                            }`}
+                          >
+                            <Sliders className="w-3.5 h-3.5" />
+                            <span>Stretch (Fill)</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 3. Zoom Controls */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs font-semibold text-gray-300">
+                          <span className="flex items-center gap-1 text-tartan-gold">
+                            <ZoomIn className="w-3.5 h-3.5" />
+                            <span>Zoom / Scale Factor</span>
+                          </span>
+                          <span className="text-white font-mono">{Math.round(imageScale * 100)}%</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setImageScale(prev => Math.max(0.5, Number((prev - 0.1).toFixed(2))))}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white border border-slate-700"
+                            title="Zoom Out"
+                          >
+                            <ZoomOut className="w-4 h-4" />
+                          </button>
+                          <input
+                            type="range"
+                            min="0.5"
+                            max="3.0"
+                            step="0.05"
+                            value={imageScale}
+                            onChange={(e) => setImageScale(parseFloat(e.target.value))}
+                            className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setImageScale(prev => Math.min(3.0, Number((prev + 0.1).toFixed(2))))}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white border border-slate-700"
+                            title="Zoom In"
+                          >
+                            <ZoomIn className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 4. Fine Position Sliders & 9-Point Alignment Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 pt-1">
+                        {/* Position Sliders */}
+                        <div className="sm:col-span-8 space-y-3">
+                          {/* Horizontal Pan (X) */}
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-[11px] font-semibold text-gray-300">
+                              <span>Horizontal Pan (Left ⟷ Right):</span>
+                              <span className="text-tartan-gold font-mono">{imagePositionX}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={imagePositionX}
+                              onChange={(e) => setImagePositionX(parseInt(e.target.value, 10))}
+                              className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                            />
+                          </div>
+
+                          {/* Vertical Pan (Y) */}
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-[11px] font-semibold text-gray-300">
+                              <span>Vertical Pan (Top ⟷ Bottom):</span>
+                              <span className="text-tartan-gold font-mono">{imagePositionY}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={imagePositionY}
+                              onChange={(e) => setImagePositionY(parseInt(e.target.value, 10))}
+                              className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                            />
+                          </div>
+                        </div>
+
+                        {/* 9-Point Quick Focus Grid */}
+                        <div className="sm:col-span-4 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 space-y-1.5">
+                          <span className="text-[10px] font-bold text-gray-400 block text-center uppercase tracking-wider">
+                            Focal Alignment
+                          </span>
+                          <div className="grid grid-cols-3 gap-1">
+                            {[
+                              { label: '↖', x: 0, y: 0, tip: 'Top Left' },
+                              { label: '⬆', x: 50, y: 0, tip: 'Top (Face/Feather Bonnet)' },
+                              { label: '↗', x: 100, y: 0, tip: 'Top Right' },
+                              { label: '⬅', x: 0, y: 50, tip: 'Center Left' },
+                              { label: '⏺', x: 50, y: 50, tip: 'Center' },
+                              { label: '➡', x: 100, y: 50, tip: 'Center Right' },
+                              { label: '↙', x: 0, y: 100, tip: 'Bottom Left' },
+                              { label: '⬇', x: 50, y: 100, tip: 'Bottom (Kilt/Pipes)' },
+                              { label: '↘', x: 100, y: 100, tip: 'Bottom Right' },
+                            ].map((pos) => {
+                              const isActive = imagePositionX === pos.x && imagePositionY === pos.y;
+                              return (
+                                <button
+                                  key={pos.label}
+                                  type="button"
+                                  onClick={() => handlePresetPosition(pos.x, pos.y)}
+                                  title={pos.tip}
+                                  className={`h-7 rounded-md text-xs font-bold transition-all flex items-center justify-center ${
+                                    isActive
+                                      ? 'bg-tartan-gold text-tartan-dark shadow font-extrabold'
+                                      : 'bg-slate-800 text-gray-300 hover:bg-slate-700 hover:text-white'
+                                  }`}
+                                >
+                                  {pos.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
 
