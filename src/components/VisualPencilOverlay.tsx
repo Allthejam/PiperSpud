@@ -31,7 +31,14 @@ import {
   Maximize2,
   Sliders,
   Eye,
-  Grid
+  Grid,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  Crosshair,
+  Plus,
+  Minus
 } from 'lucide-react';
 import { EditableCmsBlock } from '@/types/spud';
 
@@ -103,8 +110,15 @@ export const VisualPencilOverlay: React.FC = () => {
     }
   }, [editingBlock]);
 
-  // Interactive Pan & Drag Handlers for Image Preview
-  const handlePreviewMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+  // Aspect ratio preview state
+  const [previewAspect, setPreviewAspect] = useState<'16/9' | '4/3' | '1/1' | 'auto'>('auto');
+
+  // Interactive Pan & Drag Handlers with Pointer Capture
+  const handlePreviewPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
     setIsDragging(true);
     setDragStart({
       x: e.clientX,
@@ -114,18 +128,23 @@ export const VisualPencilOverlay: React.FC = () => {
     });
   };
 
-  const handlePreviewMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handlePreviewPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging || !dragStart) return;
+    e.preventDefault();
     const deltaX = e.clientX - dragStart.x;
     const deltaY = e.clientY - dragStart.y;
     // Dragging shifts the position smoothly
-    const newPosX = Math.max(0, Math.min(100, Math.round(dragStart.startPosX - (deltaX / 2.5))));
-    const newPosY = Math.max(0, Math.min(100, Math.round(dragStart.startPosY - (deltaY / 2.5))));
+    const sensitivity = 1.8;
+    const newPosX = Math.max(0, Math.min(100, Math.round(dragStart.startPosX - (deltaX / sensitivity))));
+    const newPosY = Math.max(0, Math.min(100, Math.round(dragStart.startPosY - (deltaY / sensitivity))));
     setImagePositionX(newPosX);
     setImagePositionY(newPosY);
   };
 
-  const handlePreviewMouseUp = () => {
+  const handlePreviewPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {}
     setIsDragging(false);
     setDragStart(null);
   };
@@ -134,6 +153,17 @@ export const VisualPencilOverlay: React.FC = () => {
     e.preventDefault();
     const zoomDelta = e.deltaY < 0 ? 0.08 : -0.08;
     setImageScale(prev => Math.max(0.5, Math.min(3.0, Number((prev + zoomDelta).toFixed(2)))));
+  };
+
+  const handleNudge = (dir: 'up' | 'down' | 'left' | 'right', delta: number = 5) => {
+    if (dir === 'up') setImagePositionY(prev => Math.max(0, prev - delta));
+    if (dir === 'down') setImagePositionY(prev => Math.min(100, prev + delta));
+    if (dir === 'left') setImagePositionX(prev => Math.max(0, prev - delta));
+    if (dir === 'right') setImagePositionX(prev => Math.min(100, prev + delta));
+  };
+
+  const handleZoomStep = (delta: number) => {
+    setImageScale(prev => Math.max(0.5, Math.min(3.0, Number((prev + delta).toFixed(2)))));
   };
 
   const handlePresetPosition = (posX: number, posY: number) => {
@@ -462,12 +492,12 @@ export const VisualPencilOverlay: React.FC = () => {
 
                       {/* 1. Interactive Preview Canvas with Mouse Drag and Scroll Zoom */}
                       <div 
-                        onMouseDown={handlePreviewMouseDown}
-                        onMouseMove={handlePreviewMouseMove}
-                        onMouseUp={handlePreviewMouseUp}
-                        onMouseLeave={handlePreviewMouseUp}
+                        onPointerDown={handlePreviewPointerDown}
+                        onPointerMove={handlePreviewPointerMove}
+                        onPointerUp={handlePreviewPointerUp}
+                        onPointerCancel={handlePreviewPointerUp}
                         onWheel={handlePreviewWheel}
-                        className={`relative w-full h-56 rounded-xl overflow-hidden bg-slate-950 border-2 ${isDragging ? 'border-tartan-gold cursor-grabbing' : 'border-tartan-accent/60 cursor-grab'} select-none flex items-center justify-center`}
+                        className={`relative w-full h-64 rounded-xl overflow-hidden bg-slate-950 border-2 ${isDragging ? 'border-tartan-gold cursor-grabbing' : 'border-tartan-accent/60 cursor-grab'} select-none flex items-center justify-center touch-none`}
                         title="Click and drag to slide image position. Scroll mouse wheel to zoom in/out."
                       >
                         {/* Center Guides */}
@@ -518,63 +548,76 @@ export const VisualPencilOverlay: React.FC = () => {
                         <div className="grid grid-cols-3 gap-2">
                           <button
                             type="button"
-                            onClick={() => setImageFit('cover')}
-                            className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                              imageFit === 'cover'
-                                ? 'bg-gold-gradient text-tartan-dark shadow-md'
+                            onClick={() => {
+                              setImageFit('contain');
+                              setImageScale(1.0);
+                              setImagePositionX(50);
+                              setImagePositionY(50);
+                            }}
+                            className={`py-2.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                              imageFit === 'contain'
+                                ? 'bg-gold-gradient text-tartan-dark shadow-md font-extrabold'
                                 : 'bg-slate-800 text-gray-300 hover:bg-slate-700 hover:text-white border border-slate-700'
                             }`}
                           >
-                            <Maximize2 className="w-3.5 h-3.5" />
+                            <Eye className="w-4 h-4" />
+                            <span>Best Fit (Full Photo)</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setImageFit('cover');
+                            }}
+                            className={`py-2.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                              imageFit === 'cover'
+                                ? 'bg-gold-gradient text-tartan-dark shadow-md font-extrabold'
+                                : 'bg-slate-800 text-gray-300 hover:bg-slate-700 hover:text-white border border-slate-700'
+                            }`}
+                          >
+                            <Maximize2 className="w-4 h-4" />
                             <span>Fill Frame (Cover)</span>
                           </button>
 
                           <button
                             type="button"
-                            onClick={() => setImageFit('contain')}
-                            className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                              imageFit === 'contain'
-                                ? 'bg-gold-gradient text-tartan-dark shadow-md'
-                                : 'bg-slate-800 text-gray-300 hover:bg-slate-700 hover:text-white border border-slate-700'
-                            }`}
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>Best Fit (Entire Photo)</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => setImageFit('fill')}
-                            className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                            onClick={() => {
+                              setImageFit('fill');
+                            }}
+                            className={`py-2.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                               imageFit === 'fill'
-                                ? 'bg-gold-gradient text-tartan-dark shadow-md'
+                                ? 'bg-gold-gradient text-tartan-dark shadow-md font-extrabold'
                                 : 'bg-slate-800 text-gray-300 hover:bg-slate-700 hover:text-white border border-slate-700'
                             }`}
                           >
-                            <Sliders className="w-3.5 h-3.5" />
+                            <Sliders className="w-4 h-4" />
                             <span>Stretch (Fill)</span>
                           </button>
                         </div>
                       </div>
 
-                      {/* 3. Zoom Controls */}
-                      <div className="space-y-1.5">
+                      {/* 3. Zoom Controls & Quick Zoom Presets */}
+                      <div className="space-y-2 bg-slate-900/70 p-3 rounded-xl border border-slate-800">
                         <div className="flex items-center justify-between text-xs font-semibold text-gray-300">
-                          <span className="flex items-center gap-1 text-tartan-gold">
+                          <span className="flex items-center gap-1.5 text-tartan-gold font-bold">
                             <ZoomIn className="w-3.5 h-3.5" />
-                            <span>Zoom / Scale Factor</span>
+                            <span>Zoom & Magnification Factor</span>
                           </span>
-                          <span className="text-white font-mono">{Math.round(imageScale * 100)}%</span>
+                          <span className="text-white font-mono bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
+                            {Math.round(imageScale * 100)}%
+                          </span>
                         </div>
-                        <div className="flex items-center gap-3">
+
+                        <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => setImageScale(prev => Math.max(0.5, Number((prev - 0.1).toFixed(2))))}
-                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white border border-slate-700"
-                            title="Zoom Out"
+                            onClick={() => handleZoomStep(-0.1)}
+                            className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 active:scale-95 transition-all"
+                            title="Zoom Out (-10%)"
                           >
-                            <ZoomOut className="w-4 h-4" />
+                            <Minus className="w-4 h-4" />
                           </button>
+                          
                           <input
                             type="range"
                             min="0.5"
@@ -584,25 +627,52 @@ export const VisualPencilOverlay: React.FC = () => {
                             onChange={(e) => setImageScale(parseFloat(e.target.value))}
                             className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
                           />
+
                           <button
                             type="button"
-                            onClick={() => setImageScale(prev => Math.min(3.0, Number((prev + 0.1).toFixed(2))))}
-                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white border border-slate-700"
-                            title="Zoom In"
+                            onClick={() => handleZoomStep(0.1)}
+                            className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 active:scale-95 transition-all"
+                            title="Zoom In (+10%)"
                           >
-                            <ZoomIn className="w-4 h-4" />
+                            <Plus className="w-4 h-4" />
                           </button>
+                        </div>
+
+                        {/* Quick Zoom Stepper Presets */}
+                        <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                          <span className="text-[10px] text-gray-400 font-semibold mr-1">Presets:</span>
+                          {[
+                            { label: '50% (Wide)', scale: 0.5 },
+                            { label: '100% (Normal)', scale: 1.0 },
+                            { label: '125%', scale: 1.25 },
+                            { label: '150% (Close Up)', scale: 1.5 },
+                            { label: '200% (2x Zoom)', scale: 2.0 },
+                          ].map(z => (
+                            <button
+                              key={z.label}
+                              type="button"
+                              onClick={() => setImageScale(z.scale)}
+                              className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all ${
+                                imageScale === z.scale
+                                  ? 'bg-tartan-gold text-tartan-dark font-extrabold shadow'
+                                  : 'bg-slate-800 hover:bg-slate-700 text-gray-300'
+                              }`}
+                            >
+                              {z.label}
+                            </button>
+                          ))}
                         </div>
                       </div>
 
-                      {/* 4. Fine Position Sliders & 9-Point Alignment Grid */}
+                      {/* 4. Fine Position Sliders, Nudge Pad & 9-Point Alignment Grid */}
                       <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 pt-1">
-                        {/* Position Sliders */}
-                        <div className="sm:col-span-8 space-y-3">
+                        
+                        {/* Position Sliders & Directional Nudge Pad */}
+                        <div className="sm:col-span-7 space-y-3">
                           {/* Horizontal Pan (X) */}
                           <div className="space-y-1">
                             <div className="flex items-center justify-between text-[11px] font-semibold text-gray-300">
-                              <span>Horizontal Pan (Left ⟷ Right):</span>
+                              <span>Horizontal Position (Left ⟷ Right):</span>
                               <span className="text-tartan-gold font-mono">{imagePositionX}%</span>
                             </div>
                             <input
@@ -618,7 +688,7 @@ export const VisualPencilOverlay: React.FC = () => {
                           {/* Vertical Pan (Y) */}
                           <div className="space-y-1">
                             <div className="flex items-center justify-between text-[11px] font-semibold text-gray-300">
-                              <span>Vertical Pan (Top ⟷ Bottom):</span>
+                              <span>Vertical Position (Top ⟷ Bottom):</span>
                               <span className="text-tartan-gold font-mono">{imagePositionY}%</span>
                             </div>
                             <input
@@ -630,20 +700,59 @@ export const VisualPencilOverlay: React.FC = () => {
                               className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
                             />
                           </div>
+
+                          {/* Directional Nudge Buttons */}
+                          <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                            <span className="text-[11px] font-semibold text-gray-400">Slide Nudge:</span>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleNudge('left', 5)}
+                                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-gray-200 border border-slate-700 active:scale-95"
+                                title="Slide Left"
+                              >
+                                <ArrowLeft className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleNudge('up', 5)}
+                                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-gray-200 border border-slate-700 active:scale-95"
+                                title="Slide Up"
+                              >
+                                <ArrowUp className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleNudge('down', 5)}
+                                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-gray-200 border border-slate-700 active:scale-95"
+                                title="Slide Down"
+                              >
+                                <ArrowDown className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleNudge('right', 5)}
+                                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-gray-200 border border-slate-700 active:scale-95"
+                                title="Slide Right"
+                              >
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
                         </div>
 
                         {/* 9-Point Quick Focus Grid */}
-                        <div className="sm:col-span-4 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 space-y-1.5">
+                        <div className="sm:col-span-5 bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-2 flex flex-col justify-between">
                           <span className="text-[10px] font-bold text-gray-400 block text-center uppercase tracking-wider">
-                            Focal Alignment
+                            9-Point Focus Lock
                           </span>
-                          <div className="grid grid-cols-3 gap-1">
+                          <div className="grid grid-cols-3 gap-1.5">
                             {[
                               { label: '↖', x: 0, y: 0, tip: 'Top Left' },
                               { label: '⬆', x: 50, y: 0, tip: 'Top (Face/Feather Bonnet)' },
                               { label: '↗', x: 100, y: 0, tip: 'Top Right' },
                               { label: '⬅', x: 0, y: 50, tip: 'Center Left' },
-                              { label: '⏺', x: 50, y: 50, tip: 'Center' },
+                              { label: '⏺', x: 50, y: 50, tip: 'Center Focus' },
                               { label: '➡', x: 100, y: 50, tip: 'Center Right' },
                               { label: '↙', x: 0, y: 100, tip: 'Bottom Left' },
                               { label: '⬇', x: 50, y: 100, tip: 'Bottom (Kilt/Pipes)' },
@@ -656,10 +765,10 @@ export const VisualPencilOverlay: React.FC = () => {
                                   type="button"
                                   onClick={() => handlePresetPosition(pos.x, pos.y)}
                                   title={pos.tip}
-                                  className={`h-7 rounded-md text-xs font-bold transition-all flex items-center justify-center ${
+                                  className={`h-8 rounded-lg text-xs font-bold transition-all flex items-center justify-center ${
                                     isActive
-                                      ? 'bg-tartan-gold text-tartan-dark shadow font-extrabold'
-                                      : 'bg-slate-800 text-gray-300 hover:bg-slate-700 hover:text-white'
+                                      ? 'bg-tartan-gold text-tartan-dark shadow-md font-extrabold scale-105 ring-1 ring-yellow-400'
+                                      : 'bg-slate-800 text-gray-300 hover:bg-slate-700 hover:text-white border border-slate-700/80'
                                   }`}
                                 >
                                   {pos.label}
@@ -667,6 +776,7 @@ export const VisualPencilOverlay: React.FC = () => {
                               );
                             })}
                           </div>
+                          <p className="text-[9px] text-gray-400 text-center">Click ⬆ for faces/bonnets, ⬇ for kilts</p>
                         </div>
                       </div>
                     </div>
