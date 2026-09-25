@@ -1,13 +1,52 @@
-﻿rules_version = '2';
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Stagecoach RRA Security Rules
-    match /routes/{routeId} {
-      allow read: if true; // Public read for driver flashcards or authenticated assessors
-      allow write: if request.auth != null; // Authenticated assessors & ops managers
+    // Spud the Piper - Firestore Security Rules
+
+    // Public read for website content (services, tunes, reviews, social posts, CMS blocks, SEO)
+    match /services/{serviceId} {
+      allow read: if true;
+      allow write: if true;
     }
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+    match /cms_blocks/{blockId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /bagpipe_tunes/{tuneId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /social_posts/{postId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /forum_categories/{catId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /seo_pages/{pageId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if true;
+      allow write: if true;
     }
   }
 }
