@@ -101,7 +101,8 @@ export const AdminServices: React.FC = () => {
     setEditingService(null);
     setIsCreatingNew(true);
     setFormTitle('');
-    setFormSlug('');
+    const nextIndex = services.length + 1;
+    setFormSlug(`service-${nextIndex}`);
     setFormTagline('');
     setFormPriceEstimate('From £350');
     setFormBasePrice(350);
@@ -121,14 +122,6 @@ export const AdminServices: React.FC = () => {
 
   const handleTitleChange = (val: string) => {
     setFormTitle(val);
-    if (isCreatingNew) {
-      // Auto-generate slug
-      const generatedSlug = val
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)+/g, '');
-      setFormSlug(generatedSlug);
-    }
   };
 
   const handleSaveForm = async (e: React.FormEvent) => {

@@ -836,8 +836,88 @@ export const initialSocialLinks: SocialMediaLinks = {
 
 export const initialServices: ServicePackage[] = [
   {
+    id: 'srv-weddings',
+    slug: 'service-1',
+    icon: 'Heart',
+    title: 'Scottish Castle & Highland Weddings',
+    tagline: 'The complete romantic ceremony & reception musical experience',
+    priceEstimate: 'From £320 - £480',
+    basePrice: 480,
+    depositAmount: 100,
+    deposit: '£100 Deposit',
+    popularBadge: true,
+    badgeText: 'Most Requested',
+    heroImage: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&q=80',
+    description: 'Create spine-tingling wedding memories with the iconic sound of the Highland pipes. Spud welcomes your arriving guests, pipes the bridal party down the aisle, plays during photography, and triumphantly pipes the newlyweds into dinner.',
+    fullDescription: 'Nothing evokes the timeless romance of Scotland quite like the stirring resonance of the Highland bagpipe echoing through castle stone walls and scenic lochs. Spud the Piper brings decades of experience, impeccable musicality, and majestic ceremonial presence to your wedding day. Whether you are hosting an intimate elopement on the Isle of Skye or a grand 400-guest celebration at Edinburgh Castle, Spud orchestrates every musical moment with flawless timing.',
+    features: [
+      'Greeting arriving wedding guests with traditional welcoming tunes',
+      'Piping the Bride down the aisle with Highland Cathedral',
+      'Lively exit march for the newly married couple',
+      'Atmospheric piping during photo sessions & drinks reception',
+      'Official pipe-in of the Top Table into the wedding breakfast'
+    ],
+    itinerary: [
+      {
+        stepOrTime: '45 Mins Before Ceremony',
+        title: 'Guest Arrival & Atmospheric Welcome',
+        description: 'Spud stands in full No. 1 Highland dress at the main entrance, creating an unforgettable first impression and building anticipation with classic welcoming airs.'
+      },
+      {
+        stepOrTime: 'Ceremony Start',
+        title: 'Bridal Party & Aisle Processional',
+        description: 'A spine-tingling rendition of Highland Cathedral or your chosen processional melody as the bride and bridal party make their grand entrance.'
+      },
+      {
+        stepOrTime: 'Signing of the Register',
+        title: 'Quiet Background Harmony or Organ Duet',
+        description: 'Subtle, melodic piping during the official register signing and vows.'
+      },
+      {
+        stepOrTime: 'Ceremony Recessional',
+        title: 'Newlywed Triumphant Exit March',
+        description: 'Upbeat, celebratory marches (e.g. Mairi\'s Wedding, Scotland the Brave) as the happy couple walk back down the aisle showered in confetti.'
+      },
+      {
+        stepOrTime: 'Drinks & Photography',
+        title: 'Courtyard & Drinks Reception Piping',
+        description: 'Lively jigs and reels to entertain guests during champagne and professional photographs.'
+      },
+      {
+        stepOrTime: 'Wedding Breakfast',
+        title: 'Top Table Grand Entrance Pipe-In',
+        description: 'Spud leads the newlyweds and bridal party into the dining hall to a standing ovation from all their guests.'
+      }
+    ],
+    galleryImages: [
+      'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80',
+      'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80',
+      'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&q=80'
+    ],
+    recommendedTunes: [
+      'Highland Cathedral',
+      'Mairi\'s Wedding',
+      'Scotland the Brave',
+      'Skye Boat Song',
+      'The Rowan Tree'
+    ],
+    faqs: [
+      {
+        question: 'Can Spud coordinate with our church organist or string quartet?',
+        answer: 'Yes! Spud frequently collaborates with organists and musicians, ensuring concert pitch coordination (A=440Hz / Bb) for harmonic duets.'
+      },
+      {
+        question: 'What if our wedding running times run slightly late?',
+        answer: 'Spud is completely flexible and experienced with wedding day logistics. He stays on-site until all scheduled piping duties are perfectly completed.'
+      }
+    ],
+    seoTitle: 'Scottish Wedding Bagpiper Hire | Spud the Piper Castle Weddings',
+    seoDescription: 'Hire Scotland\'s premier wedding bagpiper. Full No. 1 Highland dress, aisle processional, photo session piping, and reception grand entrance across Edinburgh, Glasgow & the Highlands.',
+    seoKeywords: ['Wedding Bagpiper Scotland', 'Castle Wedding Piper Edinburgh', 'Highland Cathedral Wedding Aisle', 'Hire a Piper for Wedding Scotland']
+  },
+  {
     id: 'srv-experience',
-    slug: 'highland-bagpipe-experience',
+    slug: 'service-2',
     icon: 'Sparkles',
     title: 'The Ultimate Highland Bagpipe Experience',
     tagline: 'Hands-on workshop, storytelling & piping masterclass with the cutest piper this side of the Great Wall of China',
@@ -918,119 +998,63 @@ export const initialServices: ServicePackage[] = [
     seoKeywords: ['Bagpipe Experience Scotland', 'Hands on Bagpipe Lesson', 'Airbnb Bagpipe Workshop Edinburgh', 'Scottish Entertainment for Tour Groups', 'Spud the Piper Masterclass']
   },
   {
-    id: 'srv-weddings',
-    slug: 'scottish-castle-weddings',
+    id: 'srv-elopements',
+    slug: 'service-3',
     icon: 'Heart',
-    title: 'Scottish Castle & Highland Weddings',
-    tagline: 'The complete romantic ceremony & reception musical experience',
-    priceEstimate: 'From £320 - £480',
-    basePrice: 480,
-    depositAmount: 100,
-    deposit: '£100 Deposit',
+    title: 'Highland Elopements & Intimate Vows',
+    tagline: 'Soul-stirring mountain, lochside & castle cliffside elopement piping',
+    priceEstimate: 'From £350',
+    basePrice: 350,
+    depositAmount: 80,
+    deposit: '£80 Deposit',
     popularBadge: true,
-    badgeText: 'Most Requested',
-    heroImage: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&q=80',
-    description: 'Create spine-tingling wedding memories with the iconic sound of the Highland pipes. Spud welcomes your arriving guests, pipes the bridal party down the aisle, plays during photography, and triumphantly pipes the newlyweds into dinner.',
-    fullDescription: 'Nothing evokes the timeless romance of Scotland quite like the stirring resonance of the Highland bagpipe echoing through castle stone walls and scenic lochs. Spud the Piper brings decades of experience, impeccable musicality, and majestic ceremonial presence to your wedding day. Whether you are hosting an intimate elopement on the Isle of Skye or a grand 400-guest celebration at Edinburgh Castle, Spud orchestrates every musical moment with flawless timing.',
+    badgeText: 'Romantic Special',
+    heroImage: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&q=80',
+    description: 'Looking to elope in the wild Scottish Highlands, Isle of Skye, Glencoe, or atop a cliffside castle ruin? Spud brings unmatched romantic magic, piping the couple down secret glen trails and accompanying their vows with haunting acoustic echoes.',
+    fullDescription: 'Scotland is the elopement capital of the world. For couples seeking a deeply intimate, wild ceremony in Glencoe, the Quiraing on the Isle of Skye, Loch Ness, or Dunnottar Castle ruins, Spud the Piper delivers majestic, spine-tingling acoustic romance. Wearing ceremonial Highland dress, Spud will hike to your chosen location, play processional melodies through the mist, pipe during your handfasting or vow exchange, and lead a celebratory dram toast.',
     features: [
-      'Greeting arriving wedding guests with traditional welcoming tunes',
-      'Piping the Bride down the aisle with Highland Cathedral',
-      'Lively exit march for the newly married couple',
-      'Atmospheric piping during photo sessions & drinks reception',
-      'Official pipe-in of the Top Table into the wedding breakfast'
+      'Travel to wild remote scenic Highland & island elopement spots (Glencoe, Skye, Lochs)',
+      'Full ceremonial kilt attire perfectly suited for breathtaking outdoor wedding photos',
+      'Processional piping across glen trails & cliff tops',
+      'Acoustic background melody for Scottish handfasting and vow exchange',
+      'Celebratory quaich / whisky toast piping'
     ],
     itinerary: [
       {
-        stepOrTime: '45 Mins Before Ceremony',
-        title: 'Guest Arrival & Atmospheric Welcome',
-        description: 'Spud stands in full No. 1 Highland dress at the main entrance, creating an unforgettable first impression and building anticipation with classic welcoming airs.'
+        stepOrTime: 'Pre-Ceremony Hike / Arrival',
+        title: 'Scenic Location Setup & Sound Echo Check',
+        description: 'Spud arrives at the outdoor glen or castle viewpoint in full kilt dress, tuning drones to harmonize with the mountain wind.'
       },
       {
-        stepOrTime: 'Ceremony Start',
-        title: 'Bridal Party & Aisle Processional',
-        description: 'A spine-tingling rendition of Highland Cathedral or your chosen processional melody as the bride and bridal party make their grand entrance.'
+        stepOrTime: 'Vow Procession',
+        title: 'Piping the Couple to the Vow Altar',
+        description: 'A magical, atmospheric rendition of Skye Boat Song or Highland Cathedral as you walk through the heather.'
       },
       {
-        stepOrTime: 'Signing of the Register',
-        title: 'Quiet Background Harmony or Organ Duet',
-        description: 'Subtle, melodic piping during the official register signing and vows.'
+        stepOrTime: 'The Vows & Handfasting',
+        title: 'Scottish Handfasting & Ring Exchange',
+        description: 'Gentle, romantic piping to accompany traditional Scottish Celtic rituals.'
       },
       {
-        stepOrTime: 'Ceremony Recessional',
-        title: 'Newlywed Triumphant Exit March',
-        description: 'Upbeat, celebratory marches (e.g. Mairi\'s Wedding, Scotland the Brave) as the happy couple walk back down the aisle showered in confetti.'
-      },
-      {
-        stepOrTime: 'Drinks & Photography',
-        title: 'Courtyard & Drinks Reception Piping',
-        description: 'Lively jigs and reels to entertain guests during champagne and professional photographs.'
-      },
-      {
-        stepOrTime: 'Wedding Breakfast',
-        title: 'Top Table Grand Entrance Pipe-In',
-        description: 'Spud leads the newlyweds and bridal party into the dining hall to a standing ovation from all their guests.'
+        stepOrTime: 'Celebration & Quaich Toast',
+        title: 'Quaich Toast & Wild Photos',
+        description: 'Joyful Scottish jigs as you pop champagne and take iconic photos amidst Scotland\'s dramatic peaks.'
       }
     ],
-    galleryImages: [
-      'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80',
-      'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80',
-      'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&q=80'
-    ],
     recommendedTunes: [
-      'Highland Cathedral',
-      'Mairi\'s Wedding',
-      'Scotland the Brave',
       'Skye Boat Song',
-      'The Rowan Tree'
+      'Highland Cathedral',
+      'My Love is Like a Red, Red Rose',
+      'Wild Mountain Thyme',
+      'Mairi\'s Wedding'
     ],
-    faqs: [
-      {
-        question: 'Can Spud coordinate with our church organist or string quartet?',
-        answer: 'Yes! Spud frequently collaborates with organists and musicians, ensuring concert pitch coordination (A=440Hz / Bb) for harmonic duets.'
-      },
-      {
-        question: 'What if our wedding running times run slightly late?',
-        answer: 'Spud is completely flexible and experienced with wedding day logistics. He stays on-site until all scheduled piping duties are perfectly completed.'
-      }
-    ],
-    seoTitle: 'Scottish Wedding Bagpiper Hire | Spud the Piper Castle Weddings',
-    seoDescription: 'Hire Scotland\'s premier wedding bagpiper. Full No. 1 Highland dress, aisle processional, photo session piping, and reception grand entrance across Edinburgh, Glasgow & the Highlands.',
-    seoKeywords: ['Wedding Bagpiper Scotland', 'Castle Wedding Piper Edinburgh', 'Highland Cathedral Wedding Aisle', 'Hire a Piper for Wedding Scotland']
-  },
-  {
-    id: 'srv-funerals',
-    slug: 'funerals-memorials',
-    icon: 'Flame',
-    title: 'Funerals, Memorials & Graveside Laments',
-    tagline: 'A respectful, heartfelt tribute to honour your loved one',
-    priceEstimate: 'From £220',
-    basePrice: 220,
-    depositAmount: 50,
-    deposit: '£50 Deposit',
-    heroImage: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&q=80',
-    description: 'The mournful resonance of the Highland bagpipe provides a deeply moving and dignified farewell. Spud can lead the cortege, play before and after the service, and perform soulful laments at the graveside or crematorium.',
-    fullDescription: 'During times of grief, the ancient voice of the Highland bagpipe conveys what words often cannot. Spud the Piper brings the highest degree of compassion, respect, and dignified decorum to funeral and memorial services. From leading the hearse cortege to playing moving laments at the graveside, crematorium chapel, or scattering of ashes, Spud provides a fitting and unforgettable farewell.',
-    features: [
-      'Solemn greeting as family and mourners arrive at the chapel',
-      'Leading the hearse and cortege with respectful ceremony',
-      'Soulful rendition of "Flowers of the Forest" or "Going Home"',
-      'Graveside final salute with "Amazing Grace"',
-      'Discreet, dignified, and compassionate presence throughout'
-    ],
-    recommendedTunes: [
-      'Amazing Grace',
-      'Flowers of the Forest',
-      'Going Home',
-      'The Mist Covered Mountains',
-      'Sleep, Dearie, Sleep'
-    ],
-    seoTitle: 'Funeral Bagpiper Scotland | Respectful Graveside Laments by Spud the Piper',
-    seoDescription: 'Compassionate and dignified funeral bagpiper hire in Scotland. Solemn cortege leading, chapel entrance, and graveside laments including Amazing Grace and Flowers of the Forest.',
-    seoKeywords: ['Funeral Bagpiper Scotland', 'Graveside Lament Bagpipes', 'Hire Piper for Funeral Edinburgh Glasgow', 'Amazing Grace Bagpipes Funeral']
+    seoTitle: 'Highland Elopement Bagpiper Scotland | Isle of Skye & Glencoe Piper',
+    seoDescription: 'Hire an authentic Highland bagpiper for romantic elopements and vow renewals in Glencoe, Isle of Skye, Loch Lomond, and Scottish castle ruins.',
+    seoKeywords: ['Highland Elopement Piper', 'Isle of Skye Elopement Bagpipes', 'Glencoe Wedding Piper', 'Scottish Elopement Music']
   },
   {
     id: 'srv-burns',
-    slug: 'burns-suppers-hogmanay',
+    slug: 'service-4',
     icon: 'Sparkles',
     title: 'Burns Suppers & Hogmanay Celebrations',
     tagline: 'Rousing Scottish energy, piping in the Haggis & Auld Lang Syne',
@@ -1060,7 +1084,7 @@ export const initialServices: ServicePackage[] = [
   },
   {
     id: 'srv-corporate',
-    slug: 'corporate-galas-castle-events',
+    slug: 'service-5',
     icon: 'Castle',
     title: 'Corporate Banquets & Castle VIP Galas',
     tagline: 'State-level Highland grandeur for international guests & brands',
@@ -1089,37 +1113,39 @@ export const initialServices: ServicePackage[] = [
     seoKeywords: ['Corporate Bagpiper Scotland', 'Castle Banquet Piper', 'VIP Event Bagpiper Edinburgh', 'International Conference Scottish Entertainment']
   },
   {
-    id: 'srv-tuition',
-    slug: 'private-bagpipe-tuition',
-    icon: 'GraduationCap',
-    title: 'Private Bagpipe Tuition & Masterclasses',
-    tagline: 'Learn the ancient art of the Great Highland Bagpipe',
-    priceEstimate: '£60 / Hour',
-    basePrice: 60,
-    depositAmount: 20,
-    deposit: '£20 Deposit',
+    id: 'srv-funerals',
+    slug: 'service-6',
+    icon: 'Flame',
+    title: 'Funerals, Memorials & Graveside Laments',
+    tagline: 'A respectful, heartfelt tribute to honour your loved one',
+    priceEstimate: 'From £220',
+    basePrice: 220,
+    depositAmount: 50,
+    deposit: '£50 Deposit',
     heroImage: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&q=80',
-    description: 'Learn chanter technique, embellishments (doublings, birls, strikes), drone maintenance, and tune repertoire from an award-winning master piper. Available in-person or via high-definition video call.',
-    fullDescription: 'Whether you are picking up the practice chanter for the very first time or refining competition-grade piobaireachd, Spud provides structured, inspiring one-on-one coaching. Learn authentic embellishments, blowing and posture technique, instrument care, and sheet music reading at your own pace.',
+    description: 'The mournful resonance of the Highland bagpipe provides a deeply moving and dignified farewell. Spud can lead the cortege, play before and after the service, and perform soulful laments at the graveside or crematorium.',
+    fullDescription: 'During times of grief, the ancient voice of the Highland bagpipe conveys what words often cannot. Spud the Piper brings the highest degree of compassion, respect, and dignified decorum to funeral and memorial services. From leading the hearse cortege to playing moving laments at the graveside, crematorium chapel, or scattering of ashes, Spud provides a fitting and unforgettable farewell.',
     features: [
-      'Beginner practice chanter fundamentals to advanced piobaireachd',
-      'Blowing technique and bagpipe air pressure control',
-      'Reed calibration and instrument care',
-      'Custom sheet music and audio practice stems provided'
+      'Solemn greeting as family and mourners arrive at the chapel',
+      'Leading the hearse and cortege with respectful ceremony',
+      'Soulful rendition of "Flowers of the Forest" or "Going Home"',
+      'Graveside final salute with "Amazing Grace"',
+      'Discreet, dignified, and compassionate presence throughout'
     ],
     recommendedTunes: [
-      'Scots Wha Hae',
-      'Brown Haired Maiden',
-      'Highland Cathedral',
-      'Caber Feidh'
+      'Amazing Grace',
+      'Flowers of the Forest',
+      'Going Home',
+      'The Mist Covered Mountains',
+      'Sleep, Dearie, Sleep'
     ],
-    seoTitle: 'Bagpipe Lessons Scotland & Online | 1-on-1 Tuition with Spud the Piper',
-    seoDescription: 'Learn to play the Scottish bagpipes with master tuition from Spud the Piper. Practice chanter fundamentals, drone maintenance, and tune mastery in-person or via Zoom.',
-    seoKeywords: ['Bagpipe Lessons Scotland', 'Learn Bagpipes Online', 'Practice Chanter Tuition', 'Bagpipe Teacher Edinburgh']
+    seoTitle: 'Funeral Bagpiper Scotland | Respectful Graveside Laments by Spud the Piper',
+    seoDescription: 'Compassionate and dignified funeral bagpiper hire in Scotland. Solemn cortege leading, chapel entrance, and graveside laments including Amazing Grace and Flowers of the Forest.',
+    seoKeywords: ['Funeral Bagpiper Scotland', 'Graveside Lament Bagpipes', 'Hire Piper for Funeral Edinburgh Glasgow', 'Amazing Grace Bagpipes Funeral']
   },
   {
     id: 'srv-private',
-    slug: 'anniversaries-birthdays-surprise-gigs',
+    slug: 'service-7',
     icon: 'Users',
     title: 'Anniversaries, Birthdays & Surprise Gigs',
     tagline: 'Highland surprise performances for milestones and celebrations',
@@ -1147,4 +1173,5 @@ export const initialServices: ServicePackage[] = [
     seoKeywords: ['Surprise Bagpiper Hire', 'Birthday Bagpiper Scotland', 'Anniversary Piper Edinburgh Glasgow', 'Surprise Scottish Piper']
   }
 ];
+
 

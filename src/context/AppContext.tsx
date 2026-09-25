@@ -224,7 +224,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try {
           const parsed: ServicePackage[] = JSON.parse(savedServices);
           if (parsed && parsed.length > 0) {
-            setServices(parsed);
+            const initialIds = new Set(initialServices.map(s => s.id));
+            const userCreated = parsed.filter(s => !initialIds.has(s.id));
+            const merged = initialServices.map(initS => {
+              const userVer = parsed.find(p => p.id === initS.id);
+              return userVer ? { ...initS, ...userVer, slug: userVer.slug || initS.slug } : initS;
+            });
+            setServices([...merged, ...userCreated]);
           } else {
             setServices(initialServices);
           }

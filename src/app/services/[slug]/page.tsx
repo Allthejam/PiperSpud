@@ -66,8 +66,33 @@ export default function ServiceDetailPage() {
 
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
-  // Find the matching service package
-  const service = services.find(s => s.slug === slug || s.id === slug) || services[0];
+  // Smart slug resolution: support /services/service-1, custom slugs, IDs, and legacy URL patterns
+  const service = (() => {
+    if (!services || services.length === 0) return null;
+    
+    // 1. Direct match by slug or id
+    const direct = services.find(s => s.slug === slug || s.id === slug);
+    if (direct) return direct;
+
+    // 2. Numbered index matching (e.g. "service-1" -> index 0)
+    const indexMatch = slug?.match(/^service-(\d+)$/i);
+    if (indexMatch) {
+      const idx = parseInt(indexMatch[1], 10) - 1;
+      if (services[idx]) return services[idx];
+    }
+
+    // 3. Fallback matching for semantic words (e.g. "elopement", "experience", "wedding", "funeral", "burns", "corporate", "party")
+    const keyword = slug?.toLowerCase() || '';
+    const keywordMatch = services.find(s => 
+      s.title.toLowerCase().includes(keyword) || 
+      keyword.includes(s.title.toLowerCase().slice(0, 5)) ||
+      s.slug.toLowerCase().includes(keyword)
+    );
+    if (keywordMatch) return keywordMatch;
+
+    return services[0];
+  })();
+
   const Icon = getServiceIcon(service?.icon);
 
   if (!service) {
