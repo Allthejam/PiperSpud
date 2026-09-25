@@ -26,16 +26,30 @@ export const metadata: Metadata = {
   applicationName: 'Spud the Piper',
   icons: {
     icon: '/icon-192.png',
-    apple: '/icon-192.png'
+    apple: '/apple-touch-icon.png'
   },
   openGraph: {
-    title: 'Spud the Piper | Award-Winning Scottish Highland Bagpiper',
-    description: 'Renowned worldwide for Scottish wedding ceremonies, castle galas, and memorial laments. Piper to the stars.',
+    title: 'Spud the Piper | Award-Winning Scottish Highland Bagpiper for Hire',
+    description: 'Scotland\'s premier award-winning Highland Bagpiper for weddings, castle galas, elopements, and private experiences. Piper to the stars.',
     url: 'https://www.spudthepiper.co.uk',
     siteName: 'Spud the Piper',
     locale: 'en_GB',
     type: 'website',
+    images: [
+      {
+        url: 'https://www.spudthepiper.co.uk/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Spud the Piper - Award-Winning Scottish Highland Bagpiper for Hire'
+      }
+    ]
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Spud the Piper | Scottish Highland Bagpiper for Hire',
+    description: 'Scotland\'s premier award-winning Highland Bagpiper for weddings, castle galas, elopements, and private experiences.',
+    images: ['https://www.spudthepiper.co.uk/og-image.png']
+  }
 };
 
 export default function RootLayout({
@@ -47,9 +61,19 @@ export default function RootLayout({
     <html lang="en" className="scroll-smooth">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+        <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
         <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png" />
+        <meta property="og:image" content="https://www.spudthepiper.co.uk/og-image.png" />
+        <meta property="og:image:secure_url" content="https://www.spudthepiper.co.uk/og-image.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:type" content="image/png" />
+        <meta name="twitter:image" content="https://www.spudthepiper.co.uk/og-image.png" />
+        <meta name="twitter:card" content="summary_large_image" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Spud the Piper" />
