@@ -47,6 +47,25 @@ export const ServicesSection: React.FC = () => {
       ]
     },
     {
+      id: 'srv-experience',
+      icon: Sparkles,
+      title: 'The Ultimate Highland Bagpipe Experience',
+      tagline: 'Hands-on workshop, storytelling & piping masterclass with the cutest piper this side of the Great Wall of China',
+      priceEstimate: 'From £250 - £350 (Group Rate)',
+      deposit: '£60 Deposit',
+      popularBadge: true,
+      description: 'The ultimate interactive Scottish entertainment experience for tourists, tour groups, Airbnb / holiday home rentals, stag & hen parties, and corporate retreats! Spud visits your accommodation or venue to reveal the secrets of the Great Highland Bagpipe, hands out practice chanters so everyone learns the Scottish scale, lets everyone have a shot on the big pipes, performs a private concert, and poses for unforgettable group photos in full ceremonial kilt regalia.',
+      features: [
+        'Interactive demo: how the bag, blowpipe, drones & reed mechanics work',
+        'Hands-on practice chanter workshop (learn your first Scottish scale)',
+        '"Have a Shot on the Big Pipes" (everyone gets to hold and blow the Highland pipes)',
+        'Private close-up mini concert & personal Scottish tune requests',
+        'Souvenir group photo shoot with Spud in Full Highland No. 1 Dress',
+        'Hilarious storytelling & legendary tales from Spud\'s global travels',
+        'Spud travels directly to your rented holiday home, lodge, Airbnb, or venue'
+      ]
+    },
+    {
       id: 'srv-funerals',
       icon: Flame,
       title: 'Funerals, Memorials & Graveside Laments',

@@ -7,6 +7,7 @@ export type EventType =
   | 'Burns Supper / Hogmanay'
   | 'Corporate / Castle Event'
   | 'Birthday / Private Party'
+  | 'Highland Bagpipe Experience (Hands-On Workshop / Airbnb)'
   | 'Bagpipe Tuition / Lesson';
 
 export type HighlandDressOption = 

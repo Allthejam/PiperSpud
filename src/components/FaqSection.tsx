@@ -41,6 +41,11 @@ export const FaqSection: React.FC = () => {
       category: 'Event Logistics'
     },
     {
+      question: 'What is the "Highland Bagpipe Experience" and where can it take place?',
+      answer: 'The Highland Bagpipe Experience is an interactive, hands-on workshop led by Spud the Piper. Perfect for tour groups, holidaymakers, families, stag/hen parties, and Airbnb/holiday home guests. Spud brings practice chanters so everyone learns to finger the Scottish scale, gives each guest a shot at playing the Great Highland Bagpipe, plays a close-up private concert, and poses for photos in full ceremonial kilt regalia. Spud can travel to your rental cottage, lodge, Airbnb, hotel, castle, or outdoor venue anywhere in Scotland.',
+      category: 'Highland Experience'
+    },
+    {
       question: 'When is the remaining balance due after the deposit?',
       answer: 'The remaining balance after the deposit can be settled prior to the event date or on the day of the performance via bank transfer, card, or cash as preferred.',
       category: 'Booking & Payments'

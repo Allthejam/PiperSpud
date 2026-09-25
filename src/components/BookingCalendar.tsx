@@ -54,6 +54,7 @@ export const BookingCalendar: React.FC = () => {
     'Burns Supper / Hogmanay': { base: 450, deposit: 100 },
     'Corporate / Castle Event': { base: 550, deposit: 150 },
     'Birthday / Private Party': { base: 350, deposit: 80 },
+    'Highland Bagpipe Experience (Hands-On Workshop / Airbnb)': { base: 280, deposit: 60 },
     'Bagpipe Tuition / Lesson': { base: 60, deposit: 20 },
   };
 
@@ -339,6 +340,7 @@ export const BookingCalendar: React.FC = () => {
                     >
                       <option value="Wedding Ceremony & Reception">Wedding Ceremony & Reception</option>
                       <option value="Wedding Ceremony Only">Wedding Ceremony Only</option>
+                      <option value="Highland Bagpipe Experience (Hands-On Workshop / Airbnb)">Highland Bagpipe Experience (Hands-On Workshop / Airbnb)</option>
                       <option value="Funeral / Memorial Service">Funeral / Memorial Service</option>
                       <option value="Burns Supper / Hogmanay">Burns Supper / Hogmanay</option>
                       <option value="Corporate / Castle Event">Corporate / Castle Event</option>

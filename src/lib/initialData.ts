@@ -126,10 +126,44 @@ export const initialBookings: BookingEvent[] = [
     notes: 'Destination wedding on the bridge of Eilean Donan Castle followed by celebratory pipe tunes.',
     createdAt: '2026-09-18T08:30:00Z',
     brevoEmailSent: false
+  },
+  {
+    id: 'spud-bk-105',
+    clientName: 'Willem van den Berg & Friends (Netherlands)',
+    clientEmail: 'willem.vandenberg@amsterdam-travel.nl',
+    clientPhone: '+31 6 12345678',
+    eventType: 'Highland Bagpipe Experience (Hands-On Workshop / Airbnb)',
+    date: '2026-09-24',
+    timeSlot: '15:00 - 17:00',
+    venueName: 'Loch Lomond Highland Lodge Rental',
+    venueAddress: 'Rowardennan, Loch Lomond',
+    venuePostcode: 'G63 0AR',
+    tartanChoice: 'Full No. 1 Dress (Feather Bonnet & Plaid)',
+    estimatedPrice: 300,
+    depositAmount: 60,
+    status: 'completed',
+    specialTunes: ['Scotland the Brave', 'The Black Bear', 'Auld Lang Syne'],
+    notes: 'Hands-on bagpipe masterclass for 6 guys from the Netherlands. Chanter scale practice, trying the big pipes, and group kilt photos with the cutest piper this side of the Great Wall of China!',
+    createdAt: '2026-09-20T10:00:00Z',
+    approvedAt: '2026-09-20T11:15:00Z',
+    depositPaidAt: '2026-09-20T13:00:00Z',
+    paypalOrderId: 'PP-ORD-9932145',
+    brevoEmailSent: true
   }
 ];
 
 export const initialReviews: Review[] = [
+  {
+    id: 'rev-5',
+    authorName: 'Willem van den Berg (Amsterdam, NL)',
+    eventType: 'Highland Bagpipe Experience (Loch Lomond Lodge)',
+    rating: 5,
+    date: 'September 2026',
+    comment: 'Six of us rented a lodge in Scotland and booked Spud for a private Highland Bagpipe Experience. It was by far the highlight of our entire trip! Spud brought practice chanters, taught us how to play the scale, and let us all have a go at the big pipes. Unbelievable fun, huge laughs, and great stories. Truly the cutest piper this side of the Great Wall of China! Bedankt Spud!',
+    status: 'approved',
+    isFeatured: true,
+    location: 'Loch Lomond Holiday Rental'
+  },
   {
     id: 'rev-1',
     authorName: 'Catriona & Jamie Robertson',
@@ -178,6 +212,37 @@ export const initialReviews: Review[] = [
 
 export const initialSocialPosts: SocialPost[] = [
   // ─── 1. REAL-TIME SOCIAL FEED POSTS (Timeline Stream) ───
+  {
+    id: 'feed-exp-1',
+    postType: 'feed',
+    authorName: 'Spud the Piper',
+    authorRole: 'Spud the Piper',
+    authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&q=80',
+    content: '🇳🇱🏴󠁧󠁢󠁳󠁣󠁴󠁿 What a fantastic afternoon hosting a private Highland Bagpipe Experience for 6 great lads visiting from the Netherlands! I brought my practice chanters to their rental lodge on Loch Lomond, showed them the full anatomy of the Great Highland Bagpipe, taught them their first Scottish scale, and then they all had a shot on the big pipes! \n\nLaughter, great banter, and genuine Scottish hospitality with "the cutest piper this side of the Great Wall of China"! Now officially available for bookings across Scotland! 🎵🥃🏴󠁧󠁢󠁳󠁣󠁴󠁿\n\n#BagpipeExperience #ScotlandTravel #LochLomond #TourScotland #HighlandPiping',
+    imageUrl: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1000&q=85',
+    eventLocation: 'Loch Lomond Holiday Rental, Scotland',
+    tunePlayed: 'Scotland the Brave',
+    tags: ['#BagpipeExperience', '#ScotlandTravel', '#LochLomond', '#TourScotland', '#HighlandPiping'],
+    likes: 248,
+    isPinned: true,
+    comments: [
+      {
+        id: 'c-exp1',
+        authorName: 'Willem van den Berg',
+        authorRole: 'Guest',
+        content: 'Spud, you were absolute legend mate! The whole group had the best afternoon. My lungs are still recovering from trying to blow the drones! 😂🥃',
+        createdAt: '2026-09-24T18:15:00Z'
+      },
+      {
+        id: 'c-exp2',
+        authorName: 'Lars Jansen',
+        authorRole: 'Guest',
+        content: 'Best experience in Scotland hands down! Highly recommend to anyone visiting! 🙌',
+        createdAt: '2026-09-24T18:40:00Z'
+      }
+    ],
+    timestamp: '2026-09-24T17:30:00Z'
+  },
   {
     id: 'feed-1',
     postType: 'feed',
