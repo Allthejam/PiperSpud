@@ -8,7 +8,8 @@ import {
   BagpipeTune,
   SeoPageConfig,
   ForumCategoryItem,
-  SocialMediaLinks
+  SocialMediaLinks,
+  ServicePackage
 } from '@/types/spud';
 
 export const initialBookings: BookingEvent[] = [
@@ -832,3 +833,318 @@ export const initialSocialLinks: SocialMediaLinks = {
   tiktok: 'https://www.tiktok.com/@spudthepiper',
   trustpilot: 'https://www.trustpilot.com/review/spudthepiper.co.uk'
 };
+
+export const initialServices: ServicePackage[] = [
+  {
+    id: 'srv-experience',
+    slug: 'highland-bagpipe-experience',
+    icon: 'Sparkles',
+    title: 'The Ultimate Highland Bagpipe Experience',
+    tagline: 'Hands-on workshop, storytelling & piping masterclass with the cutest piper this side of the Great Wall of China',
+    priceEstimate: 'From £250 - £350 (Group Rate)',
+    basePrice: 280,
+    depositAmount: 60,
+    deposit: '£60 Deposit',
+    popularBadge: true,
+    badgeText: 'New & Trending',
+    heroImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
+    description: 'The ultimate interactive Scottish entertainment experience for tourists, tour groups, Airbnb / holiday home rentals, stag & hen parties, and corporate retreats! Spud visits your accommodation or venue to reveal the secrets of the Great Highland Bagpipe, hands out practice chanters so everyone learns the Scottish scale, lets everyone have a shot on the big pipes, performs a private concert, and poses for unforgettable group photos in full ceremonial kilt regalia.',
+    fullDescription: 'Looking for a genuine, unforgettable Scottish experience that goes far beyond simply watching a performance? The Highland Bagpipe Experience is an interactive, laughter-packed masterclass brought straight to your holiday home, castle lodge, Airbnb, hotel, or private venue across Scotland. Spud the Piper—warm, charismatic, and widely known as "the cutest piper this side of the Great Wall of China"—will guide your group through the ancient mechanics of the pipes, teach everyone how to play the Scottish scale on practice chanters, let every brave guest try blowing the full Great Highland Bagpipes, and deliver a stirring private concert followed by souvenir photos in full ceremonial Number 1 kilt regalia.',
+    features: [
+      'Interactive demo: how the bag, blowpipe, drones & reed mechanics work',
+      'Hands-on practice chanter workshop (learn your first Scottish scale)',
+      '"Have a Shot on the Big Pipes" (everyone gets to hold and blow the Highland pipes)',
+      'Private close-up mini concert & personal Scottish tune requests',
+      'Souvenir group photo shoot with Spud in Full Highland No. 1 Dress',
+      'Hilarious storytelling & legendary tales from Spud\'s global travels',
+      'Spud travels directly to your rented holiday home, lodge, Airbnb, or venue'
+    ],
+    itinerary: [
+      {
+        stepOrTime: 'Step 1 • 15 Mins',
+        title: 'Ceremonial Welcome & Anatomy of the Pipes',
+        description: 'Spud arrives in full Highland regalia, strikes up a welcoming march, and gives an engaging walkthrough of the bagpipe components: the pipe bag, blowpipe, drones, chanter, and delicate cane reeds.'
+      },
+      {
+        stepOrTime: 'Step 2 • 25 Mins',
+        title: 'Hands-On Practice Chanter Workshop',
+        description: 'Spud distributes individual practice chanters to every guest. He teaches finger placement, scale progressions, and simple Scottish ornaments, guiding everyone to play their first Scottish notes together.'
+      },
+      {
+        stepOrTime: 'Step 3 • 25 Mins',
+        title: '"Have a Shot on the Big Pipes!"',
+        description: 'Each guest gets to step into the piper\'s shoes! Spud helps you strap in, find the balance, strike the bag, and squeeze the air through the drones. Expect huge laughs and iconic videos.'
+      },
+      {
+        stepOrTime: 'Step 4 • 15 Mins',
+        title: 'Private Mini-Concert & Scottish Storytelling',
+        description: 'Spud performs a bespoke selection of Scotland\'s greatest anthems up close, taking custom tune requests while sharing hilarious stories from his world tours and royal performances.'
+      },
+      {
+        stepOrTime: 'Step 5 • 10 Mins',
+        title: 'Souvenir Group Photo Session & Farewell',
+        description: 'Pose for photos with Spud in full military feather bonnet or glengarry, holding the pipes or chanters. A perfect keepsake of your Scottish journey.'
+      }
+    ],
+    galleryImages: [
+      'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&q=80',
+      'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80',
+      'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80',
+      'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80'
+    ],
+    recommendedTunes: [
+      'Scotland the Brave',
+      'The Black Bear',
+      'Highland Cathedral',
+      'Auld Lang Syne',
+      'Flower of Scotland'
+    ],
+    faqs: [
+      {
+        question: 'Where can the Highland Bagpipe Experience take place?',
+        answer: 'Spud travels anywhere across Scotland directly to your rented holiday lodge, cottage, Airbnb, hotel, private garden, castle grounds, or corporate retreat.'
+      },
+      {
+        question: 'Do we need any musical experience or prior knowledge?',
+        answer: 'None whatsoever! Spud breaks down the techniques with warmth, patience, and humor so that complete beginners of all ages have a brilliant time.'
+      },
+      {
+        question: 'Are instruments and chanters provided?',
+        answer: 'Yes! Spud brings sanitized practice chanters for your group to use during the session along with his Great Highland Bagpipe.'
+      }
+    ],
+    seoTitle: 'Highland Bagpipe Experience Scotland | Hands-On Workshop with Spud the Piper',
+    seoDescription: 'Book an interactive Highland Bagpipe Experience in Scotland. Learn the chanter, have a shot on the big pipes, enjoy private piping, and hear hilarious Scottish stories.',
+    seoKeywords: ['Bagpipe Experience Scotland', 'Hands on Bagpipe Lesson', 'Airbnb Bagpipe Workshop Edinburgh', 'Scottish Entertainment for Tour Groups', 'Spud the Piper Masterclass']
+  },
+  {
+    id: 'srv-weddings',
+    slug: 'scottish-castle-weddings',
+    icon: 'Heart',
+    title: 'Scottish Castle & Highland Weddings',
+    tagline: 'The complete romantic ceremony & reception musical experience',
+    priceEstimate: 'From £320 - £480',
+    basePrice: 480,
+    depositAmount: 100,
+    deposit: '£100 Deposit',
+    popularBadge: true,
+    badgeText: 'Most Requested',
+    heroImage: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&q=80',
+    description: 'Create spine-tingling wedding memories with the iconic sound of the Highland pipes. Spud welcomes your arriving guests, pipes the bridal party down the aisle, plays during photography, and triumphantly pipes the newlyweds into dinner.',
+    fullDescription: 'Nothing evokes the timeless romance of Scotland quite like the stirring resonance of the Highland bagpipe echoing through castle stone walls and scenic lochs. Spud the Piper brings decades of experience, impeccable musicality, and majestic ceremonial presence to your wedding day. Whether you are hosting an intimate elopement on the Isle of Skye or a grand 400-guest celebration at Edinburgh Castle, Spud orchestrates every musical moment with flawless timing.',
+    features: [
+      'Greeting arriving wedding guests with traditional welcoming tunes',
+      'Piping the Bride down the aisle with Highland Cathedral',
+      'Lively exit march for the newly married couple',
+      'Atmospheric piping during photo sessions & drinks reception',
+      'Official pipe-in of the Top Table into the wedding breakfast'
+    ],
+    itinerary: [
+      {
+        stepOrTime: '45 Mins Before Ceremony',
+        title: 'Guest Arrival & Atmospheric Welcome',
+        description: 'Spud stands in full No. 1 Highland dress at the main entrance, creating an unforgettable first impression and building anticipation with classic welcoming airs.'
+      },
+      {
+        stepOrTime: 'Ceremony Start',
+        title: 'Bridal Party & Aisle Processional',
+        description: 'A spine-tingling rendition of Highland Cathedral or your chosen processional melody as the bride and bridal party make their grand entrance.'
+      },
+      {
+        stepOrTime: 'Signing of the Register',
+        title: 'Quiet Background Harmony or Organ Duet',
+        description: 'Subtle, melodic piping during the official register signing and vows.'
+      },
+      {
+        stepOrTime: 'Ceremony Recessional',
+        title: 'Newlywed Triumphant Exit March',
+        description: 'Upbeat, celebratory marches (e.g. Mairi\'s Wedding, Scotland the Brave) as the happy couple walk back down the aisle showered in confetti.'
+      },
+      {
+        stepOrTime: 'Drinks & Photography',
+        title: 'Courtyard & Drinks Reception Piping',
+        description: 'Lively jigs and reels to entertain guests during champagne and professional photographs.'
+      },
+      {
+        stepOrTime: 'Wedding Breakfast',
+        title: 'Top Table Grand Entrance Pipe-In',
+        description: 'Spud leads the newlyweds and bridal party into the dining hall to a standing ovation from all their guests.'
+      }
+    ],
+    galleryImages: [
+      'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80',
+      'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80',
+      'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&q=80'
+    ],
+    recommendedTunes: [
+      'Highland Cathedral',
+      'Mairi\'s Wedding',
+      'Scotland the Brave',
+      'Skye Boat Song',
+      'The Rowan Tree'
+    ],
+    faqs: [
+      {
+        question: 'Can Spud coordinate with our church organist or string quartet?',
+        answer: 'Yes! Spud frequently collaborates with organists and musicians, ensuring concert pitch coordination (A=440Hz / Bb) for harmonic duets.'
+      },
+      {
+        question: 'What if our wedding running times run slightly late?',
+        answer: 'Spud is completely flexible and experienced with wedding day logistics. He stays on-site until all scheduled piping duties are perfectly completed.'
+      }
+    ],
+    seoTitle: 'Scottish Wedding Bagpiper Hire | Spud the Piper Castle Weddings',
+    seoDescription: 'Hire Scotland\'s premier wedding bagpiper. Full No. 1 Highland dress, aisle processional, photo session piping, and reception grand entrance across Edinburgh, Glasgow & the Highlands.',
+    seoKeywords: ['Wedding Bagpiper Scotland', 'Castle Wedding Piper Edinburgh', 'Highland Cathedral Wedding Aisle', 'Hire a Piper for Wedding Scotland']
+  },
+  {
+    id: 'srv-funerals',
+    slug: 'funerals-memorials',
+    icon: 'Flame',
+    title: 'Funerals, Memorials & Graveside Laments',
+    tagline: 'A respectful, heartfelt tribute to honour your loved one',
+    priceEstimate: 'From £220',
+    basePrice: 220,
+    depositAmount: 50,
+    deposit: '£50 Deposit',
+    heroImage: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&q=80',
+    description: 'The mournful resonance of the Highland bagpipe provides a deeply moving and dignified farewell. Spud can lead the cortege, play before and after the service, and perform soulful laments at the graveside or crematorium.',
+    fullDescription: 'During times of grief, the ancient voice of the Highland bagpipe conveys what words often cannot. Spud the Piper brings the highest degree of compassion, respect, and dignified decorum to funeral and memorial services. From leading the hearse cortege to playing moving laments at the graveside, crematorium chapel, or scattering of ashes, Spud provides a fitting and unforgettable farewell.',
+    features: [
+      'Solemn greeting as family and mourners arrive at the chapel',
+      'Leading the hearse and cortege with respectful ceremony',
+      'Soulful rendition of "Flowers of the Forest" or "Going Home"',
+      'Graveside final salute with "Amazing Grace"',
+      'Discreet, dignified, and compassionate presence throughout'
+    ],
+    recommendedTunes: [
+      'Amazing Grace',
+      'Flowers of the Forest',
+      'Going Home',
+      'The Mist Covered Mountains',
+      'Sleep, Dearie, Sleep'
+    ],
+    seoTitle: 'Funeral Bagpiper Scotland | Respectful Graveside Laments by Spud the Piper',
+    seoDescription: 'Compassionate and dignified funeral bagpiper hire in Scotland. Solemn cortege leading, chapel entrance, and graveside laments including Amazing Grace and Flowers of the Forest.',
+    seoKeywords: ['Funeral Bagpiper Scotland', 'Graveside Lament Bagpipes', 'Hire Piper for Funeral Edinburgh Glasgow', 'Amazing Grace Bagpipes Funeral']
+  },
+  {
+    id: 'srv-burns',
+    slug: 'burns-suppers-hogmanay',
+    icon: 'Sparkles',
+    title: 'Burns Suppers & Hogmanay Celebrations',
+    tagline: 'Rousing Scottish energy, piping in the Haggis & Auld Lang Syne',
+    priceEstimate: 'From £450',
+    basePrice: 450,
+    depositAmount: 100,
+    deposit: '£100 Deposit',
+    heroImage: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200&q=80',
+    description: 'Celebrate the Bard in true Highland style! Spud provides the dramatic musical entrance for the Haggis, traditional reels for the dinner, and high-energy anthems to ring in the New Year.',
+    fullDescription: 'From January Burns Suppers to midnight Hogmanay celebrations, Scottish parties require unmatched musical energy. Spud the Piper delivers the quintessential Scottish celebration: piping in the chef and Haggis with full ceremonial pomp, performing entertaining musical interludes between toasts, and bringing the house down with a rousing midnight rendition of Auld Lang Syne.',
+    features: [
+      'Grand entrance piping in the Haggis with "A Man\'s a Man for A\' That"',
+      'Entertaining musical interludes between speeches and toasts',
+      'Rousing reels and jigs to get the party dancing',
+      'Midnight chimes & stirring rendition of "Auld Lang Syne"'
+    ],
+    recommendedTunes: [
+      'A Man\'s a Man for A\' That',
+      'Auld Lang Syne',
+      'The Green Hills of Tyrol',
+      'Cock o\' the North',
+      'The Atholl Highlanders'
+    ],
+    seoTitle: 'Burns Supper & Hogmanay Bagpiper Hire Scotland | Spud the Piper',
+    seoDescription: 'Hire an energetic Scottish bagpiper for Burns Night Suppers, Piping in the Haggis, and Hogmanay New Year celebrations across Scotland and the UK.',
+    seoKeywords: ['Burns Night Bagpiper', 'Pipe in the Haggis Piper', 'Hogmanay Bagpiper Hire Scotland', 'Scottish New Year Piper']
+  },
+  {
+    id: 'srv-corporate',
+    slug: 'corporate-galas-castle-events',
+    icon: 'Castle',
+    title: 'Corporate Banquets & Castle VIP Galas',
+    tagline: 'State-level Highland grandeur for international guests & brands',
+    priceEstimate: 'From £550',
+    basePrice: 550,
+    depositAmount: 150,
+    deposit: '£150 Deposit',
+    heroImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
+    description: 'Impress international delegates, royalty, and VIP clients with authentic Scottish majesty. Spud adds unmistakable grandeur to award galas, product launches, castle dinners, and corporate summits.',
+    fullDescription: 'When hosting international VIP delegates, global executives, or state banquets, make a bold Scottish statement. Spud the Piper provides regal musical fanfare, red-carpet welcomes in Full Number 1 Highland Dress, solo concert salutes atop historic battlements, and pipe-ins for dignitaries.',
+    features: [
+      'VIP red carpet greeting with Full Number 1 Highland Dress',
+      'Banquet pipe-in and solo concert performance',
+      'Highland salute atop castle ramparts or main stage',
+      'Photo opportunities with delegates and guests'
+    ],
+    recommendedTunes: [
+      'Scotland the Brave',
+      'Highland Laddie',
+      'The Black Bear',
+      'Flower of Scotland',
+      'Loch Lomond'
+    ],
+    seoTitle: 'Corporate Event Bagpiper Scotland | Castle Banquets & VIP Galas',
+    seoDescription: 'High-impact Scottish entertainment for corporate dinners, award galas, brand launches, and castle VIP receptions with master piper Spud the Piper.',
+    seoKeywords: ['Corporate Bagpiper Scotland', 'Castle Banquet Piper', 'VIP Event Bagpiper Edinburgh', 'International Conference Scottish Entertainment']
+  },
+  {
+    id: 'srv-tuition',
+    slug: 'private-bagpipe-tuition',
+    icon: 'GraduationCap',
+    title: 'Private Bagpipe Tuition & Masterclasses',
+    tagline: 'Learn the ancient art of the Great Highland Bagpipe',
+    priceEstimate: '£60 / Hour',
+    basePrice: 60,
+    depositAmount: 20,
+    deposit: '£20 Deposit',
+    heroImage: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&q=80',
+    description: 'Learn chanter technique, embellishments (doublings, birls, strikes), drone maintenance, and tune repertoire from an award-winning master piper. Available in-person or via high-definition video call.',
+    fullDescription: 'Whether you are picking up the practice chanter for the very first time or refining competition-grade piobaireachd, Spud provides structured, inspiring one-on-one coaching. Learn authentic embellishments, blowing and posture technique, instrument care, and sheet music reading at your own pace.',
+    features: [
+      'Beginner practice chanter fundamentals to advanced piobaireachd',
+      'Blowing technique and bagpipe air pressure control',
+      'Reed calibration and instrument care',
+      'Custom sheet music and audio practice stems provided'
+    ],
+    recommendedTunes: [
+      'Scots Wha Hae',
+      'Brown Haired Maiden',
+      'Highland Cathedral',
+      'Caber Feidh'
+    ],
+    seoTitle: 'Bagpipe Lessons Scotland & Online | 1-on-1 Tuition with Spud the Piper',
+    seoDescription: 'Learn to play the Scottish bagpipes with master tuition from Spud the Piper. Practice chanter fundamentals, drone maintenance, and tune mastery in-person or via Zoom.',
+    seoKeywords: ['Bagpipe Lessons Scotland', 'Learn Bagpipes Online', 'Practice Chanter Tuition', 'Bagpipe Teacher Edinburgh']
+  },
+  {
+    id: 'srv-private',
+    slug: 'anniversaries-birthdays-surprise-gigs',
+    icon: 'Users',
+    title: 'Anniversaries, Birthdays & Surprise Gigs',
+    tagline: 'Highland surprise performances for milestones and celebrations',
+    priceEstimate: 'From £350',
+    basePrice: 350,
+    depositAmount: 80,
+    deposit: '£80 Deposit',
+    heroImage: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&q=80',
+    description: 'Surprise your family or friends with a dramatic entrance from Spud the Piper! Perfect for milestone birthdays (40th, 50th, 60th), golden anniversaries, graduations, and private garden ceilidhs.',
+    fullDescription: 'Make your loved one\'s special day unforgettable! Spud arrives unannounced, striking up hearty Scottish anthems that will stun and delight the guest of honor. Ideal for milestone birthdays, wedding anniversaries, family reunions, and retirement parties.',
+    features: [
+      'Unannounced surprise dramatic bagpipe entrance',
+      'Happy Birthday in Highland bagpipe harmony',
+      'Special tune requests and personal dedication',
+      'Photos with the guest of honor in full Scottish kilt regalia'
+    ],
+    recommendedTunes: [
+      'Happy Birthday Highland Style',
+      'Scotland the Brave',
+      'Mari\'s Wedding',
+      'Auld Lang Syne'
+    ],
+    seoTitle: 'Surprise Bagpiper for Birthdays & Anniversaries | Spud the Piper',
+    seoDescription: 'Hire Spud the Piper for surprise milestone birthdays, wedding anniversaries, graduations, and private parties across Scotland.',
+    seoKeywords: ['Surprise Bagpiper Hire', 'Birthday Bagpiper Scotland', 'Anniversary Piper Edinburgh Glasgow', 'Surprise Scottish Piper']
+  }
+];
+

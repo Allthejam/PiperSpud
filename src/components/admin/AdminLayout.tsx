@@ -48,6 +48,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
 
   const navItems = [
     { id: 'dashboard', label: 'Executive Dashboard', icon: LayoutDashboard },
+    { id: 'services', label: 'Services & Packages Studio', icon: Sparkles },
     { id: 'diary', label: 'Interactive Diary', icon: Calendar },
     { id: 'bookings', label: 'Booking Approvals & Deposits', icon: BookOpenCheck, badgeCount: 0 },
     { id: 'crm', label: 'Client CRM', icon: Users },

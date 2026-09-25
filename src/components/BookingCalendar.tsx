@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { 
   Calendar as CalendarIcon, 
@@ -41,6 +41,32 @@ export const BookingCalendar: React.FC = () => {
   const [tartanChoice, setTartanChoice] = useState<HighlandDressOption>('Full No. 1 Dress (Feather Bonnet & Plaid)');
   const [selectedTunes, setSelectedTunes] = useState<string[]>(['Highland Cathedral', 'Scotland the Brave']);
   const [notes, setNotes] = useState('');
+
+  // Auto-detect service from client URL params
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const serviceParam = urlParams.get('service');
+      if (serviceParam) {
+        const lower = serviceParam.toLowerCase();
+        if (lower.includes('experience') || lower.includes('workshop')) {
+          setEventType('Highland Bagpipe Experience (Hands-On Workshop / Airbnb)');
+        } else if (lower.includes('wedding')) {
+          setEventType('Wedding Ceremony & Reception');
+        } else if (lower.includes('funeral') || lower.includes('memorial')) {
+          setEventType('Funeral / Memorial Service');
+        } else if (lower.includes('burns') || lower.includes('hogmanay')) {
+          setEventType('Burns Supper / Hogmanay');
+        } else if (lower.includes('corporate') || lower.includes('castle') || lower.includes('gala')) {
+          setEventType('Corporate / Castle Event');
+        } else if (lower.includes('tuition') || lower.includes('lesson')) {
+          setEventType('Bagpipe Tuition / Lesson');
+        } else if (lower.includes('party') || lower.includes('birthday') || lower.includes('anniversary')) {
+          setEventType('Birthday / Private Party');
+        }
+      }
+    }
+  }, []);
 
   // UI state
   const [isSubmitting, setIsSubmitting] = useState(false);

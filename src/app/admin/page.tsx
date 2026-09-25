@@ -11,6 +11,7 @@ import { AdminMessageCenter } from '@/components/admin/AdminMessageCenter';
 import { AdminReviews } from '@/components/admin/AdminReviews';
 import { AdminForumControl } from '@/components/admin/AdminForumControl';
 import { AdminSocialLinks } from '@/components/admin/AdminSocialLinks';
+import { AdminServices } from '@/components/admin/AdminServices';
 import { AdminSeoStudio } from '@/components/admin/AdminSeoStudio';
 import { AdminNotifications } from '@/components/admin/AdminNotifications';
 import { AdminLoginModal } from '@/components/AdminLoginModal';
@@ -62,6 +63,7 @@ export default function AdminPage() {
   return (
     <AdminLayout activeTab={activeTab} setActiveTab={setActiveTab}>
       {activeTab === 'dashboard' && <AdminDashboard onNavigateTab={setActiveTab} />}
+      {activeTab === 'services' && <AdminServices />}
       {activeTab === 'diary' && <AdminDiary />}
       {activeTab === 'bookings' && <AdminBookings />}
       {activeTab === 'crm' && <AdminCRM />}

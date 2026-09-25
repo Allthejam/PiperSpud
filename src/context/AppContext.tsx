@@ -12,7 +12,8 @@ import {
   SeoPageConfig,
   BookingStatus,
   ForumCategoryItem,
-  SocialMediaLinks
+  SocialMediaLinks,
+  ServicePackage
 } from '@/types/spud';
 import { 
   initialBookings, 
@@ -25,7 +26,8 @@ import {
   initialSeoConfig, 
   initialSeoPages, 
   initialForumCategories, 
-  initialSocialLinks 
+  initialSocialLinks,
+  initialServices
 } from '@/lib/initialData';
 import { bagpipeSynth } from '@/lib/bagpipeSynth';
 import { db } from '@/lib/firebase';
@@ -37,6 +39,13 @@ interface AppContextType {
   isAdminLoggedIn: boolean;
   loginAdmin: (pass: string) => boolean;
   logoutAdmin: () => void;
+
+  // Services Management
+  services: ServicePackage[];
+  createService: (service: Omit<ServicePackage, 'id'>) => Promise<void>;
+  updateService: (id: string, updates: Partial<ServicePackage>) => Promise<void>;
+  deleteService: (id: string) => Promise<void>;
+  getServiceBySlug: (slug: string) => ServicePackage | undefined;
 
   // Visual In-Page CMS Mode
   isVisualEditMode: boolean;
@@ -171,6 +180,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [editingBlock, setEditingBlock] = useState<EditableCmsBlock | null>(null);
 
   // Core entities
+  const [services, setServices] = useState<ServicePackage[]>(initialServices);
   const [bookings, setBookings] = useState<BookingEvent[]>(initialBookings);
   const [reviews, setReviews] = useState<Review[]>(initialReviews);
   const [socialPosts, setSocialPosts] = useState<SocialPost[]>(initialSocialPosts);
@@ -208,6 +218,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const savedAdmin = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}admin`);
       if (savedAdmin === 'true') setIsAdminLoggedIn(true);
+
+      const savedServices = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}services`);
+      if (savedServices) {
+        try {
+          const parsed: ServicePackage[] = JSON.parse(savedServices);
+          if (parsed && parsed.length > 0) {
+            setServices(parsed);
+          } else {
+            setServices(initialServices);
+          }
+        } catch (e) {
+          setServices(initialServices);
+        }
+      } else {
+        setServices(initialServices);
+      }
 
       const savedBookings = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}bookings`);
       if (savedBookings) setBookings(JSON.parse(savedBookings));
@@ -286,6 +312,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     let unsubBookings = () => {};
     let unsubReviews = () => {};
+    let unsubServices = () => {};
     let unsubSocial = () => {};
     let unsubForum = () => {};
     let unsubSocialLinks = () => {};
@@ -294,6 +321,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubTunes = () => {};
 
     try {
+      unsubServices = onSnapshot(collection(db, 'services'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteServices: ServicePackage[] = [];
+          snapshot.forEach((d) => remoteServices.push(d.data() as ServicePackage));
+          if (remoteServices.length > 0) {
+            setServices(remoteServices);
+          }
+        }
+      }, (err) => console.log('Firestore services listener:', err.message));
+
       unsubBookings = onSnapshot(collection(db, 'bookings'), (snapshot) => {
         if (!snapshot.empty) {
           const remoteBookings: BookingEvent[] = [];
@@ -394,6 +431,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => {
       unsubBookings();
       unsubReviews();
+      unsubServices();
       unsubSocial();
       unsubForum();
       unsubSocialLinks();
@@ -583,6 +621,83 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const getCmsContent = (id: string, defaultVal: string): string => {
     const block = cmsBlocks.find(b => b.id === id);
     return block ? block.content : defaultVal;
+  };
+
+  // Service Management Handlers
+  const createService = async (serviceData: Omit<ServicePackage, 'id'>) => {
+    const newService: ServicePackage = {
+      ...serviceData,
+      id: `srv-${Date.now()}`,
+      isCustom: true,
+      createdAt: new Date().toISOString()
+    };
+    const updated = [newService, ...services];
+    setServices(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}services`, JSON.stringify(updated));
+    }
+    if (db) {
+      try {
+        await setDoc(doc(db, 'services', newService.id), newService);
+      } catch (e) {
+        console.warn('Firestore createService warning:', e);
+      }
+    }
+    addNotification({
+      type: 'system',
+      title: 'New Service Created',
+      message: `Package "${newService.title}" has been published.`,
+      actionUrl: `/services/${newService.slug}`
+    });
+  };
+
+  const updateService = async (id: string, updates: Partial<ServicePackage>) => {
+    const updated = services.map(s => s.id === id ? { ...s, ...updates } : s);
+    setServices(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}services`, JSON.stringify(updated));
+    }
+    if (db) {
+      try {
+        const target = updated.find(s => s.id === id);
+        if (target) {
+          await setDoc(doc(db, 'services', id), target, { merge: true });
+        }
+      } catch (e) {
+        console.warn('Firestore updateService warning:', e);
+      }
+    }
+    addNotification({
+      type: 'system',
+      title: 'Service Updated',
+      message: `Package details updated successfully.`,
+      actionUrl: '/admin'
+    });
+  };
+
+  const deleteService = async (id: string) => {
+    const updated = services.filter(s => s.id !== id);
+    setServices(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}services`, JSON.stringify(updated));
+    }
+    if (db) {
+      try {
+        await deleteDoc(doc(db, 'services', id));
+      } catch (e) {
+        console.warn('Firestore deleteService warning:', e);
+      }
+    }
+    addNotification({
+      type: 'system',
+      title: 'Service Removed',
+      message: `Service package has been deleted.`,
+      actionUrl: '/admin'
+    });
+  };
+
+  const getServiceBySlug = (slug: string): ServicePackage | undefined => {
+    return services.find(s => s.slug === slug || s.id === slug);
   };
 
   // Notification helper
@@ -1289,11 +1404,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         totalSynced++;
       }
 
+      // 9. Sync Services & Packages
+      const servicesToSync = services && services.length > 0 ? services : initialServices;
+      for (const srv of servicesToSync) {
+        await setDoc(doc(db, 'services', srv.id), JSON.parse(JSON.stringify(srv)), { merge: true });
+        totalSynced++;
+      }
+
       console.log(`[Firestore SUCCESS] Full Cloud Sync Complete: ${totalSynced} documents verified in Firestore!`);
       addNotification({
         type: 'system',
         title: 'Firebase Firestore Fully Synced',
-        message: `Successfully synchronized ${totalSynced} items across all collections (seo_pages, bagpipe_tunes, cms_blocks, bookings, reviews, etc.) to Firebase!`,
+        message: `Successfully synchronized ${totalSynced} items across all collections (services, seo_pages, bagpipe_tunes, cms_blocks, bookings, reviews, etc.) to Firebase!`,
         actionUrl: '/admin'
       });
       setIsSyncingFirestore(false);
@@ -1341,6 +1463,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isAdminLoggedIn,
       loginAdmin,
       logoutAdmin,
+      services,
+      createService,
+      updateService,
+      deleteService,
+      getServiceBySlug,
       isVisualEditMode,
       toggleVisualEditMode,
       cmsBlocks,

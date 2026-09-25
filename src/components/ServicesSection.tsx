@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
+import { useApp } from '@/context/AppContext';
 import { EditableElement } from './EditableElement';
 import { 
   Heart, 
@@ -12,136 +14,32 @@ import {
   ArrowRight, 
   Check, 
   Music,
-  Clock
+  Clock,
+  ExternalLink,
+  PlusCircle,
+  Settings,
+  Star,
+  Eye,
+  Calendar
 } from 'lucide-react';
+import { ServicePackage } from '@/types/spud';
 
-interface ServicePackage {
-  id: string;
-  icon: any;
-  title: string;
-  tagline: string;
-  priceEstimate: string;
-  deposit: string;
-  description: string;
-  features: string[];
-  popularBadge?: boolean;
-}
+const getServiceIcon = (iconName?: string) => {
+  switch (iconName) {
+    case 'Heart': return Heart;
+    case 'Flame': return Flame;
+    case 'Castle': return Castle;
+    case 'GraduationCap': return GraduationCap;
+    case 'Users': return Users;
+    case 'Music': return Music;
+    case 'Star': return Star;
+    case 'Sparkles':
+    default: return Sparkles;
+  }
+};
 
 export const ServicesSection: React.FC = () => {
-  const services: ServicePackage[] = [
-    {
-      id: 'srv-weddings',
-      icon: Heart,
-      title: 'Scottish Castle & Highland Weddings',
-      tagline: 'The complete romantic ceremony & reception musical experience',
-      priceEstimate: 'From £320 - £480',
-      deposit: '£100 Deposit',
-      popularBadge: true,
-      description: 'Create spine-tingling wedding memories with the iconic sound of the Highland pipes. Spud welcomes your arriving guests, pipes the bridal party down the aisle, plays during photography, and triumphantly pipes the newlyweds into dinner.',
-      features: [
-        'Greeting arriving wedding guests with traditional welcoming tunes',
-        'Piping the Bride down the aisle with Highland Cathedral',
-        'Lively exit march for the newly married couple',
-        'Atmospheric piping during photo sessions & drinks reception',
-        'Official pipe-in of the Top Table into the wedding breakfast'
-      ]
-    },
-    {
-      id: 'srv-experience',
-      icon: Sparkles,
-      title: 'The Ultimate Highland Bagpipe Experience',
-      tagline: 'Hands-on workshop, storytelling & piping masterclass with the cutest piper this side of the Great Wall of China',
-      priceEstimate: 'From £250 - £350 (Group Rate)',
-      deposit: '£60 Deposit',
-      popularBadge: true,
-      description: 'The ultimate interactive Scottish entertainment experience for tourists, tour groups, Airbnb / holiday home rentals, stag & hen parties, and corporate retreats! Spud visits your accommodation or venue to reveal the secrets of the Great Highland Bagpipe, hands out practice chanters so everyone learns the Scottish scale, lets everyone have a shot on the big pipes, performs a private concert, and poses for unforgettable group photos in full ceremonial kilt regalia.',
-      features: [
-        'Interactive demo: how the bag, blowpipe, drones & reed mechanics work',
-        'Hands-on practice chanter workshop (learn your first Scottish scale)',
-        '"Have a Shot on the Big Pipes" (everyone gets to hold and blow the Highland pipes)',
-        'Private close-up mini concert & personal Scottish tune requests',
-        'Souvenir group photo shoot with Spud in Full Highland No. 1 Dress',
-        'Hilarious storytelling & legendary tales from Spud\'s global travels',
-        'Spud travels directly to your rented holiday home, lodge, Airbnb, or venue'
-      ]
-    },
-    {
-      id: 'srv-funerals',
-      icon: Flame,
-      title: 'Funerals, Memorials & Graveside Laments',
-      tagline: 'A respectful, heartfelt tribute to honour your loved one',
-      priceEstimate: 'From £220',
-      deposit: '£50 Deposit',
-      description: 'The mournful resonance of the Highland bagpipe provides a deeply moving and dignified farewell. Spud can lead the cortege, play before and after the service, and perform soulful laments at the graveside or crematorium.',
-      features: [
-        'Solemn greeting as family and mourners arrive at the chapel',
-        'Leading the hearse and cortege with respectful ceremony',
-        'Soulful rendition of "Flowers of the Forest" or "Going Home"',
-        'Graveside final salute with "Amazing Grace"',
-        'Discreet, dignified, and compassionate presence throughout'
-      ]
-    },
-    {
-      id: 'srv-burns',
-      icon: Sparkles,
-      title: 'Burns Suppers & Hogmanay Celebrations',
-      tagline: 'Rousing Scottish energy, piping in the Haggis & Auld Lang Syne',
-      priceEstimate: 'From £450',
-      deposit: '£100 Deposit',
-      description: 'Celebrate the Bard in true Highland style! Spud provides the dramatic musical entrance for the Haggis, traditional reels for the dinner, and high-energy anthems to ring in the New Year.',
-      features: [
-        'Grand entrance piping in the Haggis with "A Man\'s a Man for A\' That"',
-        'Entertaining musical interludes between speeches and toasts',
-        'Rousing reels and jigs to get the party dancing',
-        'Midnight chimes & stirring rendition of "Auld Lang Syne"'
-      ]
-    },
-    {
-      id: 'srv-corporate',
-      icon: Castle,
-      title: 'Corporate Banquets & Castle VIP Galas',
-      tagline: 'State-level Highland grandeur for international guests & brands',
-      priceEstimate: 'From £550',
-      deposit: '£150 Deposit',
-      description: 'Impress international delegates, royalty, and VIP clients with authentic Scottish majesty. Spud adds unmistakable grandeur to award galas, product launches, castle dinners, and corporate summits.',
-      features: [
-        'VIP red carpet greeting with Full Number 1 Highland Dress',
-        'Banquet pipe-in and solo concert performance',
-        'Highland salute atop castle ramparts or main stage',
-        'Photo opportunities with delegates and guests'
-      ]
-    },
-    {
-      id: 'srv-tuition',
-      icon: GraduationCap,
-      title: 'Private Bagpipe Tuition & Masterclasses',
-      tagline: 'Learn the ancient art of the Great Highland Bagpipe',
-      priceEstimate: '£60 / Hour',
-      deposit: '£20 Deposit',
-      description: 'Learn chanter technique, embellishments (doublings, birls, strikes), drone maintenance, and tune repertoire from an award-winning master piper. Available in-person or via high-definition video call.',
-      features: [
-        'Beginner practice chanter fundamentals to advanced piobaireachd',
-        'Blowing technique and bagpipe air pressure control',
-        'Reed calibration and instrument care',
-        'Custom sheet music and audio practice stems provided'
-      ]
-    },
-    {
-      id: 'srv-private',
-      icon: Users,
-      title: 'Anniversaries, Birthdays & Surprise Gigs',
-      tagline: 'Highland surprise performances for milestones and celebrations',
-      priceEstimate: 'From £350',
-      deposit: '£80 Deposit',
-      description: 'Surprise your family or friends with a dramatic entrance from Spud the Piper! Perfect for milestone birthdays (40th, 50th, 60th), golden anniversaries, graduations, and private garden ceilidhs.',
-      features: [
-        'Unannounced surprise dramatic bagpipe entrance',
-        'Happy Birthday in Highland bagpipe harmony',
-        'Special tune requests and personal dedication',
-        'Photos with the guest of honor in full Scottish kilt regalia'
-      ]
-    }
-  ];
+  const { services, isAdminLoggedIn } = useApp();
 
   return (
     <section id="services" className="py-20 bg-tartan-dark relative border-b border-tartan-border">
@@ -159,6 +57,7 @@ export const ServicesSection: React.FC = () => {
               section="services"
             />
           </div>
+          
           <EditableElement
             id="services-header-title"
             tag="h2"
@@ -167,20 +66,35 @@ export const ServicesSection: React.FC = () => {
             label="Services Header Title"
             section="services"
           />
+          
           <EditableElement
             id="services-header-desc"
             tag="p"
-            defaultContent="From intimate mountain elopements to 500-guest castle galas, discover the perfect musical package for your event. Transparent pricing, instant booking, and guaranteed excellence."
+            defaultContent="From romantic castle weddings and interactive tourist experiences to memorial laments and corporate galas, discover the perfect musical package for your event. Transparent pricing, instant booking, and guaranteed excellence."
             className="text-base text-gray-300"
             label="Services Header Description"
             section="services"
           />
+
+          {isAdminLoggedIn && (
+            <div className="pt-2 flex items-center justify-center gap-3">
+              <Link
+                href="/admin"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-tartan-navy hover:bg-slate-800 text-tartan-gold border border-tartan-gold/50 text-xs font-bold shadow transition-all"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>+ Add / Manage Services in Back Office CRM</span>
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Services Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
           {services.map((service) => {
-            const Icon = service.icon;
+            const Icon = getServiceIcon(service.icon);
+            const detailUrl = `/services/${service.slug || service.id}`;
+            const bookingUrl = `/booking?service=${encodeURIComponent(service.title)}`;
 
             return (
               <div
@@ -191,13 +105,13 @@ export const ServicesSection: React.FC = () => {
                     : 'border-tartan-border/70 hover:border-tartan-accent/50'
                 }`}
               >
-                {/* Popular Pill */}
+                {/* Popular / New Pill */}
                 {service.popularBadge && (
                   <div className="absolute top-0 right-0 bg-gold-gradient text-tartan-dark text-[10px] font-extrabold px-3 py-1 rounded-bl-xl uppercase tracking-wider shadow-md">
                     <EditableElement
                       id={`${service.id}-popular-badge`}
                       tag="span"
-                      defaultContent="Most Requested"
+                      defaultContent={service.badgeText || "Most Requested"}
                       label={`${service.title} Badge`}
                       section="services"
                     />
@@ -210,14 +124,16 @@ export const ServicesSection: React.FC = () => {
                   </div>
 
                   <div className="space-y-1">
-                    <EditableElement
-                      id={`${service.id}-title`}
-                      tag="h3"
-                      defaultContent={service.title}
-                      className="text-xl font-bold text-white font-serif group-hover:text-tartan-gold transition-colors"
-                      label={`${service.title} Title`}
-                      section="services"
-                    />
+                    <Link href={detailUrl} className="group-hover:text-tartan-gold transition-colors">
+                      <EditableElement
+                        id={`${service.id}-title`}
+                        tag="h3"
+                        defaultContent={service.title}
+                        className="text-xl font-bold text-white font-serif group-hover:text-tartan-gold transition-colors"
+                        label={`${service.title} Title`}
+                        section="services"
+                      />
+                    </Link>
                     <EditableElement
                       id={`${service.id}-tagline`}
                       tag="p"
@@ -269,7 +185,7 @@ export const ServicesSection: React.FC = () => {
                       label={`${service.title} Inclusions Header`}
                       section="services"
                     />
-                    {service.features.map((feat, idx) => (
+                    {service.features.slice(0, 5).map((feat, idx) => (
                       <div key={idx} className="flex items-start gap-2 text-xs text-gray-300">
                         <Check className="w-3.5 h-3.5 text-tartan-gold shrink-0 mt-0.5" />
                         <EditableElement
@@ -284,17 +200,24 @@ export const ServicesSection: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Card Bottom CTA */}
-                <div className="mt-8 pt-4 border-t border-tartan-border/60">
-                  <EditableElement
-                    id={`${service.id}-btn`}
-                    tag="a"
-                    defaultContent="Check Availability & Book"
-                    defaultLinkUrl="#booking"
-                    className="w-full py-3 rounded-xl bg-tartan-navy hover:bg-gold-gradient hover:text-tartan-dark text-white font-bold text-xs flex items-center justify-center gap-2 border border-tartan-border transition-all shadow-md text-center"
-                    label={`${service.title} Button`}
-                    section="services"
-                  />
+                {/* Card Bottom CTAs: See Full Details + Book Now */}
+                <div className="mt-8 pt-4 border-t border-tartan-border/60 space-y-2.5">
+                  <Link
+                    href={detailUrl}
+                    className="w-full py-2.5 px-3 rounded-xl bg-tartan-navy hover:bg-slate-800 text-tartan-gold font-bold text-xs flex items-center justify-center gap-1.5 border border-tartan-border/80 hover:border-tartan-gold/60 transition-all shadow-sm group/btn"
+                  >
+                    <Eye className="w-3.5 h-3.5 text-tartan-gold group-hover/btn:scale-110 transition-transform" />
+                    <span>Explore Full Package & Gallery</span>
+                    <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-1 transition-transform" />
+                  </Link>
+
+                  <Link
+                    href={bookingUrl}
+                    className="w-full py-3 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs flex items-center justify-center gap-2 shadow-md hover:brightness-110 transition-all text-center"
+                  >
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>Check Availability & Book</span>
+                  </Link>
                 </div>
 
               </div>

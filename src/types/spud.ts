@@ -171,3 +171,37 @@ export interface SocialMediaLinks {
   tiktok: string;
   trustpilot: string;
 }
+
+export interface ServiceItineraryStep {
+  stepOrTime: string;
+  title: string;
+  description: string;
+}
+
+export interface ServicePackage {
+  id: string;
+  slug: string;
+  icon: string; // e.g. 'Heart', 'Sparkles', 'Flame', 'Castle', 'GraduationCap', 'Users'
+  title: string;
+  tagline: string;
+  priceEstimate: string;
+  basePrice: number;
+  depositAmount: number;
+  deposit: string;
+  popularBadge?: boolean;
+  badgeText?: string;
+  heroImage?: string;
+  description: string;
+  fullDescription: string;
+  features: string[];
+  itinerary?: ServiceItineraryStep[];
+  galleryImages?: string[];
+  recommendedTunes?: string[];
+  faqs?: { question: string; answer: string }[];
+  seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords?: string[];
+  isCustom?: boolean;
+  createdAt?: string;
+}
+
