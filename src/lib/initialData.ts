@@ -10,7 +10,9 @@ import {
   ForumCategoryItem,
   SocialMediaLinks,
   ServicePackage,
-  TravelExpensesConfig
+  TravelExpensesConfig,
+  MailingContact,
+  EmailCampaign
 } from '@/types/spud';
 
 export const initialBookings: BookingEvent[] = [
@@ -1194,5 +1196,138 @@ export const initialTravelConfig: TravelExpensesConfig = {
   overseasEnquiryOnly: true,
   customTravelNotes: 'Standard 50-mile free travel radius radiating from Aviemore includes Inverness, Speyside, Loch Ness, Cairngorms National Park, Pitlochry, and surrounding Highland glens. Fair mileage reimbursement applied for extended travel across Scotland. Bespoke long-distance & overseas expeditions welcome.'
 };
+
+export const initialMailingContacts: MailingContact[] = [
+  {
+    id: 'mc-1',
+    name: 'Fiona MacLeod',
+    email: 'fiona.macleod@scotmail.co.uk',
+    phone: '07798 123456',
+    source: 'booking',
+    status: 'subscribed',
+    tags: ['Wedding 2026', 'Edinburgh', 'Highland Cathedral'],
+    eventType: 'Wedding Ceremony & Reception',
+    eventDate: '2026-10-24',
+    venueName: 'Dundas Castle, South Queensferry',
+    location: 'Edinburgh & Lothians',
+    addedAt: '2026-08-15T10:30:00Z',
+    brevoSynced: true,
+    notes: 'Bride for Dundas Castle wedding ceremony. Requested Full No. 1 Dress.'
+  },
+  {
+    id: 'mc-2',
+    name: 'Lord Alistair Campbell',
+    email: 'alistair@inveraray-heritage.scot',
+    phone: '01499 302203',
+    source: 'booking',
+    status: 'subscribed',
+    tags: ['Corporate Gala', 'Castle Event', 'VIP Client'],
+    eventType: 'Corporate / Castle Event',
+    eventDate: '2026-11-14',
+    venueName: 'Inveraray Castle Great Hall',
+    location: 'Argyll & Bute',
+    addedAt: '2026-07-20T14:15:00Z',
+    brevoSynced: true,
+    notes: 'Annual St Andrew’s Heritage Gala. Black Watch tartan requested.'
+  },
+  {
+    id: 'mc-3',
+    name: 'Dr. Eilidh Sutherland',
+    email: 'eilidh.sutherland@nhs.scot',
+    phone: '07712 987654',
+    source: 'booking',
+    status: 'subscribed',
+    tags: ['Burns Supper', 'Highlands', 'Speyside'],
+    eventType: 'Burns Supper / Hogmanay',
+    eventDate: '2027-01-25',
+    venueName: 'Macdonald Aviemore Highland Resort',
+    location: 'Aviemore, Highlands',
+    addedAt: '2026-09-01T09:00:00Z',
+    brevoSynced: true,
+    notes: 'Burns Supper address & piping the haggis with Royal Stewart tartan.'
+  },
+  {
+    id: 'mc-4',
+    name: 'Hamish Stuart',
+    email: 'hamish.stuart@cairngorm-whisky.com',
+    phone: '07890 554433',
+    source: 'booking',
+    status: 'subscribed',
+    tags: ['Highland Experience', 'Whisky Tasting', 'Tourist Group'],
+    eventType: 'Highland Bagpipe Experience (Hands-On Workshop / Airbnb)',
+    eventDate: '2026-10-05',
+    venueName: 'Cairngorm Glen Bothy & Speyside Distillery',
+    location: 'Cairngorms',
+    addedAt: '2026-09-10T16:45:00Z',
+    brevoSynced: true,
+    notes: 'VIP international whisky tour group bagpipe experience.'
+  },
+  {
+    id: 'mc-5',
+    name: 'Heather Montgomery',
+    email: 'heather.montgomery@gmail.com',
+    phone: '07911 223344',
+    source: 'newsletter',
+    status: 'subscribed',
+    tags: ['VIP Highland Club', 'Tune Enthusiast'],
+    location: 'Glasgow',
+    addedAt: '2026-09-18T11:20:00Z',
+    brevoSynced: true,
+    notes: 'Subscribed via website newsletter for Scottish tunes & gig announcements.'
+  },
+  {
+    id: 'mc-6',
+    name: 'Robert MacIntyre',
+    email: 'robert@macintyre-clan.org',
+    phone: '07555 667788',
+    source: 'newsletter',
+    status: 'subscribed',
+    tags: ['VIP Highland Club', 'Clan Society'],
+    location: 'Inverness',
+    addedAt: '2026-09-22T13:10:00Z',
+    brevoSynced: true,
+    notes: 'Clan MacIntyre heritage society coordinator.'
+  }
+];
+
+export const initialCampaigns: EmailCampaign[] = [
+  {
+    id: 'camp-christmas-2026',
+    title: '🎄 Merry Christmas & Hogmanay Scottish Blessings',
+    subject: '🏴󠁧󠁢󠁳󠁣󠁴󠁿 Festive Greetings & Happy Hogmanay from Spud the Piper!',
+    heading: 'Merry Christmas & A Guid New Year from the Highlands!',
+    bodyContent: 'As another fantastic year of Highland gatherings, castle weddings, and ceilidhs comes to a close, I wanted to take a moment to personally thank you for your wonderful support throughout 2026.\n\nWhether we celebrated your special wedding day, toasted the haggis, or shared a hearty dram over the bagpipes, it has been an absolute honor performing for you.\n\nWishing you and your loved ones a joyful Festive Season and a Guid New Year when it comes! Auld Lang Syne from the Cairngorms!',
+    ctaText: 'View 2027 Diary & Reserve Early Dates',
+    ctaUrl: 'https://spudthepiper.com/booking',
+    segment: 'all',
+    status: 'draft',
+    templateType: 'christmas'
+  },
+  {
+    id: 'camp-burns-2027',
+    title: '🏴󠁧󠁢󠁳󠁣󠁴󠁿 Burns Night & January Haggis Season',
+    subject: 'Addressing the Haggis: Burns Night Dates & Ceilidh Piping with Spud',
+    heading: 'Fair fa\' your honest, sonsie face — Burns Season is Here!',
+    bodyContent: 'January is fast approaching, bringing the great Scottish tradition of Rabbie Burns Suppers across the country.\n\nSpud is currently finalizing January performance schedules for haggis piping, formal toasts, and evening ceilidh bagpipe sets across the Highlands and Central Belt.\n\nIf you are organizing a Burns Supper for your company, hotel, or private gathering, secure your date now while slots remain open.',
+    ctaText: 'Book Spud for Burns Night',
+    ctaUrl: 'https://spudthepiper.com/booking?service=burns',
+    segment: 'corporate',
+    status: 'draft',
+    templateType: 'burns_night'
+  },
+  {
+    id: 'camp-anniversary-wishes',
+    title: '💍 Wedding Anniversary & Highland Memories',
+    subject: 'Happy Anniversary from Spud the Piper! 🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+    heading: 'Celebrating Your Special Anniversary!',
+    bodyContent: 'Happy Anniversary from everyone in the Highlands! It was an absolute privilege to pipe for your wedding ceremony and march you into your banquet as newly-weds.\n\nHere’s wishing you many more years filled with love, laughter, and great Scottish music!',
+    ctaText: 'Share Your Anniversary Photo with Spud',
+    ctaUrl: 'https://spudthepiper.com/social',
+    segment: 'weddings',
+    status: 'draft',
+    templateType: 'anniversary'
+  }
+];
+
 
 

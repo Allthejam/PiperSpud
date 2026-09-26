@@ -14,7 +14,9 @@ import {
   ForumCategoryItem,
   SocialMediaLinks,
   ServicePackage,
-  TravelExpensesConfig
+  TravelExpensesConfig,
+  MailingContact,
+  EmailCampaign
 } from '@/types/spud';
 import { 
   initialBookings, 
@@ -29,7 +31,9 @@ import {
   initialForumCategories, 
   initialSocialLinks,
   initialServices,
-  initialTravelConfig
+  initialTravelConfig,
+  initialMailingContacts,
+  initialCampaigns
 } from '@/lib/initialData';
 import { bagpipeSynth } from '@/lib/bagpipeSynth';
 import { db } from '@/lib/firebase';
@@ -170,6 +174,15 @@ interface AppContextType {
   } | null;
   openPayPalModal: (booking: BookingEvent) => void;
   closePayPalModal: () => void;
+
+  // Mailing List & Seasonal Campaign Studio
+  mailingContacts: MailingContact[];
+  emailCampaigns: EmailCampaign[];
+  addMailingContact: (contact: Omit<MailingContact, 'id'>) => MailingContact;
+  removeMailingContact: (id: string) => void;
+  updateMailingContact: (id: string, updated: Partial<MailingContact>) => void;
+  saveEmailCampaign: (campaign: EmailCampaign) => void;
+  dispatchBroadcastCampaign: (campaign: EmailCampaign, recipients: MailingContact[]) => Promise<{ success: boolean; sentCount?: number; error?: string }>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -198,6 +211,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [seoConfig, setSeoConfig] = useState<SeoPageConfig>(initialSeoConfig);
   const [activeSeoDrawerPageId, setActiveSeoDrawerPageId] = useState<string | null>(null);
   const [travelConfig, setTravelConfig] = useState<TravelExpensesConfig>(initialTravelConfig);
+  const [mailingContacts, setMailingContacts] = useState<MailingContact[]>(initialMailingContacts);
+  const [emailCampaigns, setEmailCampaigns] = useState<EmailCampaign[]>(initialCampaigns);
   const [isSyncingFirestore, setIsSyncingFirestore] = useState<boolean>(false);
 
   // Audio player state & Tunes
@@ -325,6 +340,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } catch (e) {
           setTravelConfig(initialTravelConfig);
         }
+      }
+
+      const savedMailing = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}mailing_contacts`);
+      if (savedMailing) {
+        try {
+          setMailingContacts(JSON.parse(savedMailing));
+        } catch (e) {}
+      }
+
+      const savedCampaigns = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}campaigns`);
+      if (savedCampaigns) {
+        try {
+          setEmailCampaigns(JSON.parse(savedCampaigns));
+        } catch (e) {}
       }
     } catch (err) {
       console.warn('Could not load saved state from localStorage:', err);
@@ -1538,6 +1567,94 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  // Mailing List Handlers
+  const addMailingContact = (contactData: Omit<MailingContact, 'id'>) => {
+    const id = `mc-${Date.now().toString().slice(-6)}`;
+    const newContact: MailingContact = {
+      ...contactData,
+      id,
+      addedAt: contactData.addedAt || new Date().toISOString(),
+      brevoSynced: true
+    };
+    setMailingContacts(prev => {
+      const exists = prev.find(c => c.email.toLowerCase() === newContact.email.toLowerCase());
+      if (exists) {
+        return prev.map(c => c.email.toLowerCase() === newContact.email.toLowerCase() ? { ...c, ...newContact } : c);
+      }
+      const updated = [newContact, ...prev];
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}mailing_contacts`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+    syncToFirestore('mailing_contacts', id, newContact);
+    return newContact;
+  };
+
+  const removeMailingContact = (id: string) => {
+    setMailingContacts(prev => {
+      const updated = prev.filter(c => c.id !== id);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}mailing_contacts`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+    if (db) {
+      deleteDoc(doc(db, 'mailing_contacts', id)).catch(e => console.warn(e));
+    }
+  };
+
+  const updateMailingContact = (id: string, updated: Partial<MailingContact>) => {
+    setMailingContacts(prev => {
+      const next = prev.map(c => c.id === id ? { ...c, ...updated } : c);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}mailing_contacts`, JSON.stringify(next));
+      }
+      return next;
+    });
+  };
+
+  const saveEmailCampaign = (campaign: EmailCampaign) => {
+    setEmailCampaigns(prev => {
+      const exists = prev.some(c => c.id === campaign.id);
+      const updated = exists ? prev.map(c => c.id === campaign.id ? campaign : c) : [campaign, ...prev];
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}campaigns`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+  };
+
+  const dispatchBroadcastCampaign = async (campaign: EmailCampaign, recipients: MailingContact[]) => {
+    try {
+      const res = await fetch('/api/brevo/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaign, recipients })
+      });
+      const data = await res.json();
+      if (data?.success) {
+        const updatedCamp: EmailCampaign = {
+          ...campaign,
+          status: 'sent',
+          sentAt: new Date().toISOString(),
+          recipientCount: data.sentCount || recipients.length
+        };
+        saveEmailCampaign(updatedCamp);
+        addNotification({
+          type: 'system',
+          title: 'Seasonal Broadcast Dispatched via Brevo',
+          message: `Campaign "${campaign.title}" successfully sent to ${data.sentCount || recipients.length} clients!`,
+          actionUrl: '/admin'
+        });
+      }
+      return data;
+    } catch (err: any) {
+      console.error('Dispatch campaign failed:', err);
+      return { success: false, error: err.message };
+    }
+  };
+
   // Modal handlers
   const openBrevoPreview = (booking: BookingEvent) => {
     const paypalLink = `https://www.paypal.com/checkout/spudthepiper/pay?id=${booking.id}`;
@@ -1594,6 +1711,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteBooking,
       travelConfig,
       updateTravelConfig,
+      mailingContacts,
+      emailCampaigns,
+      addMailingContact,
+      removeMailingContact,
+      updateMailingContact,
+      saveEmailCampaign,
+      dispatchBroadcastCampaign,
       reviews,
       submitReview,
       approveReview,

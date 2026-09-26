@@ -13,6 +13,7 @@ import { AdminForumControl } from '@/components/admin/AdminForumControl';
 import { AdminSocialLinks } from '@/components/admin/AdminSocialLinks';
 import { AdminServices } from '@/components/admin/AdminServices';
 import { AdminTravelExpenses } from '@/components/admin/AdminTravelExpenses';
+import { AdminMailingList } from '@/components/admin/AdminMailingList';
 import { AdminSeoStudio } from '@/components/admin/AdminSeoStudio';
 import { AdminNotifications } from '@/components/admin/AdminNotifications';
 import { AdminLoginModal } from '@/components/AdminLoginModal';
@@ -69,6 +70,7 @@ export default function AdminPage() {
       {activeTab === 'diary' && <AdminDiary />}
       {activeTab === 'bookings' && <AdminBookings />}
       {activeTab === 'crm' && <AdminCRM />}
+      {activeTab === 'mailing-list' && <AdminMailingList />}
       {activeTab === 'messages' && <AdminMessageCenter />}
       {activeTab === 'forum' && <AdminForumControl />}
       {activeTab === 'social-links' && <AdminSocialLinks />}

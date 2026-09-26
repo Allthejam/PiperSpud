@@ -246,3 +246,37 @@ export interface ServicePackage {
   createdAt?: string;
 }
 
+export interface MailingContact {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  source: 'booking' | 'enquiry' | 'newsletter' | 'manual';
+  status: 'subscribed' | 'unsubscribed';
+  tags: string[];
+  eventType?: string;
+  eventDate?: string;
+  venueName?: string;
+  location?: string;
+  addedAt: string;
+  brevoSynced: boolean;
+  notes?: string;
+}
+
+export interface EmailCampaign {
+  id: string;
+  title: string;
+  subject: string;
+  previewText?: string;
+  heading: string;
+  bodyContent: string;
+  ctaText?: string;
+  ctaUrl?: string;
+  segment: 'all' | 'bookings_only' | 'enquiries_only' | 'weddings' | 'corporate' | 'subscribers';
+  status: 'draft' | 'sent';
+  sentAt?: string;
+  recipientCount?: number;
+  templateType: 'christmas' | 'burns_night' | 'anniversary' | 'custom';
+}
+
+

@@ -25,8 +25,27 @@ import {
 } from 'lucide-react';
 
 export const Footer: React.FC = () => {
-  const { socialLinks } = useApp();
+  const { socialLinks, addMailingContact } = useApp();
   const [isPwaModalOpen, setIsPwaModalOpen] = useState(false);
+  const [subscriberEmail, setSubscriberEmail] = useState('');
+  const [isSubscribed, setIsSubscribed] = useState(false);
+
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subscriberEmail) return;
+    addMailingContact({
+      name: subscriberEmail.split('@')[0],
+      email: subscriberEmail,
+      source: 'newsletter',
+      status: 'subscribed',
+      tags: ['VIP Highland Club', 'Website Footer'],
+      addedAt: new Date().toISOString(),
+      brevoSynced: true
+    });
+    setIsSubscribed(true);
+    setSubscriberEmail('');
+    setTimeout(() => setIsSubscribed(false), 5000);
+  };
 
   const socialChannels = [
     {
@@ -105,6 +124,40 @@ export const Footer: React.FC = () => {
     <>
       <footer className="bg-tartan-dark border-t border-tartan-border/80 text-gray-400 text-xs mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          
+          {/* VIP Highland Newsletter Signup Banner */}
+          <div className="bg-gradient-to-r from-tartan-card via-tartan-navy to-tartan-card p-6 sm:p-8 rounded-3xl border border-tartan-gold/40 shadow-2xl mb-12 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="space-y-1 text-center md:text-left">
+              <span className="text-xs font-bold text-tartan-gold uppercase tracking-wider flex items-center justify-center md:justify-start gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>VIP Highland Club & Newsletter</span>
+              </span>
+              <h3 className="text-xl sm:text-2xl font-bold text-white font-serif">
+                Join Spud\'s Inner Circle
+              </h3>
+              <p className="text-xs text-gray-300 max-w-lg">
+                Receive festive greetings, Burns Night announcements, exclusive bagpipe recordings, and priority notification when next season\'s diary dates open.
+              </p>
+            </div>
+
+            <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row items-center gap-2.5 w-full md:w-auto">
+              <input
+                type="email"
+                required
+                value={subscriberEmail}
+                onChange={(e) => setSubscriberEmail(e.target.value)}
+                placeholder="Enter your email address..."
+                className="bg-tartan-dark border border-tartan-border rounded-xl px-4 py-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent w-full sm:w-64"
+              />
+              <button
+                type="submit"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs tracking-wider uppercase whitespace-nowrap hover:brightness-110 shadow-lg hover:scale-105 active:scale-95 transition-all"
+              >
+                {isSubscribed ? 'Subscribed! ✓' : 'Join VIP Club'}
+              </button>
+            </form>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
             
             {/* Col 1: Brand, Bio & Social Channels */}
