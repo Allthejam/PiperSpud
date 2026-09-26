@@ -23,7 +23,20 @@ import {
 } from 'lucide-react';
 import { calculateTravelCosts, findCoordinatesForLocation } from '@/lib/travelCalculator';
 import { initialTravelConfig } from '@/lib/initialData';
-import { UKRadiusMap } from './UKRadiusMap';
+import dynamic from 'next/dynamic';
+
+const UKRadiusMap = dynamic(
+  () => import('./UKRadiusMap').then((mod) => mod.UKRadiusMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="bg-tartan-card rounded-3xl p-6 border border-tartan-border h-[460px] flex items-center justify-center text-tartan-gold text-sm animate-pulse">
+        <Compass className="w-5 h-5 mr-2 animate-spin text-tartan-gold" />
+        <span>Loading Actual UK & Highland Map...</span>
+      </div>
+    )
+  }
+);
 
 export const AdminTravelExpenses: React.FC = () => {
   const { travelConfig, updateTravelConfig } = useApp();
