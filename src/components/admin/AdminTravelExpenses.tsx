@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { calculateTravelCosts, findCoordinatesForLocation } from '@/lib/travelCalculator';
 import { initialTravelConfig } from '@/lib/initialData';
+import { UKRadiusMap } from './UKRadiusMap';
 
 export const AdminTravelExpenses: React.FC = () => {
   const { travelConfig, updateTravelConfig } = useApp();
@@ -408,54 +409,79 @@ export const AdminTravelExpenses: React.FC = () => {
               </div>
             </div>
 
-            {/* Zone 3: Overnight Accommodation */}
+            {/* Zone 3: Extended Distance & Long Journeys */}
             <div className="bg-tartan-navy/60 rounded-2xl p-4 border border-tartan-border space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-5 h-5 rounded-full bg-blue-400 text-slate-950 font-bold text-xs flex items-center justify-center">3</span>
-                  <span className="text-xs font-bold text-white uppercase tracking-wider">Overnight Stay Allowance (Zone 3)</span>
+                  <div>
+                    <span className="text-xs font-bold text-white uppercase tracking-wider block">
+                      Extended Distance & Long Journeys (Zone 3)
+                    </span>
+                    <span className="text-[11px] text-gray-300">
+                      Journeys &ge; {overnightThresholdMiles} miles from base
+                    </span>
+                  </div>
                 </div>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <span className="text-blue-400 font-bold text-xs bg-blue-950/80 px-2.5 py-0.5 rounded-full border border-blue-800">
+                  Mileage Always Charged
+                </span>
+              </div>
+
+              <p className="text-[11px] text-gray-300 leading-relaxed">
+                Standard travel mileage (£{costPerMileAboveFree.toFixed(2)}/mi) is <strong>always charged</strong> for trips reaching into Zone 3. You can also optionally enable an overnight accommodation allowance below if Spud needs hotel lodging.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                <div>
+                  <label className="block text-[11px] font-semibold text-gray-300 mb-1">
+                    Zone 3 Distance Threshold (miles)
+                  </label>
                   <input
-                    type="checkbox"
-                    checked={enableOvernightStay}
-                    onChange={(e) => setEnableOvernightStay(e.target.checked)}
-                    className="accent-tartan-gold rounded w-4 h-4"
+                    type="number"
+                    value={overnightThresholdMiles}
+                    onChange={(e) => setOvernightThresholdMiles(parseInt(e.target.value) || 0)}
+                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white text-sm font-bold focus:outline-none focus:border-tartan-accent"
                   />
-                  <span className="text-xs text-gray-300 font-semibold">Enable Overnight Fee</span>
-                </label>
+                  <p className="text-[10px] text-gray-400 mt-1">Distance trigger for long-distance Highlands & rest of UK</p>
+                </div>
+
+                <div className="bg-tartan-dark/80 rounded-xl p-3 border border-tartan-border/80 flex flex-col justify-between">
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+                      <BedDouble className="w-4 h-4 text-blue-400" />
+                      Optional Overnight Stay Fee
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={enableOvernightStay}
+                      onChange={(e) => setEnableOvernightStay(e.target.checked)}
+                      className="accent-blue-500 rounded w-4 h-4 cursor-pointer"
+                    />
+                  </label>
+                  <span className="text-[10px] text-gray-400 mt-1">
+                    {enableOvernightStay
+                      ? `Enabled: Fixed £${overnightFee} accommodation fee added to quote.`
+                      : 'Disabled: Travel mileage only (no accommodation fee added).'}
+                  </span>
+                </div>
               </div>
 
               {enableOvernightStay && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-gray-300 mb-1">
-                      Distance Trigger Threshold (miles)
-                    </label>
+                <div className="pt-2 border-t border-tartan-border/40">
+                  <label className="block text-[11px] font-semibold text-blue-300 mb-1">
+                    Fixed Accommodation Allowance Fee (£)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-gray-400 font-bold text-sm">£</span>
                     <input
                       type="number"
-                      value={overnightThresholdMiles}
-                      onChange={(e) => setOvernightThresholdMiles(parseInt(e.target.value) || 0)}
-                      className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white text-sm font-bold focus:outline-none focus:border-tartan-accent"
+                      value={overnightFee}
+                      onChange={(e) => setOvernightFee(parseFloat(e.target.value) || 0)}
+                      className="w-full bg-tartan-dark border border-blue-600/70 rounded-xl pl-8 pr-3 py-2 text-white text-sm font-bold focus:outline-none focus:border-blue-400"
                     />
-                    <p className="text-[10px] text-gray-400 mt-1">Automatically applies when distance &ge; this limit</p>
                   </div>
-
-                  <div>
-                    <label className="block text-[11px] font-semibold text-gray-300 mb-1">
-                      Fixed Accommodation Allowance (£)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-gray-400 font-bold text-sm">£</span>
-                      <input
-                        type="number"
-                        value={overnightFee}
-                        onChange={(e) => setOvernightFee(parseFloat(e.target.value) || 0)}
-                        className="w-full bg-tartan-dark border border-tartan-border rounded-xl pl-8 pr-3 py-2 text-white text-sm font-bold focus:outline-none focus:border-tartan-accent"
-                      />
-                    </div>
-                    <p className="text-[10px] text-gray-400 mt-1">Covers Highland B&B / hotel stay</p>
-                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1">Covers Highland B&B / hotel stay for multi-hour distant events</p>
                 </div>
               )}
             </div>
@@ -520,83 +546,34 @@ export const AdminTravelExpenses: React.FC = () => {
 
         </div>
 
-        {/* Right Column: Visual Radar Map & Live Test Calculator */}
+        {/* Right Column: Visual UK Map & Live Test Calculator */}
         <div className="lg:col-span-5 space-y-6">
           
-          {/* Visual Radius Radar Card */}
-          <div className="bg-tartan-card rounded-3xl p-6 border border-tartan-border/80 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-tartan-border/60 pb-3">
-              <div className="flex items-center gap-2 text-tartan-gold font-bold text-sm uppercase tracking-wider">
-                <MapIcon className="w-4 h-4" />
-                <span>Radius Zone Visualizer</span>
-              </div>
-              <span className="text-[10px] font-mono text-gray-400">RADAR 360°</span>
-            </div>
-
-            {/* Radar Diagram */}
-            <div className="relative aspect-square w-full rounded-2xl bg-gradient-to-b from-slate-950 via-tartan-dark to-slate-950 border border-tartan-border overflow-hidden flex items-center justify-center p-4">
-              
-              {/* Concentric Zone Rings */}
-              {/* Zone 4: Max limit */}
-              <div className="absolute w-[92%] h-[92%] rounded-full border border-dashed border-amber-600/40 flex items-center justify-center">
-                <span className="absolute top-2 text-[9px] font-bold text-amber-500/80 uppercase">
-                  Zone 4: &gt; {maxBookingRadiusMiles}mi (Overseas / Enquiry Only)
-                </span>
-              </div>
-
-              {/* Zone 3: Overnight stay */}
-              {enableOvernightStay && (
-                <div className="absolute w-[68%] h-[68%] rounded-full border border-blue-500/40 bg-blue-950/10 flex items-center justify-center">
-                  <span className="absolute top-2 text-[9px] font-bold text-blue-400/80 uppercase">
-                    Zone 3: &gt; {overnightThresholdMiles}mi (+£{overnightFee} Overnight)
-                  </span>
-                </div>
-              )}
-
-              {/* Zone 2: Chargeable Mileage */}
-              <div className="absolute w-[44%] h-[44%] rounded-full border border-yellow-500/50 bg-amber-950/20 flex items-center justify-center">
-                <span className="absolute top-2 text-[9px] font-bold text-yellow-300 uppercase">
-                  Zone 2: @ £{costPerMileAboveFree.toFixed(2)}/mi
-                </span>
-              </div>
-
-              {/* Zone 1: Free Radius */}
-              <div className="absolute w-[24%] h-[24%] rounded-full border-2 border-emerald-500 bg-emerald-950/40 flex items-center justify-center shadow-lg shadow-emerald-900/30">
-                <span className="text-[9px] font-extrabold text-emerald-300 uppercase tracking-tighter">
-                  FREE 50mi
-                </span>
-              </div>
-
-              {/* Center Home Pin */}
-              <div className="relative z-10 flex flex-col items-center">
-                <div className="w-8 h-8 rounded-full bg-gold-gradient text-tartan-dark font-extrabold flex items-center justify-center shadow-2xl ring-4 ring-yellow-400/30 animate-pulse">
-                  <MapPin className="w-4 h-4 text-tartan-dark fill-current" />
-                </div>
-                <span className="mt-1 text-[10px] font-bold text-white bg-black/80 px-2 py-0.5 rounded-full border border-tartan-gold/40">
-                  {publicBaseDisplay || 'Aviemore'} ({basePostcode})
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-[10px]">
-              <div className="flex items-center gap-1.5 text-emerald-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                <span>0 – {freeRadiusMiles} mi: Free Travel</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-yellow-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
-                <span>{freeRadiusMiles}+ mi: £{costPerMileAboveFree.toFixed(2)}/mi</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-blue-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-                <span>&gt; {overnightThresholdMiles} mi: +£{overnightFee} Hotel</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-amber-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                <span>&gt; {maxBookingRadiusMiles} mi: Enquiry Only</span>
-              </div>
-            </div>
-          </div>
+          {/* Authentic UK Radius Zone Map */}
+          <UKRadiusMap
+            config={{
+              baseLocationName,
+              publicBaseDisplay,
+              exactAddressPrivate,
+              basePostcode,
+              baseLatitude,
+              baseLongitude,
+              freeRadiusMiles,
+              costPerMileAboveFree,
+              chargeType,
+              enableOvernightStay,
+              overnightThresholdMiles,
+              overnightFee,
+              maxBookingRadiusMiles,
+              islandFerrySurcharge,
+              overseasEnquiryOnly,
+              customTravelNotes
+            }}
+            onSelectTestCity={(postcode, name) => {
+              setTestPostcode(postcode);
+              setTestVenueName(name);
+            }}
+          />
 
           {/* Card 3: Interactive Travel Expense Sandbox & Test Simulator */}
           <div className="bg-tartan-card rounded-3xl p-6 border border-tartan-border/80 shadow-xl space-y-4">
