@@ -765,6 +765,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setBookings(prev => [newBooking, ...prev]);
     syncToFirestore('bookings', id, newBooking);
 
+    // Dispatch background Brevo email notification
+    try {
+      if (typeof window !== 'undefined') {
+        fetch('/api/brevo/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'booking_created',
+            booking: newBooking
+          })
+        }).catch(err => console.warn('Background Brevo notify error:', err));
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+
     // Trigger notification for Spud
     addNotification({
       type: 'booking_request',
@@ -813,6 +829,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const bk = bookings.find(b => b.id === id) || updatedBooking;
     if (bk) {
+      // Dispatch live transactional email via Brevo
+      try {
+        if (typeof window !== 'undefined') {
+          fetch('/api/brevo/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'booking_approved',
+              booking: { ...bk, status: 'approved' },
+              paypalLink
+            })
+          }).catch(err => console.warn('Live Brevo dispatch warning:', err));
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+
       setActiveBrevoEmail({
         isOpen: true,
         recipientName: bk.clientName,
@@ -878,6 +911,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (updatedBooking) {
       await syncToFirestore('bookings', id, updatedBooking);
+
+      // Dispatch live deposit receipt email via Brevo
+      try {
+        if (typeof window !== 'undefined') {
+          fetch('/api/brevo/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'deposit_received',
+              booking: updatedBooking
+            })
+          }).catch(err => console.warn('Brevo receipt dispatch warning:', err));
+        }
+      } catch (e) {
+        console.warn(e);
+      }
     }
 
     const bk = bookings.find(b => b.id === id) || updatedBooking;
