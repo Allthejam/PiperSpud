@@ -91,21 +91,14 @@ export const AdminTravelExpenses: React.FC = () => {
   const [testPostcode, setTestPostcode] = useState('IV1 1AA');
   const [testVenueName, setTestVenueName] = useState('Inverness Castle');
 
-  // Quick base presets for Spud
-  const basePresets = [
-    { name: 'Aviemore & Cairngorms (Spud\'s Base)', postcode: 'PH22 1UJ', publicLabel: 'Aviemore, Highlands', lat: 57.1955, lng: -3.8350 },
-    { name: 'Inverness & Highlands', postcode: 'IV1 1AA', publicLabel: 'Inverness, Highlands', lat: 57.4778, lng: -4.2247 },
-    { name: 'Stirling & Central', postcode: 'FK8 1EJ', publicLabel: 'Stirling, Central Scotland', lat: 56.1165, lng: -3.9369 },
-    { name: 'Edinburgh & Lothians', postcode: 'EH1 1AA', publicLabel: 'Edinburgh & Lothians', lat: 55.9533, lng: -3.1883 },
-    { name: 'Glasgow & Clyde', postcode: 'G1 1AA', publicLabel: 'Glasgow & Clyde', lat: 55.8642, lng: -4.2518 }
-  ];
-
-  const handleApplyPreset = (preset: typeof basePresets[0]) => {
-    setBaseLocationName(preset.name);
-    setPublicBaseDisplay(preset.publicLabel);
-    setBasePostcode(preset.postcode);
-    setBaseLatitude(preset.lat);
-    setBaseLongitude(preset.lng);
+  const handlePostcodeChange = (newPostcode: string) => {
+    const upper = newPostcode.toUpperCase();
+    setBasePostcode(upper);
+    const resolved = findCoordinatesForLocation(upper);
+    if (resolved) {
+      setBaseLatitude(resolved.lat);
+      setBaseLongitude(resolved.lng);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -230,29 +223,6 @@ export const AdminTravelExpenses: React.FC = () => {
               </p>
             </div>
 
-            {/* Quick Presets */}
-            <div>
-              <label className="block text-[11px] font-semibold text-gray-300 mb-2">
-                Quick Highland / Scottish Base Presets:
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {basePresets.map((preset) => (
-                  <button
-                    key={preset.name}
-                    type="button"
-                    onClick={() => handleApplyPreset(preset)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                      basePostcode === preset.postcode
-                        ? 'bg-tartan-gold text-tartan-dark border-yellow-300 shadow-md font-bold'
-                        : 'bg-tartan-navy text-gray-300 border-tartan-border hover:bg-slate-700'
-                    }`}
-                  >
-                    {preset.name} ({preset.postcode})
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {/* Private Exact Address & Public Display Labels */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -293,18 +263,21 @@ export const AdminTravelExpenses: React.FC = () => {
                   type="text"
                   value={baseLocationName}
                   onChange={(e) => setBaseLocationName(e.target.value)}
+                  placeholder="e.g. Spud's Highland Home Base"
                   className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-tartan-accent"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-tartan-gold mb-1.5">
-                  Calculation Base Postcode *
+                <label className="block text-xs font-semibold text-tartan-gold mb-1.5 flex items-center justify-between">
+                  <span>Calculation Base Postcode *</span>
+                  <span className="text-[10px] text-gray-400 font-normal">Auto-locates GPS</span>
                 </label>
                 <input
                   type="text"
                   value={basePostcode}
-                  onChange={(e) => setBasePostcode(e.target.value.toUpperCase())}
+                  onChange={(e) => handlePostcodeChange(e.target.value)}
+                  placeholder="e.g. PH22 1UJ"
                   className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-sm font-bold focus:outline-none focus:border-tartan-accent"
                 />
               </div>
