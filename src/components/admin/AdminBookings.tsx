@@ -176,6 +176,29 @@ export const AdminBookings: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Travel & Distance Logistics Badge */}
+                <div className="bg-tartan-navy/70 p-3 rounded-xl border border-tartan-border flex items-center justify-between gap-3 text-xs flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span className="text-tartan-gold font-bold">📍 Travel Logistics:</span>
+                    <span className="text-gray-200">
+                      {bk.travelBreakdownText || (bk.distanceMiles !== undefined ? `${bk.distanceMiles} miles from base` : 'Standard 50-mile travel policy')}
+                    </span>
+                  </div>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    bk.isOverseasOrCustomQuote
+                      ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                      : (bk.travelExpense || 0) === 0
+                      ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                      : 'bg-yellow-950 text-yellow-300 border border-yellow-800'
+                  }`}>
+                    {bk.isOverseasOrCustomQuote
+                      ? 'Bespoke Enquiry'
+                      : (bk.travelExpense || 0) === 0
+                      ? 'FREE Travel Radius'
+                      : `+£${bk.travelExpense} Surcharge`}
+                  </span>
+                </div>
+
                 {bk.notes && (
                   <p className="text-xs text-gray-300 italic bg-tartan-navy/40 p-3 rounded-xl border border-slate-800">
                     <strong className="text-tartan-gold not-italic">Notes: </strong>{bk.notes}

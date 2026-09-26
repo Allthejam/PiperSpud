@@ -9,7 +9,8 @@ import {
   SeoPageConfig,
   ForumCategoryItem,
   SocialMediaLinks,
-  ServicePackage
+  ServicePackage,
+  TravelExpensesConfig
 } from '@/types/spud';
 
 export const initialBookings: BookingEvent[] = [
@@ -1173,5 +1174,22 @@ export const initialServices: ServicePackage[] = [
     seoKeywords: ['Surprise Bagpiper Hire', 'Birthday Bagpiper Scotland', 'Anniversary Piper Edinburgh Glasgow', 'Surprise Scottish Piper']
   }
 ];
+
+export const initialTravelConfig: TravelExpensesConfig = {
+  baseLocationName: 'Spud\'s Home Base (Edinburgh & Lothians / Central Scotland)',
+  basePostcode: 'EH1 1AA',
+  baseLatitude: 55.9533,
+  baseLongitude: -3.1883,
+  freeRadiusMiles: 50,
+  costPerMileAboveFree: 0.65,
+  chargeType: 'return',
+  overnightThresholdMiles: 120,
+  overnightFee: 120,
+  enableOvernightStay: true,
+  maxBookingRadiusMiles: 250,
+  islandFerrySurcharge: 85,
+  overseasEnquiryOnly: true,
+  customTravelNotes: 'Standard 50-mile radius from base includes Edinburgh, Lothians, Fife, Stirling, Falkirk, Glasgow, and Borders. Destinations beyond 50 miles include fair mileage reimbursement. Long-distance Highland, Island & Overseas expeditions welcome by tailored enquiry.'
+};
 
 

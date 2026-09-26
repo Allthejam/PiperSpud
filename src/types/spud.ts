@@ -45,6 +45,30 @@ export interface BookingEvent {
     status: 'delivered' | 'opened' | 'clicked';
     paypalLink?: string;
   }[];
+  // Travel & Distance Expense Breakdown
+  distanceMiles?: number;
+  travelExpense?: number;
+  isOvernightRequired?: boolean;
+  overnightExpense?: number;
+  isOverseasOrCustomQuote?: boolean;
+  travelBreakdownText?: string;
+}
+
+export interface TravelExpensesConfig {
+  baseLocationName: string; // e.g. "Spud's Home Base (Edinburgh / Lothians)"
+  basePostcode: string; // e.g. "EH1 1AA"
+  baseLatitude: number; // e.g. 55.9533
+  baseLongitude: number; // e.g. -3.1883
+  freeRadiusMiles: number; // e.g. 50 miles free travel
+  costPerMileAboveFree: number; // e.g. £0.65 per mile
+  chargeType: 'one_way' | 'return'; // standard 'return' (round trip)
+  overnightThresholdMiles: number; // e.g. 120 miles
+  overnightFee: number; // e.g. £120.00 accommodation fee
+  enableOvernightStay: boolean;
+  maxBookingRadiusMiles: number; // e.g. 250 miles
+  islandFerrySurcharge: number; // e.g. £85.00
+  overseasEnquiryOnly: boolean; // convert >maxRadius or non-UK to bespoke enquiry
+  customTravelNotes?: string;
 }
 
 export interface Review {

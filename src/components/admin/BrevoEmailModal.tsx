@@ -108,6 +108,12 @@ export const BrevoEmailModal: React.FC<BrevoEmailModalProps> = ({
                 <span className="text-gray-500 font-semibold">Deposit Required:</span>
                 <p className="font-bold text-amber-700 text-sm">£{booking.depositAmount}.00</p>
               </div>
+              {booking.travelBreakdownText && (
+                <div className="col-span-2 pt-2 border-t border-amber-200">
+                  <span className="text-gray-500 font-semibold">Travel & Logistics:</span>
+                  <p className="text-gray-800 font-medium">{booking.travelBreakdownText}</p>
+                </div>
+              )}
             </div>
           </div>
 

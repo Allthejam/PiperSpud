@@ -16,12 +16,17 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
-  Info
+  Info,
+  Compass,
+  BedDouble,
+  Ship,
+  Globe
 } from 'lucide-react';
 import { EventType, HighlandDressOption } from '@/types/spud';
+import { calculateTravelCosts } from '@/lib/travelCalculator';
 
 export const BookingCalendar: React.FC = () => {
-  const { bookings, createBooking, tunesList } = useApp();
+  const { bookings, createBooking, tunesList, travelConfig } = useApp();
 
   // Calendar view state (Current month: September/October 2026)
   const [currentYear, setCurrentYear] = useState(2026);
@@ -84,8 +89,33 @@ export const BookingCalendar: React.FC = () => {
     'Bagpipe Tuition / Lesson': { base: 60, deposit: 20 },
   };
 
-  const estimatedPrice = pricingMatrix[eventType]?.base || 450;
+  const basePackagePrice = pricingMatrix[eventType]?.base || 450;
   const depositAmount = pricingMatrix[eventType]?.deposit || 100;
+
+  // Live Travel Expenses Calculation
+  const travelResult = calculateTravelCosts(
+    venuePostcode, 
+    venueName, 
+    venueAddress, 
+    travelConfig || {
+      baseLocationName: "Spud's Home Base (Edinburgh / Lothians)",
+      basePostcode: 'EH1 1AA',
+      baseLatitude: 55.9533,
+      baseLongitude: -3.1883,
+      freeRadiusMiles: 50,
+      costPerMileAboveFree: 0.65,
+      chargeType: 'return',
+      overnightThresholdMiles: 120,
+      overnightFee: 120,
+      enableOvernightStay: true,
+      maxBookingRadiusMiles: 250,
+      islandFerrySurcharge: 85,
+      overseasEnquiryOnly: true
+    }
+  );
+
+  const travelExpense = travelResult.isOverseasOrMaxDistance ? 0 : travelResult.totalTravelExpense;
+  const estimatedPrice = basePackagePrice + travelExpense;
 
   // Calendar day generator
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
@@ -154,7 +184,13 @@ export const BookingCalendar: React.FC = () => {
         estimatedPrice,
         depositAmount,
         specialTunes: selectedTunes,
-        notes
+        notes,
+        distanceMiles: travelResult.distanceMiles,
+        travelExpense: travelResult.totalTravelExpense,
+        isOvernightRequired: travelResult.isOvernightTriggered,
+        overnightExpense: travelResult.overnightCost,
+        isOverseasOrCustomQuote: travelResult.isOverseasOrMaxDistance,
+        travelBreakdownText: travelResult.explanationText
       });
 
       setIsSubmitting(false);
@@ -194,6 +230,29 @@ export const BookingCalendar: React.FC = () => {
               </p>
             </div>
 
+            {/* Travel & Pricing Breakdown Pill */}
+            <div className="bg-tartan-dark/90 rounded-2xl p-4 border border-tartan-border text-left space-y-2 text-xs">
+              <div className="flex items-center justify-between border-b border-tartan-border/60 pb-2">
+                <span className="text-gray-400">Venue Distance & Travel:</span>
+                <span className="text-tartan-gold font-bold">
+                  {bookingSuccess.isOverseasOrCustomQuote
+                    ? 'Bespoke Expedition Enquiry'
+                    : bookingSuccess.travelExpense === 0
+                    ? 'FREE Travel (Within 50-Mile Radius)'
+                    : `+£${bookingSuccess.travelExpense} Additional Expenses`}
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-300">
+                {bookingSuccess.travelBreakdownText || 'Standard travel policy applied.'}
+              </p>
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-white font-bold">Estimated Total:</span>
+                <span className="text-white font-extrabold text-sm">
+                  {bookingSuccess.isOverseasOrCustomQuote ? 'Tailored Quote on Review' : `£${bookingSuccess.estimatedPrice}`}
+                </span>
+              </div>
+            </div>
+
             {/* Workflow Step Explanation */}
             <div className="bg-tartan-navy/80 rounded-2xl p-5 border border-tartan-border text-left space-y-3 text-xs">
               <h4 className="font-bold text-tartan-gold uppercase tracking-wider flex items-center gap-2">
@@ -202,12 +261,12 @@ export const BookingCalendar: React.FC = () => {
               </h4>
               <div className="flex items-start gap-3">
                 <div className="w-5 h-5 rounded-full bg-tartan-accent text-tartan-dark font-bold flex items-center justify-center shrink-0">1</div>
-                <p className="text-gray-200">Spud reviews the diary details and approves your slot in his Back Office.</p>
+                <p className="text-gray-200">Spud reviews the diary details, venue location, and travel logistics in his Back Office.</p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-5 h-5 rounded-full bg-tartan-accent text-tartan-dark font-bold flex items-center justify-center shrink-0">2</div>
                 <p className="text-gray-200">
-                  You will receive an official <strong className="text-white">Brevo email</strong> containing your confirmed booking summary and a secure <strong className="text-white">PayPal link</strong> to pay the £{bookingSuccess.depositAmount} deposit.
+                  You will receive an official <strong className="text-white">Brevo email</strong> containing your confirmed booking summary, travel details, and a secure <strong className="text-white">PayPal link</strong> to pay the £{bookingSuccess.depositAmount} deposit.
                 </p>
               </div>
               <div className="flex items-start gap-3">
@@ -337,19 +396,59 @@ export const BookingCalendar: React.FC = () => {
             <div className="lg:col-span-7 bg-tartan-card rounded-3xl p-6 sm:p-8 border border-tartan-accent/40 shadow-2xl">
               <form onSubmit={handleSubmitBooking} className="space-y-6">
                 
-                {/* Pricing & Deposit Pill Banner */}
-                <div className="bg-gradient-to-r from-tartan-navy to-tartan-dark p-4 rounded-2xl border border-tartan-border flex items-center justify-between flex-wrap gap-3">
-                  <div>
-                    <span className="text-xs text-gray-400">Instant Estimate:</span>
-                    <div className="text-2xl font-extrabold text-white font-serif">
-                      £{estimatedPrice} <span className="text-xs font-normal text-tartan-gold">Total</span>
+                {/* Dynamic Pricing & Travel Expense Pill Banner */}
+                <div className="bg-gradient-to-r from-tartan-navy to-tartan-dark p-4 rounded-2xl border border-tartan-border space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div>
+                      <span className="text-xs text-gray-400">Total Price Estimate:</span>
+                      <div className="text-2xl font-extrabold text-white font-serif">
+                        {travelResult.isOverseasOrMaxDistance ? (
+                          <span className="text-xl text-amber-400">Bespoke Quote</span>
+                        ) : (
+                          <>
+                            £{estimatedPrice} <span className="text-xs font-normal text-tartan-gold">Total</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs text-gray-400">Provisional Deposit:</span>
+                      <div className="text-lg font-bold text-tartan-gold">
+                        £{depositAmount} <span className="text-[10px] text-gray-300">(via PayPal upon approval)</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <span className="text-xs text-gray-400">Required Deposit:</span>
-                    <div className="text-lg font-bold text-tartan-gold">
-                      £{depositAmount} <span className="text-[10px] text-gray-300">(via PayPal upon approval)</span>
+
+                  {/* Itemised Breakdown Details */}
+                  <div className="pt-2 border-t border-tartan-border/60 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-400">Base Service:</span>
+                      <span className="text-white font-bold">£{basePackagePrice}</span>
                     </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-400">Travel ({travelResult.distanceMiles} mi):</span>
+                      <span className={`font-bold ${
+                        travelResult.isWithinFreeRadius 
+                          ? 'text-emerald-400' 
+                          : travelResult.isOverseasOrMaxDistance 
+                          ? 'text-amber-400' 
+                          : 'text-tartan-gold'
+                      }`}>
+                        {travelResult.isWithinFreeRadius 
+                          ? 'FREE (Included)' 
+                          : travelResult.isOverseasOrMaxDistance 
+                          ? 'Expedition Quote' 
+                          : `+£${travelResult.totalTravelExpense}`}
+                      </span>
+                    </div>
+
+                    {travelResult.isOvernightTriggered && (
+                      <div className="flex items-center gap-1 text-blue-300">
+                        <BedDouble className="w-3.5 h-3.5" />
+                        <span>+£{travelResult.overnightCost} Overnight</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -438,7 +537,7 @@ export const BookingCalendar: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Form Row 3: Venue Location */}
+                {/* Form Row 3: Venue Location & Dynamic Travel Distance Feedback */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-tartan-gold mb-1.5 flex items-center gap-1">
@@ -456,18 +555,41 @@ export const BookingCalendar: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-tartan-gold mb-1.5">
-                      Venue Postcode *
+                    <label className="block text-xs font-semibold text-tartan-gold mb-1.5 flex items-center justify-between">
+                      <span>Venue Postcode *</span>
+                      <span className="text-[10px] text-gray-400 font-normal">Base: {travelConfig.basePostcode}</span>
                     </label>
                     <input
                       type="text"
                       value={venuePostcode}
-                      onChange={(e) => setVenuePostcode(e.target.value)}
-                      placeholder="e.g. EH30 9SP"
-                      className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-3 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-tartan-accent"
+                      onChange={(e) => setVenuePostcode(e.target.value.toUpperCase())}
+                      placeholder="e.g. EH30 9SP, IV40 8DX..."
+                      className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-3 text-white placeholder-gray-500 text-sm font-bold focus:outline-none focus:border-tartan-accent"
                     />
                   </div>
                 </div>
+
+                {/* Real-time Distance & Travel Expense Feedback Badge */}
+                {venuePostcode && (
+                  <div className={`p-3 rounded-xl border text-xs flex items-center gap-2.5 transition-all ${
+                    travelResult.isWithinFreeRadius
+                      ? 'bg-emerald-950/60 border-emerald-700/80 text-emerald-300'
+                      : travelResult.isOverseasOrMaxDistance
+                      ? 'bg-amber-950/70 border-amber-700/80 text-amber-200'
+                      : 'bg-yellow-950/60 border-yellow-700/80 text-yellow-200'
+                  }`}>
+                    {travelResult.isWithinFreeRadius ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    ) : travelResult.isOverseasOrMaxDistance ? (
+                      <Globe className="w-4 h-4 text-amber-400 shrink-0" />
+                    ) : (
+                      <Compass className="w-4 h-4 text-tartan-gold shrink-0" />
+                    )}
+                    <div className="flex-1">
+                      <p className="font-semibold">{travelResult.explanationText}</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Form Row 4: Tartan Attire Preference */}
                 <div>

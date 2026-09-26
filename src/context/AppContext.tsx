@@ -13,7 +13,8 @@ import {
   BookingStatus,
   ForumCategoryItem,
   SocialMediaLinks,
-  ServicePackage
+  ServicePackage,
+  TravelExpensesConfig
 } from '@/types/spud';
 import { 
   initialBookings, 
@@ -27,7 +28,8 @@ import {
   initialSeoPages, 
   initialForumCategories, 
   initialSocialLinks,
-  initialServices
+  initialServices,
+  initialTravelConfig
 } from '@/lib/initialData';
 import { bagpipeSynth } from '@/lib/bagpipeSynth';
 import { db } from '@/lib/firebase';
@@ -75,6 +77,10 @@ interface AppContextType {
   rejectBooking: (id: string) => void;
   markDepositPaid: (id: string, paypalOrderId?: string) => void;
   deleteBooking: (id: string) => void;
+
+  // Travel Radius & Expenses Configuration
+  travelConfig: TravelExpensesConfig;
+  updateTravelConfig: (newConfig: Partial<TravelExpensesConfig>) => Promise<void>;
 
   // Reviews
   reviews: Review[];
@@ -191,6 +197,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [seoPages, setSeoPages] = useState<SeoPageConfig[]>(initialSeoPages);
   const [seoConfig, setSeoConfig] = useState<SeoPageConfig>(initialSeoConfig);
   const [activeSeoDrawerPageId, setActiveSeoDrawerPageId] = useState<string | null>(null);
+  const [travelConfig, setTravelConfig] = useState<TravelExpensesConfig>(initialTravelConfig);
   const [isSyncingFirestore, setIsSyncingFirestore] = useState<boolean>(false);
 
   // Audio player state & Tunes
@@ -307,6 +314,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const savedSeo = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}seo`);
       if (savedSeo) setSeoConfig(JSON.parse(savedSeo));
+
+      const savedTravel = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}travel_config`);
+      if (savedTravel) {
+        try {
+          setTravelConfig(JSON.parse(savedTravel));
+        } catch (e) {}
+      }
     } catch (err) {
       console.warn('Could not load saved state from localStorage:', err);
     }
@@ -325,6 +339,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubCms = () => {};
     let unsubSeo = () => {};
     let unsubTunes = () => {};
+    let unsubTravel = () => {};
 
     try {
       unsubServices = onSnapshot(collection(db, 'services'), (snapshot) => {
@@ -430,6 +445,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
       }, (err) => console.log('Firestore bagpipe_tunes listener:', err.message));
+
+      unsubTravel = onSnapshot(doc(db, 'settings', 'travel_config'), (snap) => {
+        if (snap.exists()) {
+          setTravelConfig(snap.data() as TravelExpensesConfig);
+        }
+      }, (err) => console.log('Firestore travel_config listener:', err.message));
     } catch (e) {
       console.warn('Firebase Firestore initialization:', e);
     }
@@ -444,6 +465,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubCms();
       unsubSeo();
       unsubTunes();
+      unsubTravel();
     };
   }, []);
 
@@ -1417,11 +1439,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         totalSynced++;
       }
 
+      // 10. Sync Travel & Expense Config
+      await setDoc(doc(db, 'settings', 'travel_config'), JSON.parse(JSON.stringify(travelConfig)), { merge: true });
+      totalSynced++;
+
       console.log(`[Firestore SUCCESS] Full Cloud Sync Complete: ${totalSynced} documents verified in Firestore!`);
       addNotification({
         type: 'system',
         title: 'Firebase Firestore Fully Synced',
-        message: `Successfully synchronized ${totalSynced} items across all collections (services, seo_pages, bagpipe_tunes, cms_blocks, bookings, reviews, etc.) to Firebase!`,
+        message: `Successfully synchronized ${totalSynced} items across all collections (services, travel_config, seo_pages, bagpipe_tunes, cms_blocks, bookings, reviews, etc.) to Firebase!`,
         actionUrl: '/admin'
       });
       setIsSyncingFirestore(false);
@@ -1431,6 +1457,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIsSyncingFirestore(false);
       return { success: false, count: 0, error: err?.message || 'Sync encountered an error' };
     }
+  };
+
+  // Travel Config Handler
+  const updateTravelConfig = async (newConfig: Partial<TravelExpensesConfig>) => {
+    const updated: TravelExpensesConfig = { ...travelConfig, ...newConfig };
+    setTravelConfig(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}travel_config`, JSON.stringify(updated));
+    }
+    if (db) {
+      try {
+        await setDoc(doc(db, 'settings', 'travel_config'), updated, { merge: true });
+      } catch (e) {
+        console.warn('Firestore updateTravelConfig warning:', e);
+      }
+    }
+    addNotification({
+      type: 'system',
+      title: 'Travel & Expenses Config Saved',
+      message: `Base location and radius expense tiers have been updated.`,
+      actionUrl: '/admin'
+    });
   };
 
   // Modal handlers
@@ -1487,6 +1535,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       rejectBooking,
       markDepositPaid,
       deleteBooking,
+      travelConfig,
+      updateTravelConfig,
       reviews,
       submitReview,
       approveReview,
