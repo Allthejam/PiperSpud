@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { 
   MapPin, 
@@ -22,25 +22,48 @@ import {
   Plane
 } from 'lucide-react';
 import { calculateTravelCosts, findCoordinatesForLocation } from '@/lib/travelCalculator';
+import { initialTravelConfig } from '@/lib/initialData';
 
 export const AdminTravelExpenses: React.FC = () => {
   const { travelConfig, updateTravelConfig } = useApp();
 
-  // Local editing state
-  const [baseLocationName, setBaseLocationName] = useState(travelConfig.baseLocationName);
-  const [basePostcode, setBasePostcode] = useState(travelConfig.basePostcode);
-  const [baseLatitude, setBaseLatitude] = useState(travelConfig.baseLatitude);
-  const [baseLongitude, setBaseLongitude] = useState(travelConfig.baseLongitude);
-  const [freeRadiusMiles, setFreeRadiusMiles] = useState(travelConfig.freeRadiusMiles);
-  const [costPerMileAboveFree, setCostPerMileAboveFree] = useState(travelConfig.costPerMileAboveFree);
-  const [chargeType, setChargeType] = useState<'one_way' | 'return'>(travelConfig.chargeType);
-  const [overnightThresholdMiles, setOvernightThresholdMiles] = useState(travelConfig.overnightThresholdMiles);
-  const [overnightFee, setOvernightFee] = useState(travelConfig.overnightFee);
-  const [enableOvernightStay, setEnableOvernightStay] = useState(travelConfig.enableOvernightStay);
-  const [maxBookingRadiusMiles, setMaxBookingRadiusMiles] = useState(travelConfig.maxBookingRadiusMiles);
-  const [islandFerrySurcharge, setIslandFerrySurcharge] = useState(travelConfig.islandFerrySurcharge);
-  const [overseasEnquiryOnly, setOverseasEnquiryOnly] = useState(travelConfig.overseasEnquiryOnly);
-  const [customTravelNotes, setCustomTravelNotes] = useState(travelConfig.customTravelNotes || '');
+  const activeConfig = travelConfig || initialTravelConfig;
+
+  // Local editing state with guaranteed fallbacks
+  const [baseLocationName, setBaseLocationName] = useState(activeConfig?.baseLocationName || initialTravelConfig.baseLocationName);
+  const [basePostcode, setBasePostcode] = useState(activeConfig?.basePostcode || initialTravelConfig.basePostcode);
+  const [baseLatitude, setBaseLatitude] = useState(activeConfig?.baseLatitude ?? initialTravelConfig.baseLatitude);
+  const [baseLongitude, setBaseLongitude] = useState(activeConfig?.baseLongitude ?? initialTravelConfig.baseLongitude);
+  const [freeRadiusMiles, setFreeRadiusMiles] = useState(activeConfig?.freeRadiusMiles ?? initialTravelConfig.freeRadiusMiles);
+  const [costPerMileAboveFree, setCostPerMileAboveFree] = useState(activeConfig?.costPerMileAboveFree ?? initialTravelConfig.costPerMileAboveFree);
+  const [chargeType, setChargeType] = useState<'one_way' | 'return'>(activeConfig?.chargeType || initialTravelConfig.chargeType);
+  const [overnightThresholdMiles, setOvernightThresholdMiles] = useState(activeConfig?.overnightThresholdMiles ?? initialTravelConfig.overnightThresholdMiles);
+  const [overnightFee, setOvernightFee] = useState(activeConfig?.overnightFee ?? initialTravelConfig.overnightFee);
+  const [enableOvernightStay, setEnableOvernightStay] = useState(activeConfig?.enableOvernightStay ?? initialTravelConfig.enableOvernightStay);
+  const [maxBookingRadiusMiles, setMaxBookingRadiusMiles] = useState(activeConfig?.maxBookingRadiusMiles ?? initialTravelConfig.maxBookingRadiusMiles);
+  const [islandFerrySurcharge, setIslandFerrySurcharge] = useState(activeConfig?.islandFerrySurcharge ?? initialTravelConfig.islandFerrySurcharge);
+  const [overseasEnquiryOnly, setOverseasEnquiryOnly] = useState(activeConfig?.overseasEnquiryOnly ?? initialTravelConfig.overseasEnquiryOnly);
+  const [customTravelNotes, setCustomTravelNotes] = useState(activeConfig?.customTravelNotes || initialTravelConfig.customTravelNotes || '');
+
+  // Synchronize state when travelConfig loads or updates from Firebase
+  useEffect(() => {
+    if (travelConfig) {
+      setBaseLocationName(travelConfig.baseLocationName || initialTravelConfig.baseLocationName);
+      setBasePostcode(travelConfig.basePostcode || initialTravelConfig.basePostcode);
+      setBaseLatitude(travelConfig.baseLatitude ?? initialTravelConfig.baseLatitude);
+      setBaseLongitude(travelConfig.baseLongitude ?? initialTravelConfig.baseLongitude);
+      setFreeRadiusMiles(travelConfig.freeRadiusMiles ?? initialTravelConfig.freeRadiusMiles);
+      setCostPerMileAboveFree(travelConfig.costPerMileAboveFree ?? initialTravelConfig.costPerMileAboveFree);
+      setChargeType(travelConfig.chargeType || initialTravelConfig.chargeType);
+      setOvernightThresholdMiles(travelConfig.overnightThresholdMiles ?? initialTravelConfig.overnightThresholdMiles);
+      setOvernightFee(travelConfig.overnightFee ?? initialTravelConfig.overnightFee);
+      setEnableOvernightStay(travelConfig.enableOvernightStay ?? initialTravelConfig.enableOvernightStay);
+      setMaxBookingRadiusMiles(travelConfig.maxBookingRadiusMiles ?? initialTravelConfig.maxBookingRadiusMiles);
+      setIslandFerrySurcharge(travelConfig.islandFerrySurcharge ?? initialTravelConfig.islandFerrySurcharge);
+      setOverseasEnquiryOnly(travelConfig.overseasEnquiryOnly ?? initialTravelConfig.overseasEnquiryOnly);
+      setCustomTravelNotes(travelConfig.customTravelNotes || initialTravelConfig.customTravelNotes || '');
+    }
+  }, [travelConfig]);
 
   // UI state
   const [isSaving, setIsSaving] = useState(false);

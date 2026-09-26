@@ -1,4 +1,5 @@
 import { TravelExpensesConfig } from '@/types/spud';
+import { initialTravelConfig } from '@/lib/initialData';
 
 // Representative latitude / longitude coordinates for UK/Scottish Postcode Areas
 // and popular Scottish wedding / castle / Highland locations
@@ -208,10 +209,15 @@ export function calculateTravelCosts(
   venuePostcode: string,
   venueName: string = '',
   venueAddress: string = '',
-  config: TravelExpensesConfig
+  config?: Partial<TravelExpensesConfig>
 ): TravelCostResult {
-  const cleanPostcode = venuePostcode.trim().toUpperCase();
-  const lowerText = `${cleanPostcode} ${venueName} ${venueAddress}`.toLowerCase();
+  const safeConfig: TravelExpensesConfig = {
+    ...initialTravelConfig,
+    ...(config || {})
+  };
+
+  const cleanPostcode = (venuePostcode || '').trim().toUpperCase();
+  const lowerText = `${cleanPostcode} ${venueName || ''} ${venueAddress || ''}`.toLowerCase();
 
   // Check if explicitly overseas / international (e.g. USA, Canada, Germany, Netherlands, France, Spain, Australia, etc.)
   const overseasKeywords = [
@@ -223,7 +229,7 @@ export function calculateTravelCosts(
 
   const targetCoords = findCoordinatesForLocation(venuePostcode, venueName, venueAddress);
 
-  if (isExplicitlyOverseas || (!targetCoords && venuePostcode.length > 0 && !venuePostcode.match(/^[A-Z]{1,2}[0-9]/i))) {
+  if (isExplicitlyOverseas || (!targetCoords && venuePostcode && venuePostcode.length > 0 && !venuePostcode.match(/^[A-Z]{1,2}[0-9]/i))) {
     return {
       distanceMiles: 999,
       isWithinFreeRadius: false,
@@ -242,24 +248,24 @@ export function calculateTravelCosts(
 
   // Default coordinate fallback if unrecognised UK postcode (approx 35 miles from base)
   const coords = targetCoords || {
-    lat: config.baseLatitude + 0.3,
-    lng: config.baseLongitude + 0.3,
+    lat: safeConfig.baseLatitude + 0.3,
+    lng: safeConfig.baseLongitude + 0.3,
     name: venuePostcode || venueName || 'UK Destination'
   };
 
   const oneWayDistance = calculateHaversineDistanceMiles(
-    config.baseLatitude,
-    config.baseLongitude,
+    safeConfig.baseLatitude,
+    safeConfig.baseLongitude,
     coords.lat,
     coords.lng
   );
 
   // Check if distance exceeds Spud's maximum radius
-  if (oneWayDistance > config.maxBookingRadiusMiles) {
+  if (oneWayDistance > safeConfig.maxBookingRadiusMiles) {
     return {
       distanceMiles: oneWayDistance,
       isWithinFreeRadius: false,
-      chargeableMiles: oneWayDistance - config.freeRadiusMiles,
+      chargeableMiles: Math.max(0, oneWayDistance - safeConfig.freeRadiusMiles),
       mileageCost: 0,
       isOvernightTriggered: true,
       overnightCost: 0,
@@ -267,13 +273,13 @@ export function calculateTravelCosts(
       islandSurcharge: 0,
       totalTravelExpense: 0,
       isOverseasOrMaxDistance: true,
-      explanationText: `Distance exceeds standard ${config.maxBookingRadiusMiles}-mile radius (${oneWayDistance} miles). Submitted as a Bespoke Expedition Enquiry for Spud to review personally.`,
+      explanationText: `Distance exceeds standard ${safeConfig.maxBookingRadiusMiles}-mile radius (${oneWayDistance} miles). Submitted as a Bespoke Expedition Enquiry for Spud to review personally.`,
       matchedLocationName: coords.name
     };
   }
 
   // Zone 1: Free Radius Check (e.g. <= 50 miles)
-  if (oneWayDistance <= config.freeRadiusMiles) {
+  if (oneWayDistance <= safeConfig.freeRadiusMiles) {
     return {
       distanceMiles: oneWayDistance,
       isWithinFreeRadius: true,
@@ -282,41 +288,41 @@ export function calculateTravelCosts(
       isOvernightTriggered: false,
       overnightCost: 0,
       isIslandOrFerry: !!coords.isIsland,
-      islandSurcharge: coords.isIsland ? config.islandFerrySurcharge : 0,
-      totalTravelExpense: coords.isIsland ? config.islandFerrySurcharge : 0,
+      islandSurcharge: coords.isIsland ? safeConfig.islandFerrySurcharge : 0,
+      totalTravelExpense: coords.isIsland ? safeConfig.islandFerrySurcharge : 0,
       isOverseasOrMaxDistance: false,
-      explanationText: `Included for FREE (Venue is ${oneWayDistance} miles from Spud's base, within the ${config.freeRadiusMiles}-mile free travel radius).`,
+      explanationText: `Included for FREE (Venue is ${oneWayDistance} miles from Spud's base, within the ${safeConfig.freeRadiusMiles}-mile free travel radius).`,
       matchedLocationName: coords.name
     };
   }
 
   // Zone 2 & 3: Distance beyond free radius
-  const chargeableOneWay = oneWayDistance - config.freeRadiusMiles;
-  const multiplier = config.chargeType === 'return' ? 2 : 1;
+  const chargeableOneWay = oneWayDistance - safeConfig.freeRadiusMiles;
+  const multiplier = safeConfig.chargeType === 'return' ? 2 : 1;
   const totalChargeableMiles = chargeableOneWay * multiplier;
-  const mileageCost = Math.round(totalChargeableMiles * config.costPerMileAboveFree);
+  const mileageCost = Math.round(totalChargeableMiles * safeConfig.costPerMileAboveFree);
 
   // Overnight check (e.g. > 120 miles)
-  const isOvernightTriggered = config.enableOvernightStay && (oneWayDistance >= config.overnightThresholdMiles);
-  const overnightCost = isOvernightTriggered ? config.overnightFee : 0;
+  const isOvernightTriggered = safeConfig.enableOvernightStay && (oneWayDistance >= safeConfig.overnightThresholdMiles);
+  const overnightCost = isOvernightTriggered ? safeConfig.overnightFee : 0;
 
   // Island ferry surcharge check
   const isIsland = !!coords.isIsland;
-  const islandSurcharge = isIsland ? config.islandFerrySurcharge : 0;
+  const islandSurcharge = isIsland ? safeConfig.islandFerrySurcharge : 0;
 
   const totalTravelExpense = mileageCost + overnightCost + islandSurcharge;
 
   let breakdownParts = [
-    `£${mileageCost} mileage (${totalChargeableMiles} chargeable miles @ £${config.costPerMileAboveFree.toFixed(2)}/mi)`
+    `£${mileageCost} mileage (${totalChargeableMiles} chargeable miles @ £${safeConfig.costPerMileAboveFree.toFixed(2)}/mi)`
   ];
   if (isOvernightTriggered) {
-    breakdownParts.push(`£${overnightCost} overnight stay allowance (> ${config.overnightThresholdMiles} miles)`);
+    breakdownParts.push(`£${overnightCost} overnight stay allowance (> ${safeConfig.overnightThresholdMiles} miles)`);
   }
   if (isIsland) {
     breakdownParts.push(`£${islandSurcharge} island ferry transit surcharge`);
   }
 
-  const explanationText = `${oneWayDistance} miles from base (${config.freeRadiusMiles} miles free). Additional expenses: ${breakdownParts.join(' + ')}.`;
+  const explanationText = `${oneWayDistance} miles from base (${safeConfig.freeRadiusMiles} miles free). Additional expenses: ${breakdownParts.join(' + ')}.`;
 
   return {
     distanceMiles: oneWayDistance,

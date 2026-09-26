@@ -318,8 +318,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedTravel = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}travel_config`);
       if (savedTravel) {
         try {
-          setTravelConfig(JSON.parse(savedTravel));
-        } catch (e) {}
+          const parsed = JSON.parse(savedTravel);
+          if (parsed && typeof parsed === 'object') {
+            setTravelConfig({ ...initialTravelConfig, ...parsed });
+          }
+        } catch (e) {
+          setTravelConfig(initialTravelConfig);
+        }
       }
     } catch (err) {
       console.warn('Could not load saved state from localStorage:', err);
@@ -448,7 +453,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       unsubTravel = onSnapshot(doc(db, 'settings', 'travel_config'), (snap) => {
         if (snap.exists()) {
-          setTravelConfig(snap.data() as TravelExpensesConfig);
+          const remote = snap.data() as TravelExpensesConfig;
+          if (remote) {
+            setTravelConfig({ ...initialTravelConfig, ...remote });
+          }
         }
       }, (err) => console.log('Firestore travel_config listener:', err.message));
     } catch (e) {
