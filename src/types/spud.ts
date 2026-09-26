@@ -52,6 +52,7 @@ export interface BookingEvent {
   overnightExpense?: number;
   isOverseasOrCustomQuote?: boolean;
   travelBreakdownText?: string;
+  preferredContactMethod?: 'email' | 'telephone';
 }
 
 export interface CustomTravelZone {

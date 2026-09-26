@@ -15,7 +15,8 @@ import {
   MapPin, 
   Trash2,
   ExternalLink,
-  Sparkles
+  Sparkles,
+  Phone
 } from 'lucide-react';
 import { BookingEvent, BookingStatus } from '@/types/spud';
 
@@ -171,8 +172,21 @@ export const AdminBookings: React.FC = () => {
                     <strong className="text-white">{bk.tartanChoice}</strong>
                   </div>
                   <div>
-                    <span className="text-gray-500 font-semibold block">Contact:</span>
-                    <span className="text-white">{bk.clientPhone} • {bk.clientEmail}</span>
+                    <span className="text-gray-500 font-semibold block">Contact & Preference:</span>
+                    <span className="text-white block">{bk.clientPhone} • {bk.clientEmail}</span>
+                    <span className="inline-flex items-center gap-1 text-[11px] text-tartan-gold font-medium mt-0.5">
+                      {bk.preferredContactMethod === 'telephone' ? (
+                        <>
+                          <Phone className="w-3 h-3 text-tartan-gold" />
+                          <span>Prefers Telephone</span>
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="w-3 h-3 text-tartan-gold" />
+                          <span>Prefers Email</span>
+                        </>
+                      )}
+                    </span>
                   </div>
                 </div>
 

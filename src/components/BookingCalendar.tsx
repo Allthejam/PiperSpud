@@ -20,7 +20,8 @@ import {
   Compass,
   BedDouble,
   Ship,
-  Globe
+  Globe,
+  Phone
 } from 'lucide-react';
 import { EventType, HighlandDressOption } from '@/types/spud';
 import { calculateTravelCosts } from '@/lib/travelCalculator';
@@ -39,6 +40,7 @@ export const BookingCalendar: React.FC = () => {
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [clientPhone, setClientPhone] = useState('');
+  const [preferredContactMethod, setPreferredContactMethod] = useState<'email' | 'telephone'>('email');
   const [eventType, setEventType] = useState<EventType>('Wedding Ceremony & Reception');
   const [venueName, setVenueName] = useState('');
   const [venueAddress, setVenueAddress] = useState('');
@@ -170,10 +172,13 @@ export const BookingCalendar: React.FC = () => {
     setIsSubmitting(true);
 
     setTimeout(() => {
+      const formattedBreakdown = `${travelResult.explanationText} • Preferred Contact: ${preferredContactMethod === 'email' ? 'Email' : 'Telephone'}`;
+      
       const newBk = createBooking({
         clientName,
         clientEmail,
         clientPhone,
+        preferredContactMethod,
         eventType,
         date: selectedDate,
         timeSlot: selectedTimeSlot,
@@ -190,7 +195,7 @@ export const BookingCalendar: React.FC = () => {
         isOvernightRequired: travelResult.isOvernightTriggered,
         overnightExpense: travelResult.overnightCost,
         isOverseasOrCustomQuote: travelResult.isOverseasOrMaxDistance,
-        travelBreakdownText: travelResult.explanationText
+        travelBreakdownText: formattedBreakdown
       });
 
       setIsSubmitting(false);
@@ -245,6 +250,22 @@ export const BookingCalendar: React.FC = () => {
               <p className="text-[11px] text-gray-300">
                 {bookingSuccess.travelBreakdownText || 'Standard travel policy applied.'}
               </p>
+              <div className="flex items-center justify-between pt-1 border-t border-tartan-border/40">
+                <span className="text-gray-400">Preferred Contact Method:</span>
+                <span className="text-white font-bold flex items-center gap-1.5">
+                  {bookingSuccess.preferredContactMethod === 'telephone' ? (
+                    <>
+                      <Phone className="w-3.5 h-3.5 text-tartan-gold" />
+                      <span>Telephone ({bookingSuccess.clientPhone})</span>
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="w-3.5 h-3.5 text-tartan-gold" />
+                      <span>Email ({bookingSuccess.clientEmail})</span>
+                    </>
+                  )}
+                </span>
+              </div>
               <div className="flex items-center justify-between pt-1">
                 <span className="text-white font-bold">Estimated Total:</span>
                 <span className="text-white font-extrabold text-sm">
@@ -493,47 +514,80 @@ export const BookingCalendar: React.FC = () => {
                 </div>
 
                 {/* Form Row 2: Client Contact Details */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-tartan-gold mb-1.5">
-                      Your Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={clientName}
-                      onChange={(e) => setClientName(e.target.value)}
-                      placeholder="e.g. Fiona MacLeod"
-                      className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-3 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-tartan-accent"
-                    />
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-tartan-gold mb-1.5">
+                        Your Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={clientName}
+                        onChange={(e) => setClientName(e.target.value)}
+                        placeholder="e.g. Fiona MacLeod"
+                        className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-3 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-tartan-accent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-tartan-gold mb-1.5">
+                        Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={clientEmail}
+                        onChange={(e) => setClientEmail(e.target.value)}
+                        placeholder="fiona@example.scot"
+                        className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-3 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-tartan-accent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-tartan-gold mb-1.5">
+                        Phone Number *
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        value={clientPhone}
+                        onChange={(e) => setClientPhone(e.target.value)}
+                        placeholder="07798 123456"
+                        className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-3 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-tartan-accent"
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-tartan-gold mb-1.5">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={clientEmail}
-                      onChange={(e) => setClientEmail(e.target.value)}
-                      placeholder="fiona@example.scot"
-                      className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-3 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-tartan-accent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-tartan-gold mb-1.5">
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      value={clientPhone}
-                      onChange={(e) => setClientPhone(e.target.value)}
-                      placeholder="07798 123456"
-                      className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-3 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-tartan-accent"
-                    />
+                  {/* Preferred Contact Method Selector */}
+                  <div className="flex items-center justify-between bg-tartan-dark/80 px-4 py-2.5 rounded-xl border border-tartan-border text-xs flex-wrap gap-2">
+                    <span className="text-gray-400 font-medium">Preferred Contact Method:</span>
+                    <div className="flex items-center gap-1.5 bg-tartan-navy p-1 rounded-lg border border-tartan-border">
+                      <button
+                        type="button"
+                        onClick={() => setPreferredContactMethod('email')}
+                        className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                          preferredContactMethod === 'email'
+                            ? 'bg-tartan-gold text-tartan-dark shadow-sm'
+                            : 'text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        <Mail className="w-3.5 h-3.5" />
+                        <span>Email</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPreferredContactMethod('telephone')}
+                        className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                          preferredContactMethod === 'telephone'
+                            ? 'bg-tartan-gold text-tartan-dark shadow-sm'
+                            : 'text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        <Phone className="w-3.5 h-3.5" />
+                        <span>Telephone</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -571,23 +625,57 @@ export const BookingCalendar: React.FC = () => {
 
                 {/* Real-time Distance & Travel Expense Feedback Badge */}
                 {venuePostcode && (
-                  <div className={`p-3 rounded-xl border text-xs flex items-center gap-2.5 transition-all ${
+                  <div className={`p-4 rounded-2xl border text-xs space-y-2.5 transition-all ${
                     travelResult.isWithinFreeRadius
                       ? 'bg-emerald-950/60 border-emerald-700/80 text-emerald-300'
                       : travelResult.isOverseasOrMaxDistance
-                      ? 'bg-amber-950/70 border-amber-700/80 text-amber-200'
+                      ? 'bg-amber-950/80 border-amber-600/80 text-amber-200'
                       : 'bg-yellow-950/60 border-yellow-700/80 text-yellow-200'
                   }`}>
-                    {travelResult.isWithinFreeRadius ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                    ) : travelResult.isOverseasOrMaxDistance ? (
-                      <Globe className="w-4 h-4 text-amber-400 shrink-0" />
-                    ) : (
-                      <Compass className="w-4 h-4 text-tartan-gold shrink-0" />
-                    )}
-                    <div className="flex-1">
-                      <p className="font-semibold">{travelResult.explanationText}</p>
+                    <div className="flex items-center gap-2.5">
+                      {travelResult.isWithinFreeRadius ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      ) : travelResult.isOverseasOrMaxDistance ? (
+                        <Globe className="w-4 h-4 text-amber-400 shrink-0" />
+                      ) : (
+                        <Compass className="w-4 h-4 text-tartan-gold shrink-0" />
+                      )}
+                      <div className="flex-1">
+                        <p className="font-semibold">{travelResult.explanationText}</p>
+                      </div>
                     </div>
+
+                    {travelResult.isOverseasOrMaxDistance && (
+                      <div className="pt-2 border-t border-amber-800/60 flex items-center justify-between flex-wrap gap-2 text-xs">
+                        <span className="text-amber-300 font-medium">How would you prefer Spud to contact you for this bespoke quote?</span>
+                        <div className="flex items-center gap-1.5 bg-amber-900/60 p-1 rounded-lg border border-amber-700">
+                          <button
+                            type="button"
+                            onClick={() => setPreferredContactMethod('email')}
+                            className={`px-3 py-1 rounded-md text-xs font-bold flex items-center gap-1.5 transition-all ${
+                              preferredContactMethod === 'email'
+                                ? 'bg-tartan-gold text-tartan-dark shadow-sm'
+                                : 'text-amber-200 hover:text-white'
+                            }`}
+                          >
+                            <Mail className="w-3.5 h-3.5" />
+                            <span>Email</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPreferredContactMethod('telephone')}
+                            className={`px-3 py-1 rounded-md text-xs font-bold flex items-center gap-1.5 transition-all ${
+                              preferredContactMethod === 'telephone'
+                                ? 'bg-tartan-gold text-tartan-dark shadow-sm'
+                                : 'text-amber-200 hover:text-white'
+                            }`}
+                          >
+                            <Phone className="w-3.5 h-3.5" />
+                            <span>Telephone</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

@@ -130,19 +130,37 @@ export const AdminCRM: React.FC = () => {
 
               {/* Contact Info Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                <div className="bg-tartan-dark p-3.5 rounded-2xl border border-tartan-border space-y-1">
-                  <span className="text-gray-500 font-semibold flex items-center gap-1">
-                    <Phone className="w-3.5 h-3.5 text-green-400" /> Phone
-                  </span>
+                <div className={`p-3.5 rounded-2xl border space-y-1 ${
+                  selectedClient.preferredContactMethod === 'telephone'
+                    ? 'bg-tartan-dark border-tartan-gold/80 ring-1 ring-tartan-gold/50'
+                    : 'bg-tartan-dark border-tartan-border'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500 font-semibold flex items-center gap-1">
+                      <Phone className="w-3.5 h-3.5 text-green-400" /> Phone
+                    </span>
+                    {selectedClient.preferredContactMethod === 'telephone' && (
+                      <span className="text-[10px] bg-tartan-gold/20 text-tartan-gold px-1.5 py-0.5 rounded font-bold">Preferred</span>
+                    )}
+                  </div>
                   <a href={`tel:${selectedClient.clientPhone}`} className="text-white font-bold hover:underline block">
                     {selectedClient.clientPhone}
                   </a>
                 </div>
 
-                <div className="bg-tartan-dark p-3.5 rounded-2xl border border-tartan-border space-y-1">
-                  <span className="text-gray-500 font-semibold flex items-center gap-1">
-                    <Mail className="w-3.5 h-3.5 text-blue-400" /> Email
-                  </span>
+                <div className={`p-3.5 rounded-2xl border space-y-1 ${
+                  selectedClient.preferredContactMethod !== 'telephone'
+                    ? 'bg-tartan-dark border-tartan-gold/80 ring-1 ring-tartan-gold/50'
+                    : 'bg-tartan-dark border-tartan-border'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500 font-semibold flex items-center gap-1">
+                      <Mail className="w-3.5 h-3.5 text-blue-400" /> Email
+                    </span>
+                    {selectedClient.preferredContactMethod !== 'telephone' && (
+                      <span className="text-[10px] bg-tartan-gold/20 text-tartan-gold px-1.5 py-0.5 rounded font-bold">Preferred</span>
+                    )}
+                  </div>
                   <a href={`mailto:${selectedClient.clientEmail}`} className="text-white font-bold hover:underline block truncate">
                     {selectedClient.clientEmail}
                   </a>
