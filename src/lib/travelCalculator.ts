@@ -38,11 +38,12 @@ const UK_POSTCODE_COORDINATES: Record<string, { lat: number; lng: number; isIsla
   'IV51': { lat: 57.4120, lng: -6.1960, isIsland: true, name: 'Isle of Skye (Portree)' },
   'IV55': { lat: 57.4470, lng: -6.6570, isIsland: true, name: 'Isle of Skye (Dunvegan)' },
 
-  // Perthshire & Badenoch
+  // Perthshire & Badenoch / Aviemore
   'PH': { lat: 56.3950, lng: -3.4308, name: 'Perth & Kinross' },
   'PH15': { lat: 56.6210, lng: -3.8710, name: 'Aberfeldy / Castle Menzies' },
   'PH18': { lat: 56.7640, lng: -3.8600, name: 'Blair Atholl / Blair Castle' },
-  'PH22': { lat: 57.1983, lng: -3.8291, name: 'Aviemore & Cairngorms' },
+  'PH22': { lat: 57.1955, lng: -3.8350, name: 'Aviemore & Cairngorms' },
+  'PH221UJ': { lat: 57.1955, lng: -3.8350, name: 'Aviemore, Highlands' },
   'PH33': { lat: 56.8198, lng: -5.1052, name: 'Fort William / Ben Nevis' },
 
   // Borders & Dumfries

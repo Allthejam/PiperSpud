@@ -31,6 +31,8 @@ export const AdminTravelExpenses: React.FC = () => {
 
   // Local editing state with guaranteed fallbacks
   const [baseLocationName, setBaseLocationName] = useState(activeConfig?.baseLocationName || initialTravelConfig.baseLocationName);
+  const [publicBaseDisplay, setPublicBaseDisplay] = useState(activeConfig?.publicBaseDisplay || initialTravelConfig.publicBaseDisplay || 'Aviemore, Highlands');
+  const [exactAddressPrivate, setExactAddressPrivate] = useState(activeConfig?.exactAddressPrivate || initialTravelConfig.exactAddressPrivate || '16 Lodge Lane High Burnside, Aviemore, PH22 1UJ United Kingdom (Confidential)');
   const [basePostcode, setBasePostcode] = useState(activeConfig?.basePostcode || initialTravelConfig.basePostcode);
   const [baseLatitude, setBaseLatitude] = useState(activeConfig?.baseLatitude ?? initialTravelConfig.baseLatitude);
   const [baseLongitude, setBaseLongitude] = useState(activeConfig?.baseLongitude ?? initialTravelConfig.baseLongitude);
@@ -49,6 +51,8 @@ export const AdminTravelExpenses: React.FC = () => {
   useEffect(() => {
     if (travelConfig) {
       setBaseLocationName(travelConfig.baseLocationName || initialTravelConfig.baseLocationName);
+      setPublicBaseDisplay(travelConfig.publicBaseDisplay || initialTravelConfig.publicBaseDisplay || 'Aviemore, Highlands');
+      setExactAddressPrivate(travelConfig.exactAddressPrivate || initialTravelConfig.exactAddressPrivate || '16 Lodge Lane High Burnside, Aviemore, PH22 1UJ United Kingdom (Confidential)');
       setBasePostcode(travelConfig.basePostcode || initialTravelConfig.basePostcode);
       setBaseLatitude(travelConfig.baseLatitude ?? initialTravelConfig.baseLatitude);
       setBaseLongitude(travelConfig.baseLongitude ?? initialTravelConfig.baseLongitude);
@@ -70,20 +74,21 @@ export const AdminTravelExpenses: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Live Test Calculator state
-  const [testPostcode, setTestPostcode] = useState('EH30 9SP');
-  const [testVenueName, setTestVenueName] = useState('Dundas Castle, South Queensferry');
+  const [testPostcode, setTestPostcode] = useState('IV1 1AA');
+  const [testVenueName, setTestVenueName] = useState('Inverness Castle');
 
   // Quick base presets for Spud
   const basePresets = [
-    { name: 'Edinburgh & Lothians', postcode: 'EH1 1AA', lat: 55.9533, lng: -3.1883 },
-    { name: 'Aviemore & Cairngorms', postcode: 'PH22 1QH', lat: 57.1983, lng: -3.8291 },
-    { name: 'Inverness & Highlands', postcode: 'IV1 1AA', lat: 57.4778, lng: -4.2247 },
-    { name: 'Stirling & Central', postcode: 'FK8 1EJ', lat: 56.1165, lng: -3.9369 },
-    { name: 'Glasgow & Clyde', postcode: 'G1 1AA', lat: 55.8642, lng: -4.2518 }
+    { name: 'Aviemore & Cairngorms (Spud\'s Base)', postcode: 'PH22 1UJ', publicLabel: 'Aviemore, Highlands', lat: 57.1955, lng: -3.8350 },
+    { name: 'Inverness & Highlands', postcode: 'IV1 1AA', publicLabel: 'Inverness, Highlands', lat: 57.4778, lng: -4.2247 },
+    { name: 'Stirling & Central', postcode: 'FK8 1EJ', publicLabel: 'Stirling, Central Scotland', lat: 56.1165, lng: -3.9369 },
+    { name: 'Edinburgh & Lothians', postcode: 'EH1 1AA', publicLabel: 'Edinburgh & Lothians', lat: 55.9533, lng: -3.1883 },
+    { name: 'Glasgow & Clyde', postcode: 'G1 1AA', publicLabel: 'Glasgow & Clyde', lat: 55.8642, lng: -4.2518 }
   ];
 
   const handleApplyPreset = (preset: typeof basePresets[0]) => {
     setBaseLocationName(preset.name);
+    setPublicBaseDisplay(preset.publicLabel);
     setBasePostcode(preset.postcode);
     setBaseLatitude(preset.lat);
     setBaseLongitude(preset.lng);
@@ -96,6 +101,8 @@ export const AdminTravelExpenses: React.FC = () => {
 
     await updateTravelConfig({
       baseLocationName,
+      publicBaseDisplay,
+      exactAddressPrivate,
       basePostcode,
       baseLatitude: Number(baseLatitude),
       baseLongitude: Number(baseLongitude),
@@ -119,6 +126,8 @@ export const AdminTravelExpenses: React.FC = () => {
   // Preview config for live calculation
   const currentPreviewConfig = {
     baseLocationName,
+    publicBaseDisplay,
+    exactAddressPrivate,
     basePostcode,
     baseLatitude: Number(baseLatitude),
     baseLongitude: Number(baseLongitude),
@@ -196,6 +205,17 @@ export const AdminTravelExpenses: React.FC = () => {
               <span className="text-[11px] text-gray-400">All travel distances radiate from this pin</span>
             </div>
 
+            {/* Privacy Safeguard Banner */}
+            <div className="bg-emerald-950/40 border border-emerald-700/60 p-4 rounded-2xl space-y-1.5 text-xs text-emerald-200">
+              <div className="flex items-center gap-2 font-bold text-emerald-300">
+                <ShieldAlert className="w-4 h-4 text-emerald-400" />
+                <span>Home Privacy Safeguard Active</span>
+              </div>
+              <p className="text-[11px] text-gray-300 leading-relaxed">
+                Spud&apos;s exact residential house and street address is stored <strong>privately in the Back Office only</strong> for accurate GPS mileage calculations. The public website and client booking receipts will strictly display only <strong className="text-tartan-gold">&quot;Aviemore, Highlands&quot;</strong> as your central base location.
+              </p>
+            </div>
+
             {/* Quick Presets */}
             <div>
               <label className="block text-[11px] font-semibold text-gray-300 mb-2">
@@ -219,6 +239,37 @@ export const AdminTravelExpenses: React.FC = () => {
               </div>
             </div>
 
+            {/* Private Exact Address & Public Display Labels */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-emerald-400 mb-1 flex items-center justify-between">
+                  <span>Exact Home Address (Private Admin)</span>
+                  <span className="text-[10px] text-emerald-500 font-normal">Hidden from public</span>
+                </label>
+                <input
+                  type="text"
+                  value={exactAddressPrivate}
+                  onChange={(e) => setExactAddressPrivate(e.target.value)}
+                  placeholder="e.g. 16 Lodge Lane High Burnside, Aviemore, PH22 1UJ"
+                  className="w-full bg-tartan-dark border border-emerald-700/60 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-emerald-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-tartan-gold mb-1 flex items-center justify-between">
+                  <span>Public Central Location Label</span>
+                  <span className="text-[10px] text-gray-400 font-normal">Visible on quotes</span>
+                </label>
+                <input
+                  type="text"
+                  value={publicBaseDisplay}
+                  onChange={(e) => setPublicBaseDisplay(e.target.value)}
+                  placeholder="e.g. Aviemore, Highlands"
+                  className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-xs font-bold focus:outline-none focus:border-tartan-accent"
+                />
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-tartan-gold mb-1.5">
@@ -234,13 +285,13 @@ export const AdminTravelExpenses: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-tartan-gold mb-1.5">
-                  Base Home Postcode *
+                  Calculation Base Postcode *
                 </label>
                 <input
                   type="text"
                   value={basePostcode}
                   onChange={(e) => setBasePostcode(e.target.value.toUpperCase())}
-                  className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-tartan-accent"
+                  className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-sm font-bold focus:outline-none focus:border-tartan-accent"
                 />
               </div>
             </div>
@@ -522,7 +573,7 @@ export const AdminTravelExpenses: React.FC = () => {
                   <MapPin className="w-4 h-4 text-tartan-dark fill-current" />
                 </div>
                 <span className="mt-1 text-[10px] font-bold text-white bg-black/80 px-2 py-0.5 rounded-full border border-tartan-gold/40">
-                  {basePostcode}
+                  {publicBaseDisplay || 'Aviemore'} ({basePostcode})
                 </span>
               </div>
             </div>

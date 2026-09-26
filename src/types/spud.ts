@@ -55,10 +55,12 @@ export interface BookingEvent {
 }
 
 export interface TravelExpensesConfig {
-  baseLocationName: string; // e.g. "Spud's Home Base (Edinburgh / Lothians)"
-  basePostcode: string; // e.g. "EH1 1AA"
-  baseLatitude: number; // e.g. 55.9533
-  baseLongitude: number; // e.g. -3.1883
+  baseLocationName: string; // e.g. "Spud's Highland Home Base (Aviemore)"
+  publicBaseDisplay: string; // e.g. "Aviemore, Highlands" (publicly visible)
+  exactAddressPrivate?: string; // Private admin reference (never shown to public)
+  basePostcode: string; // e.g. "PH22 1UJ" (used for backend distance calculations)
+  baseLatitude: number; // e.g. 57.1955
+  baseLongitude: number; // e.g. -3.8350
   freeRadiusMiles: number; // e.g. 50 miles free travel
   costPerMileAboveFree: number; // e.g. £0.65 per mile
   chargeType: 'one_way' | 'return'; // standard 'return' (round trip)

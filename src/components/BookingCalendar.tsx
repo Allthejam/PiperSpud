@@ -557,7 +557,7 @@ export const BookingCalendar: React.FC = () => {
                   <div>
                     <label className="block text-xs font-semibold text-tartan-gold mb-1.5 flex items-center justify-between">
                       <span>Venue Postcode *</span>
-                      <span className="text-[10px] text-gray-400 font-normal">Base: {travelConfig.basePostcode}</span>
+                      <span className="text-[10px] text-gray-400 font-normal">Base: {travelConfig?.publicBaseDisplay || 'Aviemore, Highlands'}</span>
                     </label>
                     <input
                       type="text"

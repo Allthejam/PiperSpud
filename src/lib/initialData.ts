@@ -1176,10 +1176,12 @@ export const initialServices: ServicePackage[] = [
 ];
 
 export const initialTravelConfig: TravelExpensesConfig = {
-  baseLocationName: 'Spud\'s Home Base (Edinburgh & Lothians / Central Scotland)',
-  basePostcode: 'EH1 1AA',
-  baseLatitude: 55.9533,
-  baseLongitude: -3.1883,
+  baseLocationName: 'Spud\'s Highland Home Base (Aviemore, Cairngorms)',
+  publicBaseDisplay: 'Aviemore, Highlands',
+  exactAddressPrivate: '16 Lodge Lane High Burnside, Aviemore, PH22 1UJ United Kingdom (Confidential)',
+  basePostcode: 'PH22 1UJ',
+  baseLatitude: 57.1955,
+  baseLongitude: -3.8350,
   freeRadiusMiles: 50,
   costPerMileAboveFree: 0.65,
   chargeType: 'return',
@@ -1189,7 +1191,7 @@ export const initialTravelConfig: TravelExpensesConfig = {
   maxBookingRadiusMiles: 250,
   islandFerrySurcharge: 85,
   overseasEnquiryOnly: true,
-  customTravelNotes: 'Standard 50-mile radius from base includes Edinburgh, Lothians, Fife, Stirling, Falkirk, Glasgow, and Borders. Destinations beyond 50 miles include fair mileage reimbursement. Long-distance Highland, Island & Overseas expeditions welcome by tailored enquiry.'
+  customTravelNotes: 'Standard 50-mile free travel radius radiating from Aviemore includes Inverness, Speyside, Loch Ness, Cairngorms National Park, Pitlochry, and surrounding Highland glens. Fair mileage reimbursement applied for extended travel across Scotland. Bespoke long-distance & overseas expeditions welcome.'
 };
 
 
