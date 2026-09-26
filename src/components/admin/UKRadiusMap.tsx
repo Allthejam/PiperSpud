@@ -6,14 +6,10 @@ import {
   Compass, 
   BedDouble, 
   Layers, 
-  Maximize2, 
-  ZoomIn, 
-  ZoomOut, 
   LocateFixed, 
-  Navigation,
-  CheckCircle2,
   Sparkles,
-  Info
+  CheckCircle2,
+  HelpCircle
 } from 'lucide-react';
 import { calculateTravelCosts } from '@/lib/travelCalculator';
 import { TravelExpensesConfig } from '@/types/spud';
@@ -38,7 +34,7 @@ const KEY_SCOTTISH_AND_UK_HUBS: UKCityPoint[] = [
   { name: 'Elgin', postcode: 'IV30 1AB', region: 'Moray & Speyside', lat: 57.6499, lng: -3.3184 },
   { name: 'Pitlochry', postcode: 'PH16 5AA', region: 'Highland Perthshire', lat: 56.7044, lng: -3.7297 },
   { name: 'Grantown-on-Spey', postcode: 'PH26 3HG', region: 'Cairngorms', lat: 57.3300, lng: -3.6100 },
-  { name: 'Loch Ness / Drumnadrochit', postcode: 'IV63 6TX', region: 'Loch Ness', lat: 57.3340, lng: -4.4780 },
+  { name: 'Loch Ness', postcode: 'IV63 6TX', region: 'Great Glen & Loch Ness', lat: 57.3340, lng: -4.4780 },
   
   // Zone 2: Standard Mileage Hubs (50 - 120 mi)
   { name: 'Fort William', postcode: 'PH33 6AA', region: 'Ben Nevis & Lochaber', lat: 56.8198, lng: -5.1052 },
@@ -63,26 +59,27 @@ const KEY_SCOTTISH_AND_UK_HUBS: UKCityPoint[] = [
   { name: 'London', postcode: 'SW1A 1AA', region: 'Greater London', lat: 51.5074, lng: -0.1278 }
 ];
 
+// 100% Free Public Tile Providers - ZERO API Keys Required
 const MAP_TILE_PROVIDERS = {
-  voyager: {
+  osm: {
     name: 'Real Streets & Towns',
-    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  },
+  esriStreet: {
+    name: 'Highland Highways & A-Roads',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles &copy; Esri &mdash; Sources: Esri, DeLorme, NAVTEQ, TomTom, Intermap'
   },
   satellite: {
     name: 'Satellite & Aerial',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-  },
-  dark: {
-    name: 'Dark Stage',
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
   },
   topo: {
     name: 'Highland Topo & Glens',
-    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles &copy; Esri &mdash; Sources: USGS, Intermap, increment P Corp.'
   }
 };
 
@@ -90,12 +87,20 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
+  const leafletModuleRef = useRef<any>(null);
   const circlesLayerRef = useRef<any>(null);
   const markersLayerRef = useRef<any>(null);
 
-  const [tileTheme, setTileTheme] = useState<keyof typeof MAP_TILE_PROVIDERS>('voyager');
-  const [activeLocation, setActiveLocation] = useState<{ name: string; distance: number; cost: number; isFree: boolean; isOvernight: boolean; isEnquiry: boolean; region?: string } | null>(null);
-  const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [tileTheme, setTileTheme] = useState<keyof typeof MAP_TILE_PROVIDERS>('osm');
+  const [activeLocation, setActiveLocation] = useState<{ 
+    name: string; 
+    distance: number; 
+    cost: number; 
+    isFree: boolean; 
+    isOvernight: boolean; 
+    isEnquiry: boolean; 
+    region?: string 
+  } | null>(null);
 
   const baseLat = config.baseLatitude || 57.1955;
   const baseLng = config.baseLongitude || -3.8350;
@@ -103,13 +108,154 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
   const overnightMiles = config.overnightThresholdMiles || 120;
   const maxMiles = config.maxBookingRadiusMiles || 250;
 
-  // Initialize Real Leaflet Map
+  // Function to redraw all circles and markers
+  const renderOverlays = (L: any, map: any) => {
+    if (!circlesLayerRef.current || !markersLayerRef.current) return;
+
+    circlesLayerRef.current.clearLayers();
+    markersLayerRef.current.clearLayers();
+
+    // 1. Zone 4: Maximum Booking Boundary (> 250 miles)
+    L.circle([baseLat, baseLng], {
+      radius: maxMiles * 1609.34, // meters
+      color: '#f59e0b',
+      dashArray: '8, 8',
+      fillColor: '#f59e0b',
+      fillOpacity: 0.08,
+      weight: 2.5
+    }).addTo(circlesLayerRef.current).bindTooltip(`
+      <div style="font-family: sans-serif; font-size: 11px;">
+        <strong style="color: #b45309;">ZONE 4: &gt; ${maxMiles} Miles (Max Boundary)</strong><br/>
+        <span>Destinations beyond this trigger Bespoke Long Distance / Overseas Enquiry</span>
+      </div>
+    `, { sticky: true });
+
+    // 2. Zone 3: Extended Highland & Long Distance Journeys (> 120 miles) - ALWAYS VISIBLE!
+    L.circle([baseLat, baseLng], {
+      radius: overnightMiles * 1609.34,
+      color: '#3b82f6',
+      fillColor: '#3b82f6',
+      fillOpacity: 0.14,
+      weight: 2.5
+    }).addTo(circlesLayerRef.current).bindTooltip(`
+      <div style="font-family: sans-serif; font-size: 11px;">
+        <strong style="color: #1d4ed8;">ZONE 3: &gt; ${overnightMiles} Miles (Extended Distance)</strong><br/>
+        <span>Standard Mileage Charged (£${config.costPerMileAboveFree.toFixed(2)}/mi) ${config.enableOvernightStay ? `+ £${config.overnightFee} Overnight Stay` : '(No Overnight Fee)'}</span>
+      </div>
+    `, { sticky: true });
+
+    // 3. Zone 2: Standard Mileage Zone (50 - 120 miles)
+    L.circle([baseLat, baseLng], {
+      radius: Math.min(overnightMiles, maxMiles) * 1609.34,
+      color: '#eab308',
+      fillColor: '#eab308',
+      fillOpacity: 0.12,
+      weight: 2.5
+    }).addTo(circlesLayerRef.current).bindTooltip(`
+      <div style="font-family: sans-serif; font-size: 11px;">
+        <strong style="color: #ca8a04;">ZONE 2: 50 – ${overnightMiles} Miles (Standard Mileage)</strong><br/>
+        <span>Charged at £${config.costPerMileAboveFree.toFixed(2)}/mile return</span>
+      </div>
+    `, { sticky: true });
+
+    // 4. Zone 1: 50-Mile Free Travel Zone (Solid Emerald Green)
+    L.circle([baseLat, baseLng], {
+      radius: freeMiles * 1609.34,
+      color: '#10b981',
+      fillColor: '#10b981',
+      fillOpacity: 0.28,
+      weight: 3.5
+    }).addTo(circlesLayerRef.current).bindTooltip(`
+      <div style="font-family: sans-serif; font-size: 11px;">
+        <strong style="color: #047857;">★ ZONE 1: FREE 50-MILE RADIUS</strong><br/>
+        <span>Zero travel expense charged within this circle (Inverness, Speyside, Loch Ness, Cairngorms, Pitlochry)</span>
+      </div>
+    `, { sticky: true });
+
+    // 5. Spud's Central Home Base Marker (Aviemore)
+    const baseIcon = L.divIcon({
+      className: 'spud-base-pin',
+      html: `
+        <div style="position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer;">
+          <div style="background: linear-gradient(135deg, #d4af37 0%, #f3e5ab 50%, #aa7c11 100%); color: #0b1329; border: 3px solid #ffffff; border-radius: 9999px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; box-shadow: 0 0 20px rgba(212,175,55,0.9), 0 4px 10px rgba(0,0,0,0.5);">
+            🎺
+          </div>
+          <div style="background: #0b1329; color: #f3e5ab; border: 1.5px solid #d4af37; font-weight: 800; font-size: 10px; padding: 2px 8px; border-radius: 9999px; margin-top: 3px; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.7); letter-spacing: 0.5px;">
+            ★ BASE: ${config.publicBaseDisplay || 'Aviemore'} (${config.basePostcode})
+          </div>
+        </div>
+      `,
+      iconSize: [140, 60],
+      iconAnchor: [70, 19]
+    });
+
+    const baseMarker = L.marker([baseLat, baseLng], { icon: baseIcon, zIndexOffset: 2000 }).addTo(markersLayerRef.current);
+    baseMarker.bindPopup(`
+      <div style="color: #0b1329; font-family: sans-serif; padding: 4px 6px;">
+        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+          <span style="font-size: 16px;">🎺</span>
+          <strong style="color: #854d0e; font-size: 14px;">${config.publicBaseDisplay || 'Aviemore, Highlands'}</strong>
+        </div>
+        <p style="font-size: 11px; margin: 0; color: #374151;">
+          <strong>Postcode:</strong> ${config.basePostcode}<br/>
+          <strong>Coordinates:</strong> ${baseLat.toFixed(4)}, ${baseLng.toFixed(4)}<br/>
+          <span style="color: #059669; font-weight: bold;">★ 50-Mile Free Travel Radiates from here</span>
+        </p>
+      </div>
+    `);
+
+    // 6. City / Regional Hubs
+    KEY_SCOTTISH_AND_UK_HUBS.forEach((hub) => {
+      const cost = calculateTravelCosts(hub.postcode, hub.name, '', config);
+      
+      let markerColor = '#10b981'; // Green (Zone 1)
+      if (cost.isOverseasOrMaxDistance) markerColor = '#f59e0b'; // Amber (Zone 4)
+      else if (cost.distanceMiles >= overnightMiles) markerColor = '#3b82f6'; // Blue (Zone 3)
+      else if (cost.distanceMiles > freeMiles) markerColor = '#eab308'; // Gold (Zone 2)
+
+      const hubMarker = L.circleMarker([hub.lat, hub.lng], {
+        radius: 6,
+        fillColor: markerColor,
+        color: '#ffffff',
+        weight: 2,
+        fillOpacity: 0.95
+      }).addTo(markersLayerRef.current);
+
+      hubMarker.bindTooltip(`
+        <div style="font-family: sans-serif; font-size: 11px; line-height: 1.35; padding: 2px;">
+          <strong style="font-size: 12px; color: #0b1329;">${hub.name}</strong> <span style="color: #6b7280;">(${hub.region})</span><br/>
+          <span>Distance from Base: <b>${cost.distanceMiles} miles</b></span><br/>
+          <span>Travel Surcharge: <b style="color: ${cost.isWithinFreeRadius ? '#059669' : '#d97706'}; font-size: 12px;">${cost.isWithinFreeRadius ? 'FREE (£0.00)' : cost.isOverseasOrMaxDistance ? 'Bespoke Enquiry' : `£${cost.totalTravelExpense.toFixed(2)}`}</b></span>
+          ${cost.isOvernightTriggered ? '<br/><span style="color: #2563eb; font-weight: bold;">Includes £' + cost.overnightCost + ' Overnight Stay</span>' : ''}
+        </div>
+      `, { sticky: true });
+
+      hubMarker.on('click', () => {
+        setActiveLocation({
+          name: hub.name,
+          region: hub.region,
+          distance: cost.distanceMiles,
+          cost: cost.totalTravelExpense,
+          isFree: cost.isWithinFreeRadius,
+          isOvernight: cost.isOvernightTriggered,
+          isEnquiry: cost.isOverseasOrMaxDistance
+        });
+
+        if (onSelectTestCity) {
+          onSelectTestCity(hub.postcode, hub.name);
+        }
+      });
+    });
+  };
+
+  // Initialize Leaflet Map
   useEffect(() => {
     let isMounted = true;
 
     const initMap = async () => {
       try {
         const L = (await import('leaflet')).default;
+        leafletModuleRef.current = L;
 
         // Ensure Leaflet CSS
         if (!document.getElementById('leaflet-css')) {
@@ -122,88 +268,49 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
 
         if (!isMounted || !mapContainerRef.current) return;
 
-        // Clean up previous instance if exists
         if (mapInstanceRef.current) {
           mapInstanceRef.current.remove();
           mapInstanceRef.current = null;
         }
 
-        // Initialize Map centered on Spud's Aviemore Base
+        // Initialize Leaflet Map
         const map = L.map(mapContainerRef.current, {
-          center: [56.8, -4.2], // Center on Scottish Highlands & Central Belt
+          center: [56.8, -4.2],
           zoom: 7,
           minZoom: 5,
           maxZoom: 18,
-          zoomControl: false, // We'll render custom high-contrast buttons
+          zoomControl: false,
           scrollWheelZoom: true
         });
 
-        // Set Tile Layer
+        // Set Public Free Tile Layer
         const currentTile = MAP_TILE_PROVIDERS[tileTheme];
         tileLayerRef.current = L.tileLayer(currentTile.url, {
           attribution: currentTile.attribution,
-          subdomains: 'abcd',
+          subdomains: 'abc',
           maxZoom: 19
         }).addTo(map);
 
-        // Group for concentric radius circles
+        // Create overlay and marker layer groups
         circlesLayerRef.current = L.layerGroup().addTo(map);
-
-        // Group for city and base markers
         markersLayerRef.current = L.layerGroup().addTo(map);
 
-        // Render Base Marker (Aviemore)
-        const baseIcon = L.divIcon({
-          className: 'spud-base-pin',
-          html: `
-            <div style="position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer;">
-              <div style="background: linear-gradient(135deg, #d4af37 0%, #f3e5ab 50%, #aa7c11 100%); color: #0b1329; border: 3px solid #ffffff; border-radius: 9999px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; box-shadow: 0 0 20px rgba(212,175,55,0.9), 0 4px 10px rgba(0,0,0,0.5);">
-                🎺
-              </div>
-              <div style="background: #0b1329; color: #f3e5ab; border: 1.5px solid #d4af37; font-weight: 800; font-size: 10px; padding: 2px 8px; border-radius: 9999px; margin-top: 3px; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.7); letter-spacing: 0.5px;">
-                ★ AVIEMORE BASE (PH22 1UJ)
-              </div>
-            </div>
-          `,
-          iconSize: [120, 60],
-          iconAnchor: [60, 19]
-        });
+        // Render initial circles and markers
+        renderOverlays(L, map);
 
-        const baseMarker = L.marker([baseLat, baseLng], { icon: baseIcon, zIndexOffset: 1000 }).addTo(markersLayerRef.current);
-        baseMarker.bindPopup(`
-          <div style="color: #0b1329; font-family: sans-serif; padding: 4px 6px;">
-            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-              <span style="font-size: 16px;">🎺</span>
-              <strong style="color: #854d0e; font-size: 14px;">${config.publicBaseDisplay || 'Aviemore, Highlands'}</strong>
-            </div>
-            <p style="font-size: 11px; margin: 0; color: #374151;">
-              <strong>Calculation Postcode:</strong> ${config.basePostcode}<br/>
-              <strong>Coordinates:</strong> ${baseLat.toFixed(4)}, ${baseLng.toFixed(4)}<br/>
-              <span style="color: #059669; font-weight: bold;">★ 50-Mile Free Travel Radiates from here</span>
-            </p>
-          </div>
-        `);
-
-        // Click anywhere on map to calculate instant travel cost
+        // Interactive click anywhere on map
         map.on('click', (e: any) => {
           const clickLat = e.latlng.lat;
           const clickLng = e.latlng.lng;
-          
-          // Calculate distance from Spud's Aviemore base
-          const cost = calculateTravelCosts('', '', '', {
-            ...config,
-            baseLatitude: baseLat,
-            baseLongitude: baseLng
-          });
 
-          // Compute accurate straight-line / road distance
+          // Haversine distance
           const dLat = (clickLat - baseLat) * (Math.PI / 180);
           const dLng = (clickLng - baseLng) * (Math.PI / 180);
           const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
             Math.cos(baseLat * (Math.PI / 180)) * Math.cos(clickLat * (Math.PI / 180)) *
             Math.sin(dLng / 2) * Math.sin(dLng / 2);
           const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-          const straight = c * 3958.8; // Miles
+          const straight = c * 3958.8;
           const approxRoad = Math.round(straight * 1.25);
 
           const isFree = approxRoad <= freeMiles;
@@ -228,7 +335,6 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
         });
 
         mapInstanceRef.current = map;
-        if (isMounted) setIsMapLoaded(true);
       } catch (err) {
         console.error('Error initializing Leaflet map:', err);
       }
@@ -245,159 +351,50 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
     };
   }, []);
 
-  // Update Map Tile Layer on Theme Change
+  // Update Tile Layer on Style Switch (Ensuring zero API key requirement)
   useEffect(() => {
-    if (!mapInstanceRef.current || !tileLayerRef.current) return;
-    try {
-      const L = require('leaflet');
-      const currentTile = MAP_TILE_PROVIDERS[tileTheme];
+    if (!mapInstanceRef.current || !leafletModuleRef.current) return;
+    const L = leafletModuleRef.current;
+    const currentTile = MAP_TILE_PROVIDERS[tileTheme];
+
+    if (tileLayerRef.current) {
       mapInstanceRef.current.removeLayer(tileLayerRef.current);
-      tileLayerRef.current = L.tileLayer(currentTile.url, {
-        attribution: currentTile.attribution,
-        subdomains: 'abcd',
-        maxZoom: 19
-      }).addTo(mapInstanceRef.current);
-    } catch (err) {
-      console.error('Failed to swap tile layer:', err);
+    }
+
+    tileLayerRef.current = L.tileLayer(currentTile.url, {
+      attribution: currentTile.attribution,
+      subdomains: 'abc',
+      maxZoom: 19
+    }).addTo(mapInstanceRef.current);
+
+    // Ensure circles and markers always stay on top of the new tile layer
+    if (circlesLayerRef.current) {
+      circlesLayerRef.current.bringToFront?.();
+    }
+    if (markersLayerRef.current) {
+      markersLayerRef.current.bringToFront?.();
     }
   }, [tileTheme]);
 
-  // Update Dynamic Geodesic Radius Circles & City Markers
+  // Update Dynamic Geodesic Radius Circles when coordinates or settings change
   useEffect(() => {
-    if (!mapInstanceRef.current || !circlesLayerRef.current || !markersLayerRef.current) return;
+    if (!mapInstanceRef.current || !leafletModuleRef.current) return;
+    renderOverlays(leafletModuleRef.current, mapInstanceRef.current);
+  }, [
+    baseLat, 
+    baseLng, 
+    freeMiles, 
+    overnightMiles, 
+    maxMiles, 
+    config.costPerMileAboveFree, 
+    config.enableOvernightStay, 
+    config.overnightFee, 
+    config.chargeType,
+    config.publicBaseDisplay,
+    config.basePostcode
+  ]);
 
-    try {
-      const L = require('leaflet');
-      circlesLayerRef.current.clearLayers();
-
-      // 1. Zone 4: Maximum Booking Boundary / Overseas (> 250 miles)
-      L.circle([baseLat, baseLng], {
-        radius: maxMiles * 1609.34, // meters
-        color: '#f59e0b',
-        dashArray: '8, 8',
-        fillColor: '#f59e0b',
-        fillOpacity: 0.05,
-        weight: 2
-      }).addTo(circlesLayerRef.current).bindTooltip(`
-        <div style="font-family: sans-serif; font-size: 11px;">
-          <strong style="color: #b45309;">ZONE 4: &gt; ${maxMiles} Miles (Max Boundary)</strong><br/>
-          <span>Destinations beyond this trigger Bespoke Overseas / Long Distance Enquiry</span>
-        </div>
-      `, { sticky: true });
-
-      // 2. Zone 3: Extended Highland & Long Distance Journeys (> 120 miles) - ALWAYS VISIBLE!
-      L.circle([baseLat, baseLng], {
-        radius: overnightMiles * 1609.34,
-        color: '#3b82f6',
-        fillColor: '#3b82f6',
-        fillOpacity: 0.1,
-        weight: 2
-      }).addTo(circlesLayerRef.current).bindTooltip(`
-        <div style="font-family: sans-serif; font-size: 11px;">
-          <strong style="color: #1d4ed8;">ZONE 3: &gt; ${overnightMiles} Miles (Extended Distance)</strong><br/>
-          <span>Standard Mileage Charged (£${config.costPerMileAboveFree.toFixed(2)}/mi) ${config.enableOvernightStay ? `+ £${config.overnightFee} Overnight Stay` : '(No Overnight Fee)'}</span>
-        </div>
-      `, { sticky: true });
-
-      // 3. Zone 1: 50-Mile Free Travel Zone (Solid Emerald Green)
-      L.circle([baseLat, baseLng], {
-        radius: freeMiles * 1609.34,
-        color: '#10b981',
-        fillColor: '#10b981',
-        fillOpacity: 0.22,
-        weight: 3
-      }).addTo(circlesLayerRef.current).bindTooltip(`
-        <div style="font-family: sans-serif; font-size: 11px;">
-          <strong style="color: #047857;">★ ZONE 1: FREE 50-MILE RADIUS</strong><br/>
-          <span>Zero travel expense charged within this circle (Inverness, Speyside, Loch Ness, Cairngorms, Pitlochry)</span>
-        </div>
-      `, { sticky: true });
-
-      // Render City Markers
-      markersLayerRef.current.clearLayers();
-
-      // Re-add Base Marker
-      const baseIcon = L.divIcon({
-        className: 'spud-base-pin',
-        html: `
-          <div style="position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer;">
-            <div style="background: linear-gradient(135deg, #d4af37 0%, #f3e5ab 50%, #aa7c11 100%); color: #0b1329; border: 3px solid #ffffff; border-radius: 9999px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; box-shadow: 0 0 20px rgba(212,175,55,0.9), 0 4px 10px rgba(0,0,0,0.5);">
-              🎺
-            </div>
-            <div style="background: #0b1329; color: #f3e5ab; border: 1.5px solid #d4af37; font-weight: 800; font-size: 10px; padding: 2px 8px; border-radius: 9999px; margin-top: 3px; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.7); letter-spacing: 0.5px;">
-              ★ AVIEMORE BASE (${config.basePostcode})
-            </div>
-          </div>
-        `,
-        iconSize: [120, 60],
-        iconAnchor: [60, 19]
-      });
-
-      L.marker([baseLat, baseLng], { icon: baseIcon, zIndexOffset: 1000 })
-        .addTo(markersLayerRef.current)
-        .bindPopup(`
-          <div style="color: #0b1329; font-family: sans-serif; padding: 4px 6px;">
-            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-              <span style="font-size: 16px;">🎺</span>
-              <strong style="color: #854d0e; font-size: 14px;">${config.publicBaseDisplay || 'Aviemore, Highlands'}</strong>
-            </div>
-            <p style="font-size: 11px; margin: 0; color: #374151;">
-              <strong>Calculation Postcode:</strong> ${config.basePostcode}<br/>
-              <strong>Coordinates:</strong> ${baseLat.toFixed(4)}, ${baseLng.toFixed(4)}<br/>
-              <span style="color: #059669; font-weight: bold;">★ 50-Mile Free Travel Radiates from here</span>
-            </p>
-          </div>
-        `);
-
-      // Add Hubs
-      KEY_SCOTTISH_AND_UK_HUBS.forEach(hub => {
-        const cost = calculateTravelCosts(hub.postcode, hub.name, '', config);
-        
-        let markerColor = '#10b981'; // Green (Zone 1)
-        if (cost.isOverseasOrMaxDistance) markerColor = '#f59e0b'; // Amber (Zone 4)
-        else if (cost.distanceMiles >= overnightMiles) markerColor = '#3b82f6'; // Blue (Zone 3)
-        else if (cost.distanceMiles > freeMiles) markerColor = '#eab308'; // Gold (Zone 2)
-
-        const hubMarker = L.circleMarker([hub.lat, hub.lng], {
-          radius: 6,
-          fillColor: markerColor,
-          color: '#ffffff',
-          weight: 2,
-          fillOpacity: 0.95
-        }).addTo(markersLayerRef.current);
-
-        hubMarker.bindTooltip(`
-          <div style="font-family: sans-serif; font-size: 11px; line-height: 1.35; padding: 2px;">
-            <strong style="font-size: 12px; color: #0b1329;">${hub.name}</strong> <span style="color: #6b7280;">(${hub.region})</span><br/>
-            <span>Distance from Aviemore: <b>${cost.distanceMiles} miles</b></span><br/>
-            <span>Travel Surcharge: <b style="color: ${cost.isWithinFreeRadius ? '#059669' : '#d97706'}; font-size: 12px;">${cost.isWithinFreeRadius ? 'FREE (£0.00)' : cost.isOverseasOrMaxDistance ? 'Bespoke Enquiry' : `£${cost.totalTravelExpense.toFixed(2)}`}</b></span>
-            ${cost.isOvernightTriggered ? '<br/><span style="color: #2563eb; font-weight: bold;">Includes £' + cost.overnightCost + ' Overnight Stay</span>' : ''}
-          </div>
-        `, { sticky: true });
-
-        hubMarker.on('click', () => {
-          setActiveLocation({
-            name: hub.name,
-            region: hub.region,
-            distance: cost.distanceMiles,
-            cost: cost.totalTravelExpense,
-            isFree: cost.isWithinFreeRadius,
-            isOvernight: cost.isOvernightTriggered,
-            isEnquiry: cost.isOverseasOrMaxDistance
-          });
-
-          if (onSelectTestCity) {
-            onSelectTestCity(hub.postcode, hub.name);
-          }
-        });
-      });
-
-    } catch (err) {
-      console.error('Error updating radius circles:', err);
-    }
-  }, [baseLat, baseLng, freeMiles, overnightMiles, maxMiles, config.costPerMileAboveFree, config.enableOvernightStay, config.overnightFee, config.chargeType]);
-
-  // Quick Preset Camera Controls
+  // Camera presets
   const handleZoomPreset = (type: 'scotland' | 'uk' | 'base') => {
     if (!mapInstanceRef.current) return;
     if (type === 'base') {
@@ -422,16 +419,16 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
             <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
               <span>Actual UK & Highland Map</span>
               <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-800">
-                Live Geodesic Scale
+                100% Free Public Tiles
               </span>
             </h3>
             <p className="text-[11px] text-gray-300">
-              Interactive geographic map centered on Spud&apos;s Aviemore base
+              Live geographic map centered on Spud&apos;s base ({config.publicBaseDisplay || 'Aviemore'})
             </p>
           </div>
         </div>
 
-        {/* Tile Layers Dropdown / Buttons */}
+        {/* Public Tile Layers Buttons - Zero API keys */}
         <div className="flex items-center gap-1.5 bg-tartan-dark p-1 rounded-xl border border-tartan-border">
           {(Object.keys(MAP_TILE_PROVIDERS) as Array<keyof typeof MAP_TILE_PROVIDERS>).map((key) => (
             <button
@@ -504,7 +501,7 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
                 )}
               </div>
               <div className="text-gray-300 text-[11px]">
-                Road Distance from Aviemore Base: <strong className="text-white">{activeLocation.distance} miles</strong>
+                Road Distance from Base: <strong className="text-white">{activeLocation.distance} miles</strong>
               </div>
             </div>
 
