@@ -297,33 +297,58 @@ export function calculateTravelCosts(
     };
   }
 
-  // Zone 2 & 3: Distance beyond free radius
-  const chargeableOneWay = oneWayDistance - safeConfig.freeRadiusMiles;
+  // Check if distance falls within any intermediate Custom Travel Zones
+  const matchingCustomZone = (safeConfig.customZones || []).find(
+    (zone) => oneWayDistance >= zone.minMiles && oneWayDistance <= zone.maxMiles
+  );
+
+  const effectiveRate = matchingCustomZone?.ratePerMile !== undefined 
+    ? matchingCustomZone.ratePerMile 
+    : safeConfig.costPerMileAboveFree;
+
+  const fixedZoneSurcharge = matchingCustomZone?.fixedSurcharge || 0;
+
+  // Distance beyond free radius
+  const chargeableOneWay = Math.max(0, oneWayDistance - safeConfig.freeRadiusMiles);
   const multiplier = safeConfig.chargeType === 'return' ? 2 : 1;
   const totalChargeableMiles = chargeableOneWay * multiplier;
-  const mileageCost = Math.round(totalChargeableMiles * safeConfig.costPerMileAboveFree);
+  const mileageCost = Math.round(totalChargeableMiles * effectiveRate);
 
-  // Overnight check (e.g. > 120 miles)
-  const isOvernightTriggered = safeConfig.enableOvernightStay && (oneWayDistance >= safeConfig.overnightThresholdMiles);
-  const overnightCost = isOvernightTriggered ? safeConfig.overnightFee : 0;
+  // Overnight check (checks custom zone override or global threshold)
+  let isOvernightTriggered = false;
+  let overnightCost = 0;
+
+  if (matchingCustomZone?.enableOvernight !== undefined) {
+    if (matchingCustomZone.enableOvernight) {
+      isOvernightTriggered = true;
+      overnightCost = matchingCustomZone.overnightFee ?? safeConfig.overnightFee;
+    }
+  } else if (safeConfig.enableOvernightStay && (oneWayDistance >= safeConfig.overnightThresholdMiles)) {
+    isOvernightTriggered = true;
+    overnightCost = safeConfig.overnightFee;
+  }
 
   // Island ferry surcharge check
   const isIsland = !!coords.isIsland;
   const islandSurcharge = isIsland ? safeConfig.islandFerrySurcharge : 0;
 
-  const totalTravelExpense = mileageCost + overnightCost + islandSurcharge;
+  const totalTravelExpense = mileageCost + overnightCost + fixedZoneSurcharge + islandSurcharge;
 
   let breakdownParts = [
-    `£${mileageCost} mileage (${totalChargeableMiles} chargeable miles @ £${safeConfig.costPerMileAboveFree.toFixed(2)}/mi)`
+    `£${mileageCost} mileage (${totalChargeableMiles} chargeable miles @ £${effectiveRate.toFixed(2)}/mi)`
   ];
+  if (fixedZoneSurcharge > 0) {
+    breakdownParts.push(`£${fixedZoneSurcharge} ${matchingCustomZone?.name || 'zone'} surcharge`);
+  }
   if (isOvernightTriggered) {
-    breakdownParts.push(`£${overnightCost} overnight stay allowance (> ${safeConfig.overnightThresholdMiles} miles)`);
+    breakdownParts.push(`£${overnightCost} overnight stay allowance`);
   }
   if (isIsland) {
     breakdownParts.push(`£${islandSurcharge} island ferry transit surcharge`);
   }
 
-  const explanationText = `${oneWayDistance} miles from base (${safeConfig.freeRadiusMiles} miles free). Additional expenses: ${breakdownParts.join(' + ')}.`;
+  const zoneLabel = matchingCustomZone ? ` (${matchingCustomZone.name})` : '';
+  const explanationText = `${oneWayDistance} miles from base${zoneLabel} (${safeConfig.freeRadiusMiles} miles free). Additional expenses: ${breakdownParts.join(' + ')}.`;
 
   return {
     distanceMiles: oneWayDistance,

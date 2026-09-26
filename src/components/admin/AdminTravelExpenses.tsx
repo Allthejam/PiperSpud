@@ -19,10 +19,13 @@ import {
   Map as MapIcon,
   Fuel,
   Ship,
-  Plane
+  Plane,
+  PlusCircle,
+  Trash2
 } from 'lucide-react';
 import { calculateTravelCosts, findCoordinatesForLocation } from '@/lib/travelCalculator';
 import { initialTravelConfig } from '@/lib/initialData';
+import { CustomTravelZone } from '@/types/spud';
 import dynamic from 'next/dynamic';
 
 const UKRadiusMap = dynamic(
@@ -56,6 +59,7 @@ export const AdminTravelExpenses: React.FC = () => {
   const [overnightThresholdMiles, setOvernightThresholdMiles] = useState(activeConfig?.overnightThresholdMiles ?? initialTravelConfig.overnightThresholdMiles);
   const [overnightFee, setOvernightFee] = useState(activeConfig?.overnightFee ?? initialTravelConfig.overnightFee);
   const [enableOvernightStay, setEnableOvernightStay] = useState(activeConfig?.enableOvernightStay ?? initialTravelConfig.enableOvernightStay);
+  const [customZones, setCustomZones] = useState<CustomTravelZone[]>(activeConfig?.customZones || []);
   const [maxBookingRadiusMiles, setMaxBookingRadiusMiles] = useState(activeConfig?.maxBookingRadiusMiles ?? initialTravelConfig.maxBookingRadiusMiles);
   const [islandFerrySurcharge, setIslandFerrySurcharge] = useState(activeConfig?.islandFerrySurcharge ?? initialTravelConfig.islandFerrySurcharge);
   const [overseasEnquiryOnly, setOverseasEnquiryOnly] = useState(activeConfig?.overseasEnquiryOnly ?? initialTravelConfig.overseasEnquiryOnly);
@@ -76,6 +80,7 @@ export const AdminTravelExpenses: React.FC = () => {
       setOvernightThresholdMiles(travelConfig.overnightThresholdMiles ?? initialTravelConfig.overnightThresholdMiles);
       setOvernightFee(travelConfig.overnightFee ?? initialTravelConfig.overnightFee);
       setEnableOvernightStay(travelConfig.enableOvernightStay ?? initialTravelConfig.enableOvernightStay);
+      setCustomZones(travelConfig.customZones || []);
       setMaxBookingRadiusMiles(travelConfig.maxBookingRadiusMiles ?? initialTravelConfig.maxBookingRadiusMiles);
       setIslandFerrySurcharge(travelConfig.islandFerrySurcharge ?? initialTravelConfig.islandFerrySurcharge);
       setOverseasEnquiryOnly(travelConfig.overseasEnquiryOnly ?? initialTravelConfig.overseasEnquiryOnly);
@@ -101,6 +106,40 @@ export const AdminTravelExpenses: React.FC = () => {
     }
   };
 
+  const handleAddCustomZone = () => {
+    const nextZoneNum = 4 + customZones.length;
+    const minM = customZones.length === 0 
+      ? Math.max(overnightThresholdMiles + 30, 160)
+      : customZones[customZones.length - 1].maxMiles + 1;
+    const maxM = minM + 50;
+
+    const colors = ['#a855f7', '#ec4899', '#06b6d4', '#f97316', '#14b8a6'];
+    const assignedColor = colors[customZones.length % colors.length];
+
+    const newZone: CustomTravelZone = {
+      id: `zone-${Date.now()}`,
+      name: `Extended UK Transit (Zone ${nextZoneNum})`,
+      minMiles: minM,
+      maxMiles: maxM,
+      ratePerMile: costPerMileAboveFree,
+      fixedSurcharge: 0,
+      enableOvernight: false,
+      overnightFee: overnightFee,
+      color: assignedColor,
+      description: `Covers destinations between ${minM} and ${maxM} miles.`
+    };
+
+    setCustomZones([...customZones, newZone]);
+  };
+
+  const handleUpdateCustomZone = (id: string, updates: Partial<CustomTravelZone>) => {
+    setCustomZones(customZones.map(z => z.id === id ? { ...z, ...updates } : z));
+  };
+
+  const handleRemoveCustomZone = (id: string) => {
+    setCustomZones(customZones.filter(z => z.id !== id));
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -119,6 +158,7 @@ export const AdminTravelExpenses: React.FC = () => {
       overnightThresholdMiles: Number(overnightThresholdMiles),
       overnightFee: Number(overnightFee),
       enableOvernightStay,
+      customZones,
       maxBookingRadiusMiles: Number(maxBookingRadiusMiles),
       islandFerrySurcharge: Number(islandFerrySurcharge),
       overseasEnquiryOnly,
@@ -144,6 +184,7 @@ export const AdminTravelExpenses: React.FC = () => {
     overnightThresholdMiles: Number(overnightThresholdMiles),
     overnightFee: Number(overnightFee),
     enableOvernightStay,
+    customZones,
     maxBookingRadiusMiles: Number(maxBookingRadiusMiles),
     islandFerrySurcharge: Number(islandFerrySurcharge),
     overseasEnquiryOnly,
@@ -472,12 +513,147 @@ export const AdminTravelExpenses: React.FC = () => {
               )}
             </div>
 
-            {/* Zone 4: Maximum Distance & Overseas Safeguard */}
+            {/* Dynamic Intermediate Custom Zones */}
+            {customZones.map((cz, index) => {
+              const zoneNum = 4 + index;
+              const zoneColor = cz.color || '#a855f7';
+              return (
+                <div key={cz.id} className="bg-tartan-navy/70 rounded-2xl p-4 border border-purple-800/60 shadow-lg space-y-3 relative">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full text-slate-950 font-bold text-xs flex items-center justify-center shadow-sm" style={{ backgroundColor: zoneColor }}>
+                        {zoneNum}
+                      </span>
+                      <div>
+                        <span className="text-xs font-bold text-purple-200 uppercase tracking-wider block">
+                          Intermediate Travel Zone {zoneNum}
+                        </span>
+                        <span className="text-[10px] text-gray-300">
+                          {cz.minMiles} – {cz.maxMiles} miles from base
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveCustomZone(cz.id)}
+                      className="p-1.5 rounded-lg bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 text-xs flex items-center gap-1 transition-all"
+                      title="Delete this custom zone"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                      <span className="text-[10px] font-semibold">Remove</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-300 mb-1">
+                        Zone Name / Label
+                      </label>
+                      <input
+                        type="text"
+                        value={cz.name}
+                        onChange={(e) => handleUpdateCustomZone(cz.id, { name: e.target.value })}
+                        placeholder="e.g. Extended Borders & North England"
+                        className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white text-xs font-bold focus:outline-none focus:border-purple-400"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-300 mb-1">
+                          Min Distance (mi)
+                        </label>
+                        <input
+                          type="number"
+                          value={cz.minMiles}
+                          onChange={(e) => handleUpdateCustomZone(cz.id, { minMiles: parseInt(e.target.value) || 0 })}
+                          className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-2.5 py-2 text-white text-xs font-bold focus:outline-none focus:border-purple-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-300 mb-1">
+                          Max Distance (mi)
+                        </label>
+                        <input
+                          type="number"
+                          value={cz.maxMiles}
+                          onChange={(e) => handleUpdateCustomZone(cz.id, { maxMiles: parseInt(e.target.value) || 0 })}
+                          className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-2.5 py-2 text-white text-xs font-bold focus:outline-none focus:border-purple-400"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-gray-300 mb-1">
+                        Rate Per Mile (£)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.05"
+                        value={cz.ratePerMile ?? costPerMileAboveFree}
+                        onChange={(e) => handleUpdateCustomZone(cz.id, { ratePerMile: parseFloat(e.target.value) || 0 })}
+                        className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-1.5 text-white text-xs font-bold focus:outline-none focus:border-purple-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-semibold text-gray-300 mb-1">
+                        Fixed Zone Surcharge (£)
+                      </label>
+                      <input
+                        type="number"
+                        value={cz.fixedSurcharge || 0}
+                        onChange={(e) => handleUpdateCustomZone(cz.id, { fixedSurcharge: parseFloat(e.target.value) || 0 })}
+                        className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-1.5 text-white text-xs font-bold focus:outline-none focus:border-purple-400"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-4">
+                      <label className="flex items-center gap-2 cursor-pointer text-[11px] text-gray-300">
+                        <input
+                          type="checkbox"
+                          checked={cz.enableOvernight || false}
+                          onChange={(e) => handleUpdateCustomZone(cz.id, { enableOvernight: e.target.checked })}
+                          className="accent-purple-500 rounded w-3.5 h-3.5"
+                        />
+                        <span>Hotel Stay (£{cz.overnightFee || overnightFee})</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Add New Zone Button */}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={handleAddCustomZone}
+                className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-purple-950/60 via-tartan-navy to-purple-950/60 hover:from-purple-900/80 hover:to-purple-900/80 border border-purple-600/60 text-purple-200 text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-all hover:scale-[1.01]"
+              >
+                <PlusCircle className="w-4 h-4 text-purple-400" />
+                <span>+ Add New Intermediate Zone (Zone {4 + customZones.length})</span>
+              </button>
+            </div>
+
+            {/* Zone Max: Maximum Distance & Overseas Safeguard */}
             <div className="bg-tartan-navy/60 rounded-2xl p-4 border border-tartan-border space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-amber-500 text-slate-950 font-bold text-xs flex items-center justify-center">4</span>
-                  <span className="text-xs font-bold text-white uppercase tracking-wider">Max Distance & Overseas Enquiry Mode</span>
+                  <span className="w-5 h-5 rounded-full bg-amber-500 text-slate-950 font-bold text-xs flex items-center justify-center">
+                    {4 + customZones.length}
+                  </span>
+                  <div>
+                    <span className="text-xs font-bold text-white uppercase tracking-wider block">
+                      Zone {4 + customZones.length}: Max Distance & Overseas Safeguard
+                    </span>
+                    <span className="text-[10px] text-gray-300">
+                      Journeys &gt; {maxBookingRadiusMiles} miles from base
+                    </span>
+                  </div>
                 </div>
                 <span className="text-amber-400 font-bold text-xs">Custom Quote Required</span>
               </div>
@@ -548,6 +724,7 @@ export const AdminTravelExpenses: React.FC = () => {
               costPerMileAboveFree,
               chargeType,
               enableOvernightStay,
+              customZones,
               overnightThresholdMiles,
               overnightFee,
               maxBookingRadiusMiles,

@@ -1188,6 +1188,7 @@ export const initialTravelConfig: TravelExpensesConfig = {
   overnightThresholdMiles: 120,
   overnightFee: 120,
   enableOvernightStay: true,
+  customZones: [],
   maxBookingRadiusMiles: 250,
   islandFerrySurcharge: 85,
   overseasEnquiryOnly: true,

@@ -12,7 +12,7 @@ import {
   HelpCircle
 } from 'lucide-react';
 import { calculateTravelCosts } from '@/lib/travelCalculator';
-import { TravelExpensesConfig } from '@/types/spud';
+import { TravelExpensesConfig, CustomTravelZone } from '@/types/spud';
 
 interface UKRadiusMapProps {
   config: TravelExpensesConfig;
@@ -107,6 +107,8 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
   const freeMiles = config.freeRadiusMiles || 50;
   const overnightMiles = config.overnightThresholdMiles || 120;
   const maxMiles = config.maxBookingRadiusMiles || 250;
+  const customZones = config.customZones || [];
+  const maxZoneNumber = 4 + customZones.length;
 
   // Function to redraw all circles and markers
   const renderOverlays = (L: any, map: any) => {
@@ -115,7 +117,7 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
     circlesLayerRef.current.clearLayers();
     markersLayerRef.current.clearLayers();
 
-    // 1. Zone 4: Maximum Booking Boundary (> 250 miles)
+    // 1. Max Safeguard Zone: e.g. Zone 4, Zone 5, Zone 6 (> maxMiles)
     L.circle([baseLat, baseLng], {
       radius: maxMiles * 1609.34, // meters
       color: '#f59e0b',
@@ -125,12 +127,30 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
       weight: 2.5
     }).addTo(circlesLayerRef.current).bindTooltip(`
       <div style="font-family: sans-serif; font-size: 11px;">
-        <strong style="color: #b45309;">ZONE 4: &gt; ${maxMiles} Miles (Max Boundary)</strong><br/>
+        <strong style="color: #b45309;">ZONE ${maxZoneNumber}: &gt; ${maxMiles} Miles (Max Safeguard)</strong><br/>
         <span>Destinations beyond this trigger Bespoke Long Distance / Overseas Enquiry</span>
       </div>
     `, { sticky: true });
 
-    // 2. Zone 3: Extended Highland & Long Distance Journeys (> 120 miles) - ALWAYS VISIBLE!
+    // 2. Custom Intermediate Zones (e.g. Zone 4, Zone 5)
+    customZones.forEach((cz, idx) => {
+      const czNum = 4 + idx;
+      const zoneColor = cz.color || '#a855f7';
+      L.circle([baseLat, baseLng], {
+        radius: cz.maxMiles * 1609.34,
+        color: zoneColor,
+        fillColor: zoneColor,
+        fillOpacity: 0.12,
+        weight: 2.5
+      }).addTo(circlesLayerRef.current).bindTooltip(`
+        <div style="font-family: sans-serif; font-size: 11px;">
+          <strong style="color: ${zoneColor};">ZONE ${czNum}: ${cz.name} (${cz.minMiles} – ${cz.maxMiles} mi)</strong><br/>
+          <span>Rate: £${(cz.ratePerMile ?? config.costPerMileAboveFree).toFixed(2)}/mi ${cz.fixedSurcharge ? `+ £${cz.fixedSurcharge} Surcharge` : ''} ${cz.enableOvernight ? `+ £${cz.overnightFee ?? config.overnightFee} Overnight` : ''}</span>
+        </div>
+      `, { sticky: true });
+    });
+
+    // 3. Zone 3: Extended Highland & Long Distance Journeys (> 120 miles) - ALWAYS VISIBLE!
     L.circle([baseLat, baseLng], {
       radius: overnightMiles * 1609.34,
       color: '#3b82f6',
@@ -144,7 +164,7 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
       </div>
     `, { sticky: true });
 
-    // 3. Zone 2: Standard Mileage Zone (50 - 120 miles)
+    // 4. Zone 2: Standard Mileage Zone (50 - 120 miles)
     L.circle([baseLat, baseLng], {
       radius: Math.min(overnightMiles, maxMiles) * 1609.34,
       color: '#eab308',
@@ -158,7 +178,7 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
       </div>
     `, { sticky: true });
 
-    // 4. Zone 1: 50-Mile Free Travel Zone (Solid Emerald Green)
+    // 5. Zone 1: 50-Mile Free Travel Zone (Solid Emerald Green)
     L.circle([baseLat, baseLng], {
       radius: freeMiles * 1609.34,
       color: '#10b981',
@@ -172,7 +192,7 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
       </div>
     `, { sticky: true });
 
-    // 5. Spud's Central Home Base Marker (Aviemore)
+    // 6. Spud's Central Home Base Marker (Aviemore)
     const baseIcon = L.divIcon({
       className: 'spud-base-pin',
       html: `
@@ -204,12 +224,12 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
       </div>
     `);
 
-    // 6. City / Regional Hubs
+    // 7. City / Regional Hubs
     KEY_SCOTTISH_AND_UK_HUBS.forEach((hub) => {
       const cost = calculateTravelCosts(hub.postcode, hub.name, '', config);
       
       let markerColor = '#10b981'; // Green (Zone 1)
-      if (cost.isOverseasOrMaxDistance) markerColor = '#f59e0b'; // Amber (Zone 4)
+      if (cost.isOverseasOrMaxDistance) markerColor = '#f59e0b'; // Amber (Max Zone)
       else if (cost.distanceMiles >= overnightMiles) markerColor = '#3b82f6'; // Blue (Zone 3)
       else if (cost.distanceMiles > freeMiles) markerColor = '#eab308'; // Gold (Zone 2)
 
@@ -319,8 +339,11 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
           
           let estCost = 0;
           if (!isFree && !isEnquiry) {
+            const matchingCz = customZones.find(z => approxRoad >= z.minMiles && approxRoad <= z.maxMiles);
+            const rate = matchingCz?.ratePerMile ?? config.costPerMileAboveFree;
+            const surcharge = matchingCz?.fixedSurcharge ?? 0;
             const chargeMiles = (approxRoad - freeMiles) * (config.chargeType === 'return' ? 2 : 1);
-            estCost = Math.round(chargeMiles * config.costPerMileAboveFree) + (isOvernight ? config.overnightFee : 0);
+            estCost = Math.round(chargeMiles * rate) + surcharge + (isOvernight ? config.overnightFee : 0);
           }
 
           setActiveLocation({
@@ -351,7 +374,7 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
     };
   }, []);
 
-  // Update Tile Layer on Style Switch (Ensuring zero API key requirement)
+  // Update Tile Layer on Style Switch
   useEffect(() => {
     if (!mapInstanceRef.current || !leafletModuleRef.current) return;
     const L = leafletModuleRef.current;
@@ -367,7 +390,6 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
       maxZoom: 19
     }).addTo(mapInstanceRef.current);
 
-    // Ensure circles and markers always stay on top of the new tile layer
     if (circlesLayerRef.current) {
       circlesLayerRef.current.bringToFront?.();
     }
@@ -391,7 +413,8 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
     config.overnightFee, 
     config.chargeType,
     config.publicBaseDisplay,
-    config.basePostcode
+    config.basePostcode,
+    JSON.stringify(customZones)
   ]);
 
   // Camera presets
@@ -419,7 +442,7 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
             <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
               <span>Actual UK & Highland Map</span>
               <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-800">
-                100% Free Public Tiles
+                Live Dynamic Scale
               </span>
             </h3>
             <p className="text-[11px] text-gray-300">
@@ -537,7 +560,7 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
 
       </div>
 
-      {/* Geodesic Zone Legend Grid */}
+      {/* Dynamic Geodesic Zone Legend Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
         {/* Zone 1 */}
         <div className="bg-emerald-950/50 border border-emerald-700/60 rounded-xl p-2.5 text-[11px] space-y-0.5">
@@ -545,7 +568,7 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-400"></span>
             <span>Zone 1: Free Radius</span>
           </div>
-          <p className="text-[10px] text-gray-300">0 – {freeMiles} miles (100% Free Travel)</p>
+          <p className="text-[10px] text-gray-300">0 – {freeMiles} mi (Free Travel)</p>
         </div>
 
         {/* Zone 2 */}
@@ -557,7 +580,7 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
           <p className="text-[10px] text-gray-300">{freeMiles}+ mi (@ £{config.costPerMileAboveFree.toFixed(2)}/mi)</p>
         </div>
 
-        {/* Zone 3 - Always visible with/without hotel stay */}
+        {/* Zone 3 */}
         <div className="bg-blue-950/50 border border-blue-700/60 rounded-xl p-2.5 text-[11px] space-y-0.5">
           <div className="flex items-center gap-1.5 font-bold text-blue-300">
             <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-400"></span>
@@ -568,13 +591,28 @@ export const UKRadiusMap: React.FC<UKRadiusMapProps> = ({ config, onSelectTestCi
           </p>
         </div>
 
-        {/* Zone 4 */}
+        {/* Dynamic Custom Zones in Legend */}
+        {customZones.map((cz, idx) => {
+          const czNum = 4 + idx;
+          const color = cz.color || '#a855f7';
+          return (
+            <div key={cz.id} className="bg-purple-950/50 border border-purple-700/60 rounded-xl p-2.5 text-[11px] space-y-0.5">
+              <div className="flex items-center gap-1.5 font-bold text-purple-300 truncate">
+                <span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: color }}></span>
+                <span className="truncate">Zone {czNum}: {cz.name}</span>
+              </div>
+              <p className="text-[10px] text-gray-300 truncate">{cz.minMiles} – {cz.maxMiles} mi (@ £{(cz.ratePerMile ?? config.costPerMileAboveFree).toFixed(2)}/mi)</p>
+            </div>
+          );
+        })}
+
+        {/* Max Safeguard Zone */}
         <div className="bg-amber-950/50 border border-amber-700/60 rounded-xl p-2.5 text-[11px] space-y-0.5">
           <div className="flex items-center gap-1.5 font-bold text-amber-300">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm shadow-amber-400"></span>
-            <span>Zone 4: Max / Overseas</span>
+            <span>Zone {maxZoneNumber}: Max Safeguard</span>
           </div>
-          <p className="text-[10px] text-gray-300">&gt; {maxMiles} mi (Direct Enquiry)</p>
+          <p className="text-[10px] text-gray-300">&gt; {maxMiles} mi (Enquiry Mode)</p>
         </div>
       </div>
 

@@ -54,6 +54,19 @@ export interface BookingEvent {
   travelBreakdownText?: string;
 }
 
+export interface CustomTravelZone {
+  id: string;
+  name: string;
+  minMiles: number;
+  maxMiles: number;
+  ratePerMile?: number; // optional custom per mile rate
+  fixedSurcharge?: number; // optional fixed zone surcharge
+  enableOvernight?: boolean;
+  overnightFee?: number;
+  color?: string; // e.g. '#a855f7', '#ec4899', '#06b6d4'
+  description?: string;
+}
+
 export interface TravelExpensesConfig {
   baseLocationName: string; // e.g. "Spud's Highland Home Base (Aviemore)"
   publicBaseDisplay: string; // e.g. "Aviemore, Highlands" (publicly visible)
@@ -67,6 +80,7 @@ export interface TravelExpensesConfig {
   overnightThresholdMiles: number; // e.g. 120 miles
   overnightFee: number; // e.g. £120.00 accommodation fee
   enableOvernightStay: boolean;
+  customZones?: CustomTravelZone[]; // Dynamic intermediate zones (e.g. Zone 4 between Zone 3 & Max Safeguard)
   maxBookingRadiusMiles: number; // e.g. 250 miles
   islandFerrySurcharge: number; // e.g. £85.00
   overseasEnquiryOnly: boolean; // convert >maxRadius or non-UK to bespoke enquiry
