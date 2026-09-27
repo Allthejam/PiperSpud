@@ -503,10 +503,43 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
           </div>
         )}
 
-        {/* ── FULL MODE ONLY: 2. SEARCH & DROPDOWN FILTER BAR ── */}
+        {/* ── FULL MODE ONLY: 2. SEARCH & DROPDOWN FILTER BAR WITH UNDER-CONSTRUCTION CAVEAT ── */}
         {!isHomePage && (
-          <div className="bg-tartan-card/95 p-4 sm:p-5 rounded-2xl border border-tartan-border shadow-xl space-y-4 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-center">
+          <div className="space-y-4 mb-8">
+            
+            {/* Audio Preview & Library Under Construction Notice Banner */}
+            <div className="bg-gradient-to-r from-amber-950/60 via-tartan-navy to-amber-950/40 border border-amber-500/40 rounded-2xl p-4 sm:p-5 flex items-start gap-3.5 shadow-xl backdrop-blur-sm">
+              <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0 mt-0.5 shadow-sm">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div className="space-y-1 flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <EditableElement
+                    id="tunes-caveat-title"
+                    tag="h4"
+                    defaultContent="Audio Jukebox Notice — Repertoire Library Under Construction"
+                    className="text-xs sm:text-sm font-bold text-amber-300 font-serif"
+                    label="Tunes Caveat Title"
+                    section="tunes"
+                  />
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-500/30 font-mono uppercase tracking-wider">
+                    Demonstration Samples
+                  </span>
+                </div>
+                <EditableElement
+                  id="tunes-caveat-desc"
+                  tag="p"
+                  defaultContent="Please note: The audio jukebox currently features demonstration sound samples and temporary reference recordings while Spud completes recording and cataloguing his official studio masters. Full master recordings and final track durations will replace these samples as Spud uploads his studio music."
+                  className="text-xs text-amber-200/90 leading-relaxed"
+                  label="Tunes Caveat Description"
+                  section="tunes"
+                />
+              </div>
+            </div>
+
+            {/* Filter Control Bar: Search Input, Moment Dropdown & Instrument Dropdown */}
+            <div className="bg-tartan-card/95 p-4 sm:p-5 rounded-2xl border border-tartan-border shadow-xl space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-center">
               
               {/* 1. Search Bar (5 cols) */}
               <div className="md:col-span-5 relative">
@@ -627,6 +660,7 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
               )}
             </div>
           </div>
+        </div>
         )}
 
         {/* ── 3. JUKEBOX TUNE CARDS GRID ── */}
