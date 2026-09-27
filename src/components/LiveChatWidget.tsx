@@ -16,7 +16,8 @@ import {
   CheckCircle2,
   Clock,
   User,
-  HelpCircle
+  HelpCircle,
+  Radio
 } from 'lucide-react';
 
 export const LiveChatWidget: React.FC = () => {
@@ -49,13 +50,6 @@ export const LiveChatWidget: React.FC = () => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [isOpen, chatMessages, activeTab, markChatAsRead]);
-
-  // When Spud goes offline while open, we can give a friendly prompt
-  useEffect(() => {
-    if (!isSpudOnline && isOpen && !inquirySubmitted) {
-      // Optional: keep current tab or gently suggest offline inquiry
-    }
-  }, [isSpudOnline, isOpen, inquirySubmitted]);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,61 +90,90 @@ export const LiveChatWidget: React.FC = () => {
 
   return (
     <>
-      {/* Floating Chat Trigger Button */}
+      {/* ================= FLOATING TRIGGER BUTTON & STATUS BADGE ================= */}
       {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-40 p-4 rounded-full bg-gold-gradient text-tartan-dark shadow-2xl hover:scale-110 transition-transform flex items-center justify-center border-2 border-yellow-300 ring-4 ring-black/30 group"
-          title={isSpudOnline ? "Chat live with Spud the Piper" : "Leave a question for Spud the Piper"}
-        >
-          <div className="relative">
-            <MessageCircle className="w-7 h-7" />
-            <span 
-              className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-tartan-dark ${
-                isSpudOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
-              }`} 
-              title={isSpudOnline ? 'Spud is Online' : 'Spud is Offline'}
-            />
-          </div>
-          {unreadChatCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center border-2 border-white animate-bounce">
-              {unreadChatCount}
+        <div className="fixed bottom-6 right-4 sm:right-6 z-40 flex flex-col items-end gap-2 group">
+          
+          {/* Teaser pill / status chip */}
+          <div 
+            onClick={() => setIsOpen(true)}
+            className={`cursor-pointer px-3 py-1.5 rounded-full shadow-lg border text-xs font-bold flex items-center gap-2 backdrop-blur-md transition-all hover:scale-105 ${
+              isSpudOnline 
+                ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-300' 
+                : 'bg-red-950/90 border-red-500/50 text-red-300'
+            }`}
+          >
+            <span className="relative flex h-2.5 w-2.5">
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                isSpudOnline ? 'bg-emerald-400' : 'bg-red-400'
+              }`} />
+              <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                isSpudOnline ? 'bg-emerald-500' : 'bg-red-500'
+              }`} />
             </span>
-          )}
-          <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out pl-0 group-hover:pl-2 text-xs font-bold uppercase tracking-wider">
-            {isSpudOnline ? 'Chat with Spud' : 'Email / Ask Spud'}
-          </span>
-        </button>
+            <span>{isSpudOnline ? 'Spud is Online' : 'Spud is Offline'}</span>
+          </div>
+
+          {/* Main Floating Button */}
+          <button
+            onClick={() => setIsOpen(true)}
+            className="p-4 rounded-full bg-gold-gradient text-tartan-dark shadow-2xl hover:scale-110 transition-transform flex items-center justify-center border-2 border-yellow-300 ring-4 ring-black/40"
+            title={isSpudOnline ? "Spud is ONLINE • Chat live now" : "Spud is OFFLINE • Leave a question"}
+          >
+            <div className="relative">
+              <MessageCircle className="w-7 h-7" />
+              <span 
+                className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-tartan-dark shadow ${
+                  isSpudOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-600'
+                }`} 
+              />
+            </div>
+            {unreadChatCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center border-2 border-white animate-bounce shadow">
+                {unreadChatCount}
+              </span>
+            )}
+            <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out pl-0 group-hover:pl-2 text-xs font-extrabold uppercase tracking-wider">
+              {isSpudOnline ? 'Chat with Spud' : 'Email / Ask Spud'}
+            </span>
+          </button>
+        </div>
       )}
 
-      {/* Floating Chat Window */}
+      {/* ================= FLOATING CHAT WINDOW ================= */}
       {isOpen && (
-        <div className="fixed bottom-6 right-4 sm:right-6 z-50 w-full max-w-sm sm:max-w-md bg-tartan-card border border-tartan-accent/50 rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[560px] animate-in slide-in-from-bottom-5 duration-200">
+        <div className="fixed bottom-6 right-4 sm:right-6 z-50 w-full max-w-sm sm:max-w-md bg-tartan-card border border-tartan-accent/50 rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[580px] animate-in slide-in-from-bottom-5 duration-200">
           
           {/* Header */}
-          <div className="bg-gradient-to-r from-tartan-navy to-tartan-dark px-5 py-3.5 border-b border-tartan-border flex items-center justify-between">
+          <div className="bg-gradient-to-r from-tartan-navy to-tartan-dark px-5 py-4 border-b border-tartan-border flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="relative">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-tartan-accent to-amber-700 flex items-center justify-center text-tartan-dark font-serif font-bold text-base shadow-inner">
+                <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-tartan-accent to-amber-700 flex items-center justify-center text-tartan-dark font-serif font-bold text-lg shadow-inner border border-yellow-300/40">
                   S
                 </div>
                 <span 
-                  className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-tartan-navy ${
-                    isSpudOnline ? 'bg-emerald-500 ring-2 ring-emerald-400/30' : 'bg-red-500 ring-2 ring-red-400/30'
+                  className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-tartan-navy shadow ${
+                    isSpudOnline ? 'bg-emerald-500 ring-2 ring-emerald-400/40 animate-pulse' : 'bg-red-600 ring-2 ring-red-400/40'
                   }`} 
                 />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-white font-serif flex items-center gap-1.5">
-                  Spud the Piper
-                  <span className={`text-[9px] uppercase font-sans tracking-wider px-1.5 py-0.5 rounded font-extrabold ${
-                    isSpudOnline ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-bold text-white font-serif">
+                    Spud the Piper
+                  </h4>
+                  {/* PROMINENT ONLINE / OFFLINE BADGE */}
+                  <span className={`text-[10px] uppercase font-sans tracking-wider px-2 py-0.5 rounded-full font-black border flex items-center gap-1 ${
+                    isSpudOnline 
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50' 
+                      : 'bg-red-500/20 text-red-300 border-red-500/50'
                   }`}>
-                    {isSpudOnline ? 'Online' : 'Offline'}
+                    <span className={`w-1.5 h-1.5 rounded-full ${isSpudOnline ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                    {isSpudOnline ? 'ONLINE' : 'OFFLINE'}
                   </span>
-                </h4>
-                <p className="text-[11px] text-gray-300">
-                  {isSpudOnline ? '🟢 Live & Ready to Chat' : '🔴 Away at event • Leave a question'}
+                </div>
+                <p className="text-[11px] text-gray-300 font-medium">
+                  {isSpudOnline ? '🟢 Live & Ready to Chat' : '🔴 Away at an event • Leave a question'}
                 </p>
               </div>
             </div>
@@ -173,11 +196,33 @@ export const LiveChatWidget: React.FC = () => {
             </div>
           </div>
 
+          {/* HIGH VISIBILITY STATUS BANNER */}
+          <div className={`px-4 py-2 border-b text-[11px] flex items-center justify-between ${
+            isSpudOnline
+              ? 'bg-emerald-950/80 border-emerald-600/30 text-emerald-200'
+              : 'bg-red-950/90 border-red-600/40 text-red-200'
+          }`}>
+            <span className="flex items-center gap-1.5 font-medium">
+              <Radio className={`w-3.5 h-3.5 shrink-0 ${isSpudOnline ? 'text-emerald-400 animate-pulse' : 'text-red-400'}`} />
+              {isSpudOnline 
+                ? 'Spud is ONLINE: Instant live replies.' 
+                : 'Spud is OFFLINE: Away playing pipes.'}
+            </span>
+            {!isSpudOnline && activeTab !== 'inquiry' && (
+              <button
+                onClick={() => setActiveTab('inquiry')}
+                className="text-[11px] text-tartan-gold underline font-bold hover:text-white ml-2 whitespace-nowrap"
+              >
+                Email Form &rarr;
+              </button>
+            )}
+          </div>
+
           {/* Navigation Tabs (Live Chat vs Email/Ask Us) */}
-          <div className="bg-tartan-dark/95 border-b border-tartan-border grid grid-cols-2 p-1 gap-1 text-xs">
+          <div className="bg-tartan-dark/95 border-b border-tartan-border grid grid-cols-2 p-1.5 gap-1.5 text-xs">
             <button
               onClick={() => setActiveTab('chat')}
-              className={`py-1.5 px-3 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all ${
+              className={`py-2 px-3 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all ${
                 activeTab === 'chat'
                   ? 'bg-tartan-accent text-tartan-dark shadow-sm'
                   : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -191,7 +236,7 @@ export const LiveChatWidget: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('inquiry')}
-              className={`py-1.5 px-3 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all ${
+              className={`py-2 px-3 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all ${
                 activeTab === 'inquiry'
                   ? 'bg-tartan-accent text-tartan-dark shadow-sm'
                   : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -205,22 +250,6 @@ export const LiveChatWidget: React.FC = () => {
           {/* TAB 1: LIVE CHAT */}
           {activeTab === 'chat' && (
             <>
-              {/* Offline Warning Banner inside Chat if Offline */}
-              {!isSpudOnline && (
-                <div className="bg-amber-950/70 border-b border-amber-600/30 px-3.5 py-2 flex items-center justify-between text-[11px] text-amber-200">
-                  <span className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    Spud is offline. Messages are recorded for direct reply.
-                  </span>
-                  <button
-                    onClick={() => setActiveTab('inquiry')}
-                    className="underline text-tartan-gold font-bold hover:text-white ml-2 whitespace-nowrap"
-                  >
-                    Leave Details
-                  </button>
-                </div>
-              )}
-
               {/* Quick FAQ Prompts */}
               <div className="bg-tartan-dark/80 px-3 py-1.5 border-b border-tartan-border flex items-center gap-2 overflow-x-auto text-[11px] no-scrollbar">
                 <button
@@ -284,7 +313,7 @@ export const LiveChatWidget: React.FC = () => {
                   type="text"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  placeholder={isSpudOnline ? "Type your message for Spud..." : "Type your question (we'll save it)..."}
+                  placeholder={isSpudOnline ? "Type your message (Spud is online)..." : "Type your question (saved for Spud)..."}
                   className="flex-1 bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent"
                 />
                 <button
