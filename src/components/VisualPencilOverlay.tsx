@@ -38,7 +38,12 @@ import {
   ArrowRight,
   Crosshair,
   Plus,
-  Minus
+  Minus,
+  Share2,
+  Trash2,
+  ExternalLink,
+  FileImage,
+  CheckCircle2
 } from 'lucide-react';
 import { EditableCmsBlock } from '@/types/spud';
 
@@ -88,7 +93,7 @@ export const VisualPencilOverlay: React.FC = () => {
   const [seoCanonical, setSeoCanonical] = useState('');
   const [seoOgImage, setSeoOgImage] = useState('');
   const [seoSchemaType, setSeoSchemaType] = useState('LocalBusiness');
-  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
+  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile' | 'social'>('mobile');
   const [isSavedSuccess, setIsSavedSuccess] = useState(false);
 
   // Derive current page ID from URL pathname
@@ -265,6 +270,19 @@ export const VisualPencilOverlay: React.FC = () => {
       'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1000&q=80'
     ];
     setImageUrl(stockPipes[Math.floor(Math.random() * stockPipes.length)]);
+  };
+
+  const handleOgImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setSeoOgImage(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // Build dynamic Schema.org JSON-LD for the selected page
@@ -1041,70 +1059,287 @@ export const VisualPencilOverlay: React.FC = () => {
                   />
                 </div>
 
-                {/* Social Share OG Image */}
-                <div>
-                  <label className="block text-tartan-gold font-bold mb-1">OpenGraph Social Share Image (og:image)</label>
-                  <input
-                    type="text"
-                    value={seoOgImage}
-                    onChange={(e) => setSeoOgImage(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white focus:border-tartan-accent focus:outline-none"
-                  />
+                {/* OpenGraph Social Share Image (og:image) Studio */}
+                <div className="bg-tartan-navy/50 p-4 rounded-2xl border border-tartan-border space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="block text-tartan-gold font-bold text-xs flex items-center gap-1.5">
+                        <ImageIcon className="w-3.5 h-3.5 text-tartan-gold" />
+                        <span>Social Share Image (og:image)</span>
+                      </label>
+                      <p className="text-[10px] text-gray-400">
+                        Shown when sharing on WhatsApp, Facebook, iMessage, and X (1200 × 630 px)
+                      </p>
+                    </div>
+                    {seoOgImage && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-600/40 font-mono">
+                        Active Image Set
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Image Preview / Drop Zone */}
+                  <div className="relative aspect-[1.91/1] w-full rounded-xl overflow-hidden bg-tartan-dark border-2 border-dashed border-tartan-border group flex items-center justify-center">
+                    {seoOgImage ? (
+                      <>
+                        <img 
+                          src={seoOgImage} 
+                          alt="Social Preview" 
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-4">
+                          <label className="cursor-pointer bg-tartan-gold text-tartan-dark font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 hover:brightness-110 shadow-lg">
+                            <Upload className="w-3.5 h-3.5" />
+                            <span>Replace Image</span>
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              className="hidden" 
+                              onChange={handleOgImageUpload}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setSeoOgImage('')}
+                            className="bg-red-600/80 hover:bg-red-600 text-white p-1.5 rounded-lg text-xs flex items-center justify-center shadow-lg"
+                            title="Remove Image"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <label className="cursor-pointer flex flex-col items-center justify-center p-6 text-center text-gray-400 hover:text-tartan-gold transition-colors w-full h-full">
+                        <Upload className="w-8 h-8 mb-2 text-tartan-gold/70" />
+                        <span className="font-semibold text-xs text-white">Click to Upload Social Image</span>
+                        <span className="text-[10px] text-gray-400 mt-0.5">JPG, PNG, WebP (Max 5MB)</span>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          onChange={handleOgImageUpload}
+                        />
+                      </label>
+                    )}
+                  </div>
+
+                  {/* Direct URL input & Upload Button */}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={seoOgImage}
+                      onChange={(e) => setSeoOgImage(e.target.value)}
+                      placeholder="Paste image URL (https://...) or use Upload button"
+                      className="flex-1 bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white text-xs focus:border-tartan-accent focus:outline-none"
+                    />
+                    <label className="cursor-pointer bg-tartan-navy hover:bg-tartan-dark text-gray-200 hover:text-white border border-tartan-border rounded-xl px-3 py-2 text-xs font-semibold flex items-center gap-1.5 shrink-0 transition-colors">
+                      <Upload className="w-3.5 h-3.5 text-tartan-gold" />
+                      <span>Upload</span>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={handleOgImageUpload}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Quick Scottish Presets */}
+                  <div>
+                    <span className="text-[10px] text-gray-400 uppercase font-semibold tracking-wider block mb-1.5">
+                      Quick Scottish Presets for Spud:
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                      {[
+                        { label: 'Feather Bonnet', url: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80' },
+                        { label: 'Castle Wedding', url: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&q=80' },
+                        { label: 'Highland Sunset', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&q=80' },
+                        { label: 'Bagpipes Stage', url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&q=80' }
+                      ].map((preset) => (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => setSeoOgImage(preset.url)}
+                          className={`px-2 py-1 rounded-lg text-[10px] font-medium border text-left truncate transition-colors ${
+                            seoOgImage === preset.url 
+                              ? 'bg-tartan-gold text-tartan-dark border-tartan-gold font-bold' 
+                              : 'bg-tartan-dark/70 text-gray-300 hover:text-white border-tartan-border hover:bg-tartan-dark'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
               </div>
 
-              {/* Right Column: Live Google & Social Preview & Schema */}
+              {/* Right Column: Live Multi-Device Search & Social Simulator */}
               <div className="lg:col-span-5 space-y-4">
                 
-                {/* Google SERP Card */}
+                {/* Search Simulator Card */}
                 <div className="bg-tartan-navy/60 rounded-2xl p-4 border border-tartan-border space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
                     <h4 className="font-bold text-tartan-gold uppercase tracking-wider flex items-center gap-1.5 text-xs">
                       <Search className="w-3.5 h-3.5" />
-                      <span>Live Google Search Simulator</span>
+                      <span>Live Search & Social Simulator</span>
                     </h4>
-                    <div className="flex items-center gap-1 bg-tartan-dark rounded-lg p-1 border border-tartan-border/80">
-                      <button
-                        type="button"
-                        onClick={() => setPreviewDevice('desktop')}
-                        className={`p-1 rounded ${previewDevice === 'desktop' ? 'bg-tartan-accent/30 text-tartan-gold' : 'text-gray-400'}`}
-                        title="Desktop Preview"
-                      >
-                        <Monitor className="w-3.5 h-3.5" />
-                      </button>
+                    
+                    {/* Device Selector Tabs */}
+                    <div className="flex items-center bg-tartan-dark rounded-xl p-1 border border-tartan-border/80 text-[11px]">
                       <button
                         type="button"
                         onClick={() => setPreviewDevice('mobile')}
-                        className={`p-1 rounded ${previewDevice === 'mobile' ? 'bg-tartan-accent/30 text-tartan-gold' : 'text-gray-400'}`}
-                        title="Mobile Preview"
+                        className={`px-2.5 py-1 rounded-lg font-medium flex items-center gap-1.5 transition-all ${
+                          previewDevice === 'mobile' 
+                            ? 'bg-tartan-gold text-tartan-dark font-bold shadow-sm' 
+                            : 'text-gray-400 hover:text-white'
+                        }`}
+                        title="Mobile Phone Search Preview"
                       >
                         <Smartphone className="w-3.5 h-3.5" />
+                        <span>Mobile</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewDevice('desktop')}
+                        className={`px-2.5 py-1 rounded-lg font-medium flex items-center gap-1.5 transition-all ${
+                          previewDevice === 'desktop' 
+                            ? 'bg-tartan-gold text-tartan-dark font-bold shadow-sm' 
+                            : 'text-gray-400 hover:text-white'
+                        }`}
+                        title="Desktop PC Search Preview"
+                      >
+                        <Monitor className="w-3.5 h-3.5" />
+                        <span>PC</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewDevice('social')}
+                        className={`px-2.5 py-1 rounded-lg font-medium flex items-center gap-1.5 transition-all ${
+                          previewDevice === 'social' 
+                            ? 'bg-tartan-gold text-tartan-dark font-bold shadow-sm' 
+                            : 'text-gray-400 hover:text-white'
+                        }`}
+                        title="WhatsApp / Facebook Share Card Preview"
+                      >
+                        <Share2 className="w-3.5 h-3.5" />
+                        <span>Social Card</span>
                       </button>
                     </div>
                   </div>
 
-                  {/* Google Snippet Box */}
-                  <div className="bg-white text-gray-900 p-4 rounded-xl border border-gray-200 shadow-sm text-left font-sans">
-                    <div className="flex items-center gap-2 text-[11px] text-gray-600 mb-1">
-                      <span className="w-4 h-4 rounded-full bg-amber-500 text-white font-bold flex items-center justify-center text-[9px]">S</span>
-                      <div className="truncate">
-                        <span className="text-gray-800 font-medium">spudthepiper.com</span>
-                        <span className="text-gray-500"> › {selectedPageId === 'home' ? '' : selectedPageId}</span>
+                  {/* 1. MOBILE PHONE PREVIEW */}
+                  {previewDevice === 'mobile' && (
+                    <div className="max-w-[340px] mx-auto bg-[#f8f9fa] text-gray-900 rounded-2xl border-4 border-slate-700 shadow-xl overflow-hidden font-sans">
+                      {/* Mobile Header Bar */}
+                      <div className="bg-white px-3 py-2 border-b border-gray-200 flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-red-400" />
+                        <div className="flex-1 bg-gray-100 rounded-full px-2.5 py-1 text-[10px] text-gray-600 truncate flex items-center gap-1">
+                          <Search className="w-2.5 h-2.5 text-gray-400 shrink-0" />
+                          <span>google.co.uk/search?q=spud+the+piper</span>
+                        </div>
+                      </div>
+
+                      {/* Mobile Google Result Card */}
+                      <div className="p-3 bg-white space-y-1.5">
+                        <div className="flex items-center gap-2 text-[11px] text-gray-700">
+                          <span className="w-5 h-5 rounded-full bg-amber-500 text-white font-bold flex items-center justify-center text-[10px] shrink-0 shadow-sm">
+                            S
+                          </span>
+                          <div className="truncate text-[11px]">
+                            <span className="font-semibold text-gray-900">Spud the Piper</span>
+                            <span className="text-gray-500 text-[10px] block truncate">
+                              spudthepiper.com › {selectedPageId === 'home' ? '' : selectedPageId}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Title & Optional Rich Image Thumbnail */}
+                        <div className="flex gap-2.5 items-start justify-between">
+                          <div className="flex-1">
+                            <h5 className="text-[15px] font-medium text-[#1a0dab] leading-snug line-clamp-2">
+                              {seoTitle || 'Spud the Piper | Award-Winning Bagpiper'}
+                            </h5>
+                            <div className="mt-1 flex items-center gap-1 text-[11px] text-[#e7711b]">
+                              <span>★★★★★</span>
+                              <span className="text-gray-600 font-medium text-[10px]">5.0 · 120 reviews</span>
+                            </div>
+                            <p className="text-[11px] text-[#4d5156] line-clamp-2 leading-relaxed mt-1">
+                              {seoDesc || 'Scotland premier award-winning Highland Bagpiper for weddings, castle events, and private tours.'}
+                            </p>
+                          </div>
+
+                          {seoOgImage && (
+                            <img 
+                              src={seoOgImage} 
+                              alt="Mobile Thumbnail" 
+                              className="w-16 h-16 rounded-xl object-cover border border-gray-200 shrink-0 shadow-sm"
+                            />
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <h5 className="text-[15px] font-medium text-[#1a0dab] hover:underline cursor-pointer leading-snug line-clamp-2">
-                      {seoTitle || 'Page Title'}
-                    </h5>
-                    <p className="text-[12px] text-[#4d5156] line-clamp-2 leading-relaxed mt-1">
-                      {seoDesc || 'Meta description copy...'}
-                    </p>
-                    <div className="mt-2 pt-1 border-t border-gray-100 flex items-center gap-1 text-[11px] text-[#e7711b]">
-                      <span>★★★★★</span>
-                      <span className="text-gray-600 font-medium">5.0 · 120 verified reviews · Bagpiper</span>
+                  )}
+
+                  {/* 2. DESKTOP PC PREVIEW */}
+                  {previewDevice === 'desktop' && (
+                    <div className="bg-white text-gray-900 p-4 rounded-xl border border-gray-200 shadow-sm text-left font-sans space-y-1">
+                      <div className="flex items-center gap-2 text-[11px] text-gray-600 mb-0.5">
+                        <span className="w-4 h-4 rounded-full bg-amber-500 text-white font-bold flex items-center justify-center text-[9px]">S</span>
+                        <div className="truncate">
+                          <span className="text-gray-800 font-medium">https://www.spudthepiper.com</span>
+                          <span className="text-gray-500"> › {selectedPageId === 'home' ? '' : selectedPageId}</span>
+                        </div>
+                      </div>
+                      <h5 className="text-[17px] font-normal text-[#1a0dab] hover:underline cursor-pointer leading-snug line-clamp-2">
+                        {seoTitle || 'Page Title'}
+                      </h5>
+                      <div className="flex items-center gap-1 text-[11px] text-[#e7711b] py-0.5">
+                        <span>★★★★★</span>
+                        <span className="text-gray-600 font-medium">Rating: 5.0 · ‎120 reviews · Scottish Highland Piper</span>
+                      </div>
+                      <p className="text-[12px] text-[#4d5156] line-clamp-2 leading-relaxed">
+                        {seoDesc || 'Meta description copy...'}
+                      </p>
                     </div>
-                  </div>
+                  )}
+
+                  {/* 3. SOCIAL MEDIA CARD PREVIEW */}
+                  {previewDevice === 'social' && (
+                    <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-700 shadow-lg text-left font-sans">
+                      <div className="aspect-[1.91/1] w-full bg-slate-800 relative overflow-hidden">
+                        {seoOgImage ? (
+                          <img 
+                            src={seoOgImage} 
+                            alt="Social Banner" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 text-xs gap-1">
+                            <ImageIcon className="w-6 h-6 text-gray-600" />
+                            <span>No OpenGraph image set yet</span>
+                          </div>
+                        )}
+                        <span className="absolute top-2 right-2 bg-black/70 text-white text-[9px] px-2 py-0.5 rounded font-mono">
+                          1200 × 630
+                        </span>
+                      </div>
+                      <div className="p-3 bg-slate-950 space-y-1">
+                        <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                          SPUDTHEPIPER.COM
+                        </span>
+                        <h5 className="text-white font-bold text-xs line-clamp-1">
+                          {seoTitle || 'Spud the Piper'}
+                        </h5>
+                        <p className="text-gray-300 text-[11px] line-clamp-2 leading-tight">
+                          {seoDesc || 'Scotland\'s premier award-winning Highland Bagpiper.'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                 </div>
 
                 {/* Schema.org Structured Data */}
