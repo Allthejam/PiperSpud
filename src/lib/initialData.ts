@@ -918,37 +918,7 @@ export const initialTunes: BagpipeTune[] = [
   }
 ];
 
-export const initialNotifications: NotificationItem[] = [
-  {
-    id: 'notif-1',
-    type: 'booking_request',
-    title: 'New Provisional Booking Request',
-    message: 'David & Sarah Fraser submitted a request for Eilean Donan Castle on 17 Oct 2026.',
-    timestamp: '15 mins ago',
-    isRead: false,
-    actionUrl: '/admin/bookings',
-    relatedId: 'spud-bk-104'
-  },
-  {
-    id: 'notif-2',
-    type: 'deposit_paid',
-    title: 'PayPal Deposit Received (£100.00)',
-    message: 'Fiona & Callum MacGregor completed their deposit payment for Dundas Castle.',
-    timestamp: '2 hours ago',
-    isRead: false,
-    actionUrl: '/admin/bookings',
-    relatedId: 'spud-bk-101'
-  },
-  {
-    id: 'notif-3',
-    type: 'chat_message',
-    title: 'New Chat Message from Sarah',
-    message: '"Do you travel to Skye and the Western Isles in October?"',
-    timestamp: '4 hours ago',
-    isRead: true,
-    actionUrl: '/admin/messages'
-  }
-];
+export const initialNotifications: NotificationItem[] = [];
 
 export const initialCmsBlocks: EditableCmsBlock[] = [
   {

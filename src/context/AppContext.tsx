@@ -206,6 +206,7 @@ interface AppContextType {
   unreadNotifCount: number;
   markNotifAsRead: (id: string) => void;
   clearAllNotifs: () => void;
+  deleteNotification: (id: string) => void;
   addNotification: (item: Omit<NotificationItem, 'id' | 'timestamp' | 'isRead'>) => void;
 
   // Multi-Page SEO & Structured Data Studio
@@ -504,7 +505,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const savedNotifs = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}notifs`);
-      if (savedNotifs) setNotifications(JSON.parse(savedNotifs));
+      if (savedNotifs) {
+        try {
+          const parsedNotifs: NotificationItem[] = JSON.parse(savedNotifs);
+          if (Array.isArray(parsedNotifs)) {
+            const mockIds = new Set(['notif-1', 'notif-2', 'notif-3']);
+            setNotifications(parsedNotifs.filter(n => !mockIds.has(n.id)));
+          }
+        } catch (e) {}
+      }
 
       const savedCms = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}cms`);
       if (savedCms) setCmsBlocks(JSON.parse(savedCms));
@@ -600,6 +609,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubTravel = () => {};
     let unsubUsers = () => {};
     let unsubChatStatus = () => {};
+    let unsubNotifications = () => {};
 
     try {
       // Real-time Firestore listener for 'users' collection
@@ -756,6 +766,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
       }, (err) => console.log('Firestore travel_config listener:', err.message));
+
+      // Real-time Firestore listener for live notifications
+      unsubNotifications = onSnapshot(collection(db, 'notifications'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteNotifs: NotificationItem[] = [];
+          snapshot.forEach((d) => remoteNotifs.push(d.data() as NotificationItem));
+          if (remoteNotifs.length > 0) {
+            const mockIds = new Set(['notif-1', 'notif-2', 'notif-3']);
+            const cleanNotifs = remoteNotifs.filter(n => !mockIds.has(n.id));
+            cleanNotifs.sort((a, b) => {
+              const timeA = a.id?.startsWith('notif-') ? parseInt(a.id.split('-')[1]) || 0 : 0;
+              const timeB = b.id?.startsWith('notif-') ? parseInt(b.id.split('-')[1]) || 0 : 0;
+              return timeB - timeA;
+            });
+            setNotifications(cleanNotifs);
+          }
+        } else {
+          setNotifications([]);
+        }
+      }, (err) => console.log('Firestore notifications listener:', err.message));
     } catch (e) {
       console.warn('Firebase Firestore initialization:', e);
     }
@@ -773,6 +803,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubTravel();
       unsubUsers();
       unsubChatStatus();
+      unsubNotifications();
     };
   }, []);
 
@@ -798,6 +829,64 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.log(`[Firestore SUCCESS] Deleted ${colName}/${docId}`);
     } catch (err: any) {
       console.error(`[Firestore ERROR] Delete failed for ${colName}/${docId}:`, err?.message || err);
+    }
+  };
+
+  // Live Notification Dispatcher & Management (Firestore Synced)
+  const addNotification = async (item: Omit<NotificationItem, 'id' | 'timestamp' | 'isRead'>) => {
+    const newNotif: NotificationItem = {
+      ...item,
+      id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      timestamp: new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }),
+      isRead: false
+    };
+    setNotifications(prev => [newNotif, ...prev]);
+    if (bagpipeSynth) {
+      try {
+        bagpipeSynth.playAlertSound();
+      } catch (e) {}
+    }
+    if (typeof window !== 'undefined') {
+      try {
+        const currentSaved = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}notifs`);
+        const parsed = currentSaved ? JSON.parse(currentSaved) : [];
+        const updated = [newNotif, ...(Array.isArray(parsed) ? parsed : [])];
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}notifs`, JSON.stringify(updated));
+      } catch (e) {}
+    }
+    if (db) {
+      await setDoc(doc(db, 'notifications', newNotif.id), newNotif).catch(e => console.warn(e));
+    }
+  };
+
+  const markNotifAsRead = async (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    if (db) {
+      await setDoc(doc(db, 'notifications', id), { isRead: true }, { merge: true }).catch(e => console.warn(e));
+    }
+  };
+
+  const clearAllNotifs = async () => {
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    if (db) {
+      for (const n of notifications) {
+        if (!n.isRead) {
+          setDoc(doc(db, 'notifications', n.id), { isRead: true }, { merge: true }).catch(e => console.warn(e));
+        }
+      }
+    }
+  };
+
+  const deleteNotification = async (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    if (typeof window !== 'undefined') {
+      try {
+        const updated = notifications.filter(n => n.id !== id);
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}notifs`, JSON.stringify(updated));
+      } catch (e) {}
+    }
+    if (db) {
+      await deleteDoc(doc(db, 'notifications', id)).catch(e => console.warn(e));
     }
   };
 
@@ -1315,20 +1404,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const getServiceBySlug = (slug: string): ServicePackage | undefined => {
     return services.find(s => s.slug === slug || s.id === slug);
-  };
-
-  // Notification helper
-  const addNotification = (item: Omit<NotificationItem, 'id' | 'timestamp' | 'isRead'>) => {
-    const newNotif: NotificationItem = {
-      ...item,
-      id: `notif-${Date.now()}`,
-      timestamp: 'Just now',
-      isRead: false
-    };
-    setNotifications(prev => [newNotif, ...prev]);
-    if (bagpipeSynth) {
-      bagpipeSynth.playAlertSound();
-    }
   };
 
   // Booking handlers
@@ -2264,15 +2339,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await deleteFromFirestore('bagpipe_tunes', id);
   };
 
-  // Notifications
-  const markNotifAsRead = (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-  };
-
-  const clearAllNotifs = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-  };
-
   // SEO handlers for all 14 pages
   const getSeoForPage = (pageIdOrPath: string): SeoPageConfig => {
     const clean = pageIdOrPath.replace(/^\//, '') || 'home';
@@ -2695,6 +2761,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unreadNotifCount,
       markNotifAsRead,
       clearAllNotifs,
+      deleteNotification,
       addNotification,
       seoPages,
       seoConfig,
