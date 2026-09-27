@@ -15,18 +15,51 @@ import {
   TravelExpensesConfig,
   MailingContact,
   EmailCampaign,
-  AdminUserRecord
+  AdminUserRecord,
+  UserRecord,
+  UserPermissions
 } from '@/types/spud';
 
-export const initialAdminWhitelist: AdminUserRecord[] = [
+export const defaultPermissions: Record<'owner' | 'admin' | 'editor', UserPermissions> = {
+  owner: {
+    canManageBookings: true,
+    canEditTunes: true,
+    canEditCms: true,
+    canManageSecurity: true,
+    canChat: true
+  },
+  admin: {
+    canManageBookings: true,
+    canEditTunes: true,
+    canEditCms: true,
+    canManageSecurity: true,
+    canChat: true
+  },
+  editor: {
+    canManageBookings: false,
+    canEditTunes: true,
+    canEditCms: true,
+    canManageSecurity: false,
+    canChat: false
+  }
+};
+
+export const initialUsers: UserRecord[] = [
   {
-    id: 'admin-spud',
+    id: 'user-spud',
     email: 'piperspud@gmail.com',
     name: 'Spud The Piper',
+    displayName: 'Spud The Piper',
     role: 'owner',
-    addedAt: '2026-09-01T00:00:00.000Z'
+    isOnline: false,
+    status: 'offline',
+    addedAt: '2026-09-01T00:00:00.000Z',
+    lastActive: '2026-09-27T12:00:00.000Z',
+    permissions: defaultPermissions.owner
   }
 ];
+
+export const initialAdminWhitelist: UserRecord[] = initialUsers;
 
 export const initialBookings: BookingEvent[] = [
   {

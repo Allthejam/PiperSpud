@@ -304,13 +304,30 @@ export interface EmailCampaign {
   templateType: 'christmas' | 'burns_night' | 'anniversary' | 'custom';
 }
 
-export interface AdminUserRecord {
+export interface UserPermissions {
+  canManageBookings: boolean;
+  canEditTunes: boolean;
+  canEditCms: boolean;
+  canManageSecurity: boolean;
+  canChat: boolean;
+}
+
+export interface UserRecord {
   id: string;
+  uid?: string;
   email: string;
   name?: string;
+  displayName?: string;
   role: 'owner' | 'admin' | 'editor';
+  isOnline: boolean;
+  status: 'online' | 'offline' | 'away';
+  lastActive?: string;
   addedAt: string;
   lastLogin?: string;
+  avatarUrl?: string;
+  permissions: UserPermissions;
 }
+
+export type AdminUserRecord = UserRecord;
 
 

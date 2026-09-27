@@ -48,5 +48,20 @@ service cloud.firestore {
       allow read: if true;
       allow write: if true;
     }
+
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /quick_responses/{qrId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /mailing_contacts/{contactId} {
+      allow read: if true;
+      allow write: if true;
+    }
   }
 }

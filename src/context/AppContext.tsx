@@ -19,7 +19,9 @@ import {
   TravelExpensesConfig,
   MailingContact,
   EmailCampaign,
-  AdminUserRecord
+  AdminUserRecord,
+  UserRecord,
+  UserPermissions
 } from '@/types/spud';
 import { 
   initialBookings, 
@@ -39,7 +41,9 @@ import {
   initialTravelConfig,
   initialMailingContacts,
   initialCampaigns,
-  initialAdminWhitelist
+  initialAdminWhitelist,
+  initialUsers,
+  defaultPermissions
 } from '@/lib/initialData';
 import { bagpipeSynth } from '@/lib/bagpipeSynth';
 import { db, auth } from '@/lib/firebase';
@@ -57,10 +61,16 @@ import {
 
 interface AppContextType {
   isMounted: boolean;
-  // Authentication & Admin (Live Firebase Auth + Google + Whitelist)
+  // Authentication & Admin (Live Firebase Auth + Google + Users Collection & Permissions)
   isAdminLoggedIn: boolean;
   firebaseUser: User | null;
+  users: UserRecord[];
   adminWhitelist: AdminUserRecord[];
+  addUser: (email: string, name?: string, role?: 'owner' | 'admin' | 'editor', permissions?: Partial<UserPermissions>) => Promise<boolean>;
+  updateUser: (id: string, updates: Partial<UserRecord>) => Promise<boolean>;
+  updateUserPermissions: (id: string, permissions: Partial<UserPermissions>) => Promise<boolean>;
+  toggleUserOnlineStatus: (id: string, isOnline: boolean) => Promise<void>;
+  removeUser: (idOrEmail: string) => Promise<boolean>;
   addAuthorizedAdmin: (email: string, name?: string, role?: 'owner' | 'admin' | 'editor') => Promise<boolean>;
   removeAuthorizedAdmin: (idOrEmail: string) => Promise<boolean>;
   isEmailAuthorized: (email: string) => boolean;
@@ -260,8 +270,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const isAdminLoggedIn = !!firebaseUser || isLegacyAdminLoggedIn;
 
-  // Admin Whitelist & Security state
-  const [adminWhitelist, setAdminWhitelist] = useState<AdminUserRecord[]>(initialAdminWhitelist);
+  // Users & Admin Security state (Synced with Firestore 'users' collection)
+  const [users, setUsers] = useState<UserRecord[]>(initialUsers);
+  const adminWhitelist = users;
 
   // Listen to Firebase Live Auth state
   useEffect(() => {
@@ -271,7 +282,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const email = user.email.toLowerCase();
         const isAllowed = 
           email === 'piperspud@gmail.com' || 
-          adminWhitelist.some(u => u.email.trim().toLowerCase() === email);
+          users.some(u => u.email.trim().toLowerCase() === email);
 
         if (isAllowed) {
           setFirebaseUser(user);
@@ -290,7 +301,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     });
     return () => unsubscribe();
-  }, [adminWhitelist]);
+  }, [users]);
 
   // Core entities
   const [services, setServices] = useState<ServicePackage[]>(initialServices);
@@ -300,8 +311,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [forumCategories, setForumCategories] = useState<ForumCategoryItem[]>(initialForumCategories);
   const [socialLinks, setSocialLinks] = useState<SocialMediaLinks>(initialSocialLinks);
   
-  // Live Chat & Message Center state
-  const [isSpudOnline, setIsSpudOnlineState] = useState<boolean>(true);
+  // Live Chat & Message Center state (Online/Offline status synced with Firestore 'users' and 'settings/chat_status')
+  const [isSpudOnline, setIsSpudOnlineState] = useState<boolean>(false);
   const [quickResponses, setQuickResponses] = useState<QuickResponse[]>(initialQuickResponses);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>(initialChatSessions);
   const [activeChatSessionId, setActiveChatSessionId] = useState<string>('');
@@ -537,14 +548,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setShowLiveStreamState(savedStream === 'true');
       }
 
-      const savedWhitelist = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`);
-      if (savedWhitelist) {
+      const savedUsers = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}users`);
+      if (savedUsers) {
         try {
-          const parsedWhitelist: AdminUserRecord[] = JSON.parse(savedWhitelist);
-          if (Array.isArray(parsedWhitelist) && parsedWhitelist.length > 0) {
-            setAdminWhitelist(parsedWhitelist);
+          const parsedUsers: UserRecord[] = JSON.parse(savedUsers);
+          if (Array.isArray(parsedUsers) && parsedUsers.length > 0) {
+            setUsers(parsedUsers);
           }
         } catch (e) {}
+      } else {
+        const savedWhitelist = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`);
+        if (savedWhitelist) {
+          try {
+            const parsedWhitelist = JSON.parse(savedWhitelist);
+            if (Array.isArray(parsedWhitelist) && parsedWhitelist.length > 0) {
+              const converted: UserRecord[] = parsedWhitelist.map((w: any) => ({
+                id: w.id || `user-${Date.now()}`,
+                email: w.email,
+                name: w.name || w.email.split('@')[0],
+                displayName: w.displayName || w.name || w.email.split('@')[0],
+                role: w.role || 'admin',
+                isOnline: w.isOnline || false,
+                status: w.status || 'offline',
+                addedAt: w.addedAt || new Date().toISOString(),
+                lastActive: w.lastActive || new Date().toISOString(),
+                permissions: w.permissions || defaultPermissions[w.role as 'owner' | 'admin' | 'editor' || 'admin']
+              }));
+              setUsers(converted);
+            }
+          } catch (e) {}
+        }
       }
     } catch (err) {
       console.warn('Could not load saved state from localStorage:', err);
@@ -565,20 +598,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubSeo = () => {};
     let unsubTunes = () => {};
     let unsubTravel = () => {};
-    let unsubAdminWhitelist = () => {};
+    let unsubUsers = () => {};
+    let unsubChatStatus = () => {};
 
     try {
-      unsubAdminWhitelist = onSnapshot(doc(db, 'settings', 'admin_whitelist'), (snap) => {
-        if (snap.exists()) {
-          const data = snap.data();
-          if (data && Array.isArray(data.admins) && data.admins.length > 0) {
-            setAdminWhitelist(data.admins);
-            if (typeof window !== 'undefined') {
-              localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`, JSON.stringify(data.admins));
+      // Real-time Firestore listener for 'users' collection
+      unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteUsers: UserRecord[] = [];
+          snapshot.forEach((d) => remoteUsers.push(d.data() as UserRecord));
+          if (remoteUsers.length > 0) {
+            setUsers(prev => {
+              const merged = [...prev];
+              remoteUsers.forEach(r => {
+                const idx = merged.findIndex(u => u.id === r.id || u.email.toLowerCase() === r.email.toLowerCase());
+                if (idx >= 0) merged[idx] = { ...merged[idx], ...r };
+                else merged.push(r);
+              });
+              if (typeof window !== 'undefined') {
+                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}users`, JSON.stringify(merged));
+                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`, JSON.stringify(merged));
+              }
+              return merged;
+            });
+
+            // Check if primary owner or spud has isOnline set in users collection
+            const spudRemote = remoteUsers.find(u => u.email.toLowerCase() === 'piperspud@gmail.com' || u.role === 'owner');
+            if (spudRemote && typeof spudRemote.isOnline === 'boolean') {
+              setIsSpudOnlineState(spudRemote.isOnline);
             }
           }
         }
-      }, (err) => console.log('Firestore admin_whitelist listener:', err.message));
+      }, (err) => console.log('Firestore users listener:', err.message));
+
+      // Real-time Firestore listener for global chat_status setting
+      unsubChatStatus = onSnapshot(doc(db, 'settings', 'chat_status'), (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data && typeof data.isSpudOnline === 'boolean') {
+            setIsSpudOnlineState(data.isSpudOnline);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(`${LOCAL_STORAGE_PREFIX}spud_online`, data.isSpudOnline ? 'true' : 'false');
+            }
+          }
+        }
+      }, (err) => console.log('Firestore chat_status listener:', err.message));
+
       unsubServices = onSnapshot(collection(db, 'services'), (snapshot) => {
         if (!snapshot.empty) {
           const remoteServices: ServicePackage[] = [];
@@ -706,7 +771,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubSeo();
       unsubTunes();
       unsubTravel();
-      unsubAdminWhitelist();
+      unsubUsers();
+      unsubChatStatus();
     };
   }, []);
 
@@ -800,44 +866,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {}
   }, [seoConfig]);
 
-  // Whitelist & Security Handlers
+  // Users, Whitelist & Security Handlers (Firestore 'users' collection)
   const isEmailAuthorized = (emailToCheck: string): boolean => {
     if (!emailToCheck) return false;
     const clean = emailToCheck.trim().toLowerCase();
     // Default authorized primary owner
     if (clean === 'piperspud@gmail.com') return true;
-    return adminWhitelist.some(u => u.email.trim().toLowerCase() === clean);
+    return users.some(u => u.email.trim().toLowerCase() === clean);
   };
 
-  const addAuthorizedAdmin = async (
+  const addUser = async (
     emailToAdd: string, 
     name?: string, 
-    role: 'owner' | 'admin' | 'editor' = 'admin'
+    role: 'owner' | 'admin' | 'editor' = 'admin',
+    permissions?: Partial<UserPermissions>
   ): Promise<boolean> => {
     const cleanEmail = emailToAdd.trim().toLowerCase();
     if (!cleanEmail || !cleanEmail.includes('@')) return false;
 
-    const existing = adminWhitelist.find(a => a.email.toLowerCase() === cleanEmail);
-    if (existing) return true;
-
-    const newAdmin: AdminUserRecord = {
-      id: `admin-${Date.now()}`,
-      email: cleanEmail,
-      name: name || cleanEmail.split('@')[0],
-      role,
-      addedAt: new Date().toISOString()
+    const existing = users.find(a => a.email.toLowerCase() === cleanEmail);
+    const userPerms: UserPermissions = {
+      ...defaultPermissions[role],
+      ...(permissions || {})
     };
 
-    const updated = [...adminWhitelist, newAdmin];
-    setAdminWhitelist(updated);
+    const id = existing ? existing.id : `user-${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    const newUser: UserRecord = {
+      id,
+      email: cleanEmail,
+      name: name || cleanEmail.split('@')[0],
+      displayName: name || cleanEmail.split('@')[0],
+      role,
+      isOnline: existing ? existing.isOnline : false,
+      status: existing ? existing.status : 'offline',
+      addedAt: existing ? existing.addedAt : new Date().toISOString(),
+      lastActive: new Date().toISOString(),
+      permissions: userPerms
+    };
+
+    const updated = existing ? users.map(u => u.id === id ? newUser : u) : [...users, newUser];
+    setUsers(updated);
     if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}users`, JSON.stringify(updated));
       localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`, JSON.stringify(updated));
     }
     if (db) {
       try {
+        await setDoc(doc(db, 'users', id), newUser, { merge: true });
         await setDoc(doc(db, 'settings', 'admin_whitelist'), { admins: updated }, { merge: true });
       } catch (e) {
-        console.warn('Firestore admin_whitelist update warning:', e);
+        console.warn('Firestore user save warning:', e);
       }
     }
     addNotification({
@@ -849,23 +927,69 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
-  const removeAuthorizedAdmin = async (idOrEmail: string): Promise<boolean> => {
+  const updateUser = async (id: string, updates: Partial<UserRecord>): Promise<boolean> => {
+    let targetUser: UserRecord | null = null;
+    const updated = users.map(u => {
+      if (u.id === id) {
+        targetUser = { ...u, ...updates, lastActive: new Date().toISOString() };
+        return targetUser;
+      }
+      return u;
+    });
+    setUsers(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}users`, JSON.stringify(updated));
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`, JSON.stringify(updated));
+    }
+    if (db && targetUser) {
+      try {
+        await setDoc(doc(db, 'users', id), targetUser, { merge: true });
+        await setDoc(doc(db, 'settings', 'admin_whitelist'), { admins: updated }, { merge: true });
+        
+        // If updating online status for primary owner or spud, also keep settings/chat_status synchronized
+        if (updates.isOnline !== undefined && ((targetUser as UserRecord).role === 'owner' || (targetUser as UserRecord).email.toLowerCase() === 'piperspud@gmail.com')) {
+          setIsSpudOnlineState(updates.isOnline);
+          await setDoc(doc(db, 'settings', 'chat_status'), { isSpudOnline: updates.isOnline, updatedAt: new Date().toISOString() }, { merge: true });
+        }
+      } catch (e) {
+        console.warn('Firestore updateUser warning:', e);
+      }
+    }
+    return true;
+  };
+
+  const updateUserPermissions = async (id: string, permissions: Partial<UserPermissions>): Promise<boolean> => {
+    const target = users.find(u => u.id === id);
+    if (!target) return false;
+    const newPerms: UserPermissions = { ...target.permissions, ...permissions };
+    return await updateUser(id, { permissions: newPerms });
+  };
+
+  const toggleUserOnlineStatus = async (id: string, isOnline: boolean): Promise<void> => {
+    await updateUser(id, { isOnline, status: isOnline ? 'online' : 'offline' });
+  };
+
+  const removeUser = async (idOrEmail: string): Promise<boolean> => {
     const clean = idOrEmail.trim().toLowerCase();
-    const target = adminWhitelist.find(a => a.id === idOrEmail || a.email.toLowerCase() === clean);
+    const target = users.find(a => a.id === idOrEmail || a.email.toLowerCase() === clean);
     if (target && target.email.toLowerCase() === 'piperspud@gmail.com' && target.role === 'owner') {
       return false; // Cannot delete primary owner
     }
 
-    const updated = adminWhitelist.filter(a => a.id !== idOrEmail && a.email.toLowerCase() !== clean);
-    setAdminWhitelist(updated);
+    const updated = users.filter(a => a.id !== idOrEmail && a.email.toLowerCase() !== clean);
+    setUsers(updated);
     if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}users`, JSON.stringify(updated));
       localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`, JSON.stringify(updated));
     }
     if (db) {
       try {
+        if (target?.id) {
+          await deleteDoc(doc(db, 'users', target.id));
+        }
         await setDoc(doc(db, 'settings', 'admin_whitelist'), { admins: updated }, { merge: true });
       } catch (e) {
-        console.warn('Firestore admin_whitelist remove warning:', e);
+        console.warn('Firestore user remove warning:', e);
       }
     }
     addNotification({
@@ -875,6 +999,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       actionUrl: '/admin'
     });
     return true;
+  };
+
+  const addAuthorizedAdmin = async (
+    emailToAdd: string, 
+    name?: string, 
+    role: 'owner' | 'admin' | 'editor' = 'admin'
+  ): Promise<boolean> => {
+    return await addUser(emailToAdd, name, role);
+  };
+
+  const removeAuthorizedAdmin = async (idOrEmail: string): Promise<boolean> => {
+    return await removeUser(idOrEmail);
   };
 
   // Auth functions (Live Firebase Auth + Google + Email/Password + Passcode fallback)
@@ -1637,9 +1773,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (typeof window !== 'undefined') {
       localStorage.setItem(`${LOCAL_STORAGE_PREFIX}spud_online`, online ? 'true' : 'false');
     }
+    
+    // Update active Spud / Owner user state
+    setUsers(prev => {
+      const updated = prev.map(u => {
+        if (u.email.toLowerCase() === 'piperspud@gmail.com' || u.role === 'owner') {
+          return { ...u, isOnline: online, status: (online ? 'online' : 'offline') as 'online' | 'offline', lastActive: new Date().toISOString() };
+        }
+        return u;
+      });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}users`, JSON.stringify(updated));
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+
     if (db) {
-      setDoc(doc(db, 'settings', 'chat_status'), { isSpudOnline: online }, { merge: true }).catch(e => console.warn(e));
+      // 1. Sync global chat status setting
+      setDoc(doc(db, 'settings', 'chat_status'), { isSpudOnline: online, updatedAt: new Date().toISOString() }, { merge: true }).catch(e => console.warn(e));
+      
+      // 2. Sync to Spud's user doc in 'users' collection
+      const spudUser = users.find(u => u.email.toLowerCase() === 'piperspud@gmail.com' || u.role === 'owner') || users[0];
+      const spudDocId = spudUser?.id || 'user-spud';
+      setDoc(doc(db, 'users', spudDocId), { 
+        isOnline: online, 
+        status: online ? 'online' : 'offline', 
+        lastActive: new Date().toISOString() 
+      }, { merge: true }).catch(e => console.warn(e));
     }
+
     addNotification({
       type: 'system',
       title: online ? 'Spud is Now ONLINE' : 'Spud is Now OFFLINE',
@@ -2240,11 +2403,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await setDoc(doc(db, 'settings', 'travel_config'), JSON.parse(JSON.stringify(travelConfig)), { merge: true });
       totalSynced++;
 
+      // 11. Sync Users Collection
+      const usersToSync = users && users.length > 0 ? users : initialUsers;
+      for (const u of usersToSync) {
+        await setDoc(doc(db, 'users', u.id), JSON.parse(JSON.stringify(u)), { merge: true });
+        totalSynced++;
+      }
+
+      // 12. Sync Admin Whitelist Settings Doc
+      await setDoc(doc(db, 'settings', 'admin_whitelist'), { admins: usersToSync }, { merge: true });
+      totalSynced++;
+
+      // 13. Sync Chat Status Setting
+      await setDoc(doc(db, 'settings', 'chat_status'), { isSpudOnline, updatedAt: new Date().toISOString() }, { merge: true });
+      totalSynced++;
+
       console.log(`[Firestore SUCCESS] Full Cloud Sync Complete: ${totalSynced} documents verified in Firestore!`);
       addNotification({
         type: 'system',
         title: 'Firebase Firestore Fully Synced',
-        message: `Successfully synchronized ${totalSynced} items across all collections (services, travel_config, seo_pages, bagpipe_tunes, cms_blocks, bookings, reviews, etc.) to Firebase!`,
+        message: `Successfully synchronized ${totalSynced} items across all collections (users, services, travel_config, seo_pages, bagpipe_tunes, cms_blocks, bookings, reviews, etc.) to Firebase!`,
         actionUrl: '/admin'
       });
       setIsSyncingFirestore(false);
@@ -2415,7 +2593,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isMounted,
       isAdminLoggedIn,
       firebaseUser,
+      users,
       adminWhitelist,
+      addUser,
+      updateUser,
+      updateUserPermissions,
+      toggleUserOnlineStatus,
+      removeUser,
       addAuthorizedAdmin,
       removeAuthorizedAdmin,
       isEmailAuthorized,
