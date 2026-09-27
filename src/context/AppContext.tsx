@@ -315,8 +315,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedTunes = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}tunes`);
       if (savedTunes) {
         try {
-          setTunesList(JSON.parse(savedTunes));
-        } catch (e) {}
+          const parsedTunes: BagpipeTune[] = JSON.parse(savedTunes);
+          if (Array.isArray(parsedTunes) && parsedTunes.length > 0) {
+            const initialMap = new Map(initialTunes.map(t => [t.id, t]));
+            const initialTitleMap = new Map(initialTunes.map(t => [t.title.toLowerCase(), t]));
+            
+            // Merge initial tunes with any user overrides while preserving audioUrl
+            const mergedInitial = initialTunes.map(initTune => {
+              const userVer = parsedTunes.find(p => p.id === initTune.id || p.title.toLowerCase() === initTune.title.toLowerCase());
+              if (userVer) {
+                return {
+                  ...initTune,
+                  ...userVer,
+                  audioUrl: userVer.audioUrl && userVer.audioUrl.trim().length > 0 ? userVer.audioUrl : initTune.audioUrl
+                };
+              }
+              return initTune;
+            });
+
+            // Keep any brand new tunes added by user
+            const customTunes = parsedTunes.filter(p => !initialMap.has(p.id) && !initialTitleMap.has(p.title.toLowerCase()));
+            setTunesList([...mergedInitial, ...customTunes]);
+          } else {
+            setTunesList(initialTunes);
+          }
+        } catch (e) {
+          setTunesList(initialTunes);
+        }
+      } else {
+        setTunesList(initialTunes);
       }
 
       const savedChat = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}chat`);
@@ -1297,24 +1324,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const playTune = (titleOrId: string) => {
     const tune = tunesList.find(t => t.id === titleOrId || t.title.toLowerCase() === titleOrId.toLowerCase());
     
-    // If the tune has an uploaded audio track URL or base64 data, use HTML5 Audio playback
-    if (tune && tune.audioUrl) {
+    // Stop any existing audio or synth first
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.pause();
+      audioPlayerRef.current.currentTime = 0;
+      audioPlayerRef.current = null;
+    }
+    if (bagpipeSynth) {
+      bagpipeSynth.stop();
+    }
+
+    // If the tune has an audio track URL, stream the authentic audio recording
+    if (tune && tune.audioUrl && tune.audioUrl.trim().length > 0) {
       try {
-        if (audioPlayerRef.current) {
-          audioPlayerRef.current.pause();
-        }
-        audioPlayerRef.current = new Audio(tune.audioUrl);
-        audioPlayerRef.current.onended = () => {
+        const audio = new Audio(tune.audioUrl);
+        audioPlayerRef.current = audio;
+        audio.onended = () => {
           setCurrentPlayingTune(null);
         };
-        audioPlayerRef.current.onerror = () => {
-          console.warn('Custom audio playback error, falling back to synthesizer');
+        audio.onerror = (e) => {
+          console.warn('Real audio playback error, falling back to synthesizer:', e);
           if (bagpipeSynth) {
             bagpipeSynth.playTune(tune.title, () => setCurrentPlayingTune(null));
           }
         };
-        audioPlayerRef.current.play();
-        setCurrentPlayingTune(tune.title);
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              setCurrentPlayingTune(tune.title);
+            })
+            .catch(err => {
+              console.warn('Audio autoplay/play promise error:', err);
+              if (bagpipeSynth) {
+                bagpipeSynth.playTune(tune.title, () => setCurrentPlayingTune(null));
+                setCurrentPlayingTune(tune.title);
+              }
+            });
+        }
       } catch (e) {
         if (bagpipeSynth) {
           bagpipeSynth.playTune(tune.title, () => setCurrentPlayingTune(null));

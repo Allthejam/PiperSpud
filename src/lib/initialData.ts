@@ -481,6 +481,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Composed in 1982 by German musicians Uli Roever and Michael Korb as a hymn for the pipes, it has become Scotland\'s most beloved wedding aisle anthem.',
     duration: '2:45',
     isPopular: true,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/Highland-Cathedral-bagpipes.mp3',
     audioNotes: [440, 493.88, 554.37, 587.33, 659.25, 587.33, 554.37, 493.88, 440]
   },
   {
@@ -494,6 +495,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Adapted as the Outlander title track, this tune is also famously played by the Doctor on his recorder in Doctor Who (1968)!',
     duration: '2:30',
     isPopular: true,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/The-Skye-Boat-Song-bagpipes.mp3',
     audioNotes: [440, 554.37, 440, 783.99, 739.99, 659.25, 587.33, 554.37, 440]
   },
   {
@@ -507,6 +509,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Originally an 1830s folk song immortalized by The Corries, this romantic ballad sings of the maiden who brings calm in every storm.',
     duration: '2:40',
     isPopular: false,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/The-Rose-Of-Allendale-bagpipes.mp3',
     audioNotes: [440, 493.88, 554.37, 659.25, 587.33, 554.37, 493.88, 440]
   },
   {
@@ -520,6 +523,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'A haunting ancient melody with roots in both Irish and Scottish Gaelic song traditions dating back hundreds of years.',
     duration: '2:50',
     isPopular: false,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/She-Moved-Through-The-Fair-bagpipes.mp3',
     audioNotes: [440, 493.88, 554.37, 587.33, 659.25, 554.37, 493.88, 440]
   },
   {
@@ -533,6 +537,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Dougie MacLean composed the words and melody in under 10 minutes while sitting on a beach in Brittany feeling homesick for Scotland.',
     duration: '3:15',
     isPopular: true,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/Caledonia-on-bagpipes.mp3',
     audioNotes: [440, 554.37, 587.33, 659.25, 783.99, 659.25, 554.37, 440]
   },
   {
@@ -546,6 +551,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Composed by pipe major Iain McLachlan for a 1962 BBC Scotland television drama set on South Uist.',
     duration: '2:35',
     isPopular: false,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/Dark-Island-on-bagpipes-1.mp3',
     audioNotes: [440, 493.88, 554.37, 587.33, 659.25, 587.33, 493.88, 440]
   },
 
@@ -561,6 +567,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Arranged in 1856 by Queen Victoria\'s personal piper Angus MacKay, it is regarded as the pinnacle of 2/4 competition pipe marches.',
     duration: '2:50',
     isPopular: true,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/The-Highland-Wedding-bagpipes.mp3',
     audioNotes: [440, 554.37, 587.33, 659.25, 739.99, 659.25, 587.33, 440]
   },
   {
@@ -574,6 +581,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Written in 1934 to celebrate a friend winning the prestigious National Mòd Gold Medal for Gaelic singing.',
     duration: '2:15',
     isPopular: true,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/08/Mairis-Wedding-bagpipes.mp3',
     audioNotes: [440, 493.88, 554.37, 587.33, 659.25, 587.33, 554.37, 440]
   },
   {
@@ -587,6 +595,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Scotland the Brave was played as Scotland\'s National Anthem for the 1982, 1986, and 1990 FIFA World Cups!',
     duration: '2:15',
     isPopular: true,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/Scotland-The-Brave.mp3',
     audioNotes: [440, 440, 493.88, 554.37, 587.33, 554.37, 493.88, 440]
   },
   {
@@ -600,6 +609,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'One of Spud\'s personal favorite solo competition pieces that he performed at the World Pipe Band Championships.',
     duration: '2:40',
     isPopular: false,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2018/04/John-Macdonald-of-Glencoe.mp3',
     audioNotes: [440, 493.88, 554.37, 659.25, 587.33, 554.37, 493.88, 440]
   },
 
@@ -615,6 +625,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Written in the 1930s to traditional Hebridean Gaelic sea-shanty rhythms and recorded by Scotland\'s famous folk group The Corries.',
     duration: '3:10',
     isPopular: true,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2018/04/The-Mingulay-Boat-Song-The-Jig-Runrig.mp3',
     audioNotes: [440, 493.88, 554.37, 659.25, 783.99, 659.25, 554.37, 440]
   },
   {
@@ -628,6 +639,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Robert Burns composed these immortal lyrics in 1794 based on traditional rural songs he collected across Ayrshire and the Highlands.',
     duration: '2:45',
     isPopular: true,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/The-Rose-Of-Allendale-on-Small-Pipes.mp3',
     audioNotes: [440, 554.37, 587.33, 659.25, 554.37, 493.88, 440]
   },
   {
@@ -641,6 +653,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Adapted by Francis McPeake in 1957 from the traditional Scottish song "The Braes of Balquhither" by Robert Tannahill.',
     duration: '2:50',
     isPopular: false,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/She-Moved-through-the-Fair-on-Small-Pipes.mp3',
     audioNotes: [440, 493.88, 554.37, 587.33, 659.25, 587.33, 554.37, 440]
   },
 
@@ -656,6 +669,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'The Black Bear is officially the fastest regimental march in the British Army, traditionally accompanied by soldiers shouting "Hey!"',
     duration: '2:20',
     isPopular: true,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/Highland-Laddie.mp3',
     audioNotes: [440, 554.37, 659.25, 587.33, 554.37, 493.88, 440]
   },
   {
@@ -669,6 +683,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Cock of the North was famously piped during the 1897 storming of Dargai Heights by Piper George Findlater VC despite being wounded in both feet!',
     duration: '2:30',
     isPopular: false,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2018/04/The-Rakes-of-Kildare-Jig-set.mp3',
     audioNotes: [440, 493.88, 554.37, 587.33, 659.25, 739.99, 659.25, 440]
   },
 
@@ -684,6 +699,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Written after the famous Jacobite victory in the pass of Killiecrankie, Perthshire in 1689.',
     duration: '2:10',
     isPopular: true,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/Crossing-The-Minch-Train-Journey-North.mp3',
     audioNotes: [440, 493.88, 554.37, 587.33, 659.25, 587.33, 554.37, 440]
   },
   {
@@ -697,6 +713,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'The comedic song words lament: "Campbeltown Loch, I wish ye were whisky! I\'d drink ye dry!"',
     duration: '2:05',
     isPopular: true,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/Cambeltown-Loch.mp3',
     audioNotes: [440, 554.37, 587.33, 659.25, 587.33, 554.37, 440]
   },
   {
@@ -710,10 +727,11 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Adapted for the pipes by Pipe Major John McLellan from Rossini\'s William Tell opera in the 19th century.',
     duration: '3:00',
     isPopular: false,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2026/02/March-Strathspey-Reel-Glyn-Morris.mp3',
     audioNotes: [440, 493.88, 554.37, 659.25, 587.33, 554.37, 493.88, 440]
   },
 
-  // ── 6. GUESTS' ARRIVAL & WELCOME ──
+  // ── 6. GUESTS\' ARRIVAL & WELCOME ──
   {
     id: 'tune-21',
     title: 'Murdo\'s Wedding',
@@ -725,6 +743,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Composed by Major Gavin Stoddart MBE, who served as Director of Army Bagpipe Music at Edinburgh Castle.',
     duration: '2:15',
     isPopular: true,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/Murdos-Wedding.mp3',
     audioNotes: [440, 493.88, 554.37, 587.33, 659.25, 587.33, 554.37, 440]
   },
   {
@@ -738,6 +757,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Composed by Pipe Major Donald MacLeod MBE, one of the greatest 20th-century composers of bagpipe music.',
     duration: '2:30',
     isPopular: false,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/Crossing-The-Minch-Train-Journey-North.mp3',
     audioNotes: [440, 554.37, 659.25, 739.99, 659.25, 554.37, 440]
   },
 
@@ -753,6 +773,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'The 1972 bagpipe recording by the Royal Scots Dragoon Guards topped the UK singles chart for five consecutive weeks!',
     duration: '3:10',
     isPopular: true,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/The-Dark-Island-on-Small-Pipes.mp3',
     audioNotes: [587.33, 783.99, 493.88, 783.99, 493.88, 440, 783.99, 659.25, 587.33]
   },
   {
@@ -766,6 +787,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Tradition dictates this sacred tune is played exclusively as a funeral lament and never for casual entertainment or practice.',
     duration: '3:30',
     isPopular: false,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/She-Moved-through-the-Fair-on-Small-Pipes.mp3',
     audioNotes: [440, 493.88, 554.37, 587.33, 554.37, 493.88, 440]
   },
   {
@@ -779,6 +801,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Adapted by Dvořák\'s pupil William Arms Fisher, its gentle descending melody offers deep solace during farewell tributes.',
     duration: '2:55',
     isPopular: false,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/The-Rose-Of-Allendale-on-Small-Pipes.mp3',
     audioNotes: [440, 554.37, 587.33, 659.25, 554.37, 440]
   },
 
@@ -794,6 +817,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Composed by Roy Williamson of The Corries in the mid-1960s, it is sung passionately by 67,000 fans at Murrayfield Stadium.',
     duration: '3:00',
     isPopular: true,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/08/Freedom-Come-All-Ye-bagpipes.mp3',
     audioNotes: [440, 587.33, 587.33, 554.37, 493.88, 440, 392, 440]
   },
   {
@@ -807,6 +831,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Written by Robert Burns in 1788 and recognized by the Guinness World Records as one of the most frequently sung songs in human history.',
     duration: '2:30',
     isPopular: true,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2026/01/Glyn_Medley.mp3',
     audioNotes: [440, 554.37, 587.33, 659.25, 783.99, 659.25, 554.37, 440]
   },
   {
@@ -820,6 +845,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Chosen to open the reconvened Scottish Parliament in 1999 as a statement of Scottish identity and human equality.',
     duration: '2:15',
     isPopular: false,
+    audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2018/04/Hornpipes-on-Highland-Pipes.mp3',
     audioNotes: [440, 493.88, 554.37, 659.25, 587.33, 554.37, 440]
   }
 ];
