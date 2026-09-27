@@ -303,4 +303,13 @@ export interface EmailCampaign {
   templateType: 'christmas' | 'burns_night' | 'anniversary' | 'custom';
 }
 
+export interface AdminUserRecord {
+  id: string;
+  email: string;
+  name?: string;
+  role: 'owner' | 'admin' | 'editor';
+  addedAt: string;
+  lastLogin?: string;
+}
+
 

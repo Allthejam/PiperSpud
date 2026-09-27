@@ -18,7 +18,8 @@ import {
   ServicePackage,
   TravelExpensesConfig,
   MailingContact,
-  EmailCampaign
+  EmailCampaign,
+  AdminUserRecord
 } from '@/types/spud';
 import { 
   initialBookings, 
@@ -37,7 +38,8 @@ import {
   initialServices,
   initialTravelConfig,
   initialMailingContacts,
-  initialCampaigns
+  initialCampaigns,
+  initialAdminWhitelist
 } from '@/lib/initialData';
 import { bagpipeSynth } from '@/lib/bagpipeSynth';
 import { db, auth } from '@/lib/firebase';
@@ -55,9 +57,13 @@ import {
 
 interface AppContextType {
   isMounted: boolean;
-  // Authentication & Admin (Live Firebase Auth + Google)
+  // Authentication & Admin (Live Firebase Auth + Google + Whitelist)
   isAdminLoggedIn: boolean;
   firebaseUser: User | null;
+  adminWhitelist: AdminUserRecord[];
+  addAuthorizedAdmin: (email: string, name?: string, role?: 'owner' | 'admin' | 'editor') => Promise<boolean>;
+  removeAuthorizedAdmin: (idOrEmail: string) => Promise<boolean>;
+  isEmailAuthorized: (email: string) => boolean;
   loginWithEmail: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   registerWithEmail: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
@@ -254,17 +260,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const isAdminLoggedIn = !!firebaseUser || isLegacyAdminLoggedIn;
 
+  // Admin Whitelist & Security state
+  const [adminWhitelist, setAdminWhitelist] = useState<AdminUserRecord[]>(initialAdminWhitelist);
+
   // Listen to Firebase Live Auth state
   useEffect(() => {
     if (!auth) return;
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setFirebaseUser(user);
-      if (user) {
-        setIsLegacyAdminLoggedIn(true);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user && user.email) {
+        const email = user.email.toLowerCase();
+        const isAllowed = 
+          email === 'piperspud@gmail.com' || 
+          adminWhitelist.some(u => u.email.trim().toLowerCase() === email);
+
+        if (isAllowed) {
+          setFirebaseUser(user);
+          setIsLegacyAdminLoggedIn(true);
+        } else {
+          // If unauthorized Google/Email user tried to session persist
+          try {
+            if (auth) await signOut(auth);
+          } catch (e) {}
+          setFirebaseUser(null);
+          setIsLegacyAdminLoggedIn(false);
+          if (typeof window !== 'undefined') localStorage.removeItem(`${LOCAL_STORAGE_PREFIX}admin`);
+        }
+      } else if (!user) {
+        setFirebaseUser(null);
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [adminWhitelist]);
 
   // Core entities
   const [services, setServices] = useState<ServicePackage[]>(initialServices);
@@ -509,6 +535,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (savedStream !== null) {
         setShowLiveStreamState(savedStream === 'true');
       }
+
+      const savedWhitelist = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`);
+      if (savedWhitelist) {
+        try {
+          const parsedWhitelist: AdminUserRecord[] = JSON.parse(savedWhitelist);
+          if (Array.isArray(parsedWhitelist) && parsedWhitelist.length > 0) {
+            setAdminWhitelist(parsedWhitelist);
+          }
+        } catch (e) {}
+      }
     } catch (err) {
       console.warn('Could not load saved state from localStorage:', err);
     }
@@ -528,8 +564,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubSeo = () => {};
     let unsubTunes = () => {};
     let unsubTravel = () => {};
+    let unsubAdminWhitelist = () => {};
 
     try {
+      unsubAdminWhitelist = onSnapshot(doc(db, 'settings', 'admin_whitelist'), (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data && Array.isArray(data.admins) && data.admins.length > 0) {
+            setAdminWhitelist(data.admins);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`, JSON.stringify(data.admins));
+            }
+          }
+        }
+      }, (err) => console.log('Firestore admin_whitelist listener:', err.message));
       unsubServices = onSnapshot(collection(db, 'services'), (snapshot) => {
         if (!snapshot.empty) {
           const remoteServices: ServicePackage[] = [];
@@ -657,6 +705,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubSeo();
       unsubTunes();
       unsubTravel();
+      unsubAdminWhitelist();
     };
   }, []);
 
@@ -750,8 +799,86 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {}
   }, [seoConfig]);
 
+  // Whitelist & Security Handlers
+  const isEmailAuthorized = (emailToCheck: string): boolean => {
+    if (!emailToCheck) return false;
+    const clean = emailToCheck.trim().toLowerCase();
+    // Default authorized primary owner
+    if (clean === 'piperspud@gmail.com') return true;
+    return adminWhitelist.some(u => u.email.trim().toLowerCase() === clean);
+  };
+
+  const addAuthorizedAdmin = async (
+    emailToAdd: string, 
+    name?: string, 
+    role: 'owner' | 'admin' | 'editor' = 'admin'
+  ): Promise<boolean> => {
+    const cleanEmail = emailToAdd.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) return false;
+
+    const existing = adminWhitelist.find(a => a.email.toLowerCase() === cleanEmail);
+    if (existing) return true;
+
+    const newAdmin: AdminUserRecord = {
+      id: `admin-${Date.now()}`,
+      email: cleanEmail,
+      name: name || cleanEmail.split('@')[0],
+      role,
+      addedAt: new Date().toISOString()
+    };
+
+    const updated = [...adminWhitelist, newAdmin];
+    setAdminWhitelist(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`, JSON.stringify(updated));
+    }
+    if (db) {
+      try {
+        await setDoc(doc(db, 'settings', 'admin_whitelist'), { admins: updated }, { merge: true });
+      } catch (e) {
+        console.warn('Firestore admin_whitelist update warning:', e);
+      }
+    }
+    addNotification({
+      type: 'system',
+      title: 'Admin Access Granted',
+      message: `Granted Back Office access to ${cleanEmail} (${role}).`,
+      actionUrl: '/admin'
+    });
+    return true;
+  };
+
+  const removeAuthorizedAdmin = async (idOrEmail: string): Promise<boolean> => {
+    const clean = idOrEmail.trim().toLowerCase();
+    const target = adminWhitelist.find(a => a.id === idOrEmail || a.email.toLowerCase() === clean);
+    if (target && target.email.toLowerCase() === 'piperspud@gmail.com' && target.role === 'owner') {
+      return false; // Cannot delete primary owner
+    }
+
+    const updated = adminWhitelist.filter(a => a.id !== idOrEmail && a.email.toLowerCase() !== clean);
+    setAdminWhitelist(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`, JSON.stringify(updated));
+    }
+    if (db) {
+      try {
+        await setDoc(doc(db, 'settings', 'admin_whitelist'), { admins: updated }, { merge: true });
+      } catch (e) {
+        console.warn('Firestore admin_whitelist remove warning:', e);
+      }
+    }
+    addNotification({
+      type: 'system',
+      title: 'Admin Access Revoked',
+      message: `Revoked Back Office access for ${target?.email || idOrEmail}.`,
+      actionUrl: '/admin'
+    });
+    return true;
+  };
+
   // Auth functions (Live Firebase Auth + Google + Email/Password + Passcode fallback)
   const loginWithEmail = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
+    const cleanEmail = email.trim().toLowerCase();
     if (!auth) {
       if (pass.toLowerCase() === 'spud123' || pass.toLowerCase() === 'admin') {
         setIsLegacyAdminLoggedIn(true);
@@ -761,7 +888,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, error: 'Firebase Auth is not configured in this environment.' };
     }
     try {
-      await signInWithEmailAndPassword(auth, email.trim(), pass);
+      const cred = await signInWithEmailAndPassword(auth, cleanEmail, pass);
+      const userEmail = cred.user.email?.toLowerCase();
+      
+      // Whitelist check
+      if (userEmail && !isEmailAuthorized(userEmail) && userEmail !== 'piperspud@gmail.com') {
+        if (auth) await signOut(auth);
+        setFirebaseUser(null);
+        setIsLegacyAdminLoggedIn(false);
+        if (typeof window !== 'undefined') localStorage.removeItem(`${LOCAL_STORAGE_PREFIX}admin`);
+        return { 
+          success: false, 
+          error: `Access Denied: ${userEmail} is not on the authorized admin list. Please contact Spud to grant access.` 
+        };
+      }
+
+      setFirebaseUser(cred.user);
       setIsLegacyAdminLoggedIn(true);
       if (typeof window !== 'undefined') localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin`, 'true');
       return { success: true };
@@ -781,9 +923,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const registerWithEmail = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
+    const cleanEmail = email.trim().toLowerCase();
     if (!auth) return { success: false, error: 'Firebase Auth is not configured in this environment.' };
     try {
-      await createUserWithEmailAndPassword(auth, email.trim(), pass);
+      const cred = await createUserWithEmailAndPassword(auth, cleanEmail, pass);
+      // Auto-whitelist if registered via admin
+      await addAuthorizedAdmin(cleanEmail, cleanEmail.split('@')[0], 'admin');
+      setFirebaseUser(cred.user);
       setIsLegacyAdminLoggedIn(true);
       if (typeof window !== 'undefined') localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin`, 'true');
       return { success: true };
@@ -807,7 +953,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
-      await signInWithPopup(auth, provider);
+      const cred = await signInWithPopup(auth, provider);
+      const userEmail = cred.user.email?.toLowerCase();
+
+      // Check if user is in whitelist
+      if (userEmail && !isEmailAuthorized(userEmail) && userEmail !== 'piperspud@gmail.com') {
+        if (auth) await signOut(auth);
+        setFirebaseUser(null);
+        setIsLegacyAdminLoggedIn(false);
+        if (typeof window !== 'undefined') localStorage.removeItem(`${LOCAL_STORAGE_PREFIX}admin`);
+        return { 
+          success: false, 
+          error: `Access Denied: ${userEmail} is not on the authorized admin list. Please contact Spud to grant access.` 
+        };
+      }
+
+      setFirebaseUser(cred.user);
       setIsLegacyAdminLoggedIn(true);
       if (typeof window !== 'undefined') localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin`, 'true');
       return { success: true };
@@ -2253,6 +2414,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isMounted,
       isAdminLoggedIn,
       firebaseUser,
+      adminWhitelist,
+      addAuthorizedAdmin,
+      removeAuthorizedAdmin,
+      isEmailAuthorized,
       loginWithEmail,
       registerWithEmail,
       loginWithGoogle,

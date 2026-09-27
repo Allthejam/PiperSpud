@@ -14,8 +14,19 @@ import {
   ServicePackage,
   TravelExpensesConfig,
   MailingContact,
-  EmailCampaign
+  EmailCampaign,
+  AdminUserRecord
 } from '@/types/spud';
+
+export const initialAdminWhitelist: AdminUserRecord[] = [
+  {
+    id: 'admin-spud',
+    email: 'piperspud@gmail.com',
+    name: 'Spud The Piper',
+    role: 'owner',
+    addedAt: '2026-09-01T00:00:00.000Z'
+  }
+];
 
 export const initialBookings: BookingEvent[] = [
   {

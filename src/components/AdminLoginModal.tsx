@@ -12,9 +12,8 @@ import {
   ArrowRight, 
   CheckCircle2, 
   Loader2, 
-  UserPlus, 
-  LogIn, 
-  HelpCircle 
+  LogIn,
+  Shield
 } from 'lucide-react';
 
 interface AdminLoginModalProps {
@@ -22,12 +21,11 @@ interface AdminLoginModalProps {
   onClose: () => void;
 }
 
-type AuthMode = 'login' | 'register' | 'forgot' | 'passcode';
+type AuthMode = 'login' | 'forgot' | 'passcode';
 
 export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClose }) => {
   const { 
     loginWithEmail, 
-    registerWithEmail, 
     loginWithGoogle, 
     sendPasswordReset, 
     loginAdmin 
@@ -75,28 +73,13 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
     }
 
     setIsLoading(true);
-
-    if (mode === 'login') {
-      const res = await loginWithEmail(email, password);
-      setIsLoading(false);
-      if (res.success) {
-        onClose();
-        window.location.href = '/admin';
-      } else {
-        setError(res.error || 'Invalid credentials.');
-      }
-    } else if (mode === 'register') {
-      const res = await registerWithEmail(email, password);
-      setIsLoading(false);
-      if (res.success) {
-        setSuccessMessage('Account created and signed in successfully!');
-        setTimeout(() => {
-          onClose();
-          window.location.href = '/admin';
-        }, 1200);
-      } else {
-        setError(res.error || 'Account creation failed.');
-      }
+    const res = await loginWithEmail(email, password);
+    setIsLoading(false);
+    if (res.success) {
+      onClose();
+      window.location.href = '/admin';
+    } else {
+      setError(res.error || 'Invalid credentials.');
     }
   };
 
@@ -105,7 +88,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
     resetMessages();
 
     if (!email.trim()) {
-      setError('Please enter the email associated with your account.');
+      setError('Please enter the email associated with your admin account.');
       return;
     }
 
@@ -145,9 +128,9 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
             </div>
             <div>
               <h3 className="text-base font-bold text-white font-serif tracking-wide">
-                Spud\'s Back Office Login
+                Spud's Back Office Login
               </h3>
-              <p className="text-xs text-tartan-gold">Live Firebase Authentication</p>
+              <p className="text-xs text-tartan-gold">Authorized Administrators Only</p>
             </div>
           </div>
           <button
@@ -163,25 +146,13 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
           <button
             onClick={() => { setMode('login'); resetMessages(); }}
             className={`flex-1 py-2.5 font-bold flex items-center justify-center gap-1.5 transition-colors border-b-2 ${
-              mode === 'login' 
+              mode === 'login' || mode === 'forgot'
                 ? 'border-tartan-gold text-tartan-gold bg-tartan-card' 
                 : 'border-transparent text-gray-400 hover:text-gray-200'
             }`}
           >
             <LogIn className="w-3.5 h-3.5" />
-            <span>Sign In</span>
-          </button>
-
-          <button
-            onClick={() => { setMode('register'); resetMessages(); }}
-            className={`flex-1 py-2.5 font-bold flex items-center justify-center gap-1.5 transition-colors border-b-2 ${
-              mode === 'register' 
-                ? 'border-tartan-gold text-tartan-gold bg-tartan-card' 
-                : 'border-transparent text-gray-400 hover:text-gray-200'
-            }`}
-          >
-            <UserPlus className="w-3.5 h-3.5" />
-            <span>Create Admin</span>
+            <span>Admin Sign In</span>
           </button>
 
           <button
@@ -193,7 +164,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
             }`}
           >
             <KeyRound className="w-3.5 h-3.5" />
-            <span>Passcode</span>
+            <span>Quick Passcode</span>
           </button>
         </div>
 
@@ -215,8 +186,8 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
             </div>
           )}
 
-          {/* MODE: LOGIN or REGISTER */}
-          {(mode === 'login' || mode === 'register') && (
+          {/* MODE: SIGN IN */}
+          {mode === 'login' && (
             <>
               {/* Google 1-Click Sign-in Button */}
               <button
@@ -264,13 +235,13 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
                 <div>
                   <label className="block text-xs font-semibold text-tartan-gold mb-1 flex items-center gap-1.5">
                     <Mail className="w-3.5 h-3.5" />
-                    <span>Email Address</span>
+                    <span>Admin Email Address</span>
                   </label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="spud@spudthepiper.com"
+                    placeholder="piperspud@gmail.com"
                     required
                     className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent text-sm"
                   />
@@ -282,21 +253,19 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
                       <Lock className="w-3.5 h-3.5" />
                       <span>Password</span>
                     </label>
-                    {mode === 'login' && (
-                      <button
-                        type="button"
-                        onClick={() => { setMode('forgot'); resetMessages(); }}
-                        className="text-[11px] text-tartan-gold hover:underline"
-                      >
-                        Forgot password?
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => { setMode('forgot'); resetMessages(); }}
+                      className="text-[11px] text-tartan-gold hover:underline"
+                    >
+                      Forgot password?
+                    </button>
                   </div>
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder={mode === 'register' ? 'Choose a secure password (min 6 chars)' : '••••••••'}
+                    placeholder="••••••••"
                     required
                     className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent text-sm"
                   />
@@ -319,7 +288,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
                       <Loader2 className="w-4 h-4 animate-spin text-tartan-dark" />
                     ) : (
                       <>
-                        <span>{mode === 'register' ? 'Register Account' : 'Sign In'}</span>
+                        <span>Sign In</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
@@ -333,7 +302,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
           {mode === 'forgot' && (
             <form onSubmit={handlePasswordReset} className="space-y-4">
               <div className="bg-tartan-dark/60 rounded-xl p-3 border border-tartan-border/60 text-xs text-gray-300">
-                Enter your admin email address and we will dispatch an instant password reset link directly via Firebase Auth.
+                Enter your authorized admin email address to receive an instant password reset link from Firebase Auth.
               </div>
 
               <div>
@@ -345,7 +314,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="spud@spudthepiper.com"
+                  placeholder="piperspud@gmail.com"
                   required
                   autoFocus
                   className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent text-sm"

@@ -21,7 +21,8 @@ import {
   Mail,
   Share2,
   Compass,
-  MapPin
+  MapPin,
+  ShieldCheck
 } from 'lucide-react';
 import { BrevoEmailModal } from './BrevoEmailModal';
 import { PayPalCheckoutModal } from './PayPalCheckoutModal';
@@ -62,6 +63,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
     { id: 'social-links', label: 'Social Media Links', icon: Share2 },
     { id: 'reviews', label: 'Review Moderation', icon: Star },
     { id: 'seo', label: 'SEO & Meta Studio', icon: Search },
+    { id: 'security', label: 'Admin Team & Security', icon: ShieldCheck },
     { id: 'notifications', label: 'Notification Center', icon: Bell, badgeCount: unreadNotifCount },
   ];
 

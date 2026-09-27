@@ -16,6 +16,7 @@ import { AdminTravelExpenses } from '@/components/admin/AdminTravelExpenses';
 import { AdminMailingList } from '@/components/admin/AdminMailingList';
 import { AdminSeoStudio } from '@/components/admin/AdminSeoStudio';
 import { AdminNotifications } from '@/components/admin/AdminNotifications';
+import { AdminSecurityControl } from '@/components/admin/AdminSecurityControl';
 import { AdminLoginModal } from '@/components/AdminLoginModal';
 import { ShieldAlert, ArrowLeft } from 'lucide-react';
 
@@ -77,6 +78,7 @@ export default function AdminPage() {
       {activeTab === 'social-links' && <AdminSocialLinks />}
       {activeTab === 'reviews' && <AdminReviews />}
       {activeTab === 'seo' && <AdminSeoStudio />}
+      {activeTab === 'security' && <AdminSecurityControl />}
       {activeTab === 'notifications' && <AdminNotifications onNavigateTab={setActiveTab} />}
     </AdminLayout>
   );
