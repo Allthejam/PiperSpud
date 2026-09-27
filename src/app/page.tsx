@@ -222,8 +222,8 @@ export default function HomePage() {
       {/* Services Showcase */}
       <ServicesSection />
 
-      {/* Audio Jukebox Sampler */}
-      <TuneSampler />
+      {/* Audio Jukebox Sampler (Home Page 3-Sample Mode) */}
+      <TuneSampler isHomePage={true} />
 
       {/* Tartan & Highland Attire Studio */}
       <TartanSelector />

@@ -37,7 +37,11 @@ import { BagpipeTune } from '@/types/spud';
 import { EditableElement } from './EditableElement';
 import { uploadToStorage } from '@/lib/firebase';
 
-export const TuneSampler: React.FC = () => {
+export interface TuneSamplerProps {
+  isHomePage?: boolean;
+}
+
+export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) => {
   const { 
     tunesList, 
     currentPlayingTune, 
@@ -49,6 +53,22 @@ export const TuneSampler: React.FC = () => {
     isAdminLoggedIn, 
     isVisualEditMode 
   } = useApp();
+
+  // Home Page Random 3 Samples State
+  const [homeRandomTuneIds, setHomeRandomTuneIds] = useState<string[]>([]);
+
+  // Random selection of 3 tunes for home page
+  React.useEffect(() => {
+    if (isHomePage && tunesList.length > 0) {
+      const shuffled = [...tunesList].sort(() => 0.5 - Math.random());
+      setHomeRandomTuneIds(shuffled.slice(0, 3).map(t => t.id));
+    }
+  }, [isHomePage, tunesList.length]);
+
+  const handleShuffleRandomTunes = () => {
+    const shuffled = [...tunesList].sort(() => 0.5 - Math.random());
+    setHomeRandomTuneIds(shuffled.slice(0, 3).map(t => t.id));
+  };
 
   // Filter & Search State
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -123,7 +143,7 @@ export const TuneSampler: React.FC = () => {
     { id: 'Burns & Galas', label: 'Burns & Galas', emoji: '🥃', count: tunesList.filter(t => t.weddingMoment === 'Burns & Galas').length },
   ];
 
-  // Filtered Tunes computation
+  // Filtered Tunes computation (Full Library)
   const filteredTunes = useMemo(() => {
     return tunesList.filter((tune) => {
       // 1. Search Query
@@ -159,6 +179,19 @@ export const TuneSampler: React.FC = () => {
       return true;
     });
   }, [tunesList, searchQuery, activeMoment, activeInstrument]);
+
+  // Displayed Tunes: 3 Random for Home Page, or Filtered Library for Full Page
+  const displayedTunes = useMemo(() => {
+    if (isHomePage) {
+      if (homeRandomTuneIds.length === 0) {
+        return tunesList.slice(0, 3);
+      }
+      const map = new Map(tunesList.map(t => [t.id, t]));
+      const matched = homeRandomTuneIds.map(id => map.get(id)).filter((t): t is BagpipeTune => !!t);
+      return matched.length > 0 ? matched : tunesList.slice(0, 3);
+    }
+    return filteredTunes;
+  }, [isHomePage, homeRandomTuneIds, tunesList, filteredTunes]);
 
   const handleOpenAddModal = () => {
     setEditingTuneId(null);
@@ -279,7 +312,7 @@ export const TuneSampler: React.FC = () => {
             <EditableElement
               id="tunes-header-badge"
               tag="span"
-              defaultContent="The Definitive Scottish Repertoire & Audio Jukebox"
+              defaultContent={isHomePage ? "Authentic Scottish Soundtracks & Live Samples" : "The Definitive Scottish Repertoire & Audio Jukebox"}
               label="Tunes Header Badge"
               section="tunes"
             />
@@ -287,7 +320,7 @@ export const TuneSampler: React.FC = () => {
           <EditableElement
             id="tunes-header-title"
             tag="h2"
-            defaultContent="Authentic Scottish Bagpipe Music for Weddings & Occasions"
+            defaultContent={isHomePage ? "Listen to Bagpipe Music Samples" : "Authentic Scottish Bagpipe Music for Weddings & Occasions"}
             className="text-3xl sm:text-5xl font-extrabold text-white font-serif tracking-tight leading-tight"
             label="Tunes Header Title"
             section="tunes"
@@ -295,283 +328,308 @@ export const TuneSampler: React.FC = () => {
           <EditableElement
             id="tunes-header-desc"
             tag="p"
-            defaultContent="From majestic aisle processionals like Highland Cathedral to joyous recesionals, clapping banquet marches, and soulful laments. Listen to real audio recordings and plan the soundtrack to your Scottish day."
+            defaultContent={isHomePage ? "Listen to live bagpipe sound samples and authentic audio recordings from Spud's master repertoire. Below are 3 featured samples, or explore our full Jukebox to hear all tunes." : "From majestic aisle processionals like Highland Cathedral to joyous recesssionals, clapping banquet marches, and soulful laments. Listen to real audio recordings and plan the soundtrack to your Scottish day."}
             className="text-sm sm:text-base text-gray-300 leading-relaxed max-w-2xl mx-auto"
             label="Tunes Header Description"
             section="tunes"
           />
-        </div>
-
-        {/* ── 1. INTERACTIVE WEDDING TIMELINE MUSIC GUIDE (Collapsible) ── */}
-        <div className="mb-10 bg-gradient-to-br from-tartan-navy/90 via-tartan-dark to-tartan-navy/80 rounded-3xl p-6 sm:p-8 border border-tartan-border shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-72 h-72 bg-tartan-accent/10 rounded-full blur-3xl pointer-events-none" />
           
-          <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-tartan-gold/15 border border-tartan-gold/40 flex items-center justify-center text-tartan-gold shadow-md">
-                <BookOpen className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base sm:text-lg font-bold text-white font-serif flex items-center gap-2">
-                  <span>How Bagpipe Music Shapes Your Wedding Ceremony</span>
-                  <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-tartan-gold/20 text-tartan-gold border border-tartan-gold/40 font-mono">
-                    6 Key Moments
-                  </span>
-                </h3>
-                <p className="text-xs text-gray-300">
-                  Click any stage below to instantly filter tunes recommended for that exact moment of your day.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
+          {/* Home Page Shuffle & See More Quick Pill */}
+          {isHomePage && (
+            <div className="pt-2 flex items-center justify-center gap-3 flex-wrap">
               <button
                 type="button"
-                onClick={() => setShowTimelineGuide(!showTimelineGuide)}
-                className="text-xs text-tartan-gold hover:text-yellow-300 flex items-center gap-1 font-semibold px-3 py-1.5 rounded-xl bg-tartan-dark border border-tartan-border transition-colors"
+                onClick={handleShuffleRandomTunes}
+                className="px-4 py-2 rounded-full bg-tartan-card hover:bg-tartan-navy text-tartan-gold border border-tartan-border hover:border-tartan-accent text-xs font-bold transition flex items-center gap-1.5 shadow"
+                title="Roll 3 different random tune samples"
               >
-                <span>{showTimelineGuide ? 'Hide Guide' : 'Show Guide'}</span>
-                {showTimelineGuide ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                <span>🎲 Shuffle 3 Random Samples</span>
               </button>
+              <Link
+                href="/tunes"
+                className="px-4 py-2 rounded-full bg-tartan-navy hover:bg-slate-700 text-white border border-tartan-border hover:border-tartan-gold text-xs font-semibold transition flex items-center gap-1.5 shadow"
+              >
+                <Music className="w-3.5 h-3.5 text-tartan-gold" />
+                <span>See All {tunesList.length} Repertoire Tunes &rarr;</span>
+              </Link>
             </div>
-          </div>
+          )}
+        </div>
 
-          {showTimelineGuide && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-              {[
-                {
-                  step: '1',
-                  moment: 'Guests Arrival',
-                  title: "1. Welcoming Your Guests",
-                  tunes: "Murdo's Wedding · Hornpipes & Jigs",
-                  desc: "As guests arrive at the venue (30-45 mins before), lively hornpipes and jaunty marches build excitement and set the celebratory tone.",
-                  badge: "👋 Upbeat & Jaunty"
-                },
-                {
-                  step: '2',
-                  moment: 'Walking Up the Aisle',
-                  title: "2. Piping Bride Up the Aisle",
-                  tunes: "Highland Cathedral · Skye Boat Song · Caledonia",
-                  desc: "One of the most emotional moments of your life. Grand, majestic slow airs played on the Great Highland Bagpipes or mellow Smallpipes.",
-                  badge: "👰 Majestic Slow Air"
-                },
-                {
-                  step: '3',
-                  moment: 'Signing the Register',
-                  title: "3. Signing the Marriage Register",
-                  tunes: "Mingulay Boat Song · Red, Red Rose · Wild Mountain Thyme",
-                  desc: "Gentle romantic melodies while you sign the schedule, followed by a cheerful jig to prepare the room for celebration.",
-                  badge: "✍️ Romantic & Lyrical"
-                },
-                {
-                  step: '4',
-                  moment: 'Newlyweds Exit / Recessional',
-                  title: "4. Recessional Down the Aisle",
-                  tunes: "The Highland Wedding · Mairi's Wedding · Scotland the Brave",
-                  desc: "You are now officially married! Triumphant, rousing marches deliver guaranteed cheers, applause, and huge energy as you exit.",
-                  badge: "🎉 Rousing & Triumphant"
-                },
-                {
-                  step: '5',
-                  moment: 'Confetti & Drinks',
-                  title: "5. Confetti Shower & Drinks",
-                  tunes: "Heilan Laddie · The Black Bear · Cock o' the North",
-                  desc: "Fast, exhilarating regimental quicksteps as you run the confetti gauntlet, followed by cocktail hour tunes for photos.",
-                  badge: "🥂 High Energy March"
-                },
-                {
-                  step: '6',
-                  moment: 'Top Table Entrance',
-                  title: "6. Grand Banquet Top Table Entrance",
-                  tunes: "Killiecrankie · Campbeltown Loch · Piper's Toast",
-                  desc: "Driving rhythmic marches that get the entire dining room clapping in unison, topped off with Spud's Traditional Piper's Toast.",
-                  badge: "👑 Clapping Banquet March"
-                },
-              ].map((item) => (
+        {/* ── FULL MODE ONLY: 1. INTERACTIVE WEDDING TIMELINE MUSIC GUIDE (Collapsible) ── */}
+        {!isHomePage && (
+          <div className="mb-10 bg-gradient-to-br from-tartan-navy/90 via-tartan-dark to-tartan-navy/80 rounded-3xl p-6 sm:p-8 border border-tartan-border shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-72 h-72 bg-tartan-accent/10 rounded-full blur-3xl pointer-events-none" />
+            
+            <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-tartan-gold/15 border border-tartan-gold/40 flex items-center justify-center text-tartan-gold shadow-md">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-white font-serif flex items-center gap-2">
+                    <span>How Bagpipe Music Shapes Your Wedding Ceremony</span>
+                    <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-tartan-gold/20 text-tartan-gold border border-tartan-gold/40 font-mono">
+                      6 Key Moments
+                    </span>
+                  </h3>
+                  <p className="text-xs text-gray-300">
+                    Click any stage below to instantly filter tunes recommended for that exact moment of your day.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
                 <button
-                  key={item.step}
                   type="button"
-                  onClick={() => setActiveMoment(item.moment)}
-                  className={`p-4 rounded-2xl border text-left transition-all relative group flex flex-col justify-between ${
-                    activeMoment === item.moment
-                      ? 'bg-tartan-gold/15 border-tartan-gold ring-1 ring-tartan-gold shadow-lg'
-                      : 'bg-tartan-dark/70 hover:bg-tartan-dark border-tartan-border/70 hover:border-tartan-gold/50'
-                  }`}
+                  onClick={() => setShowTimelineGuide(!showTimelineGuide)}
+                  className="text-xs text-tartan-gold hover:text-yellow-300 flex items-center gap-1 font-semibold px-3 py-1.5 rounded-xl bg-tartan-dark border border-tartan-border transition-colors"
                 >
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-tartan-navy text-tartan-gold border border-tartan-border/60">
-                        {item.badge}
-                      </span>
-                      <span className="text-[10px] font-mono text-gray-400 group-hover:text-tartan-gold transition-colors flex items-center gap-0.5">
-                        <span>View Tunes</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </span>
+                  <span>{showTimelineGuide ? 'Hide Guide' : 'Show Guide'}</span>
+                  {showTimelineGuide ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+
+            {showTimelineGuide && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+                {[
+                  {
+                    step: '1',
+                    moment: 'Guests Arrival',
+                    title: "1. Welcoming Your Guests",
+                    tunes: "Murdo's Wedding · Hornpipes & Jigs",
+                    desc: "As guests arrive at the venue (30-45 mins before), lively hornpipes and jaunty marches build excitement and set the celebratory tone.",
+                    badge: "👋 Upbeat & Jaunty"
+                  },
+                  {
+                    step: '2',
+                    moment: 'Walking Up the Aisle',
+                    title: "2. Piping Bride Up the Aisle",
+                    tunes: "Highland Cathedral · Skye Boat Song · Caledonia",
+                    desc: "One of the most emotional moments of your life. Grand, majestic slow airs played on the Great Highland Bagpipes or mellow Smallpipes.",
+                    badge: "👰 Majestic Slow Air"
+                  },
+                  {
+                    step: '3',
+                    moment: 'Signing the Register',
+                    title: "3. Signing the Marriage Register",
+                    tunes: "Mingulay Boat Song · Red, Red Rose · Wild Mountain Thyme",
+                    desc: "Gentle romantic melodies while you sign the schedule, followed by a cheerful jig to prepare the room for celebration.",
+                    badge: "✍️ Romantic & Lyrical"
+                  },
+                  {
+                    step: '4',
+                    moment: 'Newlyweds Exit / Recessional',
+                    title: "4. Recessional Down the Aisle",
+                    tunes: "The Highland Wedding · Mairi's Wedding · Scotland the Brave",
+                    desc: "You are now officially married! Triumphant, rousing marches deliver guaranteed cheers, applause, and huge energy as you exit.",
+                    badge: "🎉 Rousing & Triumphant"
+                  },
+                  {
+                    step: '5',
+                    moment: 'Confetti & Drinks',
+                    title: "5. Confetti Shower & Drinks",
+                    tunes: "Heilan Laddie · The Black Bear · Cock o' the North",
+                    desc: "Fast, exhilarating regimental quicksteps as you run the confetti gauntlet, followed by cocktail hour tunes for photos.",
+                    badge: "🥂 High Energy March"
+                  },
+                  {
+                    step: '6',
+                    moment: 'Top Table Entrance',
+                    title: "6. Grand Banquet Top Table Entrance",
+                    tunes: "Killiecrankie · Campbeltown Loch · Piper's Toast",
+                    desc: "Driving rhythmic marches that get the entire dining room clapping in unison, topped off with Spud's Traditional Piper's Toast.",
+                    badge: "👑 Clapping Banquet March"
+                  },
+                ].map((item) => (
+                  <button
+                    key={item.step}
+                    type="button"
+                    onClick={() => setActiveMoment(item.moment)}
+                    className={`p-4 rounded-2xl border text-left transition-all relative group flex flex-col justify-between ${
+                      activeMoment === item.moment
+                        ? 'bg-tartan-gold/15 border-tartan-gold ring-1 ring-tartan-gold shadow-lg'
+                        : 'bg-tartan-dark/70 hover:bg-tartan-dark border-tartan-border/70 hover:border-tartan-gold/50'
+                    }`}
+                  >
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-tartan-navy text-tartan-gold border border-tartan-border/60">
+                          {item.badge}
+                        </span>
+                        <span className="text-[10px] font-mono text-gray-400 group-hover:text-tartan-gold transition-colors flex items-center gap-0.5">
+                          <span>View Tunes</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-bold text-white font-serif">{item.title}</h4>
+                      <p className="text-[11px] text-gray-300 leading-relaxed">{item.desc}</p>
                     </div>
-                    <h4 className="text-sm font-bold text-white font-serif">{item.title}</h4>
-                    <p className="text-[11px] text-gray-300 leading-relaxed">{item.desc}</p>
-                  </div>
-                  <div className="mt-3 pt-2 border-t border-tartan-border/40 text-[10px] text-tartan-gold font-medium">
-                    <span>Popular: </span>
-                    <span className="text-gray-300">{item.tunes}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+                    <div className="mt-3 pt-2 border-t border-tartan-border/40 text-[10px] text-tartan-gold font-medium">
+                      <span>Popular: </span>
+                      <span className="text-gray-300">{item.tunes}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
 
-          {/* ── Spotlight: Scottish Smallpipes vs. Great Highland Pipes ── */}
-          <div className="mt-6 pt-6 border-t border-tartan-border/80 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🎺</span>
-              <div>
-                <h4 className="text-xs sm:text-sm font-bold text-white">
-                  Did you know? Spud plays both Great Highland Bagpipes & Mellow Scottish Smallpipes
-                </h4>
-                <p className="text-[11px] text-gray-300">
-                  Smallpipes are bellows-blown and quieter—ideal for intimate indoor chapels, registry offices, and gentle aisle walks.
-                </p>
+            {/* ── Spotlight: Scottish Smallpipes vs. Great Highland Pipes ── */}
+            <div className="mt-6 pt-6 border-t border-tartan-border/80 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🎺</span>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-bold text-white">
+                    Did you know? Spud plays both Great Highland Bagpipes & Mellow Scottish Smallpipes
+                  </h4>
+                  <p className="text-[11px] text-gray-300">
+                    Smallpipes are bellows-blown and quieter—ideal for intimate indoor chapels, registry offices, and gentle aisle walks.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveInstrument(activeInstrument === 'Scottish Smallpipes' ? 'All' : 'Scottish Smallpipes');
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all ${
+                    activeInstrument === 'Scottish Smallpipes'
+                      ? 'bg-blue-600 text-white border-blue-400 shadow-md font-bold'
+                      : 'bg-tartan-dark text-blue-300 border-blue-800/60 hover:bg-blue-950/60'
+                  }`}
+                >
+                  <span>Filter Mellow Smallpipes</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveInstrument(activeInstrument === 'Great Highland Bagpipes' ? 'All' : 'Great Highland Bagpipes');
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all ${
+                    activeInstrument === 'Great Highland Bagpipes'
+                      ? 'bg-tartan-gold text-tartan-dark border-tartan-gold font-bold shadow-md'
+                      : 'bg-tartan-dark text-tartan-gold border-tartan-border hover:bg-tartan-navy'
+                  }`}
+                >
+                  <span>Filter Great Highland Pipes</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── FULL MODE ONLY: 2. SEARCH & MOMENT FILTER BAR ── */}
+        {!isHomePage && (
+          <div className="space-y-4 mb-8">
+            
+            {/* Search Bar & Stats */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="relative w-full sm:w-96">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search tunes by title, Outlander, moment, or Burns..."
+                  className="w-full bg-tartan-navy/90 border border-tartan-border rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-gray-400 text-xs focus:outline-none focus:border-tartan-accent font-medium shadow-inner"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+                <span className="text-xs text-gray-400 font-mono">
+                  Showing <strong className="text-tartan-gold">{filteredTunes.length}</strong> of {tunesList.length} Scottish Tunes
+                </span>
+
+                {canManage && (
+                  <button
+                    onClick={handleOpenAddModal}
+                    className="px-3.5 py-2 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-lg hover:brightness-110 active:scale-95 transition-all"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Track / Upload Audio</span>
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveInstrument(activeInstrument === 'Scottish Smallpipes' ? 'All' : 'Scottish Smallpipes');
-                }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all ${
-                  activeInstrument === 'Scottish Smallpipes'
-                    ? 'bg-blue-600 text-white border-blue-400 shadow-md font-bold'
-                    : 'bg-tartan-dark text-blue-300 border-blue-800/60 hover:bg-blue-950/60'
-                }`}
-              >
-                <span>Filter Mellow Smallpipes</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveInstrument(activeInstrument === 'Great Highland Bagpipes' ? 'All' : 'Great Highland Bagpipes');
-                }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all ${
-                  activeInstrument === 'Great Highland Bagpipes'
-                    ? 'bg-tartan-gold text-tartan-dark border-tartan-gold font-bold shadow-md'
-                    : 'bg-tartan-dark text-tartan-gold border-tartan-border hover:bg-tartan-navy'
-                }`}
-              >
-                <span>Filter Great Highland Pipes</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* ── 2. SEARCH & MOMENT FILTER BAR ── */}
-        <div className="space-y-4 mb-8">
-          
-          {/* Search Bar & Stats */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="relative w-full sm:w-96">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search tunes by title, Outlander, moment, or Burns..."
-                className="w-full bg-tartan-navy/90 border border-tartan-border rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-gray-400 text-xs focus:outline-none focus:border-tartan-accent font-medium shadow-inner"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-xs"
-                >
-                  ✕
-                </button>
-              )}
+            {/* Moment Filter Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+              {weddingMoments.map((m) => {
+                const isActive = activeMoment === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setActiveMoment(m.id)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all shrink-0 ${
+                      isActive 
+                        ? 'bg-gold-gradient text-tartan-dark font-extrabold shadow-lg scale-105' 
+                        : 'bg-tartan-card text-gray-300 hover:text-white hover:bg-tartan-navy border border-tartan-border/60'
+                    }`}
+                  >
+                    <span>{m.emoji}</span>
+                    <span>{m.label}</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                      isActive ? 'bg-black/20 text-tartan-dark' : 'bg-tartan-dark text-gray-400'
+                    }`}>
+                      {m.id === 'All' ? tunesList.length : m.count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
-            <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
-              <span className="text-xs text-gray-400 font-mono">
-                Showing <strong className="text-tartan-gold">{filteredTunes.length}</strong> of {tunesList.length} Scottish Tunes
-              </span>
-
-              {canManage && (
-                <button
-                  onClick={handleOpenAddModal}
-                  className="px-3.5 py-2 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-lg hover:brightness-110 active:scale-95 transition-all"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Track / Upload Audio</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Moment Filter Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-            {weddingMoments.map((m) => {
-              const isActive = activeMoment === m.id;
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setActiveMoment(m.id)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all shrink-0 ${
-                    isActive 
-                      ? 'bg-gold-gradient text-tartan-dark font-extrabold shadow-lg scale-105' 
-                      : 'bg-tartan-card text-gray-300 hover:text-white hover:bg-tartan-navy border border-tartan-border/60'
-                  }`}
-                >
-                  <span>{m.emoji}</span>
-                  <span>{m.label}</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                    isActive ? 'bg-black/20 text-tartan-dark' : 'bg-tartan-dark text-gray-400'
-                  }`}>
-                    {m.id === 'All' ? tunesList.length : m.count}
+            {/* Active Filter Indicators */}
+            {(activeMoment !== 'All' || activeInstrument !== 'All' || searchQuery) && (
+              <div className="flex items-center gap-2 flex-wrap text-xs text-gray-400 pt-1">
+                <span>Active Filters:</span>
+                {activeMoment !== 'All' && (
+                  <span className="px-2.5 py-1 rounded-lg bg-tartan-gold/15 text-tartan-gold border border-tartan-gold/40 flex items-center gap-1">
+                    <span>Moment: {activeMoment}</span>
+                    <button onClick={() => setActiveMoment('All')} className="hover:text-white ml-1">✕</button>
                   </span>
+                )}
+                {activeInstrument !== 'All' && (
+                  <span className="px-2.5 py-1 rounded-lg bg-blue-950 text-blue-300 border border-blue-800 flex items-center gap-1">
+                    <span>Instrument: {activeInstrument}</span>
+                    <button onClick={() => setActiveInstrument('All')} className="hover:text-white ml-1">✕</button>
+                  </span>
+                )}
+                {searchQuery && (
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-gray-200 border border-slate-700 flex items-center gap-1">
+                    <span>Keyword: &quot;{searchQuery}&quot;</span>
+                    <button onClick={() => setSearchQuery('')} className="hover:text-white ml-1">✕</button>
+                  </span>
+                )}
+                <button
+                  onClick={() => {
+                    setActiveMoment('All');
+                    setActiveInstrument('All');
+                    setSearchQuery('');
+                  }}
+                  className="text-xs text-tartan-accent hover:underline font-semibold ml-2"
+                >
+                  Reset All Filters
                 </button>
-              );
-            })}
+              </div>
+            )}
           </div>
-
-          {/* Active Filter Indicators */}
-          {(activeMoment !== 'All' || activeInstrument !== 'All' || searchQuery) && (
-            <div className="flex items-center gap-2 flex-wrap text-xs text-gray-400 pt-1">
-              <span>Active Filters:</span>
-              {activeMoment !== 'All' && (
-                <span className="px-2.5 py-1 rounded-lg bg-tartan-gold/15 text-tartan-gold border border-tartan-gold/40 flex items-center gap-1">
-                  <span>Moment: {activeMoment}</span>
-                  <button onClick={() => setActiveMoment('All')} className="hover:text-white ml-1">✕</button>
-                </span>
-              )}
-              {activeInstrument !== 'All' && (
-                <span className="px-2.5 py-1 rounded-lg bg-blue-950 text-blue-300 border border-blue-800 flex items-center gap-1">
-                  <span>Instrument: {activeInstrument}</span>
-                  <button onClick={() => setActiveInstrument('All')} className="hover:text-white ml-1">✕</button>
-                </span>
-              )}
-              {searchQuery && (
-                <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-gray-200 border border-slate-700 flex items-center gap-1">
-                  <span>Keyword: &quot;{searchQuery}&quot;</span>
-                  <button onClick={() => setSearchQuery('')} className="hover:text-white ml-1">✕</button>
-                </span>
-              )}
-              <button
-                onClick={() => {
-                  setActiveMoment('All');
-                  setActiveInstrument('All');
-                  setSearchQuery('');
-                }}
-                className="text-xs text-tartan-accent hover:underline font-semibold ml-2"
-              >
-                Reset All Filters
-              </button>
-            </div>
-          )}
-        </div>
+        )}
 
         {/* ── 3. JUKEBOX TUNE CARDS GRID ── */}
-        {filteredTunes.length === 0 ? (
+        {displayedTunes.length === 0 ? (
           <div className="text-center py-16 bg-tartan-card rounded-3xl border border-tartan-border space-y-3">
             <Music className="w-12 h-12 text-gray-600 mx-auto" />
             <h3 className="text-lg font-bold text-white font-serif">No tunes matched your filter</h3>
@@ -785,6 +843,41 @@ export const TuneSampler: React.FC = () => {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* ── HOME PAGE MODE: SEE MORE MUSIC / EXPLORE ALL TUNES CTA ── */}
+        {isHomePage && (
+          <div className="mt-12 bg-gradient-to-r from-tartan-navy via-tartan-card to-tartan-navy rounded-3xl p-6 sm:p-8 border border-tartan-accent/50 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
+            <div className="space-y-2 max-w-xl">
+              <span className="text-xs font-bold text-tartan-gold uppercase tracking-wider flex items-center justify-center sm:justify-start gap-1.5">
+                <Sparkles className="w-4 h-4" /> Full Bagpipe Repertoire ({tunesList.length} Tracks)
+              </span>
+              <h3 className="text-xl sm:text-2xl font-bold text-white font-serif">
+                Want to hear the rest of Spud&apos;s tunes?
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
+                Spud plays over 20+ Scottish anthems, Outlander theme songs, Burns Night laments, wedding processionals, and lively banquet clapping marches.
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-3 shrink-0 flex-wrap justify-center">
+              <button
+                type="button"
+                onClick={handleShuffleRandomTunes}
+                className="px-5 py-3 rounded-xl bg-tartan-dark hover:bg-slate-800 text-tartan-gold font-bold text-xs border border-tartan-border/80 transition flex items-center gap-2 shadow"
+                title="Shuffle 3 other random samples"
+              >
+                <span>🎲 Shuffle Samples</span>
+              </button>
+
+              <Link
+                href="/tunes"
+                className="px-7 py-3.5 rounded-xl bg-gold-gradient text-tartan-dark font-black text-xs uppercase tracking-wider shadow-xl hover:brightness-110 active:scale-95 transition flex items-center gap-2"
+              >
+                <span>See All {tunesList.length} Tunes &rarr;</span>
+              </Link>
+            </div>
           </div>
         )}
 
