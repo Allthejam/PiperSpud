@@ -15,6 +15,8 @@ import {
   Send,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Sparkles,
   Info,
   Compass,
@@ -47,7 +49,23 @@ export const BookingCalendar: React.FC = () => {
   const [venuePostcode, setVenuePostcode] = useState('');
   const [tartanChoice, setTartanChoice] = useState<HighlandDressOption>('Full No. 1 Dress (Feather Bonnet & Plaid)');
   const [selectedTunes, setSelectedTunes] = useState<string[]>(['Highland Cathedral', 'Scotland the Brave']);
+  const [visibleTuneCount, setVisibleTuneCount] = useState<number>(6); // 2 rows of 3
   const [notes, setNotes] = useState('');
+
+  // Prioritize tunes placed on the Home Page first (Spud's favorites & catchment tunes), then popular tunes
+  const sortedTunes = React.useMemo(() => {
+    return [...tunesList].sort((a, b) => {
+      const aHome = a.showOnHomePage ? 1 : 0;
+      const bHome = b.showOnHomePage ? 1 : 0;
+      if (bHome !== aHome) return bHome - aHome;
+      const aPop = a.isPopular ? 1 : 0;
+      const bPop = b.isPopular ? 1 : 0;
+      if (bPop !== aPop) return bPop - aPop;
+      return a.title.localeCompare(b.title);
+    });
+  }, [tunesList]);
+
+  const displayedTunes = sortedTunes.slice(0, visibleTuneCount);
 
   // Auto-detect service from client URL params matching active services
   useEffect(() => {
@@ -689,33 +707,70 @@ export const BookingCalendar: React.FC = () => {
                 </div>
 
                 {/* Form Row 5: Special Bagpipe Tunes Selection */}
-                <div>
-                  <label className="block text-xs font-semibold text-tartan-gold mb-2 flex items-center gap-1">
-                    <Music className="w-3.5 h-3.5" />
-                    <span>Requested Tunes (Select any you wish Spud to perform):</span>
-                  </label>
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <label className="text-xs font-semibold text-tartan-gold flex items-center gap-1.5">
+                      <Music className="w-3.5 h-3.5" />
+                      <span>Requested Tunes ({selectedTunes.length} selected):</span>
+                    </label>
+                    <span className="text-[11px] text-gray-400 font-medium">
+                      Showing {Math.min(visibleTuneCount, sortedTunes.length)} of {sortedTunes.length} tunes
+                    </span>
+                  </div>
+
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {tunesList.map((tune) => {
+                    {displayedTunes.map((tune) => {
                       const isChecked = selectedTunes.includes(tune.title);
                       return (
                         <div
                           key={tune.id}
                           onClick={() => handleTuneToggle(tune.title)}
-                          className={`p-2.5 rounded-xl cursor-pointer text-xs font-medium border flex items-center gap-2 transition-all ${
+                          className={`p-2.5 rounded-xl cursor-pointer text-xs font-medium border flex items-center justify-between gap-2 transition-all ${
                             isChecked
-                              ? 'bg-tartan-navy text-tartan-gold border-tartan-gold'
-                              : 'bg-tartan-dark/70 text-gray-300 border-tartan-border hover:bg-tartan-dark'
+                              ? 'bg-tartan-navy text-tartan-gold border-tartan-gold shadow-md'
+                              : 'bg-tartan-dark/70 text-gray-300 border-tartan-border hover:bg-tartan-dark hover:border-gray-600'
                           }`}
                         >
-                          <div className={`w-4 h-4 rounded flex items-center justify-center shrink-0 border ${
-                            isChecked ? 'bg-tartan-gold text-tartan-dark border-yellow-300' : 'border-slate-600'
-                          }`}>
-                            {isChecked && <CheckCircle2 className="w-3.5 h-3.5" />}
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <div className={`w-4 h-4 rounded flex items-center justify-center shrink-0 border ${
+                              isChecked ? 'bg-tartan-gold text-tartan-dark border-yellow-300' : 'border-slate-600'
+                            }`}>
+                              {isChecked && <CheckCircle2 className="w-3.5 h-3.5" />}
+                            </div>
+                            <span className="truncate">{tune.title}</span>
                           </div>
-                          <span className="truncate">{tune.title}</span>
+                          {tune.showOnHomePage && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-tartan-gold/15 text-tartan-gold font-bold shrink-0 border border-tartan-gold/30">
+                              Featured
+                            </span>
+                          )}
                         </div>
                       );
                     })}
+                  </div>
+
+                  {/* Expand / Collapse Controls (2 rows per click) */}
+                  <div className="flex items-center justify-center gap-3 pt-1">
+                    {visibleTuneCount < sortedTunes.length && (
+                      <button
+                        type="button"
+                        onClick={() => setVisibleTuneCount(prev => prev + 6)}
+                        className="px-4 py-2 rounded-xl bg-tartan-dark/90 hover:bg-tartan-navy text-gray-200 hover:text-white border border-tartan-border/80 text-xs font-bold flex items-center gap-2 transition shadow hover:border-tartan-gold/60 active:scale-95"
+                      >
+                        <ChevronDown className="w-4 h-4 text-tartan-gold animate-bounce" />
+                        <span>See More Tunes ({sortedTunes.length - visibleTuneCount} remaining)</span>
+                      </button>
+                    )}
+                    {visibleTuneCount > 6 && (
+                      <button
+                        type="button"
+                        onClick={() => setVisibleTuneCount(6)}
+                        className="px-4 py-2 rounded-xl bg-tartan-dark/90 hover:bg-tartan-navy text-gray-400 hover:text-gray-200 border border-tartan-border/80 text-xs font-semibold flex items-center gap-1.5 transition shadow active:scale-95"
+                      >
+                        <ChevronUp className="w-4 h-4" />
+                        <span>Show Less</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
