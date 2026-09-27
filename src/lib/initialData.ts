@@ -591,6 +591,207 @@ export const initialCmsBlocks: EditableCmsBlock[] = [
     tag: 'p',
     label: 'Facebook Live Schedule Text',
     content: 'Every Tuesday & Friday 6:00 PM – 6:30 PM (UK Time). Join thousands of fans worldwide for live tune requests, Highland stories, and Scottish banter!'
+  },
+  {
+    id: 'contact-header-badge',
+    page: 'home',
+    section: 'contact',
+    tag: 'span',
+    label: 'Contact Header Badge',
+    content: 'Get In Touch with Spud'
+  },
+  {
+    id: 'contact-header-title',
+    page: 'home',
+    section: 'contact',
+    tag: 'h2',
+    label: 'Contact Header Title',
+    content: "Let's Plan Your Unforgettable Bagpipe Performance"
+  },
+  {
+    id: 'contact-header-desc',
+    page: 'home',
+    section: 'contact',
+    tag: 'p',
+    label: 'Contact Header Description',
+    content: 'Have an inquiry or special request? Reach out to Spud directly via phone, WhatsApp, or the contact form below.'
+  },
+  {
+    id: 'contact-quick-title',
+    page: 'home',
+    section: 'contact',
+    tag: 'h3',
+    label: 'Quick Contact Title',
+    content: 'Quick Contact Channels'
+  },
+  {
+    id: 'contact-phone-label',
+    page: 'home',
+    section: 'contact',
+    tag: 'p',
+    label: 'Phone Card Label',
+    content: 'Direct Phone & WhatsApp'
+  },
+  {
+    id: 'contact-phone-value',
+    page: 'home',
+    section: 'contact',
+    tag: 'p',
+    label: 'Direct Phone Number',
+    content: '07793 491367'
+  },
+  {
+    id: 'contact-phone-note',
+    page: 'home',
+    section: 'contact',
+    tag: 'span',
+    label: 'Phone Availability Note',
+    content: 'Available 7 days • Direct line to Callum (Spud)'
+  },
+  {
+    id: 'contact-email-label',
+    page: 'home',
+    section: 'contact',
+    tag: 'p',
+    label: 'Email Card Label',
+    content: 'Official Email'
+  },
+  {
+    id: 'contact-email-value',
+    page: 'home',
+    section: 'contact',
+    tag: 'p',
+    label: 'Official Email Address',
+    content: 'spud@spudthepiper.co.uk'
+  },
+  {
+    id: 'contact-email-note',
+    page: 'home',
+    section: 'contact',
+    tag: 'span',
+    label: 'Email Response Note',
+    content: 'Brevo verified • Enquiries answered within 24 hrs'
+  },
+  {
+    id: 'contact-areas-label',
+    page: 'home',
+    section: 'contact',
+    tag: 'span',
+    label: 'Coverage Title',
+    content: 'Primary Scotland & Worldwide Coverage'
+  },
+  {
+    id: 'contact-areas-desc',
+    page: 'home',
+    section: 'contact',
+    tag: 'p',
+    label: 'Service Areas List',
+    content: 'Aviemore & Cairngorms • Inverness & Highlands • Edinburgh & Lothians • Glasgow & West • Stirling & Perthshire • Aberdeenshire • Isle of Skye • UK-Wide & International Expeditions'
+  },
+  {
+    id: 'contact-stream-badge',
+    page: 'home',
+    section: 'livestream',
+    tag: 'span',
+    label: 'Stream Platform Badge',
+    content: 'Facebook Live Stream'
+  },
+  {
+    id: 'contact-stream-schedule',
+    page: 'home',
+    section: 'livestream',
+    tag: 'h4',
+    label: 'Live Stream Schedule Heading',
+    content: 'Every Tuesday & Friday at 6:00 PM'
+  },
+  {
+    id: 'contact-stream-desc',
+    page: 'home',
+    section: 'livestream',
+    tag: 'p',
+    label: 'Live Stream Description',
+    content: 'Join Spud online from the comfort of your home for live Highland tune requests, Scottish banter, and piping stories from the Cairngorms.'
+  },
+  {
+    id: 'contact-stream-btn',
+    page: 'home',
+    section: 'livestream',
+    tag: 'span',
+    label: 'Live Stream Button Text',
+    content: 'Watch Live on Facebook →',
+    linkUrl: 'https://www.facebook.com/spudthepiper/'
+  },
+  {
+    id: 'contact-form-title',
+    page: 'home',
+    section: 'contact',
+    tag: 'h3',
+    label: 'Contact Form Title',
+    content: 'Send an Inquiry to Spud'
+  },
+  {
+    id: 'contact-form-sub',
+    page: 'home',
+    section: 'contact',
+    tag: 'p',
+    label: 'Contact Form Subtitle',
+    content: "Have a question about event availability, custom tune requests, or travel logistics? Send a direct message to Spud's personal inbox."
+  },
+  {
+    id: 'contact-form-name-label',
+    page: 'home',
+    section: 'contact',
+    tag: 'span',
+    label: 'Form Name Label',
+    content: 'Your Full Name *'
+  },
+  {
+    id: 'contact-form-email-label',
+    page: 'home',
+    section: 'contact',
+    tag: 'span',
+    label: 'Form Email Label',
+    content: 'Email Address *'
+  },
+  {
+    id: 'contact-form-phone-label',
+    page: 'home',
+    section: 'contact',
+    tag: 'span',
+    label: 'Form Phone Label',
+    content: 'Phone Number (Optional)'
+  },
+  {
+    id: 'contact-form-msg-label',
+    page: 'home',
+    section: 'contact',
+    tag: 'span',
+    label: 'Form Message Label',
+    content: 'Your Message or Event Details *'
+  },
+  {
+    id: 'contact-form-btn-text',
+    page: 'home',
+    section: 'contact',
+    tag: 'span',
+    label: 'Form Submit Button',
+    content: 'Send Message to Spud'
+  },
+  {
+    id: 'contact-form-success-title',
+    page: 'home',
+    section: 'contact',
+    tag: 'h3',
+    label: 'Success Message Title',
+    content: 'Message Sent Successfully!'
+  },
+  {
+    id: 'contact-form-success-desc',
+    page: 'home',
+    section: 'contact',
+    tag: 'p',
+    label: 'Success Message Description',
+    content: 'Thank you for reaching out. Spud has received your inquiry and will be in touch with you shortly via your preferred contact channel.'
   }
 ];
 

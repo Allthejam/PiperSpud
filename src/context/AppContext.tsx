@@ -183,6 +183,10 @@ interface AppContextType {
   updateMailingContact: (id: string, updated: Partial<MailingContact>) => void;
   saveEmailCampaign: (campaign: EmailCampaign) => void;
   dispatchBroadcastCampaign: (campaign: EmailCampaign, recipients: MailingContact[]) => Promise<{ success: boolean; sentCount?: number; error?: string }>;
+  // Live Stream Visibility & Control
+  showLiveStream: boolean;
+  toggleLiveStream: () => void;
+  setShowLiveStream: (show: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -213,6 +217,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [travelConfig, setTravelConfig] = useState<TravelExpensesConfig>(initialTravelConfig);
   const [mailingContacts, setMailingContacts] = useState<MailingContact[]>(initialMailingContacts);
   const [emailCampaigns, setEmailCampaigns] = useState<EmailCampaign[]>(initialCampaigns);
+  const [showLiveStream, setShowLiveStreamState] = useState<boolean>(true);
   const [isSyncingFirestore, setIsSyncingFirestore] = useState<boolean>(false);
 
   // Audio player state & Tunes
@@ -354,6 +359,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try {
           setEmailCampaigns(JSON.parse(savedCampaigns));
         } catch (e) {}
+      }
+
+      const savedStream = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}show_livestream`);
+      if (savedStream !== null) {
+        setShowLiveStreamState(savedStream === 'true');
       }
     } catch (err) {
       console.warn('Could not load saved state from localStorage:', err);
@@ -1682,6 +1692,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActivePayPalModal(null);
   };
 
+  const setShowLiveStream = (show: boolean) => {
+    setShowLiveStreamState(show);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}show_livestream`, show ? 'true' : 'false');
+    }
+    if (db) {
+      setDoc(doc(db, 'settings', 'livestream'), { showLiveStream: show }, { merge: true }).catch(e => console.warn(e));
+    }
+  };
+
+  const toggleLiveStream = () => {
+    setShowLiveStream(!showLiveStream);
+  };
+
   const unreadNotifCount = notifications.filter(n => !n.isRead).length;
   const unreadChatCount = chatMessages.filter(m => !m.isRead && m.sender !== 'spud').length;
 
@@ -1718,6 +1742,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateMailingContact,
       saveEmailCampaign,
       dispatchBroadcastCampaign,
+      showLiveStream,
+      toggleLiveStream,
+      setShowLiveStream,
       reviews,
       submitReview,
       approveReview,

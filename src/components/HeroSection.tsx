@@ -17,7 +17,7 @@ import {
 import { SpudHeritageLogo } from './SpudHeritageLogo';
 
 export const HeroSection: React.FC = () => {
-  const { playTune, currentPlayingTune, stopTune } = useApp();
+  const { playTune, currentPlayingTune, stopTune, showLiveStream, toggleLiveStream, isVisualEditMode } = useApp();
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -259,48 +259,73 @@ export const HeroSection: React.FC = () => {
               </div>
             </div>
 
-            {/* Facebook Live Announcement Banner */}
-            <div className="bg-gradient-to-r from-blue-950/80 to-tartan-navy rounded-xl p-4 border border-blue-500/40 shadow-lg flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                </span>
-                <div>
-                  <EditableElement
-                    id="hero-stream-title"
-                    tag="h4"
-                    defaultContent="Facebook Live Streams"
-                    className="text-xs font-bold text-white uppercase tracking-wider"
-                    label="Live Stream Banner Title"
-                    section="hero"
-                  />
-                  <EditableElement
-                    id="hero-stream-time"
-                    tag="p"
-                    defaultContent="Every Tuesday & Friday • 6:00 - 6:30 PM"
-                    className="text-[11px] text-blue-200"
-                    label="Live Stream Schedule"
-                    section="hero"
-                  />
+            {/* Facebook Live Announcement Banner (Toggleable) */}
+            {showLiveStream ? (
+              <div className="bg-gradient-to-r from-blue-950/80 to-tartan-navy rounded-xl p-4 border border-blue-500/40 shadow-lg flex items-center justify-between gap-3 relative group">
+                <div className="flex items-center gap-3">
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                  </span>
+                  <div>
+                    <EditableElement
+                      id="hero-stream-title"
+                      tag="h4"
+                      defaultContent="Facebook Live Streams"
+                      className="text-xs font-bold text-white uppercase tracking-wider"
+                      label="Live Stream Banner Title"
+                      section="hero"
+                    />
+                    <EditableElement
+                      id="hero-stream-time"
+                      tag="p"
+                      defaultContent="Every Tuesday & Friday • 6:00 - 6:30 PM"
+                      className="text-[11px] text-blue-200"
+                      label="Live Stream Schedule"
+                      section="hero"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href="https://www.facebook.com/spudthepiper/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shrink-0 shadow"
+                  >
+                    <EditableElement
+                      id="hero-stream-btn"
+                      tag="span"
+                      defaultContent="Join Stream"
+                      defaultLinkUrl="https://www.facebook.com/spudthepiper/"
+                      label="Live Stream Button Text & Link"
+                      section="hero"
+                    />
+                  </a>
+                  {isVisualEditMode && (
+                    <button
+                      onClick={toggleLiveStream}
+                      className="p-1.5 rounded-lg bg-red-950/80 hover:bg-red-900 text-red-300 text-[10px] font-bold border border-red-700 shadow"
+                      title="Hide live stream banner"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
               </div>
-              <a
-                href="https://www.facebook.com/spudthepiper/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shrink-0 shadow"
-              >
-                <EditableElement
-                  id="hero-stream-btn"
-                  tag="span"
-                  defaultContent="Join Stream"
-                  defaultLinkUrl="https://www.facebook.com/spudthepiper/"
-                  label="Live Stream Button Text & Link"
-                  section="hero"
-                />
-              </a>
-            </div>
+            ) : (
+              isVisualEditMode && (
+                <div className="p-2.5 rounded-xl border border-dashed border-blue-500/40 text-center flex items-center justify-between bg-blue-950/20">
+                  <span className="text-[11px] text-gray-400">Live stream banner is hidden</span>
+                  <button
+                    onClick={toggleLiveStream}
+                    className="px-2.5 py-1 rounded-lg bg-blue-600 text-white text-[11px] font-bold shadow"
+                  >
+                    + Show Banner
+                  </button>
+                </div>
+              )
+            )}
           </div>
 
         </div>
