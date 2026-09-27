@@ -474,9 +474,9 @@ export const SocialHub: React.FC = () => {
                   </div>
                   <div
                     onClick={() => setIsComposerExpanded(true)}
-                    className="flex-1 bg-tartan-navy hover:bg-slate-800 border border-tartan-border rounded-2xl px-5 py-3.5 text-xs sm:text-sm text-gray-300 cursor-pointer transition-all flex items-center justify-between shadow-inner"
+                    className="flex-1 min-w-0 bg-tartan-navy hover:bg-slate-800 border border-tartan-border rounded-2xl px-4 sm:px-5 py-3.5 text-xs sm:text-sm text-gray-300 cursor-pointer transition-all flex items-center justify-between shadow-inner"
                   >
-                    <span className="font-medium truncate">
+                    <span className="font-medium truncate min-w-0">
                       {isAdminLoggedIn 
                         ? "What's happening on the pipes today, Spud? Share photos, events, or tune updates..." 
                         : "Share a wedding memory, gig photo, tune request, or message for Spud..."}
@@ -486,7 +486,7 @@ export const SocialHub: React.FC = () => {
                 </div>
 
                 {/* Quick Action Buttons */}
-                <div className="flex items-center justify-around pt-3 border-t border-tartan-border/50 text-xs sm:text-sm font-semibold text-gray-300">
+                <div className="flex items-center justify-center sm:justify-around flex-wrap gap-2 pt-3 border-t border-tartan-border/50 text-xs sm:text-sm font-semibold text-gray-300">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -501,27 +501,27 @@ export const SocialHub: React.FC = () => {
                       setIsComposerExpanded(true);
                       fileInputRef.current?.click();
                     }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-tartan-navy transition-colors text-green-400"
+                    className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl hover:bg-tartan-navy transition-colors text-green-400 text-xs sm:text-sm"
                   >
-                    <ImageIcon className="w-4 h-4 text-green-400" />
+                    <ImageIcon className="w-4 h-4 text-green-400 shrink-0" />
                     <span>Upload Photo</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setIsComposerExpanded(true)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-tartan-navy transition-colors text-tartan-gold"
+                    className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl hover:bg-tartan-navy transition-colors text-tartan-gold text-xs sm:text-sm"
                   >
-                    <MapPin className="w-4 h-4 text-tartan-gold" />
+                    <MapPin className="w-4 h-4 text-tartan-gold shrink-0" />
                     <span>Tag Location</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setIsComposerExpanded(true)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-tartan-navy transition-colors text-amber-400"
+                    className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl hover:bg-tartan-navy transition-colors text-amber-400 text-xs sm:text-sm"
                   >
-                    <Music className="w-4 h-4 text-amber-400" />
+                    <Music className="w-4 h-4 text-amber-400 shrink-0" />
                     <span>Tag Tune</span>
                   </button>
                 </div>
@@ -915,32 +915,36 @@ export const SocialHub: React.FC = () => {
                       )}
 
                       {/* Comment Input */}
-                      <div className="flex items-center gap-2 pt-1">
-                        <input
-                          type="text"
-                          value={commentAuthorNames[post.id] || ''}
-                          onChange={(e) => setCommentAuthorNames({ ...commentAuthorNames, [post.id]: e.target.value })}
-                          placeholder={isAdminLoggedIn ? 'Spud the Piper' : 'Your Name'}
-                          className="w-28 sm:w-40 bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent"
-                        />
-                        <input
-                          id={`comment-input-${post.id}`}
-                          type="text"
-                          value={commentInputs[post.id] || ''}
-                          onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
-                          placeholder="Write a public comment..."
-                          className="flex-1 bg-tartan-dark border border-tartan-border rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleCommentSubmit(post.id);
-                          }}
-                        />
-                        <button
-                          onClick={() => handleCommentSubmit(post.id)}
-                          className="p-3 bg-gold-gradient text-tartan-dark rounded-xl shadow hover:brightness-110 active:scale-95 transition-all shrink-0"
-                          title="Send Comment"
-                        >
-                          <Send className="w-4 h-4" />
-                        </button>
+                      <div className="pt-2 border-t border-tartan-border/40">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                          <input
+                            type="text"
+                            value={commentAuthorNames[post.id] || ''}
+                            onChange={(e) => setCommentAuthorNames({ ...commentAuthorNames, [post.id]: e.target.value })}
+                            placeholder={isAdminLoggedIn ? 'Spud the Piper' : 'Your Name'}
+                            className="w-full sm:w-36 bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent shrink-0"
+                          />
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <input
+                              id={`comment-input-${post.id}`}
+                              type="text"
+                              value={commentInputs[post.id] || ''}
+                              onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
+                              placeholder="Write a public comment..."
+                              className="w-full min-w-0 flex-1 bg-tartan-dark border border-tartan-border rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleCommentSubmit(post.id);
+                              }}
+                            />
+                            <button
+                              onClick={() => handleCommentSubmit(post.id)}
+                              className="px-3.5 py-2.5 bg-gold-gradient text-tartan-dark rounded-xl shadow hover:brightness-110 active:scale-95 transition-all shrink-0 flex items-center justify-center font-bold"
+                              title="Send Comment"
+                            >
+                              <Send className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </article>
