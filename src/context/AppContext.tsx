@@ -1113,6 +1113,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (err.code === 'auth/popup-closed-by-user') {
         return { success: false, error: 'Google sign-in popup was closed.' };
       }
+      if (err.code === 'auth/unauthorized-domain') {
+        return { 
+          success: false, 
+          error: 'Firebase (auth/unauthorized-domain): This domain/host is not in your Firebase Authorized Domains list. In Firebase Console > Authentication > Settings > Authorized Domains, add your domain (e.g., localhost, 127.0.0.1, or your live domain). You can also sign in below using Email/Password or Quick Passcode!' 
+        };
+      }
       return { success: false, error: err.message || 'Google sign-in failed.' };
     }
   };

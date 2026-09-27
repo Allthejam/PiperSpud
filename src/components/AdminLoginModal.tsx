@@ -173,9 +173,23 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
           
           {/* Status Messages */}
           {error && (
-            <div className="p-3 bg-red-950/70 border border-red-800 rounded-xl text-red-200 text-xs flex items-start gap-2 animate-in fade-in">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-400 mt-0.5" />
-              <span>{error}</span>
+            <div className="p-3.5 bg-red-950/80 border border-red-700/80 rounded-xl text-red-200 text-xs space-y-1.5 animate-in fade-in">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-400 mt-0.5" />
+                <span className="leading-relaxed">{error}</span>
+              </div>
+              {error.includes('unauthorized-domain') && (
+                <div className="pt-1.5 border-t border-red-800/60 flex items-center justify-between text-[11px]">
+                  <span className="text-red-300">Quick fix without Firebase setup:</span>
+                  <button
+                    type="button"
+                    onClick={() => { setMode('passcode'); resetMessages(); }}
+                    className="text-tartan-gold underline font-bold hover:text-white"
+                  >
+                    Use Quick Passcode →
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
