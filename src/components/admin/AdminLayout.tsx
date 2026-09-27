@@ -212,18 +212,21 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
           <div className="bg-tartan-navy rounded-2xl p-3.5 border border-tartan-border space-y-2 text-[11px]">
             <p className="font-bold text-tartan-gold uppercase tracking-wider flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Automations Active</span>
+              <span>Automations & Payments</span>
             </p>
             <div className="space-y-1.5 text-gray-300">
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1"><Mail className="w-3 h-3 text-blue-400" /> Brevo Email:</span>
-                <span className="text-green-400 font-bold">Connected</span>
+                <span className="text-emerald-400 font-bold">Connected</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1"><CreditCard className="w-3 h-3 text-yellow-400" /> PayPal Webhook:</span>
-                <span className="text-green-400 font-bold">Listening</span>
+                <span className="flex items-center gap-1"><CreditCard className="w-3 h-3 text-yellow-400" /> Payments:</span>
+                <span className="text-amber-400 font-bold">Cash / Direct Active</span>
               </div>
             </div>
+            <p className="text-[10px] text-gray-400 pt-1 border-t border-tartan-border/50 leading-relaxed">
+              Spud can approve gigs and accept cash or BACS right now. PayPal auto-capture activates once linked.
+            </p>
           </div>
         </aside>
 
