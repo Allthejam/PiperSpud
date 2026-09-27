@@ -378,7 +378,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const savedBookings = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}bookings`);
-      if (savedBookings) setBookings(JSON.parse(savedBookings));
+      if (savedBookings) {
+        try {
+          const parsedBookings: BookingEvent[] = JSON.parse(savedBookings);
+          if (Array.isArray(parsedBookings)) {
+            const mockBookingIds = new Set(['spud-bk-101', 'spud-bk-102', 'spud-bk-103', 'spud-bk-104', 'spud-bk-105']);
+            const clean = parsedBookings.filter(b => !mockBookingIds.has(b.id));
+            setBookings(clean);
+          }
+        } catch (e) {}
+      }
 
       const savedReviews = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}reviews`);
       if (savedReviews) setReviews(JSON.parse(savedReviews));
@@ -541,7 +550,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedMailing = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}mailing_contacts`);
       if (savedMailing) {
         try {
-          setMailingContacts(JSON.parse(savedMailing));
+          const parsedMailing: MailingContact[] = JSON.parse(savedMailing);
+          if (Array.isArray(parsedMailing)) {
+            const mockContactIds = new Set(['mc-1', 'mc-2', 'mc-3', 'mc-4', 'mc-5', 'mc-6']);
+            const clean = parsedMailing.filter(m => !mockContactIds.has(m.id));
+            setMailingContacts(clean);
+          }
         } catch (e) {}
       }
 
@@ -610,6 +624,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubUsers = () => {};
     let unsubChatStatus = () => {};
     let unsubNotifications = () => {};
+    let unsubMailing = () => {};
+    let unsubCampaigns = () => {};
 
     try {
       // Real-time Firestore listener for 'users' collection
@@ -668,9 +684,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (!snapshot.empty) {
           const remoteBookings: BookingEvent[] = [];
           snapshot.forEach((d) => remoteBookings.push(d.data() as BookingEvent));
-          if (remoteBookings.length > 0) {
-            setBookings(remoteBookings);
-          }
+          const mockIds = new Set(['spud-bk-101', 'spud-bk-102', 'spud-bk-103', 'spud-bk-104', 'spud-bk-105']);
+          const clean = remoteBookings.filter(b => !mockIds.has(b.id));
+          clean.sort((a, b) => new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime());
+          setBookings(clean);
+        } else {
+          setBookings([]);
         }
       }, (err) => console.log('Firestore bookings listener:', err.message));
 
@@ -786,6 +805,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setNotifications([]);
         }
       }, (err) => console.log('Firestore notifications listener:', err.message));
+
+      // Real-time Firestore listener for mailing_contacts
+      unsubMailing = onSnapshot(collection(db, 'mailing_contacts'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteContacts: MailingContact[] = [];
+          snapshot.forEach((d) => remoteContacts.push(d.data() as MailingContact));
+          const mockIds = new Set(['mc-1', 'mc-2', 'mc-3', 'mc-4', 'mc-5', 'mc-6']);
+          const clean = remoteContacts.filter(m => !mockIds.has(m.id));
+          clean.sort((a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime());
+          setMailingContacts(clean);
+        } else {
+          setMailingContacts([]);
+        }
+      }, (err) => console.log('Firestore mailing_contacts listener:', err.message));
+
+      // Real-time Firestore listener for email_campaigns
+      unsubCampaigns = onSnapshot(collection(db, 'email_campaigns'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteCampaigns: EmailCampaign[] = [];
+          snapshot.forEach((d) => remoteCampaigns.push(d.data() as EmailCampaign));
+          if (remoteCampaigns.length > 0) {
+            setEmailCampaigns(remoteCampaigns);
+          }
+        }
+      }, (err) => console.log('Firestore email_campaigns listener:', err.message));
     } catch (e) {
       console.warn('Firebase Firestore initialization:', e);
     }
@@ -804,6 +848,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubUsers();
       unsubChatStatus();
       unsubNotifications();
+      unsubMailing();
+      unsubCampaigns();
     };
   }, []);
 
@@ -2565,17 +2611,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const updateMailingContact = (id: string, updated: Partial<MailingContact>) => {
+  const updateMailingContact = async (id: string, updated: Partial<MailingContact>) => {
+    let fullContact: MailingContact | null = null;
     setMailingContacts(prev => {
-      const next = prev.map(c => c.id === id ? { ...c, ...updated } : c);
+      const next = prev.map(c => {
+        if (c.id === id) {
+          fullContact = { ...c, ...updated };
+          return fullContact;
+        }
+        return c;
+      });
       if (typeof window !== 'undefined') {
         localStorage.setItem(`${LOCAL_STORAGE_PREFIX}mailing_contacts`, JSON.stringify(next));
       }
       return next;
     });
+    if (db && fullContact) {
+      await setDoc(doc(db, 'mailing_contacts', id), fullContact, { merge: true }).catch(e => console.warn(e));
+    }
   };
 
-  const saveEmailCampaign = (campaign: EmailCampaign) => {
+  const saveEmailCampaign = async (campaign: EmailCampaign) => {
     setEmailCampaigns(prev => {
       const exists = prev.some(c => c.id === campaign.id);
       const updated = exists ? prev.map(c => c.id === campaign.id ? campaign : c) : [campaign, ...prev];
@@ -2584,6 +2640,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return updated;
     });
+    if (db) {
+      await setDoc(doc(db, 'email_campaigns', campaign.id), campaign, { merge: true }).catch(e => console.warn(e));
+    }
   };
 
   const dispatchBroadcastCampaign = async (campaign: EmailCampaign, recipients: MailingContact[]) => {

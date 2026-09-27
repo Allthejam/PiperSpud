@@ -22,6 +22,14 @@ export const AdminCRM: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<BookingEvent | null>(bookings[0] || null);
 
+  React.useEffect(() => {
+    if (!selectedClient && bookings.length > 0) {
+      setSelectedClient(bookings[0]);
+    } else if (selectedClient && !bookings.some(b => b.id === selectedClient.id)) {
+      setSelectedClient(bookings[0] || null);
+    }
+  }, [bookings, selectedClient]);
+
   const filteredClients = bookings.filter(b =>
     b.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     b.clientEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -40,6 +48,10 @@ export const AdminCRM: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <span className="text-xs text-emerald-400 bg-emerald-950/70 px-3 py-1.5 rounded-xl border border-emerald-800/80 font-bold flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Firestore Live Sync
+          </span>
           <span className="text-xs text-tartan-gold bg-tartan-card px-3.5 py-1.5 rounded-xl border border-tartan-border font-bold">
             {bookings.length} Total Client Accounts
           </span>
@@ -64,41 +76,53 @@ export const AdminCRM: React.FC = () => {
           </div>
 
           <div className="space-y-2 max-h-[600px] overflow-y-auto no-scrollbar">
-            {filteredClients.map((client) => {
-              const isSelected = selectedClient?.id === client.id;
-              const isPaid = client.status === 'deposit_paid';
+            {filteredClients.length === 0 ? (
+              <div className="p-8 text-center bg-tartan-dark/50 rounded-2xl border border-tartan-border/50 text-gray-400 text-xs space-y-2">
+                <Users className="w-8 h-8 text-gray-500 mx-auto" />
+                <p className="font-bold text-gray-300">No Client Records Found</p>
+                <p className="text-[11px] text-gray-500">
+                  {bookings.length === 0 
+                    ? 'All demo mock clients have been purged. Live client files are automatically created whenever bookings or inquiries are received.'
+                    : 'No clients match your search term.'}
+                </p>
+              </div>
+            ) : (
+              filteredClients.map((client) => {
+                const isSelected = selectedClient?.id === client.id;
+                const isPaid = client.status === 'deposit_paid';
 
-              return (
-                <div
-                  key={client.id}
-                  onClick={() => setSelectedClient(client)}
-                  className={`p-4 rounded-2xl cursor-pointer transition-all border flex items-center justify-between gap-3 ${
-                    isSelected
-                      ? 'bg-tartan-navy border-tartan-gold ring-1 ring-tartan-gold/40 shadow-md'
-                      : 'bg-tartan-dark/70 border-tartan-border/60 hover:bg-tartan-navy/60'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-tartan-accent to-amber-700 flex items-center justify-center text-tartan-dark font-serif font-bold text-sm">
-                      {client.clientName.slice(0, 1)}
+                return (
+                  <div
+                    key={client.id}
+                    onClick={() => setSelectedClient(client)}
+                    className={`p-4 rounded-2xl cursor-pointer transition-all border flex items-center justify-between gap-3 ${
+                      isSelected
+                        ? 'bg-tartan-navy border-tartan-gold ring-1 ring-tartan-gold/40 shadow-md'
+                        : 'bg-tartan-dark/70 border-tartan-border/60 hover:bg-tartan-navy/60'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-tartan-accent to-amber-700 flex items-center justify-center text-tartan-dark font-serif font-bold text-sm">
+                        {client.clientName.slice(0, 1)}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white">{client.clientName}</h4>
+                        <p className="text-[11px] text-gray-400">{client.venueName}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-white">{client.clientName}</h4>
-                      <p className="text-[11px] text-gray-400">{client.venueName}</p>
+
+                    <div className="text-right">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        isPaid ? 'bg-green-950 text-green-300 border-green-800' : 'bg-amber-950 text-yellow-300 border-yellow-800'
+                      }`}>
+                        {client.status.replace('_', ' ')}
+                      </span>
+                      <span className="text-xs text-gray-400 block mt-1">{client.date}</span>
                     </div>
                   </div>
-
-                  <div className="text-right">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                      isPaid ? 'bg-green-950 text-green-300 border-green-800' : 'bg-amber-950 text-yellow-300 border-yellow-800'
-                    }`}>
-                      {client.status.replace('_', ' ')}
-                    </span>
-                    <span className="text-xs text-gray-400 block mt-1">{client.date}</span>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
 
@@ -231,8 +255,16 @@ export const AdminCRM: React.FC = () => {
 
             </div>
           ) : (
-            <div className="p-12 text-center text-gray-400 text-xs">
-              Select a client account to inspect full dossier.
+            <div className="p-12 text-center text-gray-400 text-xs space-y-4">
+              <div className="w-16 h-16 rounded-3xl bg-tartan-dark flex items-center justify-center mx-auto text-tartan-gold border border-tartan-border shadow-inner">
+                <FileText className="w-8 h-8 opacity-60" />
+              </div>
+              <h4 className="text-sm font-bold text-white font-serif">Client Dossier & Transaction View</h4>
+              <p className="max-w-sm mx-auto text-gray-400 leading-relaxed text-[11px]">
+                {bookings.length === 0
+                  ? 'All demo mock clients have been cleared. As soon as clients submit booking requests or inquiries, select their profile from the left column to view their complete dossier, attire selection, requested tunes, and Brevo/PayPal timeline.'
+                  : 'Select any client from the directory on the left to inspect their complete booking dossier, contact parameters, and transaction timeline.'}
+              </p>
             </div>
           )}
         </div>

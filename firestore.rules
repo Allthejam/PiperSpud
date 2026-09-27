@@ -68,5 +68,10 @@ service cloud.firestore {
       allow read: if true;
       allow write: if true;
     }
+
+    match /email_campaigns/{campaignId} {
+      allow read: if true;
+      allow write: if true;
+    }
   }
 }

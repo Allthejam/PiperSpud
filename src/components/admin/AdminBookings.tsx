@@ -54,6 +54,10 @@ export const AdminBookings: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <span className="text-xs text-emerald-400 bg-emerald-950/70 px-3 py-1.5 rounded-xl border border-emerald-800/80 font-bold flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Firestore Live Sync
+          </span>
           <span className="text-xs text-gray-300 font-bold bg-tartan-card px-3 py-1.5 rounded-xl border border-tartan-border">
             Total Inquiries: <strong className="text-tartan-gold">{bookings.length}</strong>
           </span>
@@ -93,8 +97,16 @@ export const AdminBookings: React.FC = () => {
       {/* Bookings Table / Card List */}
       <div className="space-y-4">
         {filteredBookings.length === 0 ? (
-          <div className="p-12 text-center bg-tartan-card rounded-3xl border border-tartan-border text-gray-400 text-xs">
-            No bookings match your filter query.
+          <div className="p-12 text-center bg-tartan-card rounded-3xl border border-tartan-border text-gray-400 text-xs space-y-3 shadow-xl">
+            <div className="w-12 h-12 rounded-2xl bg-tartan-dark flex items-center justify-center mx-auto text-tartan-gold border border-tartan-border">
+              <Calendar className="w-6 h-6" />
+            </div>
+            <h4 className="text-sm font-bold text-white font-serif">No Bookings Found</h4>
+            <p className="max-w-md mx-auto text-gray-400 leading-relaxed">
+              {bookings.length === 0 
+                ? 'All demo mock bookings have been purged. Real-time Firebase Firestore database sync is active. When clients submit booking inquiries on the website or checkout, they will appear here instantly across all devices.'
+                : 'No bookings match your current search or filter query.'}
+            </p>
           </div>
         ) : (
           filteredBookings.map((bk: BookingEvent) => {

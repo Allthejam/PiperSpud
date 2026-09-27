@@ -614,8 +614,24 @@ export const AdminMailingList: React.FC = () => {
               <tbody className="divide-y divide-tartan-border/40">
                 {filteredContacts.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-gray-500">
-                      No contacts found matching your search criteria.
+                    <td colSpan={6} className="py-12 text-center text-gray-400">
+                      <div className="max-w-md mx-auto space-y-3">
+                        <Users className="w-8 h-8 text-tartan-gold mx-auto opacity-70" />
+                        <p className="font-bold text-white text-sm">No Mailing Contacts Found</p>
+                        <p className="text-xs text-gray-400 leading-relaxed">
+                          {mailingContacts.length === 0 
+                            ? 'All demo mock contacts have been cleared. Real-time Firebase Firestore database sync is active. New subscribers and booking clients will appear here automatically across all devices.'
+                            : 'No contacts match your active search or filter.'}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setIsAddContactModalOpen(true)}
+                          className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-tartan-navy hover:bg-slate-700 text-tartan-gold rounded-xl border border-tartan-gold/40 text-xs font-bold transition-all shadow"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Add First Contact Manually</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ) : (
