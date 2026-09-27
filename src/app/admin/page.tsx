@@ -37,16 +37,17 @@ export default function AdminPage() {
           <div className="w-16 h-16 rounded-2xl bg-tartan-accent/20 text-tartan-gold flex items-center justify-center mx-auto border border-tartan-accent/40">
             <ShieldAlert className="w-8 h-8" />
           </div>
-          <h2 className="text-2xl font-bold text-white font-serif">Spud\'s Back Office Locked</h2>
+          <h2 className="text-2xl font-bold text-white font-serif">Spud's Back Office Locked</h2>
           <p className="text-xs text-gray-300">
-            Please log in with the admin passcode to access your diary, client list, Brevo email dispatcher, and SEO tools.
+            Sign in with your Google account, admin email & password, or enter the passcode to access your diary, CRM, message center, and website controls.
           </p>
           <div className="pt-2 flex flex-col gap-2">
             <button
               onClick={() => setIsLoginModalOpen(true)}
-              className="w-full py-3 bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg"
+              className="w-full py-3 bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg flex items-center justify-center gap-2 hover:shadow-yellow-500/20 transition-all active:scale-[0.99]"
             >
-              Enter Admin Passcode (spud123)
+              <ShieldAlert className="w-4 h-4 text-tartan-dark" />
+              <span>Sign In with Google or Email</span>
             </button>
             <a
               href="/"

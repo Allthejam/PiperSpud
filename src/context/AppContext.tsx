@@ -40,15 +40,30 @@ import {
   initialCampaigns
 } from '@/lib/initialData';
 import { bagpipeSynth } from '@/lib/bagpipeSynth';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import { collection, doc, onSnapshot, setDoc, deleteDoc } from 'firebase/firestore';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signOut, 
+  onAuthStateChanged, 
+  sendPasswordResetEmail,
+  User 
+} from 'firebase/auth';
 
 interface AppContextType {
   isMounted: boolean;
-  // Authentication & Admin
+  // Authentication & Admin (Live Firebase Auth + Google)
   isAdminLoggedIn: boolean;
+  firebaseUser: User | null;
+  loginWithEmail: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+  registerWithEmail: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  sendPasswordReset: (email: string) => Promise<{ success: boolean; error?: string }>;
   loginAdmin: (pass: string) => boolean;
-  logoutAdmin: () => void;
+  logoutAdmin: () => Promise<void>;
 
   // Services Management
   services: ServicePackage[];
@@ -230,11 +245,26 @@ const LOCAL_STORAGE_PREFIX = 'spud_the_piper_';
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isMounted, setIsMounted] = useState<boolean>(false);
 
-  // Admin & Visual Edit state
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
+  // Admin & Visual Edit state (Firebase Auth + Fallback)
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+  const [isLegacyAdminLoggedIn, setIsLegacyAdminLoggedIn] = useState<boolean>(false);
   const [isVisualEditMode, setIsVisualEditMode] = useState<boolean>(false);
   const [cmsBlocks, setCmsBlocks] = useState<EditableCmsBlock[]>(initialCmsBlocks);
   const [editingBlock, setEditingBlock] = useState<EditableCmsBlock | null>(null);
+
+  const isAdminLoggedIn = !!firebaseUser || isLegacyAdminLoggedIn;
+
+  // Listen to Firebase Live Auth state
+  useEffect(() => {
+    if (!auth) return;
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setFirebaseUser(user);
+      if (user) {
+        setIsLegacyAdminLoggedIn(true);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Core entities
   const [services, setServices] = useState<ServicePackage[]>(initialServices);
@@ -285,7 +315,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsMounted(true);
     try {
       const savedAdmin = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}admin`);
-      if (savedAdmin === 'true') setIsAdminLoggedIn(true);
+      if (savedAdmin === 'true') setIsLegacyAdminLoggedIn(true);
 
       const savedServices = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}services`);
       if (savedServices) {
@@ -720,22 +750,116 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {}
   }, [seoConfig]);
 
-  // Auth functions
+  // Auth functions (Live Firebase Auth + Google + Email/Password + Passcode fallback)
+  const loginWithEmail = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
+    if (!auth) {
+      if (pass.toLowerCase() === 'spud123' || pass.toLowerCase() === 'admin') {
+        setIsLegacyAdminLoggedIn(true);
+        if (typeof window !== 'undefined') localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin`, 'true');
+        return { success: true };
+      }
+      return { success: false, error: 'Firebase Auth is not configured in this environment.' };
+    }
+    try {
+      await signInWithEmailAndPassword(auth, email.trim(), pass);
+      setIsLegacyAdminLoggedIn(true);
+      if (typeof window !== 'undefined') localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin`, 'true');
+      return { success: true };
+    } catch (err: any) {
+      let msg = 'Invalid credentials or login error.';
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+        msg = 'Invalid email or password. Please check your credentials.';
+      } else if (err.code === 'auth/invalid-email') {
+        msg = 'Please enter a valid email address.';
+      } else if (err.code === 'auth/too-many-requests') {
+        msg = 'Access temporarily disabled due to many failed attempts. Try again later or reset password.';
+      } else if (err.message) {
+        msg = err.message;
+      }
+      return { success: false, error: msg };
+    }
+  };
+
+  const registerWithEmail = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
+    if (!auth) return { success: false, error: 'Firebase Auth is not configured in this environment.' };
+    try {
+      await createUserWithEmailAndPassword(auth, email.trim(), pass);
+      setIsLegacyAdminLoggedIn(true);
+      if (typeof window !== 'undefined') localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin`, 'true');
+      return { success: true };
+    } catch (err: any) {
+      let msg = 'Registration failed.';
+      if (err.code === 'auth/email-already-in-use') {
+        msg = 'This email is already registered. Please sign in instead.';
+      } else if (err.code === 'auth/weak-password') {
+        msg = 'Password is too weak. Please use at least 6 characters.';
+      } else if (err.code === 'auth/invalid-email') {
+        msg = 'Please enter a valid email address.';
+      } else if (err.message) {
+        msg = err.message;
+      }
+      return { success: false, error: msg };
+    }
+  };
+
+  const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+    if (!auth) return { success: false, error: 'Firebase Auth is not configured in this environment.' };
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      await signInWithPopup(auth, provider);
+      setIsLegacyAdminLoggedIn(true);
+      if (typeof window !== 'undefined') localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin`, 'true');
+      return { success: true };
+    } catch (err: any) {
+      if (err.code === 'auth/popup-closed-by-user') {
+        return { success: false, error: 'Google sign-in popup was closed.' };
+      }
+      return { success: false, error: err.message || 'Google sign-in failed.' };
+    }
+  };
+
+  const sendPasswordReset = async (email: string): Promise<{ success: boolean; error?: string }> => {
+    if (!auth) return { success: false, error: 'Firebase Auth is not configured in this environment.' };
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      return { success: true };
+    } catch (err: any) {
+      let msg = 'Failed to send password reset email.';
+      if (err.code === 'auth/user-not-found') {
+        msg = 'No user found with this email address.';
+      } else if (err.code === 'auth/invalid-email') {
+        msg = 'Please provide a valid email address.';
+      } else if (err.message) {
+        msg = err.message;
+      }
+      return { success: false, error: msg };
+    }
+  };
+
   const loginAdmin = (pass: string) => {
     // Default pass: 'spud123' or 'admin'
     if (pass.toLowerCase() === 'spud123' || pass.toLowerCase() === 'admin') {
-      setIsAdminLoggedIn(true);
-      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin`, 'true');
+      setIsLegacyAdminLoggedIn(true);
+      if (typeof window !== 'undefined') localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin`, 'true');
       return true;
     }
     return false;
   };
 
-  const logoutAdmin = () => {
-    setIsAdminLoggedIn(false);
+  const logoutAdmin = async () => {
+    if (auth && firebaseUser) {
+      try {
+        await signOut(auth);
+      } catch (e) {
+        console.warn('Sign out warning:', e);
+      }
+    }
+    setFirebaseUser(null);
+    setIsLegacyAdminLoggedIn(false);
     setIsVisualEditMode(false);
     setActiveSeoDrawerPageId(null);
-    localStorage.removeItem(`${LOCAL_STORAGE_PREFIX}admin`);
+    if (typeof window !== 'undefined') localStorage.removeItem(`${LOCAL_STORAGE_PREFIX}admin`);
   };
 
   const toggleVisualEditMode = () => {
@@ -2128,6 +2252,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider value={{
       isMounted,
       isAdminLoggedIn,
+      firebaseUser,
+      loginWithEmail,
+      registerWithEmail,
+      loginWithGoogle,
+      sendPasswordReset,
       loginAdmin,
       logoutAdmin,
       services,

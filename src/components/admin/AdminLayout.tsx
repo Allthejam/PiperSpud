@@ -35,6 +35,7 @@ interface AdminLayoutProps {
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTab, children }) => {
   const { 
     isAdminLoggedIn, 
+    firebaseUser,
     logoutAdmin, 
     unreadNotifCount, 
     unreadChatCount,
@@ -122,16 +123,41 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
             )}
           </button>
 
+          {/* Authenticated User / Spud Profile Pill */}
+          {firebaseUser ? (
+            <div className="hidden md:flex items-center gap-2 bg-tartan-navy/80 border border-tartan-border px-2.5 py-1 rounded-xl text-xs">
+              {firebaseUser.photoURL ? (
+                <img 
+                  src={firebaseUser.photoURL} 
+                  alt={firebaseUser.displayName || 'Spud Admin'} 
+                  className="w-5 h-5 rounded-full object-cover border border-tartan-gold/50" 
+                />
+              ) : (
+                <div className="w-5 h-5 rounded-full bg-tartan-accent/30 text-tartan-gold flex items-center justify-center font-bold text-[10px]">
+                  {(firebaseUser.displayName || firebaseUser.email || 'A')[0].toUpperCase()}
+                </div>
+              )}
+              <span className="text-gray-300 font-medium max-w-[140px] truncate text-[11px]">
+                {firebaseUser.displayName || firebaseUser.email}
+              </span>
+            </div>
+          ) : (
+            <div className="hidden md:flex items-center gap-1.5 bg-tartan-navy/60 border border-tartan-border/60 px-2 py-1 rounded-xl text-[10px] text-tartan-gold font-bold">
+              <span>Passcode Admin</span>
+            </div>
+          )}
+
           {/* Logout button */}
           <button
-            onClick={() => {
-              logoutAdmin();
+            onClick={async () => {
+              await logoutAdmin();
               window.location.href = '/';
             }}
-            className="p-2 rounded-xl bg-red-950/60 hover:bg-red-900 text-red-300 border border-red-800 transition-colors"
-            title="Log Out"
+            className="p-2 rounded-xl bg-red-950/60 hover:bg-red-900 text-red-300 border border-red-800 transition-colors flex items-center gap-1.5 text-xs font-semibold"
+            title="Log Out of Back Office"
           >
             <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">Logout</span>
           </button>
         </div>
       </header>
