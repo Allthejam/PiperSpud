@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { initialSeoConfig, initialSeoPages } from '@/lib/initialData';
 import { SeoPageConfig } from '@/types/spud';
 
-const DEFAULT_OG_IMAGE = 'https://www.spudthepiper.com/og-image.png';
+const DEFAULT_OG_IMAGE = 'https://www.spudthepiper.com/og-image.jpg';
 const PROJECT_ID = 'piperspud-56c0a';
 
 /**
@@ -82,6 +82,7 @@ export async function generatePageMetadata(pageId: string = 'home'): Promise<Met
           url: ogImg,
           width: 1200,
           height: 630,
+          type: 'image/jpeg',
           alt: `${seo.title} - Spud the Piper`
         }
       ]
