@@ -631,7 +631,7 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredTunes.map((tune: BagpipeTune) => {
+            {displayedTunes.map((tune: BagpipeTune) => {
               const isThisPlaying = currentPlayingTune === tune.title;
 
               return (
