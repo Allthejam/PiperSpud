@@ -3,6 +3,8 @@ import {
   Review, 
   SocialPost, 
   ChatMessage, 
+  ChatSession,
+  QuickResponse,
   NotificationItem, 
   EditableCmsBlock, 
   BagpipeTune,
@@ -438,6 +440,122 @@ export const initialSocialPosts: SocialPost[] = [
   }
 ];
 
+export const initialQuickResponses: QuickResponse[] = [
+  {
+    id: 'qr-1',
+    category: 'Weddings',
+    title: 'Wedding Ceremony & Package Details',
+    text: "Failte! I'd be delighted to pipe for your wedding ceremony. Standard coverage includes greeting arriving guests, piping the bridal party down the aisle with Highland Cathedral, leading newlyweds down the aisle, photos, and piping into the wedding breakfast."
+  },
+  {
+    id: 'qr-2',
+    category: 'Pricing',
+    title: 'Availability & Transparent Rates',
+    text: "Aye! I have live availability for your date. Typical investment is £480 for full wedding ceremonies or £650 for castle banquets and evening galas. You can place a provisional hold with a £100 PayPal deposit."
+  },
+  {
+    id: 'qr-3',
+    category: 'Travel',
+    title: 'Highlands & Islands Travel Policy',
+    text: "I travel across all of Scotland, the Highlands, Western Isles, Skye, and internationally worldwide. All journeys include up to 50 miles free return travel from Aviemore, with transparent mileage after."
+  },
+  {
+    id: 'qr-4',
+    category: 'Attire',
+    title: 'Highland Dress & Tartan Options',
+    text: "I can perform in Full No. 1 Feather Bonnet dress with ceremonial plaid, Royal Stewart red tartan, Black Watch military green/blue, or Modern Highland Tweed. You can preview all tartans in our Attire Selector on site!"
+  },
+  {
+    id: 'qr-5',
+    category: 'Tunes',
+    title: 'Custom Tune & Organ Duet Advice',
+    text: "Aye! I play all classic Highland anthems (Highland Cathedral, Scotland the Brave, Mairi's Wedding, Caledonia, Outlander Theme). For church organ collaborations, I carry an A=440Hz concert chanter to match organ pitch perfectly!"
+  },
+  {
+    id: 'qr-6',
+    category: 'Booking',
+    title: 'Provisional Hold & PayPal Deposit',
+    text: "To secure your date provisionally, I can send you a formal PayPal deposit invoice right now. Once the £100 deposit is received, your date is 100% locked into my master diary."
+  },
+  {
+    id: 'qr-7',
+    category: 'General',
+    title: 'Direct Phone / WhatsApp Call',
+    text: "Feel free to give me a quick ring or WhatsApp directly on 07793 491367 so we can chat through timings and your exact musical vision!"
+  }
+];
+
+export const initialChatSessions: ChatSession[] = [
+  {
+    id: 'session-demo',
+    visitorName: 'Sarah Fraser',
+    visitorEmail: 'sarah.fraser88@gmail.com',
+    visitorPhone: '07955 882190',
+    lastMessage: 'Aye Sarah! Absolutely. I travel all across the Highlands, Islands, and worldwide.',
+    lastTimestamp: '12:08 PM',
+    unreadCount: 0,
+    isWaitingForSpud: false,
+    status: 'active',
+    activePage: 'Live Diary & Booking (/booking)',
+    ipOrLocation: 'Inverness, Scottish Highlands',
+    device: 'Apple iPhone (iOS PWA)',
+    createdAt: '2026-09-27T11:00:00Z',
+    eventType: 'Wedding Ceremony & Reception',
+    eventDate: '2026-10-17'
+  },
+  {
+    id: 'session-calum',
+    visitorName: 'Fiona & Callum MacGregor',
+    visitorEmail: 'fiona.macgregor@scotmail.com',
+    visitorPhone: '07798 123456',
+    lastMessage: 'Could we confirm if we can add an extra 30 minutes for evening photos at Dundas Castle?',
+    lastTimestamp: '10 mins ago',
+    unreadCount: 1,
+    isWaitingForSpud: true,
+    status: 'waiting',
+    activePage: 'Attire Studio (/attire)',
+    ipOrLocation: 'Edinburgh, Scotland',
+    device: 'MacBook Pro (Chrome Desktop)',
+    createdAt: '2026-09-27T11:45:00Z',
+    eventType: 'Castle Wedding Ceremony',
+    eventDate: '2026-09-26'
+  },
+  {
+    id: 'session-inquiry-1',
+    visitorName: 'Morag Henderson (Offline Inquiry)',
+    visitorEmail: 'morag.henderson@outlook.com',
+    visitorPhone: '07700 900123',
+    lastMessage: 'Left an offline inquiry: "Looking for a solemn graveside lament at Inverness Crematorium next month. Please email pricing."',
+    lastTimestamp: '45 mins ago',
+    unreadCount: 1,
+    isWaitingForSpud: true,
+    status: 'offline_inquiry',
+    activePage: 'Offline Form (/contact)',
+    ipOrLocation: 'Inverness, Highlands',
+    device: 'iPad Safari',
+    createdAt: '2026-09-27T11:15:00Z',
+    eventType: 'Memorial & Funeral Lament',
+    eventDate: '2026-10-24'
+  },
+  {
+    id: 'session-lord-campbell',
+    visitorName: 'Lord Alistair Campbell',
+    visitorEmail: 'campbell.estates@inveraray.scot',
+    visitorPhone: '07812 345678',
+    lastMessage: 'Thank you Spud, the Royal Stewart tartan will suit the gala banquet perfectly.',
+    lastTimestamp: '2 hours ago',
+    unreadCount: 0,
+    isWaitingForSpud: false,
+    status: 'resolved',
+    activePage: 'Services & Packages (/services)',
+    ipOrLocation: 'Edinburgh Great Hall',
+    device: 'Windows Desktop',
+    createdAt: '2026-09-27T09:30:00Z',
+    eventType: 'Castle Gala Dinner',
+    eventDate: '2026-10-03'
+  }
+];
+
 export const initialChatMessages: ChatMessage[] = [
   {
     id: 'msg-1',
@@ -465,6 +583,55 @@ export const initialChatMessages: ChatMessage[] = [
     timestamp: '12:08 PM',
     isRead: true,
     sessionId: 'session-demo'
+  },
+  {
+    id: 'msg-c-1',
+    sender: 'client',
+    senderName: 'Fiona MacGregor',
+    text: 'Hi Spud! We are so excited for Dundas Castle. Could we confirm if we can add an extra 30 minutes for evening photos?',
+    timestamp: '10 mins ago',
+    isRead: false,
+    sessionId: 'session-calum',
+    visitorEmail: 'fiona.macgregor@scotmail.com',
+    visitorPhone: '07798 123456'
+  },
+  {
+    id: 'msg-inq-1',
+    sender: 'client',
+    senderName: 'Morag Henderson',
+    text: 'OFFLINE INQUIRY: Looking for a solemn graveside lament at Inverness Crematorium next month. Please email pricing and availability.',
+    timestamp: '45 mins ago',
+    isRead: false,
+    sessionId: 'session-inquiry-1',
+    visitorEmail: 'morag.henderson@outlook.com',
+    visitorPhone: '07700 900123'
+  },
+  {
+    id: 'msg-campbell-1',
+    sender: 'client',
+    senderName: 'Lord Alistair Campbell',
+    text: 'Good afternoon Spud. Can you confirm which tartan you recommend for the Edinburgh Castle Ramparts salute?',
+    timestamp: '2 hours ago',
+    isRead: true,
+    sessionId: 'session-lord-campbell'
+  },
+  {
+    id: 'msg-campbell-2',
+    sender: 'spud',
+    senderName: 'Spud the Piper',
+    text: 'Good afternoon Lord Campbell! The Royal Stewart red tartan looks spectacular against the historic rampart stone masonry.',
+    timestamp: '2 hours ago',
+    isRead: true,
+    sessionId: 'session-lord-campbell'
+  },
+  {
+    id: 'msg-campbell-3',
+    sender: 'client',
+    senderName: 'Lord Alistair Campbell',
+    text: 'Thank you Spud, the Royal Stewart tartan will suit the gala banquet perfectly.',
+    timestamp: '2 hours ago',
+    isRead: true,
+    sessionId: 'session-lord-campbell'
   }
 ];
 

@@ -6,6 +6,8 @@ import {
   Review, 
   SocialPost, 
   ChatMessage, 
+  ChatSession,
+  QuickResponse,
   NotificationItem, 
   EditableCmsBlock, 
   BagpipeTune,
@@ -23,6 +25,8 @@ import {
   initialReviews, 
   initialSocialPosts, 
   initialChatMessages, 
+  initialChatSessions,
+  initialQuickResponses,
   initialNotifications, 
   initialCmsBlocks, 
   initialTunes, 
@@ -121,10 +125,38 @@ interface AppContextType {
   socialLinks: SocialMediaLinks;
   updateSocialLinks: (links: Partial<SocialMediaLinks>) => void;
 
-  // Live Chat
+  // Live Chat & Message Center
+  isSpudOnline: boolean;
+  toggleSpudOnline: () => void;
+  setSpudOnline: (online: boolean) => void;
+  quickResponses: QuickResponse[];
+  addQuickResponse: (qr: Omit<QuickResponse, 'id'>) => void;
+  updateQuickResponse: (id: string, qr: Partial<QuickResponse>) => void;
+  deleteQuickResponse: (id: string) => void;
+  chatSessions: ChatSession[];
+  activeChatSessionId: string;
+  setActiveChatSessionId: (id: string) => void;
   chatMessages: ChatMessage[];
-  sendChatMessage: (text: string, sender?: 'client' | 'spud') => void;
-  markChatAsRead: () => void;
+  sendChatMessage: (
+    text: string, 
+    sender?: 'client' | 'spud' | 'system', 
+    sessionId?: string, 
+    visitorName?: string, 
+    visitorEmail?: string, 
+    visitorPhone?: string
+  ) => void;
+  submitOfflineInquiry: (inquiry: {
+    name: string;
+    email: string;
+    phone?: string;
+    eventDate?: string;
+    eventType?: string;
+    question: string;
+  }) => void;
+  markChatAsRead: (sessionId?: string) => void;
+  markSessionResolved: (sessionId: string) => void;
+  deleteChatSession: (sessionId: string) => void;
+  waitingChatSessionsCount: number;
   unreadChatCount: number;
 
   // Audio Bagpipe Player & Tune Manager
@@ -210,7 +242,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [socialPosts, setSocialPosts] = useState<SocialPost[]>(initialSocialPosts);
   const [forumCategories, setForumCategories] = useState<ForumCategoryItem[]>(initialForumCategories);
   const [socialLinks, setSocialLinks] = useState<SocialMediaLinks>(initialSocialLinks);
+  
+  // Live Chat & Message Center state
+  const [isSpudOnline, setIsSpudOnlineState] = useState<boolean>(true);
+  const [quickResponses, setQuickResponses] = useState<QuickResponse[]>(initialQuickResponses);
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>(initialChatSessions);
+  const [activeChatSessionId, setActiveChatSessionId] = useState<string>('session-calum');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(initialChatMessages);
+
   const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
   const [seoPages, setSeoPages] = useState<SeoPageConfig[]>(initialSeoPages);
   const [seoConfig, setSeoConfig] = useState<SeoPageConfig>(initialSeoConfig);
@@ -346,8 +385,54 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setTunesList(initialTunes);
       }
 
+      const savedSpudOnline = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}spud_online`);
+      if (savedSpudOnline !== null) {
+        setIsSpudOnlineState(savedSpudOnline === 'true');
+      }
+
+      const savedQuickResponses = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}quick_responses`);
+      if (savedQuickResponses) {
+        try {
+          const parsedQr: QuickResponse[] = JSON.parse(savedQuickResponses);
+          if (Array.isArray(parsedQr) && parsedQr.length > 0) {
+            const initialIds = new Set(initialQuickResponses.map(q => q.id));
+            const userAdded = parsedQr.filter(q => !initialIds.has(q.id));
+            const merged = initialQuickResponses.map(initQ => {
+              const u = parsedQr.find(p => p.id === initQ.id);
+              return u || initQ;
+            });
+            setQuickResponses([...merged, ...userAdded]);
+          }
+        } catch (e) {}
+      }
+
+      const savedChatSessions = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}chat_sessions`);
+      if (savedChatSessions) {
+        try {
+          const parsedSessions: ChatSession[] = JSON.parse(savedChatSessions);
+          if (Array.isArray(parsedSessions) && parsedSessions.length > 0) {
+            const initialIds = new Set(initialChatSessions.map(s => s.id));
+            const userSessions = parsedSessions.filter(s => !initialIds.has(s.id));
+            const merged = initialChatSessions.map(initS => {
+              const u = parsedSessions.find(p => p.id === initS.id);
+              return u || initS;
+            });
+            setChatSessions([...userSessions, ...merged]);
+          }
+        } catch (e) {}
+      }
+
       const savedChat = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}chat`);
-      if (savedChat) setChatMessages(JSON.parse(savedChat));
+      if (savedChat) {
+        try {
+          const parsedMessages: ChatMessage[] = JSON.parse(savedChat);
+          if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
+            const initialIds = new Set(initialChatMessages.map(m => m.id));
+            const userMsgs = parsedMessages.filter(m => !initialIds.has(m.id));
+            setChatMessages([...initialChatMessages, ...userMsgs]);
+          }
+        } catch (e) {}
+      }
 
       const savedNotifs = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}notifs`);
       if (savedNotifs) setNotifications(JSON.parse(savedNotifs));
@@ -1259,65 +1344,313 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  // Chat handlers
-  const sendChatMessage = (text: string, sender: 'client' | 'spud' = 'client') => {
+  // Live Chat & Message Center Handlers
+  const setSpudOnline = (online: boolean) => {
+    setIsSpudOnlineState(online);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}spud_online`, online ? 'true' : 'false');
+    }
+    if (db) {
+      setDoc(doc(db, 'settings', 'chat_status'), { isSpudOnline: online }, { merge: true }).catch(e => console.warn(e));
+    }
+    addNotification({
+      type: 'system',
+      title: online ? 'Spud is Now ONLINE' : 'Spud is Now OFFLINE',
+      message: online 
+        ? 'Live chat is active for all website visitors.' 
+        : 'Live chat switched to offline email inquiry mode.',
+      actionUrl: '/admin/messages'
+    });
+  };
+
+  const toggleSpudOnline = () => {
+    setSpudOnline(!isSpudOnline);
+  };
+
+  const addQuickResponse = (qrData: Omit<QuickResponse, 'id'>) => {
+    const newQr: QuickResponse = {
+      ...qrData,
+      id: `qr-${Date.now()}`
+    };
+    const updated = [...quickResponses, newQr];
+    setQuickResponses(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}quick_responses`, JSON.stringify(updated));
+    }
+    if (db) {
+      setDoc(doc(db, 'quick_responses', newQr.id), newQr).catch(e => console.warn(e));
+    }
+    addNotification({
+      type: 'system',
+      title: 'Quick Response Added',
+      message: `Canned response "${newQr.title}" saved.`,
+      actionUrl: '/admin/messages'
+    });
+  };
+
+  const updateQuickResponse = (id: string, updates: Partial<QuickResponse>) => {
+    const updated = quickResponses.map(q => q.id === id ? { ...q, ...updates } : q);
+    setQuickResponses(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}quick_responses`, JSON.stringify(updated));
+    }
+    if (db) {
+      const target = updated.find(q => q.id === id);
+      if (target) {
+        setDoc(doc(db, 'quick_responses', id), target, { merge: true }).catch(e => console.warn(e));
+      }
+    }
+  };
+
+  const deleteQuickResponse = (id: string) => {
+    const updated = quickResponses.filter(q => q.id !== id);
+    setQuickResponses(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}quick_responses`, JSON.stringify(updated));
+    }
+    if (db) {
+      deleteDoc(doc(db, 'quick_responses', id)).catch(e => console.warn(e));
+    }
+  };
+
+  const sendChatMessage = (
+    text: string, 
+    sender: 'client' | 'spud' | 'system' = 'client',
+    targetSessionId?: string,
+    visitorName: string = 'Website Visitor',
+    visitorEmail?: string,
+    visitorPhone?: string
+  ) => {
+    const currentSessionId = targetSessionId || activeChatSessionId || 'session-demo';
+
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       sender,
-      senderName: sender === 'spud' ? 'Spud the Piper' : 'Website Visitor',
+      senderName: sender === 'spud' ? 'Spud the Piper' : visitorName,
       text,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       isRead: sender === 'spud',
-      sessionId: 'session-demo'
+      sessionId: currentSessionId,
+      visitorEmail,
+      visitorPhone
     };
 
-    setChatMessages(prev => [...prev, newMsg]);
+    const updatedMessages = [...chatMessages, newMsg];
+    setChatMessages(updatedMessages);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}chat`, JSON.stringify(updatedMessages));
+    }
+
+    // Update or create corresponding session
+    setChatSessions(prev => {
+      const existing = prev.find(s => s.id === currentSessionId);
+      if (existing) {
+        return prev.map(s => {
+          if (s.id === currentSessionId) {
+            return {
+              ...s,
+              lastMessage: text,
+              lastTimestamp: 'Just now',
+              isWaitingForSpud: sender === 'client',
+              unreadCount: sender === 'client' ? s.unreadCount + 1 : 0,
+              visitorEmail: visitorEmail || s.visitorEmail,
+              visitorPhone: visitorPhone || s.visitorPhone
+            };
+          }
+          return s;
+        });
+      } else {
+        const newSession: ChatSession = {
+          id: currentSessionId,
+          visitorName,
+          visitorEmail,
+          visitorPhone,
+          lastMessage: text,
+          lastTimestamp: 'Just now',
+          unreadCount: sender === 'client' ? 1 : 0,
+          isWaitingForSpud: sender === 'client',
+          status: 'active',
+          activePage: 'Website Live Chat',
+          ipOrLocation: 'Scotland / Worldwide',
+          device: typeof navigator !== 'undefined' ? (navigator.userAgent.includes('Mobile') ? 'Mobile Phone' : 'Desktop Browser') : 'Online Visitor',
+          createdAt: new Date().toISOString()
+        };
+        return [newSession, ...prev];
+      }
+    });
 
     if (sender === 'client') {
       addNotification({
         type: 'chat_message',
-        title: 'New Live Chat Inquiry',
-        message: `Visitor: "${text.length > 40 ? text.slice(0, 40) + '...' : text}"`,
-        actionUrl: '/admin/messages'
+        title: `Live Chat from ${visitorName}`,
+        message: `"${text.length > 40 ? text.slice(0, 40) + '...' : text}"`,
+        actionUrl: '/admin/messages',
+        relatedId: currentSessionId
       });
 
-      // Automated intelligent assistant reply after 1.5 seconds if Spud hasn't answered
-      setTimeout(() => {
-        const autoReplies: { [key: string]: string } = {
-          wedding: 'Aye! Spud specializes in wedding ceremonies, greeting guests at castle gates, and piping the top table into the reception. Check our Booking Diary to view available dates!',
-          price: 'Typical rates range from £220 for memorial laments to £450 - £650 for full wedding and castle events, depending on location and duration. You can use our instant quote calculator on the booking page!',
-          tartan: 'Spud can perform in Full No. 1 Dress with Feather Bonnet, Royal Stewart Tartan, Black Watch Military, or Modern Highland Tweed. You can preview all tartans in our Attire Selector!',
-          tune: 'Spud plays all classic Highland bagpipe tunes including Highland Cathedral, Scotland the Brave, Flower of Scotland, and Amazing Grace. Feel free to use the audio jukebox on our site to preview them!'
-        };
+      // If Spud is offline, post an immediate courteous system reply
+      if (!isSpudOnline) {
+        setTimeout(() => {
+          const offlineBotMsg: ChatMessage = {
+            id: `msg-${Date.now() + 1}`,
+            sender: 'system',
+            senderName: 'Spud the Piper (Away Notice)',
+            text: `Failte! Spud is currently away performing at a Highland venue or event. Your question has been delivered to his Live Message Center. If you would like an email reply, please use the "Email Us / Leave Question" tab!`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            isRead: false,
+            sessionId: currentSessionId
+          };
+          setChatMessages(c => [...c, offlineBotMsg]);
+        }, 800);
+      } else {
+        // Auto-reply assistant if Spud is online but hasn't picked up after 1.5s
+        setTimeout(() => {
+          const autoReplies: { [key: string]: string } = {
+            wedding: 'Aye! Spud specializes in wedding ceremonies, greeting guests at castle gates, and piping the top table into the reception. Check our Booking Diary to view available dates!',
+            price: 'Typical rates range from £220 for memorial laments to £450 - £650 for full wedding and castle events, depending on location and duration. You can use our instant quote calculator on the booking page!',
+            tartan: 'Spud can perform in Full No. 1 Dress with Feather Bonnet, Royal Stewart Tartan, Black Watch Military, or Modern Highland Tweed. You can preview all tartans in our Attire Selector!',
+            tune: 'Spud plays all classic Highland bagpipe tunes including Highland Cathedral, Scotland the Brave, Flower of Scotland, and Amazing Grace. Feel free to use the audio jukebox on our site to preview them!'
+          };
 
-        const lower = text.toLowerCase();
-        let replyText = 'Thanks for your message! Spud or his assistant will reply directly shortly. You can also call or WhatsApp Spud directly on 07793 491367.';
-        if (lower.includes('wedding') || lower.includes('marry') || lower.includes('bride')) {
-          replyText = autoReplies.wedding;
-        } else if (lower.includes('price') || lower.includes('cost') || lower.includes('quote') || lower.includes('fee')) {
-          replyText = autoReplies.price;
-        } else if (lower.includes('tartan') || lower.includes('dress') || lower.includes('kilt') || lower.includes('outfit')) {
-          replyText = autoReplies.tartan;
-        } else if (lower.includes('tune') || lower.includes('song') || lower.includes('music') || lower.includes('cathedral')) {
-          replyText = autoReplies.tune;
-        }
+          const lower = text.toLowerCase();
+          let replyText = 'Thanks for your message! Spud will reply to your conversation directly in a moment. You can also call or WhatsApp Spud directly on 07793 491367.';
+          if (lower.includes('wedding') || lower.includes('marry') || lower.includes('bride')) {
+            replyText = autoReplies.wedding;
+          } else if (lower.includes('price') || lower.includes('cost') || lower.includes('quote') || lower.includes('fee')) {
+            replyText = autoReplies.price;
+          } else if (lower.includes('tartan') || lower.includes('dress') || lower.includes('kilt') || lower.includes('outfit')) {
+            replyText = autoReplies.tartan;
+          } else if (lower.includes('tune') || lower.includes('song') || lower.includes('music') || lower.includes('cathedral')) {
+            replyText = autoReplies.tune;
+          }
 
-        const botMsg: ChatMessage = {
-          id: `msg-${Date.now() + 1}`,
-          sender: 'spud',
-          senderName: 'Spud the Piper (Auto-Assist)',
-          text: replyText,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isRead: false,
-          sessionId: 'session-demo'
-        };
-        setChatMessages(c => [...c, botMsg]);
-      }, 1500);
+          const botMsg: ChatMessage = {
+            id: `msg-${Date.now() + 1}`,
+            sender: 'spud',
+            senderName: 'Spud the Piper (Auto-Assist)',
+            text: replyText,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            isRead: false,
+            sessionId: currentSessionId
+          };
+          setChatMessages(c => [...c, botMsg]);
+        }, 1500);
+      }
     }
   };
 
-  const markChatAsRead = () => {
-    setChatMessages(prev => prev.map(m => ({ ...m, isRead: true })));
+  const submitOfflineInquiry = (inquiry: {
+    name: string;
+    email: string;
+    phone?: string;
+    eventDate?: string;
+    eventType?: string;
+    question: string;
+  }) => {
+    const sessionId = `session-inquiry-${Date.now()}`;
+    const newSession: ChatSession = {
+      id: sessionId,
+      visitorName: `${inquiry.name} (Offline Inquiry)`,
+      visitorEmail: inquiry.email,
+      visitorPhone: inquiry.phone,
+      lastMessage: inquiry.question,
+      lastTimestamp: 'Just now',
+      unreadCount: 1,
+      isWaitingForSpud: true,
+      status: 'offline_inquiry',
+      activePage: 'Offline Question Form',
+      ipOrLocation: 'Direct Email Inquiry',
+      device: typeof navigator !== 'undefined' ? (navigator.userAgent.includes('Mobile') ? 'Mobile Phone' : 'Desktop') : 'Website Inquiry',
+      createdAt: new Date().toISOString(),
+      eventType: inquiry.eventType || 'General Inquiry',
+      eventDate: inquiry.eventDate
+    };
+
+    const newMsg: ChatMessage = {
+      id: `msg-${Date.now()}`,
+      sender: 'client',
+      senderName: inquiry.name,
+      text: `OFFLINE INQUIRY: ${inquiry.question} ${inquiry.eventDate ? `[Date: ${inquiry.eventDate}]` : ''} ${inquiry.eventType ? `[Type: ${inquiry.eventType}]` : ''} [Reply to: ${inquiry.email}]`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isRead: false,
+      sessionId,
+      visitorEmail: inquiry.email,
+      visitorPhone: inquiry.phone
+    };
+
+    const updatedSessions = [newSession, ...chatSessions];
+    const updatedMessages = [...chatMessages, newMsg];
+
+    setChatSessions(updatedSessions);
+    setChatMessages(updatedMessages);
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}chat_sessions`, JSON.stringify(updatedSessions));
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}chat`, JSON.stringify(updatedMessages));
+    }
+
+    // Capture into mailing list contacts
+    addMailingContact({
+      name: inquiry.name,
+      email: inquiry.email,
+      phone: inquiry.phone,
+      source: 'enquiry',
+      status: 'subscribed',
+      tags: ['LiveChat', 'OfflineInquiry', inquiry.eventType || 'General'],
+      eventType: inquiry.eventType,
+      eventDate: inquiry.eventDate,
+      addedAt: new Date().toISOString().split('T')[0],
+      brevoSynced: false,
+      notes: `Offline Question: "${inquiry.question}"`
+    });
+
+    addNotification({
+      type: 'chat_message',
+      title: 'New Offline Inquiry Received',
+      message: `${inquiry.name} asked: "${inquiry.question.slice(0, 45)}..."`,
+      actionUrl: '/admin/messages',
+      relatedId: sessionId
+    });
+  };
+
+  const markChatAsRead = (sessionId?: string) => {
+    const targetSessionId = sessionId || activeChatSessionId;
+    setChatMessages(prev => prev.map(m => {
+      if (!targetSessionId || m.sessionId === targetSessionId) {
+        return { ...m, isRead: true };
+      }
+      return m;
+    }));
+
+    setChatSessions(prev => prev.map(s => {
+      if (!targetSessionId || s.id === targetSessionId) {
+        return { ...s, unreadCount: 0 };
+      }
+      return s;
+    }));
+  };
+
+  const markSessionResolved = (sessionId: string) => {
+    setChatSessions(prev => prev.map(s => {
+      if (s.id === sessionId) {
+        return { ...s, status: 'resolved', isWaitingForSpud: false, unreadCount: 0 };
+      }
+      return s;
+    }));
+    addNotification({
+      type: 'system',
+      title: 'Chat Session Resolved',
+      message: `Conversation has been marked as completed.`,
+      actionUrl: '/admin/messages'
+    });
+  };
+
+  const deleteChatSession = (sessionId: string) => {
+    setChatSessions(prev => prev.filter(s => s.id !== sessionId));
+    setChatMessages(prev => prev.filter(m => m.sessionId !== sessionId));
+    if (activeChatSessionId === sessionId) {
+      setActiveChatSessionId('session-demo');
+    }
   };
 
   // Audio Bagpipe Player & Tune Manager
@@ -1823,10 +2156,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       editForumCategory,
       socialLinks,
       updateSocialLinks,
+      
+      // Live Chat & Message Center
+      isSpudOnline,
+      toggleSpudOnline,
+      setSpudOnline,
+      quickResponses,
+      addQuickResponse,
+      updateQuickResponse,
+      deleteQuickResponse,
+      chatSessions,
+      activeChatSessionId,
+      setActiveChatSessionId,
       chatMessages,
       sendChatMessage,
+      submitOfflineInquiry,
       markChatAsRead,
+      markSessionResolved,
+      deleteChatSession,
+      waitingChatSessionsCount: chatSessions.filter(s => s.isWaitingForSpud).length,
       unreadChatCount,
+
       currentPlayingTune,
       playTune,
       playSampleTune,

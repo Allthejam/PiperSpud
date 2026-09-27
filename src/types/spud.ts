@@ -132,6 +132,31 @@ export interface SocialPost {
   isPinned?: boolean;
 }
 
+export interface QuickResponse {
+  id: string;
+  category: 'Weddings' | 'Pricing' | 'Travel' | 'Attire' | 'Tunes' | 'Booking' | 'General';
+  title: string;
+  text: string;
+}
+
+export interface ChatSession {
+  id: string;
+  visitorName: string;
+  visitorEmail?: string;
+  visitorPhone?: string;
+  lastMessage: string;
+  lastTimestamp: string;
+  unreadCount: number;
+  isWaitingForSpud: boolean;
+  status: 'active' | 'waiting' | 'offline_inquiry' | 'resolved';
+  activePage?: string;
+  ipOrLocation?: string;
+  device?: string;
+  createdAt: string;
+  eventType?: string;
+  eventDate?: string;
+}
+
 export interface ChatMessage {
   id: string;
   sender: 'client' | 'spud' | 'system';
@@ -140,6 +165,8 @@ export interface ChatMessage {
   timestamp: string;
   isRead: boolean;
   sessionId: string;
+  visitorEmail?: string;
+  visitorPhone?: string;
 }
 
 export interface NotificationItem {
