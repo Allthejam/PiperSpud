@@ -46,6 +46,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { EditableCmsBlock } from '@/types/spud';
+import { uploadToStorage } from '@/lib/firebase';
 
 export const VisualPencilOverlay: React.FC = () => {
   const pathname = usePathname();
@@ -249,16 +250,22 @@ export const VisualPencilOverlay: React.FC = () => {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setImageUrl(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
+      try {
+        const cloudUrl = await uploadToStorage(file, 'cms_images');
+        setImageUrl(cloudUrl);
+      } catch (err) {
+        console.warn('Firebase Storage upload, falling back to local data URL:', err);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            setImageUrl(reader.result);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -272,16 +279,22 @@ export const VisualPencilOverlay: React.FC = () => {
     setImageUrl(stockPipes[Math.floor(Math.random() * stockPipes.length)]);
   };
 
-  const handleOgImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleOgImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setSeoOgImage(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
+      try {
+        const cloudUrl = await uploadToStorage(file, 'seo_images');
+        setSeoOgImage(cloudUrl);
+      } catch (err) {
+        console.warn('Firebase Storage OG image upload, falling back to local data URL:', err);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            setSeoOgImage(reader.result);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 

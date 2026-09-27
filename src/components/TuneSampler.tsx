@@ -16,10 +16,14 @@ import {
   X, 
   Save, 
   CheckCircle2, 
-  Clock 
+  Clock,
+  Cloud,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { BagpipeTune } from '@/types/spud';
 import { EditableElement } from './EditableElement';
+import { uploadToStorage } from '@/lib/firebase';
 
 export const TuneSampler: React.FC = () => {
   const { 
@@ -45,6 +49,8 @@ export const TuneSampler: React.FC = () => {
   const [tuneDescription, setTuneDescription] = useState<string>('');
   const [tuneAudioUrl, setTuneAudioUrl] = useState<string>('');
   const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadStatus, setUploadStatus] = useState<string>('');
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const categories = ['All', 'Wedding', 'Lament / Funeral', 'Celebration / March', 'Traditional Scottish'];
@@ -60,6 +66,8 @@ export const TuneSampler: React.FC = () => {
     setTuneDuration('1:45');
     setTuneDescription('');
     setTuneAudioUrl('');
+    setUploadStatus('');
+    setUploadError(null);
     setIsModalOpen(true);
   };
 
@@ -70,21 +78,61 @@ export const TuneSampler: React.FC = () => {
     setTuneDuration(tune.duration);
     setTuneDescription(tune.description);
     setTuneAudioUrl(tune.audioUrl || '');
+    setUploadStatus('');
+    setUploadError(null);
     setIsModalOpen(true);
   };
 
-  const handleAudioFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAudioFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setIsUploading(true);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setTuneAudioUrl(reader.result);
-          setIsUploading(false);
-        }
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Check size limit: 40MB
+    if (file.size > 40 * 1024 * 1024) {
+      setUploadError('Audio file is too large. Please choose an audio file under 40MB.');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+    setUploadStatus(`Uploading "${file.name}" to Firebase Cloud Storage...`);
+
+    try {
+      // 1. Upload to Firebase Storage bucket (gs://piperspud-56c0a.firebasestorage.app)
+      const cloudUrl = await uploadToStorage(file, 'audio_tunes');
+      setTuneAudioUrl(cloudUrl);
+      setUploadStatus(`✓ Successfully uploaded & saved to Firebase Storage!`);
+
+      // 2. Attempt auto-detecting duration from audio metadata
+      try {
+        const audioTest = new Audio();
+        audioTest.src = URL.createObjectURL(file);
+        audioTest.onloadedmetadata = () => {
+          const totalSec = Math.round(audioTest.duration);
+          if (!isNaN(totalSec) && totalSec > 0) {
+            const mins = Math.floor(totalSec / 60);
+            const secs = totalSec % 60;
+            setTuneDuration(`${mins}:${secs < 10 ? '0' : ''}${secs}`);
+          }
+        };
+      } catch {}
+    } catch (err: any) {
+      console.error('Firebase Storage upload error:', err);
+      // If Firebase Storage has permission or network issue, fallback to FileReader
+      try {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            setTuneAudioUrl(reader.result);
+            setUploadStatus('Saved locally in browser.');
+          }
+        };
+        reader.readAsDataURL(file);
+      } catch {
+        setUploadError(err?.message || 'Failed to upload audio file. Please try again.');
+      }
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -399,42 +447,71 @@ export const TuneSampler: React.FC = () => {
 
               {/* Audio Track Upload / URL */}
               <div className="bg-tartan-dark/90 p-4 rounded-2xl border border-tartan-border space-y-3">
-                <label className="block text-xs font-bold text-tartan-gold uppercase tracking-wider flex items-center gap-2">
-                  <Headphones className="w-4 h-4" />
-                  <span>Custom Studio Audio Recording (MP3 / WAV / Audio File)</span>
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-tartan-gold uppercase tracking-wider flex items-center gap-2">
+                    <Headphones className="w-4 h-4 text-tartan-gold" />
+                    <span>Studio Audio Track (MP3 / WAV / Cloud Stream)</span>
+                  </label>
+                  <span className="text-[10px] text-blue-300 font-mono flex items-center gap-1 bg-blue-950/70 px-2 py-0.5 rounded-full border border-blue-800/40">
+                    <Cloud className="w-3 h-3 text-blue-400" />
+                    <span>Firebase Storage</span>
+                  </span>
+                </div>
                 
                 <div className="flex items-center gap-3 flex-wrap">
-                  <label className="cursor-pointer px-4 py-2.5 rounded-xl bg-gold-gradient text-tartan-dark text-xs font-extrabold flex items-center gap-2 shadow-md hover:brightness-110 transition-all">
-                    <Upload className="w-4 h-4" />
-                    <span>{isUploading ? 'Processing File...' : 'Upload MP3 / Audio from Device'}</span>
+                  <label className={`cursor-pointer px-4 py-2.5 rounded-xl bg-gold-gradient text-tartan-dark text-xs font-extrabold flex items-center gap-2 shadow-md hover:brightness-110 transition-all ${isUploading ? 'opacity-70 pointer-events-none' : ''}`}>
+                    {isUploading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4" />
+                    )}
+                    <span>{isUploading ? 'Uploading to Cloud Storage...' : 'Upload MP3 / Audio from Device'}</span>
                     <input
                       type="file"
                       accept="audio/*"
+                      disabled={isUploading}
                       onChange={handleAudioFileUpload}
                       className="hidden"
                     />
                   </label>
 
-                  {tuneAudioUrl && (
+                  {tuneAudioUrl && !isUploading && (
                     <button
                       type="button"
-                      onClick={() => setTuneAudioUrl('')}
+                      onClick={() => {
+                        setTuneAudioUrl('');
+                        setUploadStatus('');
+                      }}
                       className="text-xs text-red-400 hover:text-red-300 underline"
                     >
-                      Remove Custom Audio
+                      Remove Audio Track
                     </button>
                   )}
                 </div>
 
+                {/* Upload Status & Error Banner */}
+                {uploadStatus && (
+                  <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1.5 bg-emerald-950/40 p-2 rounded-lg border border-emerald-800/40">
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                    <span>{uploadStatus}</span>
+                  </p>
+                )}
+
+                {uploadError && (
+                  <p className="text-[11px] text-red-400 font-medium flex items-center gap-1.5 bg-red-950/40 p-2 rounded-lg border border-red-800/40">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-400" />
+                    <span>{uploadError}</span>
+                  </p>
+                )}
+
                 <div>
-                  <label className="block text-[11px] text-gray-400 mb-1">Or Direct Audio Stream URL (CDN / Cloud Storage):</label>
+                  <label className="block text-[11px] text-gray-400 mb-1">Permanent Cloud Storage / CDN Audio URL:</label>
                   <input
                     type="text"
                     value={tuneAudioUrl}
                     onChange={(e) => setTuneAudioUrl(e.target.value)}
-                    placeholder="https://.../spud-tune.mp3"
-                    className="w-full bg-tartan-card border border-tartan-border rounded-xl px-3 py-2 text-white placeholder-gray-500 text-xs focus:outline-none focus:border-tartan-accent"
+                    placeholder="https://firebasestorage.googleapis.com/.../tune.mp3"
+                    className="w-full bg-tartan-card border border-tartan-border rounded-xl px-3 py-2 text-white placeholder-gray-500 text-xs focus:outline-none focus:border-tartan-accent font-mono"
                   />
                 </div>
 
@@ -442,7 +519,7 @@ export const TuneSampler: React.FC = () => {
                   <div className="pt-2 border-t border-tartan-border/60">
                     <p className="text-xs text-emerald-400 font-semibold mb-1 flex items-center gap-1.5">
                       <CheckCircle2 className="w-4 h-4" />
-                      <span>Audio Track Attached & Ready for Jukebox</span>
+                      <span>Audio Track Active & Streamable Online</span>
                     </p>
                     <audio controls src={tuneAudioUrl} className="w-full h-8 mt-1" />
                   </div>

@@ -51,11 +51,17 @@ export async function uploadToStorage(file: File, folder: string = 'uploads'): P
     throw new Error('Firebase Storage is not initialized.');
   }
 
-  const fileExt = file.name.split('.').pop() || 'jpg';
-  const cleanFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+  const rawName = file.name.substring(0, file.name.lastIndexOf('.')) || 'file';
+  const cleanName = rawName.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
+  const fileExt = file.name.split('.').pop() || 'mp3';
+  const cleanFileName = `${cleanName}_${Date.now()}.${fileExt}`;
   const storageRef = ref(storage, `${folder}/${cleanFileName}`);
 
-  const snapshot = await uploadBytes(storageRef, file);
+  const metadata = {
+    contentType: file.type || (fileExt === 'mp3' ? 'audio/mpeg' : fileExt === 'wav' ? 'audio/wav' : 'application/octet-stream')
+  };
+
+  const snapshot = await uploadBytes(storageRef, file, metadata);
   const downloadUrl = await getDownloadURL(snapshot.ref);
   return downloadUrl;
 }
