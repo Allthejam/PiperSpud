@@ -269,7 +269,7 @@ export const initialSocialPosts: SocialPost[] = [
     authorRole: 'Spud the Piper',
     authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&q=80',
     content: '🇳🇱🏴󠁧󠁢󠁳󠁣󠁴󠁿 What a fantastic afternoon hosting a private Highland Bagpipe Experience for 6 great lads visiting from the Netherlands! I brought my practice chanters to their rental lodge on Loch Lomond, showed them the full anatomy of the Great Highland Bagpipe, taught them their first Scottish scale, and then they all had a shot on the big pipes! \n\nLaughter, great banter, and genuine Scottish hospitality with "the cutest piper this side of the Great Wall of China"! Now officially available for bookings across Scotland! 🎵🥃🏴󠁧󠁢󠁳󠁣󠁴󠁿\n\n#BagpipeExperience #ScotlandTravel #LochLomond #TourScotland #HighlandPiping',
-    imageUrl: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1000&q=85',
+    imageUrl: 'https://www.spudthepiper.com/og-image.png',
     eventLocation: 'Loch Lomond Holiday Rental, Scotland',
     tunePlayed: 'Scotland the Brave',
     tags: ['#BagpipeExperience', '#ScotlandTravel', '#LochLomond', '#TourScotland', '#HighlandPiping'],
@@ -379,7 +379,7 @@ export const initialSocialPosts: SocialPost[] = [
     authorRole: 'Spud the Piper',
     authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&q=80',
     content: 'Sunset salute atop the ramparts of Edinburgh Castle tonight before the VIP banquet in the Great Hall. Full No. 1 feather bonnet and polished silver regalia. 🏰🥃\n\n#EdinburghCastle #RampartsSalute #FlowerOfScotland #HighlandDress',
-    imageUrl: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1000&q=85',
+    imageUrl: 'https://www.spudthepiper.com/og-image.png',
     eventLocation: 'Edinburgh Castle Ramparts & Great Hall, Edinburgh',
     tunePlayed: 'Flower of Scotland',
     tags: ['#EdinburghCastle', '#RampartsSalute', '#FlowerOfScotland', '#HighlandDress'],
@@ -1181,7 +1181,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     metaDescription: 'Scotland\'s premier award-winning Highland Bagpiper for weddings, funerals, castle events, corporate banquets & tuition. Check live availability and book online.',
     keywords: ['Spud the Piper', 'Scottish Bagpiper for Hire', 'Wedding Bagpiper Scotland', 'Edinburgh Castle Piper', 'Highland Bagpipe Music', 'Funeral Bagpiper Scotland', 'Glasgow Bagpiper'],
     canonicalUrl: 'https://www.spudthepiper.com',
-    ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
+    ogImage: 'https://www.spudthepiper.com/og-image.png',
     h1: 'Award-Winning Scottish Highland Bagpiper',
     schemaType: 'LocalBusiness, MusicGroup'
   },
@@ -1193,7 +1193,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     metaDescription: 'Discover the story behind Spud the Piper - trusted by Hollywood celebrities like Jamie Lee Curtis, Scottish castles, and hundreds of happy couples worldwide.',
     keywords: ['About Spud the Piper', 'Celebrity Bagpiper', 'Scottish Piper Biography', 'Highland Bagpiper Experience', 'Jamie Lee Curtis Piper'],
     canonicalUrl: 'https://www.spudthepiper.com/about',
-    ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
+    ogImage: 'https://www.spudthepiper.com/og-image.png',
     h1: 'The Story of Spud the Piper',
     schemaType: 'AboutPage, Person'
   },
@@ -1229,7 +1229,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     metaDescription: 'Preview Spud in Full No. 1 Feather Bonnet dress, Royal Stewart, Black Watch Military, or Modern Day Highland Tweed to match your wedding or gala color scheme.',
     keywords: ['Highland Dress Bagpiper', 'Royal Stewart Tartan Kilt', 'Feather Bonnet Piper', 'Black Watch Bagpiper', 'Highland Tweed Jacket'],
     canonicalUrl: 'https://www.spudthepiper.com/attire',
-    ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
+    ogImage: 'https://www.spudthepiper.com/og-image.png',
     h1: 'Highland Dress & Tartan Studio',
     schemaType: 'ItemPage, VisualArtwork'
   },
@@ -1265,7 +1265,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     metaDescription: 'Read verified 5-star reviews from brides, grooms, castle venues, and corporate clients across Scotland. Rated 5.0 / 5.0 for unforgettable Scottish piping.',
     keywords: ['Spud the Piper Reviews', 'Wedding Bagpiper Ratings', 'Scottish Wedding Awards Piper', 'Highland Bagpipe Testimonials'],
     canonicalUrl: 'https://www.spudthepiper.com/reviews',
-    ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
+    ogImage: 'https://www.spudthepiper.com/og-image.png',
     h1: '5-Star Reviews & Industry Accolades',
     schemaType: 'Review, AggregateRating'
   },
@@ -1289,7 +1289,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     metaDescription: 'Get in touch directly with Spud the Piper for fast quotes and bookings. Call or WhatsApp 07793 491367 or send a message via our 24/7 instant chat.',
     keywords: ['Contact Spud the Piper', 'Bagpiper Phone Number', 'Bagpiper WhatsApp Scotland', 'Hire Bagpiper Edinburgh Glasgow'],
     canonicalUrl: 'https://www.spudthepiper.com/contact',
-    ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
+    ogImage: 'https://www.spudthepiper.com/og-image.png',
     h1: 'Contact Spud the Piper',
     schemaType: 'ContactPage, LocalBusiness'
   },
@@ -1301,7 +1301,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     metaDescription: 'Read the official booking and performance terms, client expectations, and service commitments for Spud the Piper.',
     keywords: ['Bagpiper Terms and Conditions', 'Spud the Piper Performance Agreement'],
     canonicalUrl: 'https://www.spudthepiper.com/terms',
-    ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
+    ogImage: 'https://www.spudthepiper.com/og-image.png',
     h1: 'Terms & Conditions of Service',
     schemaType: 'WebPage'
   },
@@ -1313,7 +1313,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     metaDescription: 'Learn how Spud the Piper handles and protects your personal booking information, contact details, and payment security.',
     keywords: ['Spud the Piper Privacy Policy', 'GDPR Compliance Scottish Piper'],
     canonicalUrl: 'https://www.spudthepiper.com/privacy',
-    ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
+    ogImage: 'https://www.spudthepiper.com/og-image.png',
     h1: 'Privacy Policy & Data Protection',
     schemaType: 'WebPage'
   },
@@ -1325,7 +1325,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     metaDescription: 'Understand how cookies, analytics, and session preferences are utilized on the Spud the Piper PWA and website.',
     keywords: ['Cookie Policy', 'Spud the Piper Cookies'],
     canonicalUrl: 'https://www.spudthepiper.com/cookies',
-    ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
+    ogImage: 'https://www.spudthepiper.com/og-image.png',
     h1: 'Cookie & Tracking Policy',
     schemaType: 'WebPage'
   },
@@ -1337,7 +1337,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     metaDescription: 'Clear details on provisional holds, PayPal deposit payments, Brevo automated confirmation emails, and date rescheduling guidelines.',
     keywords: ['Bagpipe Deposit Policy', 'PayPal Bagpiper Booking', 'Cancellation Policy Spud the Piper'],
     canonicalUrl: 'https://www.spudthepiper.com/booking-policy',
-    ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
+    ogImage: 'https://www.spudthepiper.com/og-image.png',
     h1: 'Booking, Deposits & Rescheduling Terms',
     schemaType: 'WebPage'
   },
@@ -1349,7 +1349,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     metaDescription: 'Step-by-step instructions for installing Spud the Piper on iOS Safari, Android Chrome, and Desktop PC/Mac for 1-tap offline sound samples and diary bookings.',
     keywords: ['Install Spud the Piper', 'Spud the Piper App', 'Scottish Bagpiper PWA', 'Download Bagpiper App'],
     canonicalUrl: 'https://www.spudthepiper.com/install',
-    ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
+    ogImage: 'https://www.spudthepiper.com/og-image.png',
     h1: 'How to Install Spud the Piper App',
     schemaType: 'WebPage, SoftwareApplication'
   }
@@ -1473,7 +1473,7 @@ export const initialServices: ServicePackage[] = [
     galleryImages: [
       'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80',
       'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80',
-      'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&q=80'
+      'https://www.spudthepiper.com/og-image.png'
     ],
     recommendedTunes: [
       'Highland Cathedral',
@@ -1508,7 +1508,7 @@ export const initialServices: ServicePackage[] = [
     deposit: '£60 Deposit',
     popularBadge: true,
     badgeText: 'New & Trending',
-    heroImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
+    heroImage: 'https://www.spudthepiper.com/og-image.png',
     description: 'The ultimate interactive Scottish entertainment experience for tourists, tour groups, Airbnb / holiday home rentals, stag & hen parties, and corporate retreats! Spud visits your accommodation or venue to reveal the secrets of the Great Highland Bagpipe, hands out practice chanters so everyone learns the Scottish scale, lets everyone have a shot on the big pipes, performs a private concert, and poses for unforgettable group photos in full ceremonial kilt regalia.',
     fullDescription: 'Looking for a genuine, unforgettable Scottish experience that goes far beyond simply watching a performance? The Highland Bagpipe Experience is an interactive, laughter-packed masterclass brought straight to your holiday home, castle lodge, Airbnb, hotel, or private venue across Scotland. Spud the Piper—warm, charismatic, and widely known as "the cutest piper this side of the Great Wall of China"—will guide your group through the ancient mechanics of the pipes, teach everyone how to play the Scottish scale on practice chanters, let every brave guest try blowing the full Great Highland Bagpipes, and deliver a stirring private concert followed by souvenir photos in full ceremonial Number 1 kilt regalia.',
     features: [
@@ -1548,7 +1548,7 @@ export const initialServices: ServicePackage[] = [
       }
     ],
     galleryImages: [
-      'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&q=80',
+      'https://www.spudthepiper.com/og-image.png',
       'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80',
       'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80',
       'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80'
@@ -1673,7 +1673,7 @@ export const initialServices: ServicePackage[] = [
     basePrice: 550,
     depositAmount: 150,
     deposit: '£150 Deposit',
-    heroImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
+    heroImage: 'https://www.spudthepiper.com/og-image.png',
     description: 'Impress international delegates, royalty, and VIP clients with authentic Scottish majesty. Spud adds unmistakable grandeur to award galas, product launches, castle dinners, and corporate summits.',
     fullDescription: 'When hosting international VIP delegates, global executives, or state banquets, make a bold Scottish statement. Spud the Piper provides regal musical fanfare, red-carpet welcomes in Full Number 1 Highland Dress, solo concert salutes atop historic battlements, and pipe-ins for dignitaries.',
     features: [

@@ -205,7 +205,7 @@ export const HeroSection: React.FC = () => {
                 <EditableElement
                   id="hero-main-photo"
                   isImage={true}
-                  defaultImageUrl="https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&q=80"
+                  defaultImageUrl="/og-image.png"
                   defaultAlt="Spud the Piper performing in full Highland Regalia in Scotland"
                   className="w-full h-96 object-cover object-center"
                   section="hero"

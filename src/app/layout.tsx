@@ -13,12 +13,13 @@ export const viewport: Viewport = {
   userScalable: false
 };
 
-const defaultOgImage = initialSeoConfig.ogImage || 'https://www.spudthepiper.com/og-image.png';
+const defaultOgImage = 'https://www.spudthepiper.com/og-image.png';
 
 export const metadata: Metadata = {
-  title: initialSeoConfig.title || 'Spud the Piper | Award-Winning Scottish Highland Bagpiper for Hire',
-  description: initialSeoConfig.metaDescription || 'Spud the Piper - Scotland\'s premier award-winning Highland Bagpiper for weddings, funerals, castle events, corporate banquets & tuition. Check live availability and book online.',
-  keywords: initialSeoConfig.keywords || ['Spud the Piper', 'Scottish Bagpiper', 'Wedding Piper Scotland', 'Edinburgh Castle Bagpiper', 'Funeral Bagpiper Scotland', 'Highland Bagpipe Music', 'Scottish Piper For Hire', 'PWA App'],
+  metadataBase: new URL('https://www.spudthepiper.com'),
+  title: initialSeoConfig?.title || 'Spud the Piper | Award-Winning Scottish Highland Bagpiper for Hire',
+  description: initialSeoConfig?.metaDescription || 'Spud the Piper - Scotland\'s premier award-winning Highland Bagpiper for weddings, funerals, castle events, corporate banquets & tuition. Check live availability and book online.',
+  keywords: initialSeoConfig?.keywords || ['Spud the Piper', 'Scottish Bagpiper', 'Wedding Piper Scotland', 'Edinburgh Castle Bagpiper', 'Funeral Bagpiper Scotland', 'Highland Bagpipe Music', 'Scottish Piper For Hire', 'PWA App'],
   authors: [{ name: 'Spud the Piper' }],
   manifest: '/manifest.json',
   appleWebApp: {
@@ -32,19 +33,13 @@ export const metadata: Metadata = {
     apple: '/apple-touch-icon.png'
   },
   openGraph: {
-    title: initialSeoConfig.title || 'Spud the Piper | Award-Winning Scottish Highland Bagpiper for Hire',
-    description: initialSeoConfig.metaDescription || 'Scotland\'s premier award-winning Highland Bagpiper for weddings, castle galas, elopements, and private experiences. Piper to the stars.',
+    title: initialSeoConfig?.title || 'Spud the Piper | Award-Winning Scottish Highland Bagpiper for Hire',
+    description: initialSeoConfig?.metaDescription || 'Scotland\'s premier award-winning Highland Bagpiper for weddings, castle galas, elopements, and private experiences. Piper to the stars.',
     url: 'https://www.spudthepiper.com',
     siteName: 'Spud the Piper',
     locale: 'en_GB',
     type: 'website',
     images: [
-      {
-        url: defaultOgImage,
-        width: 1200,
-        height: 630,
-        alt: 'Spud the Piper - Award-Winning Scottish Highland Bagpiper for Hire'
-      },
       {
         url: 'https://www.spudthepiper.com/og-image.png',
         width: 1200,
@@ -55,9 +50,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: initialSeoConfig.title || 'Spud the Piper | Scottish Highland Bagpiper for Hire',
-    description: initialSeoConfig.metaDescription || 'Scotland\'s premier award-winning Highland Bagpiper for weddings, castle galas, elopements, and private experiences.',
-    images: [defaultOgImage]
+    title: initialSeoConfig?.title || 'Spud the Piper | Scottish Highland Bagpiper for Hire',
+    description: initialSeoConfig?.metaDescription || 'Scotland\'s premier award-winning Highland Bagpiper for weddings, castle galas, elopements, and private experiences.',
+    images: ['https://www.spudthepiper.com/og-image.png']
   }
 };
 

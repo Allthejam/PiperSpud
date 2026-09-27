@@ -272,7 +272,7 @@ export const VisualPencilOverlay: React.FC = () => {
 
   const handleSimulateCamera = () => {
     const stockPipes = [
-      'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1000&q=80',
+      'https://www.spudthepiper.com/og-image.png',
       'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1000&q=80',
       'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1000&q=80',
       'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1000&q=80'
@@ -327,7 +327,7 @@ export const VisualPencilOverlay: React.FC = () => {
           "name": "Spud the Piper",
           "description": "Scotland's premier award-winning Highland Bagpiper for hire.",
           "url": baseDomain,
-          "image": seoOgImage || "https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80",
+          "image": seoOgImage || "https://www.spudthepiper.com/og-image.png",
           "telephone": "+447793491367",
           "genre": ["Traditional Scottish", "Highland Bagpipe Music", "Celtic Folk"],
           "priceRange": "£220 - £650",
@@ -1174,7 +1174,7 @@ export const VisualPencilOverlay: React.FC = () => {
                     </span>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                       {[
-                        { label: 'Feather Bonnet', url: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80' },
+                        { label: 'Feather Bonnet', url: 'https://www.spudthepiper.com/og-image.png' },
                         { label: 'Castle Wedding', url: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&q=80' },
                         { label: 'Highland Sunset', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&q=80' },
                         { label: 'Bagpipes Stage', url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&q=80' }

@@ -2365,7 +2365,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           keywords: ['bagpiper', 'scotland'],
           h1: `Spud the Piper - ${pageId}`,
           canonicalUrl: `https://www.spudthepiper.com/${pageId}`,
-          ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
+          ogImage: 'https://www.spudthepiper.com/og-image.png',
           schemaType: 'LocalBusiness'
         };
         targetDoc = { ...fallback, ...newConfig };

@@ -26,7 +26,7 @@ export const TartanSelector: React.FC = () => {
       description: 'Feather bonnet, cross-belt with silver crest, full shoulder plaid, horsehair sporran, doublet tunic, spats, and dirk. Maximum visual majesty.',
       colorScheme: ['#991B1B', '#1E3A8A', '#D4AF37', '#000000'],
       bestFor: 'Castle Weddings, Cathedral Ceremonies & VIP State Galas',
-      imageUrl: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=600&q=80'
+      imageUrl: '/og-image.png'
     },
     {
       id: 'royal-stewart',
