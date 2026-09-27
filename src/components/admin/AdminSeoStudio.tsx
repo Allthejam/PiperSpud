@@ -24,6 +24,7 @@ import {
   Layers
 } from 'lucide-react';
 import { uploadToStorage } from '@/lib/firebase';
+import { formatOgImageToStandardDimensions } from '@/lib/imageOptimizer';
 
 export const AdminSeoStudio: React.FC = () => {
   const { 
@@ -94,7 +95,8 @@ export const AdminSeoStudio: React.FC = () => {
     if (!file) return;
     try {
       setIsUploadingOg(true);
-      const uploadedUrl = await uploadToStorage(file, 'seo_og_images');
+      const optimizedFile = await formatOgImageToStandardDimensions(file);
+      const uploadedUrl = await uploadToStorage(optimizedFile, 'seo_og_images');
       setOgImage(uploadedUrl);
     } catch (err) {
       console.warn('Could not upload OG image to storage:', err);

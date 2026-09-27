@@ -48,6 +48,7 @@ import {
 } from 'lucide-react';
 import { EditableCmsBlock } from '@/types/spud';
 import { uploadToStorage } from '@/lib/firebase';
+import { formatOgImageToStandardDimensions } from '@/lib/imageOptimizer';
 
 export const VisualPencilOverlay: React.FC = () => {
   const pathname = usePathname();
@@ -284,7 +285,8 @@ export const VisualPencilOverlay: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       try {
-        const cloudUrl = await uploadToStorage(file, 'seo_images');
+        const optimizedFile = await formatOgImageToStandardDimensions(file);
+        const cloudUrl = await uploadToStorage(optimizedFile, 'seo_images');
         setSeoOgImage(cloudUrl);
       } catch (err) {
         console.warn('Firebase Storage OG image upload, falling back to local data URL:', err);

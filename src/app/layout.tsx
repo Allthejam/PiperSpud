@@ -3,7 +3,7 @@ import './globals.css';
 import { AppProvider } from '@/context/AppContext';
 import { CookieConsentBanner } from '@/components/CookieConsentBanner';
 import { PwaInstallBanner } from '@/components/PwaInstallBanner';
-import { initialSeoConfig } from '@/lib/initialData';
+import { generatePageMetadata, getLivePageSeo } from '@/lib/serverSeo';
 
 export const viewport: Viewport = {
   themeColor: '#0C1B33',
@@ -13,54 +13,18 @@ export const viewport: Viewport = {
   userScalable: false
 };
 
-const defaultOgImage = 'https://www.spudthepiper.com/og-image.png';
+export async function generateMetadata(): Promise<Metadata> {
+  return await generatePageMetadata('home');
+}
 
-export const metadata: Metadata = {
-  metadataBase: new URL('https://www.spudthepiper.com'),
-  title: initialSeoConfig?.title || 'Spud the Piper | Award-Winning Scottish Highland Bagpiper for Hire',
-  description: initialSeoConfig?.metaDescription || 'Spud the Piper - Scotland\'s premier award-winning Highland Bagpiper for weddings, funerals, castle events, corporate banquets & tuition. Check live availability and book online.',
-  keywords: initialSeoConfig?.keywords || ['Spud the Piper', 'Scottish Bagpiper', 'Wedding Piper Scotland', 'Edinburgh Castle Bagpiper', 'Funeral Bagpiper Scotland', 'Highland Bagpipe Music', 'Scottish Piper For Hire', 'PWA App'],
-  authors: [{ name: 'Spud the Piper' }],
-  manifest: '/manifest.json',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'black-translucent',
-    title: 'Spud the Piper'
-  },
-  applicationName: 'Spud the Piper',
-  icons: {
-    icon: '/icon-192.png',
-    apple: '/apple-touch-icon.png'
-  },
-  openGraph: {
-    title: initialSeoConfig?.title || 'Spud the Piper | Award-Winning Scottish Highland Bagpiper for Hire',
-    description: initialSeoConfig?.metaDescription || 'Scotland\'s premier award-winning Highland Bagpiper for weddings, castle galas, elopements, and private experiences. Piper to the stars.',
-    url: 'https://www.spudthepiper.com',
-    siteName: 'Spud the Piper',
-    locale: 'en_GB',
-    type: 'website',
-    images: [
-      {
-        url: 'https://www.spudthepiper.com/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'Spud the Piper - Award-Winning Scottish Highland Bagpiper for Hire'
-      }
-    ]
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: initialSeoConfig?.title || 'Spud the Piper | Scottish Highland Bagpiper for Hire',
-    description: initialSeoConfig?.metaDescription || 'Scotland\'s premier award-winning Highland Bagpiper for weddings, castle galas, elopements, and private experiences.',
-    images: ['https://www.spudthepiper.com/og-image.png']
-  }
-};
-
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const liveSeo = await getLivePageSeo('home');
+  const ogImageUrl = liveSeo.ogImage || 'https://www.spudthepiper.com/og-image.png';
+
   return (
     <html lang="en" className="scroll-smooth">
       <head>
@@ -70,11 +34,11 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
         <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png" />
-        <meta property="og:image" content={defaultOgImage} />
-        <meta property="og:image:secure_url" content={defaultOgImage} />
+        <meta property="og:image" content={ogImageUrl} />
+        <meta property="og:image:secure_url" content={ogImageUrl} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
-        <meta name="twitter:image" content={defaultOgImage} />
+        <meta name="twitter:image" content={ogImageUrl} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
