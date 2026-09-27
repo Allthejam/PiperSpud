@@ -43,7 +43,8 @@ import {
   Trash2,
   ExternalLink,
   FileImage,
-  CheckCircle2
+  CheckCircle2,
+  ChevronDown
 } from 'lucide-react';
 import { EditableCmsBlock } from '@/types/spud';
 import { uploadToStorage } from '@/lib/firebase';
@@ -969,29 +970,38 @@ export const VisualPencilOverlay: React.FC = () => {
               </button>
             </div>
 
-            {/* Page Tabs Bar */}
-            <div className="bg-tartan-dark px-6 py-2.5 border-b border-tartan-border/80 flex items-center gap-2 overflow-x-auto no-scrollbar">
-              <span className="text-[11px] font-bold text-tartan-gold shrink-0 uppercase tracking-wider">
-                Select Page:
-              </span>
-              {seoPages.map((p) => {
-                const isActive = p.pageId === selectedPageId;
-                return (
-                  <button
-                    key={p.pageId}
-                    type="button"
-                    onClick={() => handlePageSelect(p.pageId)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
-                      isActive 
-                        ? 'bg-tartan-gold text-tartan-dark shadow-md font-bold' 
-                        : 'bg-tartan-navy/70 text-gray-300 hover:text-white hover:bg-tartan-navy border border-tartan-border/40'
-                    }`}
+            {/* Select Page Dropdown Selector Bar */}
+            <div className="bg-tartan-dark px-6 py-3 border-b border-tartan-border/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <label htmlFor="modal-seo-page-select" className="text-xs font-bold text-tartan-gold shrink-0 flex items-center gap-1.5 uppercase tracking-wider">
+                  <Globe className="w-3.5 h-3.5" />
+                  <span>Select Page to Edit:</span>
+                </label>
+                
+                <div className="relative flex-1 max-w-md">
+                  <select
+                    id="modal-seo-page-select"
+                    value={selectedPageId}
+                    onChange={(e) => handlePageSelect(e.target.value)}
+                    className="w-full bg-tartan-navy text-white text-xs font-semibold py-2 px-3.5 rounded-xl border border-tartan-border focus:border-tartan-gold focus:outline-none appearance-none cursor-pointer pr-10 shadow-inner"
                   >
-                    <span>{p.pageName}</span>
-                    <span className="text-[10px] opacity-70 font-mono">({p.path})</span>
-                  </button>
-                );
-              })}
+                    {seoPages.map((p) => (
+                      <option key={p.pageId} value={p.pageId} className="bg-tartan-card text-white py-1">
+                        {p.pageName} ({p.path})
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-tartan-gold">
+                    <ChevronDown className="w-4 h-4" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                <span className="text-[11px] text-gray-400">
+                  Active Route: <code className="text-tartan-gold bg-tartan-navy px-2 py-0.5 rounded-md border border-tartan-border font-mono">{seoPages.find(p => p.pageId === selectedPageId)?.path || `/${selectedPageId}`}</code>
+                </span>
+              </div>
             </div>
 
             {/* Studio Content Grid */}
