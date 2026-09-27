@@ -1,14 +1,6 @@
 export type BookingStatus = 'pending' | 'approved' | 'deposit_paid' | 'completed' | 'cancelled';
 
-export type EventType = 
-  | 'Wedding Ceremony & Reception'
-  | 'Wedding Ceremony Only'
-  | 'Funeral / Memorial Service'
-  | 'Burns Supper / Hogmanay'
-  | 'Corporate / Castle Event'
-  | 'Birthday / Private Party'
-  | 'Highland Bagpipe Experience (Hands-On Workshop / Airbnb)'
-  | 'Bagpipe Tuition / Lesson';
+export type EventType = string;
 
 export type HighlandDressOption = 
   | 'Full No. 1 Dress (Feather Bonnet & Plaid)'

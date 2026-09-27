@@ -27,7 +27,7 @@ import { EventType, HighlandDressOption } from '@/types/spud';
 import { calculateTravelCosts } from '@/lib/travelCalculator';
 
 export const BookingCalendar: React.FC = () => {
-  const { bookings, createBooking, tunesList, travelConfig } = useApp();
+  const { bookings, createBooking, tunesList, travelConfig, services } = useApp();
 
   // Calendar view state (Current month: September/October 2026)
   const [currentYear, setCurrentYear] = useState(2026);
@@ -36,12 +36,12 @@ export const BookingCalendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>('2026-10-24');
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('13:30 - 16:30');
   
-  // Form fields
+  // Form fields - default to first active service package title
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [preferredContactMethod, setPreferredContactMethod] = useState<'email' | 'telephone'>('email');
-  const [eventType, setEventType] = useState<EventType>('Wedding Ceremony & Reception');
+  const [eventType, setEventType] = useState<string>(services[0]?.title || 'Scottish Castle & Highland Weddings');
   const [venueName, setVenueName] = useState('');
   const [venueAddress, setVenueAddress] = useState('');
   const [venuePostcode, setVenuePostcode] = useState('');
@@ -49,50 +49,39 @@ export const BookingCalendar: React.FC = () => {
   const [selectedTunes, setSelectedTunes] = useState<string[]>(['Highland Cathedral', 'Scotland the Brave']);
   const [notes, setNotes] = useState('');
 
-  // Auto-detect service from client URL params
+  // Auto-detect service from client URL params matching active services
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && services && services.length > 0) {
       const urlParams = new URLSearchParams(window.location.search);
       const serviceParam = urlParams.get('service');
       if (serviceParam) {
         const lower = serviceParam.toLowerCase();
-        if (lower.includes('experience') || lower.includes('workshop')) {
-          setEventType('Highland Bagpipe Experience (Hands-On Workshop / Airbnb)');
-        } else if (lower.includes('wedding')) {
-          setEventType('Wedding Ceremony & Reception');
-        } else if (lower.includes('funeral') || lower.includes('memorial')) {
-          setEventType('Funeral / Memorial Service');
-        } else if (lower.includes('burns') || lower.includes('hogmanay')) {
-          setEventType('Burns Supper / Hogmanay');
-        } else if (lower.includes('corporate') || lower.includes('castle') || lower.includes('gala')) {
-          setEventType('Corporate / Castle Event');
-        } else if (lower.includes('tuition') || lower.includes('lesson')) {
-          setEventType('Bagpipe Tuition / Lesson');
-        } else if (lower.includes('party') || lower.includes('birthday') || lower.includes('anniversary')) {
-          setEventType('Birthday / Private Party');
+        const matched = services.find(s => 
+          s.slug.toLowerCase() === lower || 
+          s.title.toLowerCase().includes(lower) || 
+          (lower.includes('wedding') && s.title.toLowerCase().includes('wedding')) ||
+          (lower.includes('funeral') && (s.title.toLowerCase().includes('funeral') || s.title.toLowerCase().includes('memorial') || s.title.toLowerCase().includes('lament'))) ||
+          (lower.includes('burns') && (s.title.toLowerCase().includes('burns') || s.title.toLowerCase().includes('hogmanay'))) ||
+          (lower.includes('corporate') && (s.title.toLowerCase().includes('corporate') || s.title.toLowerCase().includes('castle'))) ||
+          (lower.includes('experience') && (s.title.toLowerCase().includes('experience') || s.title.toLowerCase().includes('workshop') || s.title.toLowerCase().includes('airbnb'))) ||
+          (lower.includes('lesson') && (s.title.toLowerCase().includes('lesson') || s.title.toLowerCase().includes('tuition'))) ||
+          (lower.includes('birthday') && (s.title.toLowerCase().includes('birthday') || s.title.toLowerCase().includes('anniversary') || s.title.toLowerCase().includes('party')))
+        );
+        if (matched) {
+          setEventType(matched.title);
         }
       }
     }
-  }, []);
+  }, [services]);
 
   // UI state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState<any | null>(null);
 
-  // Pricing calculator
-  const pricingMatrix: { [key in EventType]: { base: number; deposit: number } } = {
-    'Wedding Ceremony & Reception': { base: 480, deposit: 100 },
-    'Wedding Ceremony Only': { base: 320, deposit: 80 },
-    'Funeral / Memorial Service': { base: 220, deposit: 50 },
-    'Burns Supper / Hogmanay': { base: 450, deposit: 100 },
-    'Corporate / Castle Event': { base: 550, deposit: 150 },
-    'Birthday / Private Party': { base: 350, deposit: 80 },
-    'Highland Bagpipe Experience (Hands-On Workshop / Airbnb)': { base: 280, deposit: 60 },
-    'Bagpipe Tuition / Lesson': { base: 60, deposit: 20 },
-  };
-
-  const basePackagePrice = pricingMatrix[eventType]?.base || 450;
-  const depositAmount = pricingMatrix[eventType]?.deposit || 100;
+  // Dynamic Pricing from active services state in AppContext
+  const selectedService = services.find(s => s.title === eventType || s.slug === eventType) || services[0];
+  const basePackagePrice = selectedService?.basePrice ?? 480;
+  const depositAmount = selectedService?.depositAmount ?? 100;
 
   // Live Travel Expenses Calculation
   const travelResult = calculateTravelCosts(
@@ -481,17 +470,18 @@ export const BookingCalendar: React.FC = () => {
                     </label>
                     <select
                       value={eventType}
-                      onChange={(e) => setEventType(e.target.value as EventType)}
-                      className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-3 text-white text-sm focus:outline-none focus:border-tartan-accent"
+                      onChange={(e) => setEventType(e.target.value)}
+                      className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-3 text-white text-sm focus:outline-none focus:border-tartan-accent font-medium"
                     >
-                      <option value="Wedding Ceremony & Reception">Wedding Ceremony & Reception</option>
-                      <option value="Wedding Ceremony Only">Wedding Ceremony Only</option>
-                      <option value="Highland Bagpipe Experience (Hands-On Workshop / Airbnb)">Highland Bagpipe Experience (Hands-On Workshop / Airbnb)</option>
-                      <option value="Funeral / Memorial Service">Funeral / Memorial Service</option>
-                      <option value="Burns Supper / Hogmanay">Burns Supper / Hogmanay</option>
-                      <option value="Corporate / Castle Event">Corporate / Castle Event</option>
-                      <option value="Birthday / Private Party">Birthday / Private Party</option>
-                      <option value="Bagpipe Tuition / Lesson">Bagpipe Tuition / Lesson</option>
+                      {services && services.length > 0 ? (
+                        services.map((srv) => (
+                          <option key={srv.id} value={srv.title} className="bg-tartan-navy text-white">
+                            {srv.title} ({srv.priceEstimate || `£${srv.basePrice}`})
+                          </option>
+                        ))
+                      ) : (
+                        <option value="Scottish Castle & Highland Weddings">Scottish Castle & Highland Weddings</option>
+                      )}
                     </select>
                   </div>
 
