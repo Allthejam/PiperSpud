@@ -423,6 +423,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 return {
                   ...initTune,
                   ...userVer,
+                  showOnHomePage: userVer.showOnHomePage !== undefined ? userVer.showOnHomePage : initTune.showOnHomePage,
                   audioUrl: userVer.audioUrl && userVer.audioUrl.trim().length > 0 ? userVer.audioUrl : initTune.audioUrl
                 };
               }

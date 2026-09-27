@@ -513,6 +513,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Composed in 1982 by German musicians Uli Roever and Michael Korb as a hymn for the pipes, it has become Scotland\'s most beloved wedding aisle anthem.',
     duration: '2:45',
     isPopular: true,
+    showOnHomePage: true,
     audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/Highland-Cathedral-bagpipes.mp3',
     audioNotes: [440, 493.88, 554.37, 587.33, 659.25, 587.33, 554.37, 493.88, 440]
   },
@@ -527,6 +528,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Adapted as the Outlander title track, this tune is also famously played by the Doctor on his recorder in Doctor Who (1968)!',
     duration: '2:30',
     isPopular: true,
+    showOnHomePage: true,
     audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/The-Skye-Boat-Song-bagpipes.mp3',
     audioNotes: [440, 554.37, 440, 783.99, 739.99, 659.25, 587.33, 554.37, 440]
   },
@@ -627,6 +629,7 @@ export const initialTunes: BagpipeTune[] = [
     funFact: 'Scotland the Brave was played as Scotland\'s National Anthem for the 1982, 1986, and 1990 FIFA World Cups!',
     duration: '2:15',
     isPopular: true,
+    showOnHomePage: true,
     audioUrl: 'https://www.scottishbagpipers.com/wp-content/uploads/2022/07/Scotland-The-Brave.mp3',
     audioNotes: [440, 440, 493.88, 554.37, 587.33, 554.37, 493.88, 440]
   },

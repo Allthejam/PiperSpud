@@ -211,6 +211,7 @@ export interface BagpipeTune {
   audioNotes?: number[];
   audioUrl?: string;
   isPopular?: boolean;
+  showOnHomePage?: boolean;
 }
 
 export interface SeoPageConfig {

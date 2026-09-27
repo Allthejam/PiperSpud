@@ -54,22 +54,6 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
     isVisualEditMode 
   } = useApp();
 
-  // Home Page Random 3 Samples State
-  const [homeRandomTuneIds, setHomeRandomTuneIds] = useState<string[]>([]);
-
-  // Random selection of 3 tunes for home page
-  React.useEffect(() => {
-    if (isHomePage && tunesList.length > 0) {
-      const shuffled = [...tunesList].sort(() => 0.5 - Math.random());
-      setHomeRandomTuneIds(shuffled.slice(0, 3).map(t => t.id));
-    }
-  }, [isHomePage, tunesList.length]);
-
-  const handleShuffleRandomTunes = () => {
-    const shuffled = [...tunesList].sort(() => 0.5 - Math.random());
-    setHomeRandomTuneIds(shuffled.slice(0, 3).map(t => t.id));
-  };
-
   // Filter & Search State
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeMoment, setActiveMoment] = useState<string>('All');
@@ -90,6 +74,7 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
   const [tuneDescription, setTuneDescription] = useState<string>('');
   const [tuneFunFact, setTuneFunFact] = useState<string>('');
   const [tuneAudioUrl, setTuneAudioUrl] = useState<string>('');
+  const [tuneShowOnHomePage, setTuneShowOnHomePage] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadStatus, setUploadStatus] = useState<string>('');
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -180,18 +165,17 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
     });
   }, [tunesList, searchQuery, activeMoment, activeInstrument]);
 
-  // Displayed Tunes: 3 Random for Home Page, or Filtered Library for Full Page
+  // Displayed Tunes: Checked for Home Page, or Filtered Library for Full Page
   const displayedTunes = useMemo(() => {
     if (isHomePage) {
-      if (homeRandomTuneIds.length === 0) {
-        return tunesList.slice(0, 3);
+      const homePicked = tunesList.filter(t => t.showOnHomePage === true);
+      if (homePicked.length > 0) {
+        return homePicked;
       }
-      const map = new Map(tunesList.map(t => [t.id, t]));
-      const matched = homeRandomTuneIds.map(id => map.get(id)).filter((t): t is BagpipeTune => !!t);
-      return matched.length > 0 ? matched : tunesList.slice(0, 3);
+      return tunesList.slice(0, 3);
     }
     return filteredTunes;
-  }, [isHomePage, homeRandomTuneIds, tunesList, filteredTunes]);
+  }, [isHomePage, tunesList, filteredTunes]);
 
   const handleOpenAddModal = () => {
     setEditingTuneId(null);
@@ -204,6 +188,7 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
     setTuneDescription('');
     setTuneFunFact('');
     setTuneAudioUrl('');
+    setTuneShowOnHomePage(false);
     setUploadStatus('');
     setUploadError(null);
     setIsModalOpen(true);
@@ -220,6 +205,7 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
     setTuneDescription(tune.description || '');
     setTuneFunFact(tune.funFact || '');
     setTuneAudioUrl(tune.audioUrl || '');
+    setTuneShowOnHomePage(tune.showOnHomePage ?? false);
     setUploadStatus('');
     setUploadError(null);
     setIsModalOpen(true);
@@ -287,7 +273,8 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
       duration: tuneDuration,
       description: tuneDescription,
       funFact: tuneFunFact,
-      audioUrl: tuneAudioUrl || undefined
+      audioUrl: tuneAudioUrl || undefined,
+      showOnHomePage: tuneShowOnHomePage
     };
 
     if (editingTuneId) {
@@ -334,20 +321,15 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
             section="tunes"
           />
           
-          {/* Home Page Shuffle & See More Quick Pill */}
+          {/* Home Page Featured Notice & See More Quick Pill */}
           {isHomePage && (
             <div className="pt-2 flex items-center justify-center gap-3 flex-wrap">
-              <button
-                type="button"
-                onClick={handleShuffleRandomTunes}
-                className="px-4 py-2 rounded-full bg-tartan-card hover:bg-tartan-navy text-tartan-gold border border-tartan-border hover:border-tartan-accent text-xs font-bold transition flex items-center gap-1.5 shadow"
-                title="Roll 3 different random tune samples"
-              >
-                <span>🎲 Shuffle 3 Random Samples</span>
-              </button>
+              <span className="px-4 py-1.5 rounded-full bg-tartan-card text-tartan-gold border border-tartan-border text-xs font-semibold flex items-center gap-1.5 shadow">
+                <span>⭐ Featuring {displayedTunes.length} Hand-Picked Home Tracks</span>
+              </span>
               <Link
                 href="/tunes"
-                className="px-4 py-2 rounded-full bg-tartan-navy hover:bg-slate-700 text-white border border-tartan-border hover:border-tartan-gold text-xs font-semibold transition flex items-center gap-1.5 shadow"
+                className="px-4 py-1.5 rounded-full bg-tartan-navy hover:bg-slate-700 text-white border border-tartan-border hover:border-tartan-gold text-xs font-semibold transition flex items-center gap-1.5 shadow"
               >
                 <Music className="w-3.5 h-3.5 text-tartan-gold" />
                 <span>See All {tunesList.length} Repertoire Tunes &rarr;</span>
@@ -794,10 +776,24 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                       </Link>
                     </div>
 
-                    {/* Admin Edit & Delete Quick Icons */}
+                    {/* Admin Edit, Delete & Home Page Quick Toggle */}
                     {canManage && (
-                      <div className="flex items-center justify-between pt-2 border-t border-tartan-border/40 text-[10px]">
-                        <span className="text-gray-400 font-mono">ID: {tune.id}</span>
+                      <div className="flex items-center justify-between pt-2 border-t border-tartan-border/40 text-[10px] flex-wrap gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => updateTune(tune.id, { showOnHomePage: !tune.showOnHomePage })}
+                            className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all flex items-center gap-1 ${
+                              tune.showOnHomePage
+                                ? 'bg-amber-500/25 text-yellow-300 border-amber-500/50 hover:bg-amber-500/35 shadow-sm'
+                                : 'bg-slate-800 text-gray-400 border-slate-700 hover:text-white hover:bg-slate-700'
+                            }`}
+                            title="Toggle whether this tune is displayed on the main Home Page"
+                          >
+                            <span>{tune.showOnHomePage ? '🏠 On Home Page' : '＋ Add to Home'}</span>
+                          </button>
+                        </div>
+
                         <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => handleOpenEditModal(tune)}
@@ -805,7 +801,7 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                             title="Edit Tune & Upload Music Track"
                           >
                             <Edit3 className="w-3 h-3" />
-                            <span>Edit / Upload</span>
+                            <span>Edit</span>
                           </button>
 
                           {deleteConfirmId === tune.id ? (
@@ -851,7 +847,7 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
           <div className="mt-12 bg-gradient-to-r from-tartan-navy via-tartan-card to-tartan-navy rounded-3xl p-6 sm:p-8 border border-tartan-accent/50 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
             <div className="space-y-2 max-w-xl">
               <span className="text-xs font-bold text-tartan-gold uppercase tracking-wider flex items-center justify-center sm:justify-start gap-1.5">
-                <Sparkles className="w-4 h-4" /> Full Bagpipe Repertoire ({tunesList.length} Tracks)
+                <Sparkles className="w-4 h-4" /> Full Scottish Bagpipe Repertoire ({tunesList.length} Tracks)
               </span>
               <h3 className="text-xl sm:text-2xl font-bold text-white font-serif">
                 Want to hear the rest of Spud&apos;s tunes?
@@ -862,20 +858,11 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
             </div>
             
             <div className="flex items-center gap-3 shrink-0 flex-wrap justify-center">
-              <button
-                type="button"
-                onClick={handleShuffleRandomTunes}
-                className="px-5 py-3 rounded-xl bg-tartan-dark hover:bg-slate-800 text-tartan-gold font-bold text-xs border border-tartan-border/80 transition flex items-center gap-2 shadow"
-                title="Shuffle 3 other random samples"
-              >
-                <span>🎲 Shuffle Samples</span>
-              </button>
-
               <Link
                 href="/tunes"
                 className="px-7 py-3.5 rounded-xl bg-gold-gradient text-tartan-dark font-black text-xs uppercase tracking-wider shadow-xl hover:brightness-110 active:scale-95 transition flex items-center gap-2"
               >
-                <span>See All {tunesList.length} Tunes &rarr;</span>
+                <span>See Full Jukebox &amp; All {tunesList.length} Tunes &rarr;</span>
               </Link>
             </div>
           </div>
@@ -1137,6 +1124,29 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                     </p>
                     <audio controls src={tuneAudioUrl} className="w-full h-8 mt-1" />
                   </div>
+                )}
+              </div>
+
+              {/* Home Page Display Checkbox Toggle */}
+              <div className="bg-tartan-dark/90 p-4 rounded-2xl border border-tartan-border flex items-center justify-between gap-4">
+                <div>
+                  <label className="flex items-center gap-2.5 cursor-pointer text-xs font-bold text-tartan-gold">
+                    <input
+                      type="checkbox"
+                      checked={tuneShowOnHomePage}
+                      onChange={(e) => setTuneShowOnHomePage(e.target.checked)}
+                      className="w-4 h-4 rounded text-tartan-gold focus:ring-tartan-gold bg-tartan-navy border-tartan-border cursor-pointer accent-amber-500"
+                    />
+                    <span>Display on Home Page Jukebox</span>
+                  </label>
+                  <p className="text-[11px] text-gray-400 mt-0.5">
+                    Check this box to feature this track on the main home page sampler.
+                  </p>
+                </div>
+                {tuneShowOnHomePage && (
+                  <span className="text-[10px] px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-600/40 font-bold shrink-0">
+                    ✓ Featured on Home
+                  </span>
                 )}
               </div>
 
