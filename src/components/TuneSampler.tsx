@@ -30,7 +30,8 @@ import {
   Award,
   ArrowRight,
   HelpCircle,
-  Filter
+  Filter,
+  Download
 } from 'lucide-react';
 import { BagpipeTune } from '@/types/spud';
 import { EditableElement } from './EditableElement';
@@ -44,8 +45,8 @@ export const TuneSampler: React.FC = () => {
     stopTune, 
     addTune, 
     updateTune, 
-    deleteTune,
-    isAdminLoggedIn,
+    deleteTune, 
+    isAdminLoggedIn, 
     isVisualEditMode 
   } = useApp();
 
@@ -55,6 +56,7 @@ export const TuneSampler: React.FC = () => {
   const [activeInstrument, setActiveInstrument] = useState<string>('All');
   const [showTimelineGuide, setShowTimelineGuide] = useState<boolean>(true);
   const [showSmallpipesGuide, setShowSmallpipesGuide] = useState<boolean>(false);
+  const [downloadingTuneId, setDownloadingTuneId] = useState<string | null>(null);
   
   // Add / Edit Modal State
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -72,6 +74,41 @@ export const TuneSampler: React.FC = () => {
   const [uploadStatus, setUploadStatus] = useState<string>('');
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Audio MP3 Download Handler
+  const handleDownloadTune = async (tune: BagpipeTune) => {
+    if (!tune.audioUrl) {
+      alert(`Audio file for "${tune.title}" is being prepared. Please try another track!`);
+      return;
+    }
+
+    setDownloadingTuneId(tune.id);
+    try {
+      const response = await fetch(tune.audioUrl);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      const cleanTitle = tune.title.replace(/[^a-zA-Z0-9_-]/g, '_');
+      link.download = `Spud_the_Piper_${cleanTitle}.mp3`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      const link = document.createElement('a');
+      link.href = tune.audioUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      const cleanTitle = tune.title.replace(/[^a-zA-Z0-9_-]/g, '_');
+      link.download = `Spud_the_Piper_${cleanTitle}.mp3`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } finally {
+      setTimeout(() => setDownloadingTuneId(null), 1200);
+    }
+  };
 
   // Wedding & Event Moments Definition
   const weddingMoments = [
@@ -641,33 +678,52 @@ export const TuneSampler: React.FC = () => {
                   {/* Player Controls & Request CTA */}
                   <div className="mt-6 pt-4 border-t border-tartan-border/50 space-y-3">
                     
-                    <div className="flex items-center justify-between gap-2">
-                      <button
-                        onClick={() => {
-                          if (isThisPlaying) {
-                            stopTune();
-                          } else {
-                            playTune(tune.title);
-                          }
-                        }}
-                        className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all shadow-md ${
-                          isThisPlaying
-                            ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
-                            : 'bg-gold-gradient hover:brightness-110 text-tartan-dark'
-                        }`}
-                      >
-                        {isThisPlaying ? (
-                          <>
-                            <Square className="w-3.5 h-3.5 fill-white" />
-                            <span>Stop Audio</span>
-                          </>
-                        ) : (
-                          <>
-                            <Play className="w-3.5 h-3.5 fill-tartan-dark" />
-                            <span>Play Sample</span>
-                          </>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            if (isThisPlaying) {
+                              stopTune();
+                            } else {
+                              playTune(tune.title);
+                            }
+                          }}
+                          className={`px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-md ${
+                            isThisPlaying
+                              ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
+                              : 'bg-gold-gradient hover:brightness-110 text-tartan-dark'
+                          }`}
+                        >
+                          {isThisPlaying ? (
+                            <>
+                              <Square className="w-3.5 h-3.5 fill-white" />
+                              <span>Stop</span>
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-3.5 h-3.5 fill-tartan-dark" />
+                              <span>Play</span>
+                            </>
+                          )}
+                        </button>
+
+                        {tune.audioUrl && (
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadTune(tune)}
+                            disabled={downloadingTuneId === tune.id}
+                            className="px-3 py-2.5 rounded-xl bg-tartan-navy hover:bg-slate-700 text-gray-200 hover:text-tartan-gold border border-tartan-border hover:border-tartan-accent/60 transition-all flex items-center gap-1.5 text-xs font-semibold shadow"
+                            title={`Download "${tune.title}" MP3 Audio Recording`}
+                          >
+                            {downloadingTuneId === tune.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-tartan-gold" />
+                            ) : (
+                              <Download className="w-3.5 h-3.5 text-tartan-gold" />
+                            )}
+                            <span>Download MP3</span>
+                          </button>
                         )}
-                      </button>
+                      </div>
 
                       {/* Request CTA for booking */}
                       <Link
