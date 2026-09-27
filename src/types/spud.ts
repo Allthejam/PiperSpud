@@ -174,11 +174,16 @@ export interface EditableCmsBlock {
 export interface BagpipeTune {
   id: string;
   title: string;
-  category: 'Wedding' | 'Lament / Funeral' | 'Celebration / March' | 'Traditional Scottish';
+  category: string;
+  weddingMoment?: string;
   description: string;
+  funFact?: string;
+  instrumentRecommended?: string;
+  tempo?: string;
   duration: string;
-  audioNotes?: number[]; // frequencies or midi steps for WebAudio bagpipe synth
-  audioUrl?: string; // High-res MP3/WAV/audio recording URL or uploaded base64
+  audioNotes?: number[];
+  audioUrl?: string;
+  isPopular?: boolean;
 }
 
 export interface SeoPageConfig {

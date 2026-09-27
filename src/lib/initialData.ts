@@ -469,45 +469,358 @@ export const initialChatMessages: ChatMessage[] = [
 ];
 
 export const initialTunes: BagpipeTune[] = [
+  // ── 1. PIPING THE BRIDE / PARTNER UP THE AISLE (PROCESSIONAL) ──
   {
     id: 'tune-1',
     title: 'Highland Cathedral',
     category: 'Wedding',
-    description: 'The definitive Scottish wedding processional. Majestic, emotive, and stirring.',
+    weddingMoment: 'Walking Up the Aisle',
+    tempo: 'Majestic Slow Air',
+    instrumentRecommended: 'Great Highland Bagpipes',
+    description: 'The definitive, grand Scottish wedding processional. Stately, deeply emotive, and spine-tingling as the bride enters the ceremony.',
+    funFact: 'Composed in 1982 by German musicians Uli Roever and Michael Korb as a hymn for the pipes, it has become Scotland\'s most beloved wedding aisle anthem.',
     duration: '2:45',
+    isPopular: true,
     audioNotes: [440, 493.88, 554.37, 587.33, 659.25, 587.33, 554.37, 493.88, 440]
+  },
+  {
+    id: 'tune-5',
+    title: 'The Skye Boat Song (Outlander Theme)',
+    category: 'Wedding',
+    weddingMoment: 'Walking Up the Aisle',
+    tempo: 'Majestic Slow Air',
+    instrumentRecommended: 'Choice / Both',
+    description: 'The world-famous romantic melody recounting Bonnie Prince Charlie\'s escape over the sea to Skye, and the iconic title theme to Outlander.',
+    funFact: 'Adapted as the Outlander title track, this tune is also famously played by the Doctor on his recorder in Doctor Who (1968)!',
+    duration: '2:30',
+    isPopular: true,
+    audioNotes: [440, 554.37, 440, 783.99, 739.99, 659.25, 587.33, 554.37, 440]
+  },
+  {
+    id: 'tune-6',
+    title: 'The Rose of Allendale',
+    category: 'Wedding',
+    weddingMoment: 'Walking Up the Aisle',
+    tempo: 'Majestic Slow Air',
+    instrumentRecommended: 'Scottish Smallpipes',
+    description: 'Soulful, heartfelt romantic folk air. Melodic and emotional, offering a uniquely touching and gentle alternative for walking up the aisle.',
+    funFact: 'Originally an 1830s folk song immortalized by The Corries, this romantic ballad sings of the maiden who brings calm in every storm.',
+    duration: '2:40',
+    isPopular: false,
+    audioNotes: [440, 493.88, 554.37, 659.25, 587.33, 554.37, 493.88, 440]
+  },
+  {
+    id: 'tune-7',
+    title: 'She Moved Through the Fair',
+    category: 'Wedding',
+    weddingMoment: 'Walking Up the Aisle',
+    tempo: 'Majestic Slow Air',
+    instrumentRecommended: 'Scottish Smallpipes',
+    description: 'Ancient, delicate Celtic slow air with a mystical, ethereal quality. Ideal for intimate castle chapels, gardens, and lochside elopements.',
+    funFact: 'A haunting ancient melody with roots in both Irish and Scottish Gaelic song traditions dating back hundreds of years.',
+    duration: '2:50',
+    isPopular: false,
+    audioNotes: [440, 493.88, 554.37, 587.33, 659.25, 554.37, 493.88, 440]
+  },
+  {
+    id: 'tune-8',
+    title: 'Caledonia',
+    category: 'Traditional Scottish',
+    weddingMoment: 'Walking Up the Aisle',
+    tempo: 'Majestic Slow Air',
+    instrumentRecommended: 'Great Highland Bagpipes',
+    description: 'Dougie MacLean\'s legendary Scottish anthem of love, belonging, and homecoming. Resonates deeply with couples and guests worldwide.',
+    funFact: 'Dougie MacLean composed the words and melody in under 10 minutes while sitting on a beach in Brittany feeling homesick for Scotland.',
+    duration: '3:15',
+    isPopular: true,
+    audioNotes: [440, 554.37, 587.33, 659.25, 783.99, 659.25, 554.37, 440]
+  },
+  {
+    id: 'tune-9',
+    title: 'The Dark Island',
+    category: 'Wedding',
+    weddingMoment: 'Walking Up the Aisle',
+    tempo: 'Majestic Slow Air',
+    instrumentRecommended: 'Great Highland Bagpipes',
+    description: 'One of the most evocative and romantic Highland slow airs ever composed, capturing the mystical grandeur of Scotland\'s Western Isles.',
+    funFact: 'Composed by pipe major Iain McLachlan for a 1962 BBC Scotland television drama set on South Uist.',
+    duration: '2:35',
+    isPopular: false,
+    audioNotes: [440, 493.88, 554.37, 587.33, 659.25, 587.33, 493.88, 440]
+  },
+
+  // ── 2. NEWLYWEDS RECESSIONAL / DOWN THE AISLE ──
+  {
+    id: 'tune-10',
+    title: 'The Highland Wedding',
+    category: 'Wedding',
+    weddingMoment: 'Newlyweds Exit / Recessional',
+    tempo: 'Jaunty March',
+    instrumentRecommended: 'Great Highland Bagpipes',
+    description: 'The absolute master march for playing newlyweds out of their ceremony. Stately, triumphant, and celebrated by Grade 1 pipe bands globally.',
+    funFact: 'Arranged in 1856 by Queen Victoria\'s personal piper Angus MacKay, it is regarded as the pinnacle of 2/4 competition pipe marches.',
+    duration: '2:50',
+    isPopular: true,
+    audioNotes: [440, 554.37, 587.33, 659.25, 739.99, 659.25, 587.33, 440]
+  },
+  {
+    id: 'tune-11',
+    title: 'Mairi\'s Wedding (The Lewis Bridal Song)',
+    category: 'Wedding',
+    weddingMoment: 'Newlyweds Exit / Recessional',
+    tempo: 'Jaunty March',
+    instrumentRecommended: 'Great Highland Bagpipes',
+    description: 'Joyous, buoyant, and instantly recognizable ("Step we gaily, on we go..."). Gets everyone smiling, clapping, and cheering down the aisle.',
+    funFact: 'Written in 1934 to celebrate a friend winning the prestigious National Mòd Gold Medal for Gaelic singing.',
+    duration: '2:15',
+    isPopular: true,
+    audioNotes: [440, 493.88, 554.37, 587.33, 659.25, 587.33, 554.37, 440]
   },
   {
     id: 'tune-2',
     title: 'Scotland the Brave',
     category: 'Celebration / March',
-    description: 'The world-famous rousing patriotic march. Perfect for energetic celebratory exits and greetings.',
+    weddingMoment: 'Newlyweds Exit / Recessional',
+    tempo: 'Rousing Quickstep',
+    instrumentRecommended: 'Great Highland Bagpipes',
+    description: 'The world\'s most famous rousing patriotic Scottish march. Instantly recognized everywhere, delivering guaranteed cheers as you exit as newlyweds.',
+    funFact: 'Scotland the Brave was played as Scotland\'s National Anthem for the 1982, 1986, and 1990 FIFA World Cups!',
     duration: '2:15',
+    isPopular: true,
     audioNotes: [440, 440, 493.88, 554.37, 587.33, 554.37, 493.88, 440]
   },
   {
-    id: 'tune-3',
-    title: 'Flower of Scotland',
-    category: 'Traditional Scottish',
-    description: 'The beloved national anthem of Scotland. Ideal for banquets, Burns suppers, and international guests.',
-    duration: '3:00',
-    audioNotes: [440, 587.33, 587.33, 554.37, 493.88, 440, 392, 440]
+    id: 'tune-12',
+    title: 'John Macdonald of Glencoe',
+    category: 'Celebration / March',
+    weddingMoment: 'Newlyweds Exit / Recessional',
+    tempo: 'Jaunty March',
+    instrumentRecommended: 'Great Highland Bagpipes',
+    description: 'An upbeat, sparkling competition pipe march composed prior to WWI. A favorite among virtuoso solo pipers for grand celebratory exits.',
+    funFact: 'One of Spud\'s personal favorite solo competition pieces that he performed at the World Pipe Band Championships.',
+    duration: '2:40',
+    isPopular: false,
+    audioNotes: [440, 493.88, 554.37, 659.25, 587.33, 554.37, 493.88, 440]
   },
+
+  // ── 3. SIGNING OF THE WEDDING REGISTER ──
+  {
+    id: 'tune-13',
+    title: 'The Mingulay Boat Song & The Jig Runrig',
+    category: 'Wedding',
+    weddingMoment: 'Signing the Register',
+    tempo: 'Majestic Slow Air',
+    instrumentRecommended: 'Choice / Both',
+    description: 'A gentle slow air that seamlessly transitions into a sparkling celebratory jig—tailored to the exact length of the register signing.',
+    funFact: 'Written in the 1930s to traditional Hebridean Gaelic sea-shanty rhythms and recorded by Scotland\'s famous folk group The Corries.',
+    duration: '3:10',
+    isPopular: true,
+    audioNotes: [440, 493.88, 554.37, 659.25, 783.99, 659.25, 554.37, 440]
+  },
+  {
+    id: 'tune-14',
+    title: 'My Love is Like a Red, Red Rose',
+    category: 'Wedding',
+    weddingMoment: 'Signing the Register',
+    tempo: 'Majestic Slow Air',
+    instrumentRecommended: 'Scottish Smallpipes',
+    description: 'Robert Burns\' timeless romantic masterpiece played as a tender, lyrical slow air while the couple signs the marriage schedule.',
+    funFact: 'Robert Burns composed these immortal lyrics in 1794 based on traditional rural songs he collected across Ayrshire and the Highlands.',
+    duration: '2:45',
+    isPopular: true,
+    audioNotes: [440, 554.37, 587.33, 659.25, 554.37, 493.88, 440]
+  },
+  {
+    id: 'tune-15',
+    title: 'Wild Mountain Thyme (Will Ye Go Lassie, Go)',
+    category: 'Traditional Scottish',
+    weddingMoment: 'Signing the Register',
+    tempo: 'Majestic Slow Air',
+    instrumentRecommended: 'Scottish Smallpipes',
+    description: 'Warm, sweet, and comforting Celtic melody celebrated across Scotland. Creates a serene, joyful ambiance during photo signing.',
+    funFact: 'Adapted by Francis McPeake in 1957 from the traditional Scottish song "The Braes of Balquhither" by Robert Tannahill.',
+    duration: '2:50',
+    isPopular: false,
+    audioNotes: [440, 493.88, 554.37, 587.33, 659.25, 587.33, 554.37, 440]
+  },
+
+  // ── 4. CONFETTI SHOWER & DRINKS RECEPTION ──
+  {
+    id: 'tune-16',
+    title: 'Heilan Laddie & The Black Bear',
+    category: 'Celebration / March',
+    weddingMoment: 'Confetti & Drinks',
+    tempo: 'Rousing Quickstep',
+    instrumentRecommended: 'Great Highland Bagpipes',
+    description: 'The ultimate energetic double-set for running the confetti gauntlet! Fast, cheerful, and full of British Army regimental swagger.',
+    funFact: 'The Black Bear is officially the fastest regimental march in the British Army, traditionally accompanied by soldiers shouting "Hey!"',
+    duration: '2:20',
+    isPopular: true,
+    audioNotes: [440, 554.37, 659.25, 587.33, 554.37, 493.88, 440]
+  },
+  {
+    id: 'tune-17',
+    title: 'The Rakes of Kildare & Cock of the North',
+    category: 'Celebration / March',
+    weddingMoment: 'Confetti & Drinks',
+    tempo: 'Lively Hornpipe / Jig',
+    instrumentRecommended: 'Great Highland Bagpipes',
+    description: 'High-octane Scottish & Irish jigs that keep the celebratory energy soaring during the confetti shower, champagne drinks, and photos.',
+    funFact: 'Cock of the North was famously piped during the 1897 storming of Dargai Heights by Piper George Findlater VC despite being wounded in both feet!',
+    duration: '2:30',
+    isPopular: false,
+    audioNotes: [440, 493.88, 554.37, 587.33, 659.25, 739.99, 659.25, 440]
+  },
+
+  // ── 5. TOP TABLE ENTRANCE & BANQUET ──
+  {
+    id: 'tune-18',
+    title: 'Killiecrankie',
+    category: 'Wedding',
+    weddingMoment: 'Top Table Entrance',
+    tempo: 'Jaunty March',
+    instrumentRecommended: 'Great Highland Bagpipes',
+    description: 'Strong, rhythmic, driving march based on the 1689 battle tune. The perfect tempo for the whole room to clap in unison as the newlyweds enter.',
+    funFact: 'Written after the famous Jacobite victory in the pass of Killiecrankie, Perthshire in 1689.',
+    duration: '2:10',
+    isPopular: true,
+    audioNotes: [440, 493.88, 554.37, 587.33, 659.25, 587.33, 554.37, 440]
+  },
+  {
+    id: 'tune-19',
+    title: 'Campbeltown Loch (Glendaruel Highlanders)',
+    category: 'Celebration / March',
+    weddingMoment: 'Top Table Entrance',
+    tempo: 'Jaunty March',
+    instrumentRecommended: 'Great Highland Bagpipes',
+    description: 'Famous celebratory 6/8 march played as Spud recites the Traditional Piper\'s Toast and presents the quaich of Scottish single malt whisky.',
+    funFact: 'The comedic song words lament: "Campbeltown Loch, I wish ye were whisky! I\'d drink ye dry!"',
+    duration: '2:05',
+    isPopular: true,
+    audioNotes: [440, 554.37, 587.33, 659.25, 587.33, 554.37, 440]
+  },
+  {
+    id: 'tune-20',
+    title: 'The Green Hills of Tyrol & The Battles O\'er',
+    category: 'Celebration / March',
+    weddingMoment: 'Top Table Entrance',
+    tempo: 'Jaunty March',
+    instrumentRecommended: 'Great Highland Bagpipes',
+    description: 'Two of the most beloved and noble 3/4 retreat airs in the bagpipe canon. Stately, rich in harmony, and grand for dining entrances.',
+    funFact: 'Adapted for the pipes by Pipe Major John McLellan from Rossini\'s William Tell opera in the 19th century.',
+    duration: '3:00',
+    isPopular: false,
+    audioNotes: [440, 493.88, 554.37, 659.25, 587.33, 554.37, 493.88, 440]
+  },
+
+  // ── 6. GUESTS' ARRIVAL & WELCOME ──
+  {
+    id: 'tune-21',
+    title: 'Murdo\'s Wedding',
+    category: 'Wedding',
+    weddingMoment: 'Guests Arrival',
+    tempo: 'Jaunty March',
+    instrumentRecommended: 'Great Highland Bagpipes',
+    description: 'Crisp, cheerful 4/4 pipe march setting a joyful, anticipation-filled tone as guests arrive at the venue, castle gates, or chapel.',
+    funFact: 'Composed by Major Gavin Stoddart MBE, who served as Director of Army Bagpipe Music at Edinburgh Castle.',
+    duration: '2:15',
+    isPopular: true,
+    audioNotes: [440, 493.88, 554.37, 587.33, 659.25, 587.33, 554.37, 440]
+  },
+  {
+    id: 'tune-22',
+    title: 'Crossing the Minch & The Train Journey North',
+    category: 'Celebration / March',
+    weddingMoment: 'Guests Arrival',
+    tempo: 'Lively Hornpipe / Jig',
+    instrumentRecommended: 'Great Highland Bagpipes',
+    description: 'A dazzling pair of traditional hornpipes composed over 50 years ago, showcasing virtuosic fingerwork and setting a celebratory mood.',
+    funFact: 'Composed by Pipe Major Donald MacLeod MBE, one of the greatest 20th-century composers of bagpipe music.',
+    duration: '2:30',
+    isPopular: false,
+    audioNotes: [440, 554.37, 659.25, 739.99, 659.25, 554.37, 440]
+  },
+
+  // ── 7. MEMORIALS & LAMENTS ──
   {
     id: 'tune-4',
     title: 'Amazing Grace',
     category: 'Lament / Funeral',
-    description: 'Deeply moving and soulful. A timeless hymn for memorial services and reverent occasions.',
+    weddingMoment: 'Memorial & Lament',
+    tempo: 'Heartfelt Lament',
+    instrumentRecommended: 'Choice / Both',
+    description: 'Deeply moving, timeless, and reverent. The quintessential soulful hymn for memorial services, memorials, and solemn tributes.',
+    funFact: 'The 1972 bagpipe recording by the Royal Scots Dragoon Guards topped the UK singles chart for five consecutive weeks!',
     duration: '3:10',
+    isPopular: true,
     audioNotes: [587.33, 783.99, 493.88, 783.99, 493.88, 440, 783.99, 659.25, 587.33]
   },
   {
-    id: 'tune-5',
-    title: 'Skye Boat Song',
+    id: 'tune-23',
+    title: 'Flowers of the Forest',
+    category: 'Lament / Funeral',
+    weddingMoment: 'Memorial & Lament',
+    tempo: 'Heartfelt Lament',
+    instrumentRecommended: 'Great Highland Bagpipes',
+    description: 'Scotland\'s sacred national lament. Solemn, deeply moving, and performed with dignified reverence for military funerals and memorials.',
+    funFact: 'Tradition dictates this sacred tune is played exclusively as a funeral lament and never for casual entertainment or practice.',
+    duration: '3:30',
+    isPopular: false,
+    audioNotes: [440, 493.88, 554.37, 587.33, 554.37, 493.88, 440]
+  },
+  {
+    id: 'tune-24',
+    title: 'Going Home (Dvořák New World Theme)',
+    category: 'Lament / Funeral',
+    weddingMoment: 'Memorial & Lament',
+    tempo: 'Heartfelt Lament',
+    instrumentRecommended: 'Choice / Both',
+    description: 'Heartbreakingly tender and peaceful melody based on Antonín Dvořák\'s Largo from the New World Symphony.',
+    funFact: 'Adapted by Dvořák\'s pupil William Arms Fisher, its gentle descending melody offers deep solace during farewell tributes.',
+    duration: '2:55',
+    isPopular: false,
+    audioNotes: [440, 554.37, 587.33, 659.25, 554.37, 440]
+  },
+
+  // ── 8. BURNS SUPPERS, HOGMANAY & CASTLE GALAS ──
+  {
+    id: 'tune-3',
+    title: 'Flower of Scotland',
     category: 'Traditional Scottish',
-    description: 'The iconic lullaby and Outlander theme recounting Bonnie Prince Charlie\'s journey over the sea to Skye.',
+    weddingMoment: 'Burns & Galas',
+    tempo: 'Majestic Slow Air',
+    instrumentRecommended: 'Great Highland Bagpipes',
+    description: 'The beloved modern national anthem of Scotland celebrating Robert the Bruce\'s victory at Bannockburn. Perfect for galas and banquets.',
+    funFact: 'Composed by Roy Williamson of The Corries in the mid-1960s, it is sung passionately by 67,000 fans at Murrayfield Stadium.',
+    duration: '3:00',
+    isPopular: true,
+    audioNotes: [440, 587.33, 587.33, 554.37, 493.88, 440, 392, 440]
+  },
+  {
+    id: 'tune-25',
+    title: 'Auld Lang Syne',
+    category: 'Burns & Hogmanay',
+    weddingMoment: 'Burns & Galas',
+    tempo: 'Jaunty March',
+    instrumentRecommended: 'Great Highland Bagpipes',
+    description: 'The universal Scottish song of friendship, nostalgia, and celebration. The essential grand finale to every Scottish wedding reception and Hogmanay.',
+    funFact: 'Written by Robert Burns in 1788 and recognized by the Guinness World Records as one of the most frequently sung songs in human history.',
     duration: '2:30',
-    audioNotes: [440, 554.37, 440, 783.99, 739.99, 659.25, 587.33, 554.37, 440]
+    isPopular: true,
+    audioNotes: [440, 554.37, 587.33, 659.25, 783.99, 659.25, 554.37, 440]
+  },
+  {
+    id: 'tune-26',
+    title: 'A Man\'s a Man for A\' That',
+    category: 'Burns & Hogmanay',
+    weddingMoment: 'Burns & Galas',
+    tempo: 'Jaunty March',
+    instrumentRecommended: 'Great Highland Bagpipes',
+    description: 'Robert Burns\' immortal hymn to human dignity, equality, and Scottish pride. The premier tune for piping in the Haggis at Burns Suppers.',
+    funFact: 'Chosen to open the reconvened Scottish Parliament in 1999 as a statement of Scottish identity and human equality.',
+    duration: '2:15',
+    isPopular: false,
+    audioNotes: [440, 493.88, 554.37, 659.25, 587.33, 554.37, 440]
   }
 ];
 

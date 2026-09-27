@@ -142,12 +142,90 @@ class BagpipeSynthesizer {
         { note: 'F', dur: 0.4 }, { note: 'E', dur: 0.8 }, { note: 'D', dur: 0.8 },
         { note: 'C', dur: 1.6 }, { note: 'B', dur: 1.6 }
       ],
+      'The Skye Boat Song (Outlander Theme)': [
+        { note: 'Low A', dur: 0.6 }, { note: 'C', dur: 0.4 }, { note: 'Low A', dur: 0.6 },
+        { note: 'High G', dur: 0.8 }, { note: 'F', dur: 0.4 }, { note: 'E', dur: 0.8 },
+        { note: 'D', dur: 0.6 }, { note: 'C', dur: 0.4 }, { note: 'Low A', dur: 1.2 },
+        { note: 'Low A', dur: 0.6 }, { note: 'C', dur: 0.4 }, { note: 'Low A', dur: 0.6 },
+        { note: 'High G', dur: 1.6 }
+      ],
+      'Skye Boat Song': [
+        { note: 'Low A', dur: 0.6 }, { note: 'C', dur: 0.4 }, { note: 'Low A', dur: 0.6 },
+        { note: 'High G', dur: 0.8 }, { note: 'F', dur: 0.4 }, { note: 'E', dur: 0.8 },
+        { note: 'D', dur: 0.6 }, { note: 'C', dur: 0.4 }, { note: 'Low A', dur: 1.2 },
+        { note: 'Low A', dur: 0.6 }, { note: 'C', dur: 0.4 }, { note: 'Low A', dur: 0.6 },
+        { note: 'High G', dur: 1.6 }
+      ],
+      'The Highland Wedding': [
+        { note: 'Low A', dur: 0.35 }, { note: 'C', dur: 0.35 }, { note: 'E', dur: 0.7 },
+        { note: 'E', dur: 0.35 }, { note: 'D', dur: 0.35 }, { note: 'C', dur: 0.35 }, { note: 'B', dur: 0.35 },
+        { note: 'Low A', dur: 0.7 }, { note: 'C', dur: 0.35 }, { note: 'E', dur: 0.7 },
+        { note: 'High G', dur: 0.35 }, { note: 'F', dur: 0.35 }, { note: 'E', dur: 0.7 },
+        { note: 'D', dur: 0.7 }, { note: 'C', dur: 0.7 }
+      ],
+      "Mairi's Wedding (The Lewis Bridal Song)": [
+        { note: 'D', dur: 0.35 }, { note: 'D', dur: 0.35 }, { note: 'E', dur: 0.35 }, { note: 'F', dur: 0.35 },
+        { note: 'E', dur: 0.7 }, { note: 'D', dur: 0.35 }, { note: 'B', dur: 0.35 },
+        { note: 'Low A', dur: 0.7 }, { note: 'B', dur: 0.35 }, { note: 'D', dur: 0.7 },
+        { note: 'E', dur: 0.35 }, { note: 'D', dur: 0.35 }, { note: 'D', dur: 0.7 }
+      ],
       'Scotland the Brave': [
         { note: 'Low A', dur: 0.4 }, { note: 'Low A', dur: 0.4 }, { note: 'B', dur: 0.3 },
         { note: 'C', dur: 0.3 }, { note: 'D', dur: 0.6 }, { note: 'C', dur: 0.3 },
         { note: 'B', dur: 0.3 }, { note: 'Low A', dur: 0.6 }, { note: 'Low A', dur: 0.4 },
         { note: 'D', dur: 0.4 }, { note: 'E', dur: 0.4 }, { note: 'F', dur: 0.8 },
         { note: 'E', dur: 0.4 }, { note: 'D', dur: 0.4 }, { note: 'C', dur: 0.8 }
+      ],
+      'Caledonia': [
+        { note: 'Low A', dur: 0.5 }, { note: 'C', dur: 0.5 }, { note: 'D', dur: 0.8 },
+        { note: 'E', dur: 0.8 }, { note: 'High G', dur: 0.8 }, { note: 'E', dur: 0.4 },
+        { note: 'D', dur: 0.8 }, { note: 'C', dur: 0.4 }, { note: 'Low A', dur: 1.2 },
+        { note: 'C', dur: 0.6 }, { note: 'D', dur: 0.8 }, { note: 'E', dur: 1.2 }
+      ],
+      'The Mingulay Boat Song & The Jig Runrig': [
+        { note: 'Low A', dur: 0.6 }, { note: 'C', dur: 0.6 }, { note: 'E', dur: 0.8 },
+        { note: 'D', dur: 0.4 }, { note: 'C', dur: 0.6 }, { note: 'B', dur: 0.6 },
+        { note: 'Low A', dur: 1.0 }, { note: 'C', dur: 0.5 }, { note: 'E', dur: 0.8 },
+        { note: 'High G', dur: 0.4 }, { note: 'E', dur: 0.8 }, { note: 'D', dur: 1.2 }
+      ],
+      'My Love is Like a Red, Red Rose': [
+        { note: 'Low A', dur: 0.6 }, { note: 'D', dur: 0.8 }, { note: 'E', dur: 0.4 },
+        { note: 'F', dur: 0.8 }, { note: 'E', dur: 0.4 }, { note: 'D', dur: 0.8 },
+        { note: 'B', dur: 0.8 }, { note: 'Low A', dur: 1.2 }, { note: 'D', dur: 0.8 },
+        { note: 'F', dur: 0.8 }, { note: 'High G', dur: 1.2 }
+      ],
+      'Heilan Laddie & The Black Bear': [
+        { note: 'Low A', dur: 0.3 }, { note: 'C', dur: 0.3 }, { note: 'E', dur: 0.5 },
+        { note: 'E', dur: 0.3 }, { note: 'D', dur: 0.3 }, { note: 'C', dur: 0.3 }, { note: 'B', dur: 0.3 },
+        { note: 'Low A', dur: 0.5 }, { note: 'Low A', dur: 0.3 }, { note: 'High G', dur: 0.5 },
+        { note: 'F', dur: 0.3 }, { note: 'E', dur: 0.5 }, { note: 'D', dur: 0.5 }
+      ],
+      'Killiecrankie': [
+        { note: 'Low A', dur: 0.4 }, { note: 'D', dur: 0.6 }, { note: 'D', dur: 0.3 }, { note: 'E', dur: 0.3 },
+        { note: 'F', dur: 0.6 }, { note: 'E', dur: 0.3 }, { note: 'D', dur: 0.6 },
+        { note: 'B', dur: 0.4 }, { note: 'Low A', dur: 0.6 }, { note: 'D', dur: 0.8 }
+      ],
+      "Murdo's Wedding": [
+        { note: 'Low A', dur: 0.4 }, { note: 'C', dur: 0.4 }, { note: 'E', dur: 0.6 },
+        { note: 'E', dur: 0.3 }, { note: 'D', dur: 0.3 }, { note: 'C', dur: 0.6 },
+        { note: 'B', dur: 0.3 }, { note: 'Low A', dur: 0.6 }, { note: 'C', dur: 0.4 },
+        { note: 'D', dur: 0.6 }, { note: 'E', dur: 0.8 }
+      ],
+      'Campbeltown Loch (Glendaruel Highlanders)': [
+        { note: 'Low A', dur: 0.4 }, { note: 'C', dur: 0.4 }, { note: 'D', dur: 0.6 },
+        { note: 'E', dur: 0.4 }, { note: 'D', dur: 0.4 }, { note: 'C', dur: 0.6 },
+        { note: 'B', dur: 0.4 }, { note: 'Low A', dur: 0.8 }, { note: 'E', dur: 0.6 }
+      ],
+      'Flowers of the Forest': [
+        { note: 'Low A', dur: 0.8 }, { note: 'D', dur: 1.0 }, { note: 'C', dur: 0.5 },
+        { note: 'B', dur: 0.8 }, { note: 'Low A', dur: 1.2 }, { note: 'Low G', dur: 0.6 },
+        { note: 'Low A', dur: 1.5 }, { note: 'D', dur: 0.8 }, { note: 'E', dur: 0.8 },
+        { note: 'F', dur: 1.2 }, { note: 'E', dur: 0.6 }, { note: 'D', dur: 1.8 }
+      ],
+      'Going Home (Dvořák New World Theme)': [
+        { note: 'E', dur: 0.8 }, { note: 'High G', dur: 1.2 }, { note: 'High G', dur: 0.4 },
+        { note: 'E', dur: 0.8 }, { note: 'D', dur: 1.2 }, { note: 'Low A', dur: 0.8 },
+        { note: 'C', dur: 1.2 }, { note: 'D', dur: 0.8 }, { note: 'E', dur: 1.6 }
       ],
       'Flower of Scotland': [
         { note: 'Low A', dur: 0.6 }, { note: 'D', dur: 0.8 }, { note: 'D', dur: 0.4 },
@@ -156,6 +234,18 @@ class BagpipeSynthesizer {
         { note: 'E', dur: 0.6 }, { note: 'F', dur: 0.8 }, { note: 'E', dur: 0.4 },
         { note: 'D', dur: 1.2 }
       ],
+      'Auld Lang Syne': [
+        { note: 'Low A', dur: 0.6 }, { note: 'D', dur: 0.8 }, { note: 'D', dur: 0.4 },
+        { note: 'D', dur: 0.8 }, { note: 'F', dur: 0.8 }, { note: 'E', dur: 0.6 },
+        { note: 'D', dur: 0.4 }, { note: 'E', dur: 0.8 }, { note: 'F', dur: 0.8 },
+        { note: 'D', dur: 0.8 }, { note: 'D', dur: 0.4 }, { note: 'F', dur: 0.8 },
+        { note: 'High G', dur: 1.6 }
+      ],
+      "A Man's a Man for A' That": [
+        { note: 'Low A', dur: 0.4 }, { note: 'D', dur: 0.6 }, { note: 'D', dur: 0.4 },
+        { note: 'E', dur: 0.4 }, { note: 'F', dur: 0.6 }, { note: 'E', dur: 0.4 },
+        { note: 'D', dur: 0.6 }, { note: 'B', dur: 0.4 }, { note: 'Low A', dur: 0.8 }
+      ],
       'Amazing Grace': [
         { note: 'D', dur: 0.6 }, { note: 'High G', dur: 1.2 }, { note: 'B', dur: 0.4 },
         { note: 'High G', dur: 0.4 }, { note: 'B', dur: 1.2 }, { note: 'Low A', dur: 0.6 },
@@ -163,17 +253,12 @@ class BagpipeSynthesizer {
         { note: 'D', dur: 0.6 }, { note: 'High G', dur: 1.2 }, { note: 'B', dur: 0.4 },
         { note: 'High G', dur: 0.4 }, { note: 'B', dur: 1.2 }, { note: 'Low A', dur: 0.6 },
         { note: 'High G', dur: 2.0 }
-      ],
-      'Skye Boat Song': [
-        { note: 'Low A', dur: 0.6 }, { note: 'C', dur: 0.4 }, { note: 'Low A', dur: 0.6 },
-        { note: 'High G', dur: 0.8 }, { note: 'F', dur: 0.4 }, { note: 'E', dur: 0.8 },
-        { note: 'D', dur: 0.6 }, { note: 'C', dur: 0.4 }, { note: 'Low A', dur: 1.2 },
-        { note: 'Low A', dur: 0.6 }, { note: 'C', dur: 0.4 }, { note: 'Low A', dur: 0.6 },
-        { note: 'High G', dur: 1.6 }
       ]
     };
 
-    const notes = tunes[tuneName] || tunes['Highland Cathedral'];
+    // Pick specific tune notes or find case-insensitive matching, or fallback to Highland Cathedral
+    const matchedKey = Object.keys(tunes).find(k => k.toLowerCase() === tuneName.toLowerCase() || tuneName.toLowerCase().includes(k.toLowerCase()));
+    const notes = matchedKey ? tunes[matchedKey] : tunes['Highland Cathedral'];
     let currentStart = this.ctx.currentTime + 0.3;
 
     for (const item of notes) {
