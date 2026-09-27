@@ -17,7 +17,7 @@ import {
 import { SpudHeritageLogo } from './SpudHeritageLogo';
 
 export const HeroSection: React.FC = () => {
-  const { playTune, currentPlayingTune, stopTune, showLiveStream, toggleLiveStream, isVisualEditMode } = useApp();
+  const { playTune, playSampleTune, currentPlayingTune, stopTune, showLiveStream, toggleLiveStream, isVisualEditMode } = useApp();
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -143,18 +143,18 @@ export const HeroSection: React.FC = () => {
                   if (currentPlayingTune) {
                     stopTune();
                   } else {
-                    playTune('Highland Cathedral');
+                    playSampleTune();
                   }
                 }}
-                className={`w-full sm:w-auto px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all border ${
+                className={`w-full sm:w-auto px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all border shadow-lg ${
                   currentPlayingTune
-                    ? 'bg-tartan-gold text-tartan-dark border-yellow-300'
-                    : 'bg-tartan-navy/80 hover:bg-tartan-navy text-white border-tartan-accent/50'
+                    ? 'bg-tartan-gold text-tartan-dark border-yellow-300 ring-2 ring-yellow-400/50 animate-pulse'
+                    : 'bg-tartan-navy/80 hover:bg-tartan-navy text-white border-tartan-accent/50 hover:border-tartan-gold'
                 }`}
               >
                 {currentPlayingTune ? (
                   <>
-                    <Volume2 className="w-5 h-5 animate-pulse shrink-0" />
+                    <Volume2 className="w-5 h-5 animate-pulse shrink-0 text-tartan-dark" />
                     <span>Stop Sample ({currentPlayingTune})</span>
                   </>
                 ) : (

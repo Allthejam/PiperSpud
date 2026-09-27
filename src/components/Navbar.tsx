@@ -46,7 +46,8 @@ export const Navbar: React.FC = () => {
     isAdminLoggedIn, 
     currentPlayingTune, 
     stopTune, 
-    playTune 
+    playTune,
+    playSampleTune 
   } = useApp();
 
   const isRealAdmin = isMounted && isAdminLoggedIn;
@@ -282,7 +283,7 @@ export const Navbar: React.FC = () => {
                   if (currentPlayingTune) {
                     stopTune();
                   } else {
-                    playTune('Highland Cathedral');
+                    playSampleTune();
                   }
                 }}
                 className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md ${
@@ -290,11 +291,11 @@ export const Navbar: React.FC = () => {
                     ? 'bg-tartan-gold text-tartan-dark ring-2 ring-yellow-300 animate-pulse font-bold'
                     : 'bg-tartan-navy text-tartan-gold hover:bg-tartan-card border border-tartan-accent/40'
                 }`}
-                title={currentPlayingTune ? `Playing: ${currentPlayingTune} (Click to pause)` : "Play Highland Cathedral Bagpipe Sample"}
+                title={currentPlayingTune ? `Playing: ${currentPlayingTune} (Click to pause)` : "Play Real Highland Bagpipe Sample from Cloud Storage"}
               >
                 {currentPlayingTune ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
                 <span className="hidden xl:inline text-xs font-bold">
-                  {currentPlayingTune ? 'Playing Bagpipes' : 'Sound Sample'}
+                  {currentPlayingTune ? `Playing: ${currentPlayingTune}` : 'Sound Sample'}
                 </span>
               </button>
 

@@ -130,6 +130,7 @@ interface AppContextType {
   // Audio Bagpipe Player & Tune Manager
   currentPlayingTune: string | null;
   playTune: (titleOrId: string) => void;
+  playSampleTune: () => void;
   stopTune: () => void;
   tunesList: BagpipeTune[];
   addTune: (tune: Omit<BagpipeTune, 'id'>) => void;
@@ -1328,6 +1329,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const playSampleTune = () => {
+    // 1. Find all tunes that have real audio uploaded in Firebase Storage
+    const storageTunes = tunesList.filter(t => t.audioUrl && t.audioUrl.trim().length > 0);
+    
+    if (storageTunes.length > 0) {
+      // Pick a random real audio track from Firebase Storage
+      const randomTune = storageTunes[Math.floor(Math.random() * storageTunes.length)];
+      playTune(randomTune.title);
+    } else {
+      // Fallback to iconic Highland Cathedral
+      playTune('Highland Cathedral');
+    }
+  };
+
   const stopTune = () => {
     if (audioPlayerRef.current) {
       audioPlayerRef.current.pause();
@@ -1767,6 +1782,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unreadChatCount,
       currentPlayingTune,
       playTune,
+      playSampleTune,
       stopTune,
       tunesList,
       addTune,
