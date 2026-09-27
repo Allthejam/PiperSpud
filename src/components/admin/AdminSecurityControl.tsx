@@ -33,9 +33,7 @@ export const AdminSecurityControl: React.FC = () => {
     updateUser,
     updateUserPermissions,
     toggleUserOnlineStatus,
-    removeUser,
-    syncAllToFirestore,
-    isSyncingFirestore
+    removeUser
   } = useApp();
 
   const [newEmail, setNewEmail] = useState('');
@@ -135,21 +133,6 @@ export const AdminSecurityControl: React.FC = () => {
     }
   };
 
-  const handleForceSync = async () => {
-    const res = await syncAllToFirestore();
-    if (res.success) {
-      setFeedback({
-        type: 'success',
-        message: `Successfully verified and synced ${res.count} records (including 'users' collection and 'settings/chat_status') to Firebase Firestore.`
-      });
-    } else {
-      setFeedback({
-        type: 'error',
-        message: `Sync failed: ${res.error}`
-      });
-    }
-  };
-
   return (
     <div className="space-y-6 max-w-6xl mx-auto animate-in fade-in duration-200">
       
@@ -169,7 +152,7 @@ export const AdminSecurityControl: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
             <div className="flex items-center gap-3 bg-tartan-dark/80 border border-tartan-border p-3.5 rounded-2xl">
               <div className="w-12 h-12 rounded-xl bg-tartan-accent/20 text-tartan-gold flex items-center justify-center font-serif text-xl font-bold border border-tartan-accent/30">
                 {users.length}
@@ -178,20 +161,10 @@ export const AdminSecurityControl: React.FC = () => {
                 <p className="text-xs font-bold text-white">Firestore Users</p>
                 <p className="text-[11px] text-green-400 font-semibold flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block"></span>
-                  <span>Collection Active</span>
+                  <span>Real-Time Sync</span>
                 </p>
               </div>
             </div>
-
-            <button
-              onClick={handleForceSync}
-              disabled={isSyncingFirestore}
-              className="px-4 py-3 bg-tartan-navy hover:bg-slate-700 text-tartan-gold border border-tartan-border rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition disabled:opacity-50"
-              title="Push all users and chat status directly to Firebase Firestore"
-            >
-              <RefreshCw className={`w-4 h-4 ${isSyncingFirestore ? 'animate-spin' : ''}`} />
-              <span>{isSyncingFirestore ? 'Syncing...' : 'Sync Firestore'}</span>
-            </button>
           </div>
         </div>
       </div>

@@ -66,8 +66,6 @@ export const VisualPencilOverlay: React.FC = () => {
     activeSeoDrawerPageId,
     openSeoDrawer,
     closeSeoDrawer,
-    isSyncingFirestore,
-    syncAllToFirestore,
     logoutAdmin 
   } = useApp();
 
@@ -387,17 +385,6 @@ export const VisualPencilOverlay: React.FC = () => {
           >
             <Search className="w-3.5 h-3.5 text-blue-300" />
             <span>SEO & Schema Studio</span>
-          </button>
-
-          {/* Cloud Database Sync */}
-          <button
-            onClick={() => syncAllToFirestore()}
-            disabled={isSyncingFirestore}
-            className="px-3 py-1.5 rounded-md bg-emerald-950/80 hover:bg-emerald-900 text-emerald-200 border border-emerald-600 font-semibold flex items-center gap-1.5 transition-all text-xs shadow disabled:opacity-50"
-            title="Push all collections (SEO pages, tunes, blocks) directly to Firebase Cloud Firestore"
-          >
-            <Cloud className={`w-3.5 h-3.5 text-emerald-400 ${isSyncingFirestore ? 'animate-spin' : ''}`} />
-            <span>{isSyncingFirestore ? 'Syncing...' : 'Sync to Firebase'}</span>
           </button>
 
           <a
@@ -1407,16 +1394,6 @@ export const VisualPencilOverlay: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => syncAllToFirestore()}
-                  disabled={isSyncingFirestore}
-                  className="px-4 py-2.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-900 text-emerald-200 border border-emerald-600 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50"
-                  title="Upload all 14 pages to Firebase Firestore seo_pages collection"
-                >
-                  <Cloud className={`w-3.5 h-3.5 text-emerald-400 ${isSyncingFirestore ? 'animate-spin' : ''}`} />
-                  <span>{isSyncingFirestore ? 'Syncing...' : 'Sync All 14 Pages to Cloud'}</span>
-                </button>
                 <button
                   type="button"
                   onClick={closeSeoDrawer}

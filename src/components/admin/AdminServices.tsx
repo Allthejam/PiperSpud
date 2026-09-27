@@ -47,9 +47,7 @@ export const AdminServices: React.FC = () => {
     services, 
     createService, 
     updateService, 
-    deleteService, 
-    syncAllToFirestore, 
-    isSyncingFirestore 
+    deleteService 
   } = useApp();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -182,15 +180,6 @@ export const AdminServices: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          <button
-            onClick={() => syncAllToFirestore()}
-            disabled={isSyncingFirestore}
-            className="px-4 py-2 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-200 border border-emerald-600 rounded-xl text-xs font-bold flex items-center gap-2 shadow transition-all disabled:opacity-50"
-          >
-            <Cloud className={`w-4 h-4 text-emerald-400 ${isSyncingFirestore ? 'animate-spin' : ''}`} />
-            <span>{isSyncingFirestore ? 'Syncing...' : 'Sync to Firebase'}</span>
-          </button>
-
           <button
             onClick={openCreateModal}
             className="px-4 py-2 bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:brightness-110 flex items-center gap-2 transition-all"

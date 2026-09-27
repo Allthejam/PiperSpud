@@ -9,6 +9,7 @@ import { AdminBookings } from '@/components/admin/AdminBookings';
 import { AdminCRM } from '@/components/admin/AdminCRM';
 import { AdminMessageCenter } from '@/components/admin/AdminMessageCenter';
 import { AdminReviews } from '@/components/admin/AdminReviews';
+import { AdminFaqs } from '@/components/admin/AdminFaqs';
 import { AdminForumControl } from '@/components/admin/AdminForumControl';
 import { AdminSocialLinks } from '@/components/admin/AdminSocialLinks';
 import { AdminServices } from '@/components/admin/AdminServices';
@@ -74,6 +75,7 @@ export default function AdminPage() {
       {activeTab === 'crm' && <AdminCRM />}
       {activeTab === 'mailing-list' && <AdminMailingList />}
       {activeTab === 'messages' && <AdminMessageCenter />}
+      {activeTab === 'faqs' && <AdminFaqs />}
       {activeTab === 'forum' && <AdminForumControl />}
       {activeTab === 'social-links' && <AdminSocialLinks />}
       {activeTab === 'reviews' && <AdminReviews />}

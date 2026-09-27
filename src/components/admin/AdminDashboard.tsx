@@ -119,14 +119,10 @@ export const AdminDashboard: React.FC<{ onNavigateTab: (tab: string) => void }> 
           </div>
         </div>
 
-        <button
-          onClick={() => syncAllToFirestore()}
-          disabled={isSyncingFirestore}
-          className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2.5 transition-all disabled:opacity-50 shrink-0"
-        >
-          <Cloud className={`w-4 h-4 ${isSyncingFirestore ? 'animate-spin' : ''}`} />
-          <span>{isSyncingFirestore ? 'Syncing to Firebase...' : 'Push All Collections to Firebase'}</span>
-        </button>
+        <div className="px-5 py-3 rounded-2xl bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 font-bold text-xs flex items-center gap-2.5 shadow-lg shrink-0">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Real-Time Cloud Sync Active</span>
+        </div>
       </div>
 
       {/* KPI Cards Grid */}

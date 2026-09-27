@@ -31,7 +31,7 @@ export default function FaqPage() {
         </div>
       </div>
 
-      <FaqSection />
+      <FaqSection showOnlyHome={false} />
 
       {/* Direct Contact Bar */}
       <section className="py-16 bg-tartan-navy border-t border-tartan-border text-center">

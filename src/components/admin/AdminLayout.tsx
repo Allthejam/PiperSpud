@@ -22,7 +22,8 @@ import {
   Share2,
   Compass,
   MapPin,
-  ShieldCheck
+  ShieldCheck,
+  HelpCircle
 } from 'lucide-react';
 import { BrevoEmailModal } from './BrevoEmailModal';
 import { PayPalCheckoutModal } from './PayPalCheckoutModal';
@@ -59,6 +60,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
     { id: 'crm', label: 'Client CRM', icon: Users },
     { id: 'mailing-list', label: 'Mailing List & Newsletters', icon: Mail },
     { id: 'messages', label: 'Message Center', icon: MessageSquare, badgeCount: unreadChatCount },
+    { id: 'faqs', label: 'FAQ Knowledgebase', icon: HelpCircle },
     { id: 'forum', label: 'Forum & Category Control', icon: MessageSquare },
     { id: 'social-links', label: 'Social Media Links', icon: Share2 },
     { id: 'reviews', label: 'Review Moderation', icon: Star },

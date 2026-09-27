@@ -21,7 +21,8 @@ import {
   EmailCampaign,
   AdminUserRecord,
   UserRecord,
-  UserPermissions
+  UserPermissions,
+  FaqItem
 } from '@/types/spud';
 import { 
   initialBookings, 
@@ -43,7 +44,8 @@ import {
   initialCampaigns,
   initialAdminWhitelist,
   initialUsers,
-  defaultPermissions
+  defaultPermissions,
+  initialFaqs
 } from '@/lib/initialData';
 import { bagpipeSynth } from '@/lib/bagpipeSynth';
 import { db, auth } from '@/lib/firebase';
@@ -219,6 +221,13 @@ interface AppContextType {
   openSeoDrawer: (pageId?: string) => void;
   closeSeoDrawer: () => void;
 
+  // FAQs Knowledgebase
+  faqs: FaqItem[];
+  addFaq: (faq: Omit<FaqItem, 'id'>) => Promise<void>;
+  updateFaq: (id: string, updates: Partial<FaqItem>) => Promise<void>;
+  deleteFaq: (id: string) => Promise<void>;
+  reorderFaqs: (newOrderedList: FaqItem[]) => Promise<void>;
+
   // Cloud Database Sync
   isSyncingFirestore: boolean;
   syncAllToFirestore: () => Promise<{ success: boolean; count: number; error?: string }>;
@@ -326,6 +335,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [travelConfig, setTravelConfig] = useState<TravelExpensesConfig>(initialTravelConfig);
   const [mailingContacts, setMailingContacts] = useState<MailingContact[]>(initialMailingContacts);
   const [emailCampaigns, setEmailCampaigns] = useState<EmailCampaign[]>(initialCampaigns);
+  const [faqs, setFaqs] = useState<FaqItem[]>(initialFaqs);
   const [showLiveStream, setShowLiveStreamState] = useState<boolean>(true);
   const [isSyncingFirestore, setIsSyncingFirestore] = useState<boolean>(false);
 
@@ -566,6 +576,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } catch (e) {}
       }
 
+      const savedFaqs = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}faqs`);
+      if (savedFaqs) {
+        try {
+          const parsedFaqs: FaqItem[] = JSON.parse(savedFaqs);
+          if (Array.isArray(parsedFaqs) && parsedFaqs.length > 0) {
+            setFaqs(parsedFaqs);
+          }
+        } catch (e) {}
+      }
+
       const savedStream = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}show_livestream`);
       if (savedStream !== null) {
         setShowLiveStreamState(savedStream === 'true');
@@ -626,6 +646,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubNotifications = () => {};
     let unsubMailing = () => {};
     let unsubCampaigns = () => {};
+    let unsubFaqs = () => {};
 
     try {
       // Real-time Firestore listener for 'users' collection
@@ -830,6 +851,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
       }, (err) => console.log('Firestore email_campaigns listener:', err.message));
+
+      // Real-time Firestore listener for faqs
+      unsubFaqs = onSnapshot(collection(db, 'faqs'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteFaqs: FaqItem[] = [];
+          snapshot.forEach((d) => remoteFaqs.push({ ...(d.data() as FaqItem), id: d.id }));
+          remoteFaqs.sort((a, b) => (a.order || 0) - (b.order || 0));
+          setFaqs(remoteFaqs);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(`${LOCAL_STORAGE_PREFIX}faqs`, JSON.stringify(remoteFaqs));
+          }
+        }
+      }, (err) => console.log('Firestore faqs listener:', err.message));
     } catch (e) {
       console.warn('Firebase Firestore initialization:', e);
     }
@@ -850,6 +884,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubNotifications();
       unsubMailing();
       unsubCampaigns();
+      unsubFaqs();
     };
   }, []);
 
@@ -2671,7 +2706,77 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return data;
     } catch (err: any) {
       console.error('Dispatch campaign failed:', err);
-      return { success: false, error: err.message };
+      return { success: false, error: err?.message };
+    }
+  };
+
+  // FAQ Handlers (Firestore Synced)
+  const addFaq = async (faqData: Omit<FaqItem, 'id'>) => {
+    const id = `faq-${Date.now()}`;
+    const newFaq: FaqItem = {
+      ...faqData,
+      id,
+      order: faqData.order ?? (faqs.length + 1),
+      showOnHome: faqData.showOnHome ?? true,
+      updatedAt: new Date().toISOString()
+    };
+    setFaqs(prev => {
+      const updated = [...prev, newFaq];
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}faqs`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+    await syncToFirestore('faqs', id, newFaq);
+    addNotification({
+      type: 'system',
+      title: 'New FAQ Question Published',
+      message: `Added: "${newFaq.question.slice(0, 45)}..."`,
+      actionUrl: '/admin'
+    });
+  };
+
+  const updateFaq = async (id: string, updates: Partial<FaqItem>) => {
+    let targetFaq: FaqItem | null = null;
+    setFaqs(prev => {
+      const updated = prev.map(f => {
+        if (f.id === id) {
+          targetFaq = { ...f, ...updates, updatedAt: new Date().toISOString() };
+          return targetFaq;
+        }
+        return f;
+      });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}faqs`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+    if (targetFaq) {
+      await syncToFirestore('faqs', id, targetFaq);
+    }
+  };
+
+  const deleteFaq = async (id: string) => {
+    setFaqs(prev => {
+      const updated = prev.filter(f => f.id !== id);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}faqs`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+    await deleteFromFirestore('faqs', id);
+  };
+
+  const reorderFaqs = async (newOrderedList: FaqItem[]) => {
+    const updated = newOrderedList.map((f, idx) => ({ ...f, order: idx + 1 }));
+    setFaqs(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}faqs`, JSON.stringify(updated));
+    }
+    if (db) {
+      for (const f of updated) {
+        await syncToFirestore('faqs', f.id, f);
+      }
     }
   };
 
@@ -2830,6 +2935,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       activeSeoDrawerPageId,
       openSeoDrawer,
       closeSeoDrawer,
+      faqs,
+      addFaq,
+      updateFaq,
+      deleteFaq,
+      reorderFaqs,
       isSyncingFirestore,
       syncAllToFirestore,
       activeBrevoEmail,

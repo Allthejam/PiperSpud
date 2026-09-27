@@ -330,4 +330,14 @@ export interface UserRecord {
 
 export type AdminUserRecord = UserRecord;
 
+export interface FaqItem {
+  id: string;
+  question: string;
+  answer: string;
+  category: string;
+  showOnHome?: boolean;
+  order?: number;
+  updatedAt?: string;
+}
+
 

@@ -30,9 +30,7 @@ export const AdminSeoStudio: React.FC = () => {
   const { 
     seoPages, 
     getSeoForPage, 
-    updatePageSeo, 
-    syncAllToFirestore, 
-    isSyncingFirestore 
+    updatePageSeo 
   } = useApp();
 
   const [selectedPageId, setSelectedPageId] = useState('home');
@@ -190,17 +188,6 @@ export const AdminSeoStudio: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3 flex-wrap shrink-0">
-            <button
-              type="button"
-              onClick={() => syncAllToFirestore()}
-              disabled={isSyncingFirestore}
-              className="px-4 py-2.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 text-emerald-200 border border-emerald-600/80 text-xs font-semibold flex items-center gap-2 transition-all disabled:opacity-50 shadow-md"
-              title="Upload all pages directly to Firebase Firestore seo_pages collection"
-            >
-              <Cloud className={`w-4 h-4 text-emerald-400 ${isSyncingFirestore ? 'animate-spin' : ''}`} />
-              <span>{isSyncingFirestore ? 'Syncing...' : 'Sync All Pages to Cloud'}</span>
-            </button>
-
             <button
               type="button"
               onClick={handleSaveSeo}
