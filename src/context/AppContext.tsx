@@ -156,6 +156,7 @@ interface AppContextType {
   markChatAsRead: (sessionId?: string) => void;
   markSessionResolved: (sessionId: string) => void;
   deleteChatSession: (sessionId: string) => void;
+  clearAllChatHistory: () => void;
   waitingChatSessionsCount: number;
   unreadChatCount: number;
 
@@ -247,7 +248,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isSpudOnline, setIsSpudOnlineState] = useState<boolean>(true);
   const [quickResponses, setQuickResponses] = useState<QuickResponse[]>(initialQuickResponses);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>(initialChatSessions);
-  const [activeChatSessionId, setActiveChatSessionId] = useState<string>('session-calum');
+  const [activeChatSessionId, setActiveChatSessionId] = useState<string>('');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(initialChatMessages);
 
   const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
@@ -410,14 +411,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (savedChatSessions) {
         try {
           const parsedSessions: ChatSession[] = JSON.parse(savedChatSessions);
-          if (Array.isArray(parsedSessions) && parsedSessions.length > 0) {
-            const initialIds = new Set(initialChatSessions.map(s => s.id));
-            const userSessions = parsedSessions.filter(s => !initialIds.has(s.id));
-            const merged = initialChatSessions.map(initS => {
-              const u = parsedSessions.find(p => p.id === initS.id);
-              return u || initS;
-            });
-            setChatSessions([...userSessions, ...merged]);
+          if (Array.isArray(parsedSessions)) {
+            const mockSessionIds = new Set(['session-demo', 'session-calum', 'session-inquiry-1', 'session-lord-campbell']);
+            const realUserSessions = parsedSessions.filter(s => !mockSessionIds.has(s.id));
+            setChatSessions(realUserSessions);
+            if (realUserSessions.length > 0) {
+              setActiveChatSessionId(realUserSessions[0].id);
+            }
           }
         } catch (e) {}
       }
@@ -426,10 +426,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (savedChat) {
         try {
           const parsedMessages: ChatMessage[] = JSON.parse(savedChat);
-          if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
-            const initialIds = new Set(initialChatMessages.map(m => m.id));
-            const userMsgs = parsedMessages.filter(m => !initialIds.has(m.id));
-            setChatMessages([...initialChatMessages, ...userMsgs]);
+          if (Array.isArray(parsedMessages)) {
+            const mockMessageIds = new Set(['msg-1', 'msg-2', 'msg-3', 'msg-c-1', 'msg-inq-1', 'msg-campbell-1', 'msg-campbell-2', 'msg-campbell-3']);
+            const mockSessionIds = new Set(['session-demo', 'session-calum', 'session-inquiry-1', 'session-lord-campbell']);
+            const realUserMsgs = parsedMessages.filter(m => !mockMessageIds.has(m.id) && (!m.sessionId || !mockSessionIds.has(m.sessionId)));
+            setChatMessages(realUserMsgs);
           }
         } catch (e) {}
       }
@@ -1646,11 +1647,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteChatSession = (sessionId: string) => {
-    setChatSessions(prev => prev.filter(s => s.id !== sessionId));
+    setChatSessions(prev => {
+      const remaining = prev.filter(s => s.id !== sessionId);
+      if (activeChatSessionId === sessionId) {
+        setActiveChatSessionId(remaining.length > 0 ? remaining[0].id : '');
+      }
+      return remaining;
+    });
     setChatMessages(prev => prev.filter(m => m.sessionId !== sessionId));
-    if (activeChatSessionId === sessionId) {
-      setActiveChatSessionId('session-demo');
+  };
+
+  const clearAllChatHistory = () => {
+    setChatSessions([]);
+    setChatMessages([]);
+    setActiveChatSessionId('');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(`${LOCAL_STORAGE_PREFIX}chat`);
+      localStorage.removeItem(`${LOCAL_STORAGE_PREFIX}chat_sessions`);
     }
+    addNotification({
+      type: 'system',
+      title: 'Chat History Cleared',
+      message: 'All test chat messages and sessions have been reset for live testing.',
+      actionUrl: '/admin/messages'
+    });
   };
 
   // Audio Bagpipe Player & Tune Manager
@@ -2174,6 +2194,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       markChatAsRead,
       markSessionResolved,
       deleteChatSession,
+      clearAllChatHistory,
       waitingChatSessionsCount: chatSessions.filter(s => s.isWaitingForSpud).length,
       unreadChatCount,
 

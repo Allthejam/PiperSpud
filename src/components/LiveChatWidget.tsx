@@ -274,36 +274,52 @@ export const LiveChatWidget: React.FC = () => {
 
               {/* Messages Container */}
               <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-tartan-dark/50 text-xs">
-                {chatMessages.map((msg) => {
-                  const isMe = msg.sender === 'client';
-                  const isSpud = msg.sender === 'spud';
-                  const isBot = msg.sender === 'system';
-
-                  return (
-                    <div
-                      key={msg.id}
-                      className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
-                    >
-                      <div className="flex items-center gap-1.5 mb-1 text-[10px] text-gray-400">
-                        {isBot && <Bot className="w-3 h-3 text-tartan-gold" />}
-                        <span>{msg.senderName}</span>
-                        <span>• {msg.timestamp}</span>
-                      </div>
-
-                      <div
-                        className={`max-w-[85%] rounded-2xl px-4 py-2.5 leading-relaxed shadow-md ${
-                          isMe
-                            ? 'bg-tartan-accent text-tartan-dark font-medium rounded-tr-none'
-                            : isSpud
-                            ? 'bg-tartan-navy border border-tartan-accent text-white rounded-tl-none'
-                            : 'bg-slate-800/90 text-gray-200 border border-slate-700 rounded-tl-none'
-                        }`}
-                      >
-                        {msg.text}
-                      </div>
+                {chatMessages.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-tartan-navy border border-tartan-accent/50 flex items-center justify-center text-tartan-gold font-serif font-bold text-xl shadow-lg">
+                      S
                     </div>
-                  );
-                })}
+                    <div>
+                      <h4 className="text-sm font-bold text-white font-serif">Failte! Welcome to Spud&apos;s Live Chat</h4>
+                      <p className="text-xs text-gray-300 mt-1 max-w-xs leading-relaxed">
+                        {isSpudOnline 
+                          ? "Spud is online now. Ask any question about wedding ceremonies, dates, castle galas, tartans, or tune requests!"
+                          : "Spud is currently offline at an event. Type your question below or switch to 'Email Us' and Spud will reply to your email."}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  chatMessages.map((msg) => {
+                    const isMe = msg.sender === 'client';
+                    const isSpud = msg.sender === 'spud';
+                    const isBot = msg.sender === 'system';
+
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
+                      >
+                        <div className="flex items-center gap-1.5 mb-1 text-[10px] text-gray-400">
+                          {isBot && <Bot className="w-3 h-3 text-tartan-gold" />}
+                          <span>{msg.senderName}</span>
+                          <span>• {msg.timestamp}</span>
+                        </div>
+
+                        <div
+                          className={`max-w-[85%] rounded-2xl px-4 py-2.5 leading-relaxed shadow-md ${
+                            isMe
+                              ? 'bg-tartan-accent text-tartan-dark font-medium rounded-tr-none'
+                              : isSpud
+                              ? 'bg-tartan-navy border border-tartan-accent text-white rounded-tl-none'
+                              : 'bg-slate-800/90 text-gray-200 border border-slate-700 rounded-tl-none'
+                          }`}
+                        >
+                          {msg.text}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
                 <div ref={messagesEndRef} />
               </div>
 

@@ -41,6 +41,7 @@ export const AdminMessageCenter: React.FC = () => {
     markChatAsRead,
     markSessionResolved,
     deleteChatSession,
+    clearAllChatHistory,
     isSpudOnline,
     toggleSpudOnline,
     setSpudOnline,
@@ -221,13 +222,29 @@ export const AdminMessageCenter: React.FC = () => {
                 <Users className="w-4 h-4 text-tartan-gold" />
                 Conversations ({chatSessions.length})
               </span>
-              <button
-                onClick={() => setIsQrModalOpen(true)}
-                className="text-[11px] text-tartan-gold hover:text-white flex items-center gap-1 font-semibold"
-              >
-                <Settings2 className="w-3.5 h-3.5" />
-                Quick Responses
-              </button>
+              <div className="flex items-center gap-2">
+                {chatSessions.length > 0 && (
+                  <button
+                    onClick={() => {
+                      if (confirm('Clear all chat conversations & reset for live testing?')) {
+                        clearAllChatHistory();
+                      }
+                    }}
+                    className="text-[11px] text-red-400 hover:text-red-300 hover:underline flex items-center gap-1"
+                    title="Purge test chat sessions"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    Clear All
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsQrModalOpen(true)}
+                  className="text-[11px] text-tartan-gold hover:text-white flex items-center gap-1 font-semibold"
+                >
+                  <Settings2 className="w-3.5 h-3.5" />
+                  Quick Responses
+                </button>
+              </div>
             </div>
 
             {/* Filter Tabs */}
@@ -282,8 +299,14 @@ export const AdminMessageCenter: React.FC = () => {
           {/* Sessions List Feed */}
           <div className="flex-1 overflow-y-auto divide-y divide-tartan-border/50 bg-tartan-dark/40">
             {filteredSessions.length === 0 ? (
-              <div className="p-8 text-center text-gray-500 text-xs">
-                No conversations match this filter.
+              <div className="p-8 text-center text-gray-400 text-xs space-y-2">
+                <MessageSquare className="w-8 h-8 mx-auto text-gray-600 mb-2" />
+                <p className="font-semibold text-gray-300">No active conversations</p>
+                <p className="text-[11px] text-gray-500">
+                  {chatSessions.length === 0 
+                    ? 'When a visitor chats or submits a question on the site, their conversation will appear here live in real-time.' 
+                    : 'No conversations match this filter.'}
+                </p>
               </div>
             ) : (
               filteredSessions.map((session) => {
