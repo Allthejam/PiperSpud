@@ -120,40 +120,41 @@ export const Navbar: React.FC = () => {
   return (
     <>
       {/* 1. TOP UTILITY HEADER BAR */}
-      <div className={`bg-tartan-dark border-b border-tartan-border/60 py-1.5 px-4 text-xs font-sans transition-all duration-300 ${isRealAdmin ? 'mt-10' : ''}`}>
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <div className={`bg-tartan-dark border-b border-tartan-border/60 py-1 px-3 sm:px-4 text-xs font-sans transition-all duration-300 ${isRealAdmin ? 'mt-12 sm:mt-10' : ''}`}>
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
           
           {/* Left Direct Contact Quick Links */}
-          <div className="flex items-center space-x-4 sm:space-x-6 text-[11px]">
+          <div className="flex items-center space-x-3 sm:space-x-6 text-[11px] min-w-0">
             <a 
               href="tel:07793491367" 
-              className="flex items-center gap-1.5 text-gray-300 hover:text-tartan-gold transition-colors font-medium"
+              className="flex items-center gap-1.5 text-gray-300 hover:text-tartan-gold transition-colors font-medium truncate"
+              title="Call or WhatsApp Spud"
             >
-              <Phone className="w-3 h-3 text-tartan-gold" />
-              <span>Call / WhatsApp: <strong className="text-white font-bold">07793 491367</strong></span>
+              <Phone className="w-3 h-3 text-tartan-gold shrink-0" />
+              <span><span className="hidden xs:inline">Call/WhatsApp: </span><strong className="text-white font-bold">07793 491367</strong></span>
             </a>
             
-            <span className="text-slate-600 select-none">|</span>
+            <span className="hidden sm:inline text-slate-600 select-none">|</span>
 
             <a 
               href="mailto:spud@spudthepiper.co.uk" 
-              className="flex items-center gap-1.5 text-gray-300 hover:text-tartan-gold transition-colors"
+              className="hidden sm:flex items-center gap-1.5 text-gray-300 hover:text-tartan-gold transition-colors truncate"
             >
-              <Mail className="w-3 h-3 text-tartan-gold" />
+              <Mail className="w-3 h-3 text-tartan-gold shrink-0" />
               <span>Email: <strong className="text-tartan-gold font-bold">spud@spudthepiper.co.uk</strong></span>
             </a>
           </div>
 
           {/* Right Tagline & PWA App Link */}
-          <div className="hidden md:flex items-center gap-3 text-[11px] text-tartan-goldLight tracking-wide">
-            <span>🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland&apos;s Premier Highland Bagpiper</span>
-            <span className="text-slate-600">•</span>
+          <div className="flex items-center gap-2 sm:gap-3 text-[11px] text-tartan-goldLight tracking-wide shrink-0">
+            <span className="hidden lg:inline">🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland&apos;s Premier Highland Bagpiper</span>
+            <span className="hidden lg:inline text-slate-600">•</span>
             <Link 
               href="/install"
-              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-tartan-accent/20 hover:bg-tartan-accent/30 text-tartan-gold font-bold border border-tartan-accent/40 transition-all hover:scale-105"
+              className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 rounded-full bg-tartan-accent/20 hover:bg-tartan-accent/30 text-tartan-gold font-bold border border-tartan-accent/40 transition-all hover:scale-105 text-[10px] sm:text-[11px]"
             >
-              <Smartphone className="w-3 h-3 text-tartan-gold" />
-              <span>📲 Install App</span>
+              <Smartphone className="w-3 h-3 text-tartan-gold shrink-0" />
+              <span>Install App</span>
             </Link>
           </div>
 
@@ -162,24 +163,24 @@ export const Navbar: React.FC = () => {
 
       {/* 2. PRIMARY MAIN HEADER & CLEAN MENU */}
       <header className="sticky top-0 z-40 bg-tartan-dark/95 backdrop-blur-md border-b border-tartan-accent/30 transition-all shadow-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-18 py-2">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-15 sm:h-18 py-2 gap-2">
             
             {/* Logo / Brand */}
-            <Link href="/" className="flex items-center gap-3 cursor-pointer group shrink-0">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-tartan-card via-tartan-navy to-tartan-dark p-1 border border-tartan-accent/60 shadow-lg flex items-center justify-center group-hover:scale-105 group-hover:border-tartan-gold transition-all">
-                <SpudHeritageLogo variant="icon" size="custom" className="w-9 h-9" />
+            <Link href="/" className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink min-w-0">
+              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br from-tartan-card via-tartan-navy to-tartan-dark p-0.5 sm:p-1 border border-tartan-accent/60 shadow-lg flex items-center justify-center group-hover:scale-105 group-hover:border-tartan-gold transition-all shrink-0">
+                <SpudHeritageLogo variant="icon" size="custom" className="w-7 h-7 sm:w-9 sm:h-9" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg md:text-xl font-extrabold tracking-tight text-white font-serif uppercase">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm sm:text-lg md:text-xl font-extrabold tracking-tight text-white font-serif uppercase truncate leading-tight">
                     Spud The Piper
                   </span>
-                  <span className="hidden sm:inline-block bg-tartan-red/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider border border-red-400">
+                  <span className="hidden md:inline-block bg-tartan-red/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider border border-red-400">
                     Scotland
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[10px] text-tartan-gold tracking-widest uppercase font-semibold">
+                <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-tartan-gold tracking-wider uppercase font-semibold truncate">
                   <span>Highland Bagpiper</span>
                   <span className="text-slate-500">•</span>
                   <span className="font-serif italic font-normal text-tartan-goldLight capitalize tracking-normal">Est. 1999</span>
@@ -276,8 +277,8 @@ export const Navbar: React.FC = () => {
             </nav>
 
             {/* Header Right CTAs */}
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              {/* Bagpipe Audio Synth Quick Toggle */}
+            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+              {/* Bagpipe Audio Synth Quick Toggle (Desktop only) */}
               <button
                 onClick={() => {
                   if (currentPlayingTune) {
@@ -286,7 +287,7 @@ export const Navbar: React.FC = () => {
                     playSampleTune();
                   }
                 }}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md ${
+                className={`hidden md:flex px-3 py-2 rounded-xl text-xs font-semibold items-center gap-1.5 transition-all shadow-md ${
                   currentPlayingTune
                     ? 'bg-tartan-gold text-tartan-dark ring-2 ring-yellow-300 animate-pulse font-bold'
                     : 'bg-tartan-navy text-tartan-gold hover:bg-tartan-card border border-tartan-accent/40'
@@ -302,19 +303,20 @@ export const Navbar: React.FC = () => {
               {/* Book Now Primary Button */}
               <Link
                 href="/booking"
-                className="px-4 py-2 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs tracking-wide uppercase shadow-lg hover:shadow-yellow-500/20 transition-all hover:scale-105 flex items-center gap-1.5"
+                className="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-[11px] sm:text-xs tracking-wide uppercase shadow-md hover:shadow-yellow-500/20 transition-all hover:scale-105 flex items-center gap-1 sm:gap-1.5 shrink-0"
               >
-                <Calendar className="w-3.5 h-3.5" />
-                <span>Diary & Booking</span>
+                <Calendar className="w-3.5 h-3.5 shrink-0" />
+                <span className="inline sm:hidden">Book</span>
+                <span className="hidden sm:inline">Diary &amp; Booking</span>
               </Link>
 
               {/* Mobile Menu Toggle Button */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 rounded-xl lg:hidden bg-tartan-navy text-gray-200 border border-tartan-border hover:text-white"
+                className="p-1.5 sm:p-2 rounded-xl lg:hidden bg-tartan-navy text-tartan-gold hover:text-white border border-tartan-accent/40 hover:border-tartan-gold transition-colors shrink-0 flex items-center justify-center shadow-md"
                 aria-label="Toggle Navigation Menu"
               >
-                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                {isMobileMenuOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-tartan-gold" />}
               </button>
             </div>
 
