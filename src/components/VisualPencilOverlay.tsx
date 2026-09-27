@@ -269,7 +269,7 @@ export const VisualPencilOverlay: React.FC = () => {
 
   // Build dynamic Schema.org JSON-LD for the selected page
   const generateSchemaJson = () => {
-    const baseDomain = 'https://www.spudthepiper.co.uk';
+    const baseDomain = 'https://www.spudthepiper.com';
     const activeUrl = `${baseDomain}/${selectedPageId === 'home' ? '' : selectedPageId}`;
     
     return {
@@ -1021,7 +1021,7 @@ export const VisualPencilOverlay: React.FC = () => {
                       type="text"
                       value={seoCanonical}
                       onChange={(e) => setSeoCanonical(e.target.value)}
-                      placeholder="https://www.spudthepiper.co.uk/..."
+                      placeholder="https://www.spudthepiper.com/..."
                       className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white focus:border-tartan-accent focus:outline-none"
                     />
                   </div>
@@ -1090,7 +1090,7 @@ export const VisualPencilOverlay: React.FC = () => {
                     <div className="flex items-center gap-2 text-[11px] text-gray-600 mb-1">
                       <span className="w-4 h-4 rounded-full bg-amber-500 text-white font-bold flex items-center justify-center text-[9px]">S</span>
                       <div className="truncate">
-                        <span className="text-gray-800 font-medium">spudthepiper.co.uk</span>
+                        <span className="text-gray-800 font-medium">spudthepiper.com</span>
                         <span className="text-gray-500"> › {selectedPageId === 'home' ? '' : selectedPageId}</span>
                       </div>
                     </div>

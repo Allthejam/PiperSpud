@@ -31,13 +31,13 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Spud the Piper | Award-Winning Scottish Highland Bagpiper for Hire',
     description: 'Scotland\'s premier award-winning Highland Bagpiper for weddings, castle galas, elopements, and private experiences. Piper to the stars.',
-    url: 'https://www.spudthepiper.co.uk',
+    url: 'https://www.spudthepiper.com',
     siteName: 'Spud the Piper',
     locale: 'en_GB',
     type: 'website',
     images: [
       {
-        url: 'https://www.spudthepiper.co.uk/og-image.png',
+        url: 'https://www.spudthepiper.com/og-image.png',
         width: 1200,
         height: 630,
         alt: 'Spud the Piper - Award-Winning Scottish Highland Bagpiper for Hire'
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Spud the Piper | Scottish Highland Bagpiper for Hire',
     description: 'Scotland\'s premier award-winning Highland Bagpiper for weddings, castle galas, elopements, and private experiences.',
-    images: ['https://www.spudthepiper.co.uk/og-image.png']
+    images: ['https://www.spudthepiper.com/og-image.png']
   }
 };
 
@@ -67,12 +67,12 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
         <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png" />
-        <meta property="og:image" content="https://www.spudthepiper.co.uk/og-image.png" />
-        <meta property="og:image:secure_url" content="https://www.spudthepiper.co.uk/og-image.png" />
+        <meta property="og:image" content="https://www.spudthepiper.com/og-image.png" />
+        <meta property="og:image:secure_url" content="https://www.spudthepiper.com/og-image.png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:image:type" content="image/png" />
-        <meta name="twitter:image" content="https://www.spudthepiper.co.uk/og-image.png" />
+        <meta name="twitter:image" content="https://www.spudthepiper.com/og-image.png" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

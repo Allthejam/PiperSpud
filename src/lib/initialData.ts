@@ -803,7 +803,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     title: 'Spud the Piper | Award-Winning Scottish Highland Bagpiper For Hire',
     metaDescription: 'Scotland\'s premier award-winning Highland Bagpiper for weddings, funerals, castle events, corporate banquets & tuition. Check live availability and book online.',
     keywords: ['Spud the Piper', 'Scottish Bagpiper for Hire', 'Wedding Bagpiper Scotland', 'Edinburgh Castle Piper', 'Highland Bagpipe Music', 'Funeral Bagpiper Scotland', 'Glasgow Bagpiper'],
-    canonicalUrl: 'https://www.spudthepiper.co.uk',
+    canonicalUrl: 'https://www.spudthepiper.com',
     ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
     h1: 'Award-Winning Scottish Highland Bagpiper',
     schemaType: 'LocalBusiness, MusicGroup'
@@ -815,7 +815,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     title: 'About Spud the Piper | 15+ Years Highland Craft & Celebrity Piper',
     metaDescription: 'Discover the story behind Spud the Piper - trusted by Hollywood celebrities like Jamie Lee Curtis, Scottish castles, and hundreds of happy couples worldwide.',
     keywords: ['About Spud the Piper', 'Celebrity Bagpiper', 'Scottish Piper Biography', 'Highland Bagpiper Experience', 'Jamie Lee Curtis Piper'],
-    canonicalUrl: 'https://www.spudthepiper.co.uk/about',
+    canonicalUrl: 'https://www.spudthepiper.com/about',
     ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
     h1: 'The Story of Spud the Piper',
     schemaType: 'AboutPage, Person'
@@ -827,7 +827,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     title: 'Bagpiper Hire Services | Weddings, Funerals, Castle Galas & Tuition',
     metaDescription: 'Explore Spud\'s bespoke piping packages: full wedding day ceremonies, solemn funeral laments, corporate banquets, Burns Suppers, and 1-on-1 bagpipe tuition.',
     keywords: ['Bagpipe Wedding Packages', 'Funeral Piper Scotland', 'Corporate Bagpiper Hire', 'Burns Supper Piper', 'Bagpipe Lessons Scotland'],
-    canonicalUrl: 'https://www.spudthepiper.co.uk/services',
+    canonicalUrl: 'https://www.spudthepiper.com/services',
     ogImage: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&q=80',
     h1: 'Highland Bagpiping Services & Packages',
     schemaType: 'Service, OfferCatalog'
@@ -839,7 +839,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     title: 'Bagpipe Tunes & Repertoire | Listen Online & Request Custom Songs',
     metaDescription: 'Listen to Highland Cathedral, Scotland the Brave, Flower of Scotland, and Amazing Grace with our authentic bagpipe jukebox and choose custom ceremony tunes.',
     keywords: ['Scottish Bagpipe Tunes', 'Highland Cathedral Bagpipes', 'Scotland the Brave Audio', 'Wedding Bagpipe Music', 'Bagpipe Jukebox'],
-    canonicalUrl: 'https://www.spudthepiper.co.uk/tunes',
+    canonicalUrl: 'https://www.spudthepiper.com/tunes',
     ogImage: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&q=80',
     h1: 'Repertoire & Bagpipe Audio Jukebox',
     schemaType: 'MusicPlaylist, MusicRecording'
@@ -851,7 +851,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     title: 'Highland Dress & Tartan Studio | Authentic Scottish Bagpiper Attire',
     metaDescription: 'Preview Spud in Full No. 1 Feather Bonnet dress, Royal Stewart, Black Watch Military, or Modern Day Highland Tweed to match your wedding or gala color scheme.',
     keywords: ['Highland Dress Bagpiper', 'Royal Stewart Tartan Kilt', 'Feather Bonnet Piper', 'Black Watch Bagpiper', 'Highland Tweed Jacket'],
-    canonicalUrl: 'https://www.spudthepiper.co.uk/attire',
+    canonicalUrl: 'https://www.spudthepiper.com/attire',
     ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
     h1: 'Highland Dress & Tartan Studio',
     schemaType: 'ItemPage, VisualArtwork'
@@ -863,7 +863,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     title: 'Check Live Availability & Book Spud the Piper Online',
     metaDescription: 'View Spud\'s real-time diary calendar, calculate instant quotes for your venue, and submit provisional bookings with instant PayPal deposit confirmation.',
     keywords: ['Book Scottish Bagpiper', 'Bagpiper Availability Diary', 'Bagpipe Hire Quote', 'Edinburgh Wedding Piper Booking', 'Online Piper Calendar'],
-    canonicalUrl: 'https://www.spudthepiper.co.uk/booking',
+    canonicalUrl: 'https://www.spudthepiper.com/booking',
     ogImage: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&q=80',
     h1: 'Live Diary & Online Booking System',
     schemaType: 'ReserveAction, Event'
@@ -875,7 +875,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     title: 'Highland Social Wall & Facebook Live | Spud the Piper Community',
     metaDescription: 'Join thousands of fans on our Highland Social Wall. Share event photos, comment on gigs, and watch Spud\'s Facebook Live streams every Tuesday & Friday.',
     keywords: ['Spud the Piper Facebook Live', 'Scottish Bagpipe Community', 'Highland Social Wall', 'Bagpipe Livestream'],
-    canonicalUrl: 'https://www.spudthepiper.co.uk/social',
+    canonicalUrl: 'https://www.spudthepiper.com/social',
     ogImage: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&q=80',
     h1: 'Highland Social Wall & Livestreams',
     schemaType: 'SocialMediaPosting, BroadcastEvent'
@@ -887,7 +887,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     title: '5-Star Client Reviews & Awards | Spud the Piper Testimonials',
     metaDescription: 'Read verified 5-star reviews from brides, grooms, castle venues, and corporate clients across Scotland. Rated 5.0 / 5.0 for unforgettable Scottish piping.',
     keywords: ['Spud the Piper Reviews', 'Wedding Bagpiper Ratings', 'Scottish Wedding Awards Piper', 'Highland Bagpipe Testimonials'],
-    canonicalUrl: 'https://www.spudthepiper.co.uk/reviews',
+    canonicalUrl: 'https://www.spudthepiper.com/reviews',
     ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
     h1: '5-Star Reviews & Industry Accolades',
     schemaType: 'Review, AggregateRating'
@@ -899,7 +899,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     title: 'Bagpiper Hire FAQ & Pricing Guide | Spud the Piper',
     metaDescription: 'Get instant answers about bagpiper pricing, travel across the Highlands & Islands, attire choices, ceremony timings, and custom tune requests.',
     keywords: ['How much does a bagpiper cost in Scotland', 'Bagpiper FAQ', 'Wedding Bagpipe Timings', 'Bagpiper Travel Distance Scotland'],
-    canonicalUrl: 'https://www.spudthepiper.co.uk/faq',
+    canonicalUrl: 'https://www.spudthepiper.com/faq',
     ogImage: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&q=80',
     h1: 'Frequently Asked Questions & Pricing Guide',
     schemaType: 'FAQPage'
@@ -911,7 +911,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     title: 'Contact Spud the Piper | Direct Phone, WhatsApp & Email Inquiries',
     metaDescription: 'Get in touch directly with Spud the Piper for fast quotes and bookings. Call or WhatsApp 07793 491367 or send a message via our 24/7 instant chat.',
     keywords: ['Contact Spud the Piper', 'Bagpiper Phone Number', 'Bagpiper WhatsApp Scotland', 'Hire Bagpiper Edinburgh Glasgow'],
-    canonicalUrl: 'https://www.spudthepiper.co.uk/contact',
+    canonicalUrl: 'https://www.spudthepiper.com/contact',
     ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
     h1: 'Contact Spud the Piper',
     schemaType: 'ContactPage, LocalBusiness'
@@ -923,7 +923,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     title: 'Terms & Conditions | Spud the Piper Performance Agreements',
     metaDescription: 'Read the official booking and performance terms, client expectations, and service commitments for Spud the Piper.',
     keywords: ['Bagpiper Terms and Conditions', 'Spud the Piper Performance Agreement'],
-    canonicalUrl: 'https://www.spudthepiper.co.uk/terms',
+    canonicalUrl: 'https://www.spudthepiper.com/terms',
     ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
     h1: 'Terms & Conditions of Service',
     schemaType: 'WebPage'
@@ -935,7 +935,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     title: 'Privacy Policy | Spud the Piper Data Protection & GDPR',
     metaDescription: 'Learn how Spud the Piper handles and protects your personal booking information, contact details, and payment security.',
     keywords: ['Spud the Piper Privacy Policy', 'GDPR Compliance Scottish Piper'],
-    canonicalUrl: 'https://www.spudthepiper.co.uk/privacy',
+    canonicalUrl: 'https://www.spudthepiper.com/privacy',
     ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
     h1: 'Privacy Policy & Data Protection',
     schemaType: 'WebPage'
@@ -947,7 +947,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     title: 'Cookie Policy | Spud the Piper Website Tracking Preferences',
     metaDescription: 'Understand how cookies, analytics, and session preferences are utilized on the Spud the Piper PWA and website.',
     keywords: ['Cookie Policy', 'Spud the Piper Cookies'],
-    canonicalUrl: 'https://www.spudthepiper.co.uk/cookies',
+    canonicalUrl: 'https://www.spudthepiper.com/cookies',
     ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
     h1: 'Cookie & Tracking Policy',
     schemaType: 'WebPage'
@@ -959,7 +959,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     title: 'Booking & Deposit Policy | PayPal Invoicing & Cancellation Terms',
     metaDescription: 'Clear details on provisional holds, PayPal deposit payments, Brevo automated confirmation emails, and date rescheduling guidelines.',
     keywords: ['Bagpipe Deposit Policy', 'PayPal Bagpiper Booking', 'Cancellation Policy Spud the Piper'],
-    canonicalUrl: 'https://www.spudthepiper.co.uk/booking-policy',
+    canonicalUrl: 'https://www.spudthepiper.com/booking-policy',
     ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
     h1: 'Booking, Deposits & Rescheduling Terms',
     schemaType: 'WebPage'
@@ -971,7 +971,7 @@ export const initialSeoPages: SeoPageConfig[] = [
     title: 'How to Install Spud the Piper App | Mobile & Desktop PWA Guide',
     metaDescription: 'Step-by-step instructions for installing Spud the Piper on iOS Safari, Android Chrome, and Desktop PC/Mac for 1-tap offline sound samples and diary bookings.',
     keywords: ['Install Spud the Piper', 'Spud the Piper App', 'Scottish Bagpiper PWA', 'Download Bagpiper App'],
-    canonicalUrl: 'https://www.spudthepiper.co.uk/install',
+    canonicalUrl: 'https://www.spudthepiper.com/install',
     ogImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
     h1: 'How to Install Spud the Piper App',
     schemaType: 'WebPage, SoftwareApplication'

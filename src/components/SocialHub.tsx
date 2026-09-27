@@ -376,7 +376,7 @@ export const SocialHub: React.FC = () => {
             "@context": "https://schema.org",
             "@type": "DiscussionForumPosting",
             "name": "Spud the Piper - Highland Social Timeline & Forum",
-            "url": "https://www.spudthepiper.co.uk/social",
+            "url": "https://www.spudthepiper.com/social",
             "description": "Real-time social timeline and discussion forum for Spud the Piper Scottish performances worldwide.",
             "author": {
               "@type": "MusicGroup",
