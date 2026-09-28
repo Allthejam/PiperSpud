@@ -39,7 +39,7 @@ const getServiceIcon = (iconName?: string) => {
 };
 
 export const ServicesSection: React.FC = () => {
-  const { services, isAdminLoggedIn } = useApp();
+  const { services, isAdminLoggedIn, pricingConfig } = useApp();
 
   return (
     <section id="services" className="py-20 bg-tartan-dark relative border-b border-tartan-border">
@@ -149,21 +149,27 @@ export const ServicesSection: React.FC = () => {
                     <EditableElement
                       id={`${service.id}-price`}
                       tag="span"
-                      defaultContent={service.priceEstimate}
+                      defaultContent={pricingConfig?.hidePrices ? (pricingConfig.poaLabel || 'Price on Application') : service.priceEstimate}
                       className="text-sm font-extrabold text-white font-serif"
                       label={`${service.title} Price`}
                       section="services"
                     />
-                    <div className="shrink-0">
-                      <EditableElement
-                        id={`${service.id}-deposit`}
-                        tag="span"
-                        defaultContent={service.deposit}
-                        className="text-[11px] font-bold text-tartan-gold bg-tartan-accent/15 px-2.5 py-0.5 rounded-full border border-tartan-accent/30"
-                        label={`${service.title} Deposit`}
-                        section="services"
-                      />
-                    </div>
+                    {!pricingConfig?.hidePrices ? (
+                      <div className="shrink-0">
+                        <EditableElement
+                          id={`${service.id}-deposit`}
+                          tag="span"
+                          defaultContent={service.deposit}
+                          className="text-[11px] font-bold text-tartan-gold bg-tartan-accent/15 px-2.5 py-0.5 rounded-full border border-tartan-accent/30"
+                          label={`${service.title} Deposit`}
+                          section="services"
+                        />
+                      </div>
+                    ) : (
+                      <span className="text-[10px] font-bold text-amber-300 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/30 shrink-0">
+                        Bespoke Quote
+                      </span>
+                    )}
                   </div>
 
                   <EditableElement

@@ -61,7 +61,8 @@ export default function ServiceDetailPage() {
     playTune, 
     stopTune, 
     currentPlayingTune, 
-    tunesList 
+    tunesList,
+    pricingConfig 
   } = useApp();
 
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
@@ -225,12 +226,16 @@ export default function ServiceDetailPage() {
               {/* Pricing & Deposit Card */}
               <div className="bg-tartan-card/95 p-5 rounded-2xl border border-tartan-accent/40 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Package Estimate:</span>
+                  <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider">
+                    {pricingConfig?.hidePrices ? 'Pricing & Quote:' : 'Package Estimate:'}
+                  </span>
                   <div className="text-2xl sm:text-3xl font-extrabold text-white font-serif">
-                    {service.priceEstimate}
+                    {pricingConfig?.hidePrices ? (pricingConfig.poaLabel || 'Price on Application') : service.priceEstimate}
                   </div>
                   <p className="text-[11px] text-tartan-gold font-semibold mt-0.5">
-                    {service.deposit} required upon booking approval
+                    {pricingConfig?.hidePrices 
+                      ? (pricingConfig.poaDescription || 'Bespoke quote calculated based on your date, venue & requirements')
+                      : `${service.deposit} required upon booking approval`}
                   </p>
                 </div>
 
@@ -240,7 +245,7 @@ export default function ServiceDetailPage() {
                     className="w-full sm:w-auto px-6 py-3.5 bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:brightness-110 flex items-center justify-center gap-2 transition-all"
                   >
                     <Calendar className="w-4 h-4" />
-                    <span>Check Dates & Book</span>
+                    <span>Check Dates & Inquire</span>
                   </Link>
                 </div>
               </div>

@@ -22,7 +22,8 @@ import {
   AdminUserRecord,
   UserRecord,
   UserPermissions,
-  FaqItem
+  FaqItem,
+  PricingConfig
 } from '@/types/spud';
 import { 
   initialBookings, 
@@ -45,7 +46,8 @@ import {
   initialAdminWhitelist,
   initialUsers,
   defaultPermissions,
-  initialFaqs
+  initialFaqs,
+  initialPricingConfig
 } from '@/lib/initialData';
 import { bagpipeSynth } from '@/lib/bagpipeSynth';
 import { db, auth } from '@/lib/firebase';
@@ -122,6 +124,10 @@ interface AppContextType {
   // Travel Radius & Expenses Configuration
   travelConfig: TravelExpensesConfig;
   updateTravelConfig: (newConfig: Partial<TravelExpensesConfig>) => Promise<void>;
+
+  // Public Pricing & Price on Application (POA) Configuration
+  pricingConfig: PricingConfig;
+  updatePricingConfig: (newConfig: Partial<PricingConfig>) => Promise<void>;
 
   // Reviews
   reviews: Review[];
@@ -333,6 +339,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [seoConfig, setSeoConfig] = useState<SeoPageConfig>(initialSeoConfig);
   const [activeSeoDrawerPageId, setActiveSeoDrawerPageId] = useState<string | null>(null);
   const [travelConfig, setTravelConfig] = useState<TravelExpensesConfig>(initialTravelConfig);
+  const [pricingConfig, setPricingConfig] = useState<PricingConfig>(initialPricingConfig);
   const [mailingContacts, setMailingContacts] = useState<MailingContact[]>(initialMailingContacts);
   const [emailCampaigns, setEmailCampaigns] = useState<EmailCampaign[]>(initialCampaigns);
   const [faqs, setFaqs] = useState<FaqItem[]>(initialFaqs);
@@ -557,6 +564,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
+      const savedPricing = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}pricing_config`);
+      if (savedPricing) {
+        try {
+          const parsedPricing = JSON.parse(savedPricing);
+          if (parsedPricing && typeof parsedPricing === 'object') {
+            setPricingConfig({ ...initialPricingConfig, ...parsedPricing });
+          }
+        } catch (e) {
+          setPricingConfig(initialPricingConfig);
+        }
+      }
+
       const savedMailing = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}mailing_contacts`);
       if (savedMailing) {
         try {
@@ -641,6 +660,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubSeo = () => {};
     let unsubTunes = () => {};
     let unsubTravel = () => {};
+    let unsubPricing = () => {};
     let unsubUsers = () => {};
     let unsubChatStatus = () => {};
     let unsubNotifications = () => {};
@@ -807,6 +827,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }, (err) => console.log('Firestore travel_config listener:', err.message));
 
+      unsubPricing = onSnapshot(doc(db, 'settings', 'pricing_config'), (snap) => {
+        if (snap.exists()) {
+          const remote = snap.data() as PricingConfig;
+          if (remote) {
+            setPricingConfig({ ...initialPricingConfig, ...remote });
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(`${LOCAL_STORAGE_PREFIX}pricing_config`, JSON.stringify({ ...initialPricingConfig, ...remote }));
+            }
+          }
+        }
+      }, (err) => console.log('Firestore pricing_config listener:', err.message));
+
       // Real-time Firestore listener for live notifications
       unsubNotifications = onSnapshot(collection(db, 'notifications'), (snapshot) => {
         if (!snapshot.empty) {
@@ -879,6 +911,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubSeo();
       unsubTunes();
       unsubTravel();
+      unsubPricing();
       unsubUsers();
       unsubChatStatus();
       unsubNotifications();
@@ -2609,6 +2642,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  // Public Pricing & POA Config Handler
+  const updatePricingConfig = async (newConfig: Partial<PricingConfig>) => {
+    const updated: PricingConfig = { ...pricingConfig, ...newConfig };
+    setPricingConfig(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}pricing_config`, JSON.stringify(updated));
+    }
+    if (db) {
+      try {
+        await setDoc(doc(db, 'settings', 'pricing_config'), updated, { merge: true });
+      } catch (e) {
+        console.warn('Firestore updatePricingConfig warning:', e);
+      }
+    }
+    addNotification({
+      type: 'system',
+      title: updated.hidePrices ? 'Price on Application (POA) Mode Enabled' : 'Public Fixed Prices Mode Enabled',
+      message: updated.hidePrices 
+        ? `Website is now displaying "${updated.poaLabel}" on all services and booking calendar.` 
+        : `Fixed service prices are now displayed publicly.`,
+      actionUrl: '/admin'
+    });
+  };
+
   // Mailing List Handlers
   const addMailingContact = (contactData: Omit<MailingContact, 'id'>) => {
     const id = `mc-${Date.now().toString().slice(-6)}`;
@@ -2865,6 +2922,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteBooking,
       travelConfig,
       updateTravelConfig,
+      pricingConfig,
+      updatePricingConfig,
       mailingContacts,
       emailCampaigns,
       addMailingContact,

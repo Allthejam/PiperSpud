@@ -47,12 +47,42 @@ export const AdminServices: React.FC = () => {
     services, 
     createService, 
     updateService, 
-    deleteService 
+    deleteService,
+    pricingConfig,
+    updatePricingConfig
   } = useApp();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [editingService, setEditingService] = useState<ServicePackage | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [isSavingPricing, setIsSavingPricing] = useState(false);
+
+  // Local state for Pricing Config
+  const [poaHidePrices, setPoaHidePrices] = useState(pricingConfig?.hidePrices ?? true);
+  const [poaLabelText, setPoaLabelText] = useState(pricingConfig?.poaLabel || 'Price on Application');
+  const [poaDescText, setPoaDescText] = useState(pricingConfig?.poaDescription || 'Bespoke quote calculated upon inquiry based on your date, venue location & requirements.');
+  const [pricingSavedToast, setPricingSavedToast] = useState(false);
+
+  // Keep in sync with remote
+  React.useEffect(() => {
+    if (pricingConfig) {
+      setPoaHidePrices(pricingConfig.hidePrices);
+      setPoaLabelText(pricingConfig.poaLabel || 'Price on Application');
+      setPoaDescText(pricingConfig.poaDescription || 'Bespoke quote calculated upon inquiry based on your date, venue location & requirements.');
+    }
+  }, [pricingConfig]);
+
+  const handleSavePricingConfig = async (hide: boolean, label: string, desc: string) => {
+    setIsSavingPricing(true);
+    await updatePricingConfig({
+      hidePrices: hide,
+      poaLabel: label,
+      poaDescription: desc
+    });
+    setIsSavingPricing(false);
+    setPricingSavedToast(true);
+    setTimeout(() => setPricingSavedToast(false), 3000);
+  };
 
   // Form State
   const [formTitle, setFormTitle] = useState('');
@@ -188,6 +218,147 @@ export const AdminServices: React.FC = () => {
             <span>+ Add New Service</span>
           </button>
         </div>
+      </div>
+
+      {/* Public Pricing & "Price on Application" (POA) Control Card */}
+      <div className="bg-gradient-to-br from-tartan-card via-tartan-dark to-slate-900 rounded-3xl p-6 sm:p-7 border border-tartan-accent/50 shadow-2xl space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-tartan-border/70 pb-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">💰</span>
+              <h3 className="text-lg font-bold text-white font-serif">Public Pricing & &quot;Price on Application&quot; (POA) Controls</h3>
+            </div>
+            <p className="text-xs text-gray-300">
+              Control whether fixed prices (e.g. £480) are visible publicly on the website, or replaced with a bespoke &quot;Price on Application&quot; message.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {pricingSavedToast && (
+              <span className="px-3 py-1.5 rounded-xl bg-emerald-950 text-emerald-300 border border-emerald-800 text-xs font-bold flex items-center gap-1.5 animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>Saved to Firebase Live!</span>
+              </span>
+            )}
+            <button
+              onClick={() => handleSavePricingConfig(poaHidePrices, poaLabelText, poaDescText)}
+              disabled={isSavingPricing}
+              className="px-5 py-2.5 bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center gap-2"
+            >
+              <Check className="w-4 h-4" />
+              <span>{isSavingPricing ? 'Saving...' : 'Save Pricing Mode'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Pricing Mode Toggle Buttons */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          {/* Option 1: Price on Application (Recommended by Spud) */}
+          <div 
+            onClick={() => {
+              setPoaHidePrices(true);
+              handleSavePricingConfig(true, poaLabelText, poaDescText);
+            }}
+            className={`p-5 rounded-2xl border cursor-pointer transition-all space-y-3 ${
+              poaHidePrices
+                ? 'bg-amber-950/40 border-tartan-gold shadow-lg shadow-amber-950/30'
+                : 'bg-tartan-navy/40 border-tartan-border/60 hover:border-slate-600 opacity-75'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                  poaHidePrices ? 'border-tartan-gold bg-tartan-gold text-tartan-dark font-bold' : 'border-gray-500'
+                }`}>
+                  {poaHidePrices && <Check className="w-3.5 h-3.5" />}
+                </div>
+                <span className="text-sm font-bold text-white">Hide Public Prices — Show &quot;Price on Application&quot; (POA)</span>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                Spud&apos;s Preferred
+              </span>
+            </div>
+            <p className="text-xs text-gray-300 leading-relaxed">
+              Hides rigid package prices. Services and booking calendar display bespoke quote notices. Spud reviews each event location & requirements before sending the custom PayPal deposit invoice.
+            </p>
+          </div>
+
+          {/* Option 2: Show Fixed Public Prices */}
+          <div 
+            onClick={() => {
+              setPoaHidePrices(false);
+              handleSavePricingConfig(false, poaLabelText, poaDescText);
+            }}
+            className={`p-5 rounded-2xl border cursor-pointer transition-all space-y-3 ${
+              !poaHidePrices
+                ? 'bg-emerald-950/40 border-emerald-400 shadow-lg shadow-emerald-950/30'
+                : 'bg-tartan-navy/40 border-tartan-border/60 hover:border-slate-600 opacity-75'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                  !poaHidePrices ? 'border-emerald-400 bg-emerald-400 text-slate-900 font-bold' : 'border-gray-500'
+                }`}>
+                  {!poaHidePrices && <Check className="w-3.5 h-3.5" />}
+                </div>
+                <span className="text-sm font-bold text-white">Show Public Fixed Prices & Estimates</span>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                Standard
+              </span>
+            </div>
+            <p className="text-xs text-gray-300 leading-relaxed">
+              Publicly displays package rates (e.g. &quot;From £480&quot;, &quot;£80 Deposit&quot;) and calculates automated mileage estimates on the booking calculator.
+            </p>
+          </div>
+
+        </div>
+
+        {/* Customization Inputs when POA is active */}
+        {poaHidePrices && (
+          <div className="bg-tartan-navy/50 p-4 rounded-2xl border border-tartan-border space-y-4 animate-in fade-in">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-tartan-gold mb-1">
+                  Public Label Tag (Shown on Service Cards)
+                </label>
+                <input
+                  type="text"
+                  value={poaLabelText}
+                  onChange={(e) => setPoaLabelText(e.target.value)}
+                  placeholder="e.g. Price on Application, Bespoke Quote on Request, POA"
+                  className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-4 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-tartan-gold mb-1">
+                  Booking Inquiry Subtitle Note
+                </label>
+                <input
+                  type="text"
+                  value={poaDescText}
+                  onChange={(e) => setPoaDescText(e.target.value)}
+                  placeholder="e.g. Bespoke quote calculated upon inquiry based on your date, venue location & requirements."
+                  className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-4 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent"
+                />
+              </div>
+            </div>
+
+            {/* Live Website Preview Pill */}
+            <div className="pt-2 flex items-center justify-between border-t border-tartan-border/50 text-xs flex-wrap gap-2">
+              <span className="text-gray-400">Live Card Price Tag Preview:</span>
+              <div className="bg-tartan-dark px-3.5 py-1.5 rounded-xl border border-tartan-border flex items-center gap-2">
+                <span className="text-xs font-extrabold text-white font-serif">{poaLabelText || 'Price on Application'}</span>
+                <span className="text-[10px] font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/30">
+                  Bespoke Quote
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Search Bar */}

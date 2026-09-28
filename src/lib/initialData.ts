@@ -18,7 +18,8 @@ import {
   AdminUserRecord,
   UserRecord,
   UserPermissions,
-  FaqItem
+  FaqItem,
+  PricingConfig
 } from '@/types/spud';
 
 export const defaultPermissions: Record<'owner' | 'admin' | 'editor', UserPermissions> = {
@@ -1635,6 +1636,12 @@ export const initialTravelConfig: TravelExpensesConfig = {
   islandFerrySurcharge: 85,
   overseasEnquiryOnly: true,
   customTravelNotes: 'Standard 50-mile free travel radius radiating from Aviemore includes Inverness, Speyside, Loch Ness, Cairngorms National Park, Pitlochry, and surrounding Highland glens. Fair mileage reimbursement applied for extended travel across Scotland. Bespoke long-distance & overseas expeditions welcome.'
+};
+
+export const initialPricingConfig: PricingConfig = {
+  hidePrices: true, // Default to true as requested by Spud to display Price on Application
+  poaLabel: 'Price on Application',
+  poaDescription: 'Bespoke quote calculated upon inquiry based on your date, venue location & requirements.'
 };
 
 export const initialMailingContacts: MailingContact[] = [];

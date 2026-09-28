@@ -238,6 +238,12 @@ export interface SocialMediaLinks {
   trustpilot: string;
 }
 
+export interface PricingConfig {
+  hidePrices: boolean; // if true, hide fixed prices site-wide and show Price on Application
+  poaLabel: string; // e.g. "Price on Application", "Bespoke Quote on Request"
+  poaDescription: string; // explanation shown on booking and service pages
+}
+
 export interface ServiceItineraryStep {
   stepOrTime: string;
   title: string;

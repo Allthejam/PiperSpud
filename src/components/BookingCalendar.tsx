@@ -23,13 +23,14 @@ import {
   BedDouble,
   Ship,
   Globe,
-  Phone
+  Phone,
+  ShieldCheck
 } from 'lucide-react';
 import { EventType, HighlandDressOption } from '@/types/spud';
 import { calculateTravelCosts } from '@/lib/travelCalculator';
 
 export const BookingCalendar: React.FC = () => {
-  const { bookings, createBooking, tunesList, travelConfig, services } = useApp();
+  const { bookings, createBooking, tunesList, travelConfig, services, pricingConfig } = useApp();
 
   // Calendar view state (Current month: September/October 2026)
   const [currentYear, setCurrentYear] = useState(2026);
@@ -428,9 +429,13 @@ export const BookingCalendar: React.FC = () => {
                 <div className="bg-gradient-to-r from-tartan-navy to-tartan-dark p-4 rounded-2xl border border-tartan-border space-y-3">
                   <div className="flex items-center justify-between flex-wrap gap-3">
                     <div>
-                      <span className="text-xs text-gray-400">Total Price Estimate:</span>
+                      <span className="text-xs text-gray-400">
+                        {pricingConfig?.hidePrices ? 'Pricing & Quote:' : 'Total Price Estimate:'}
+                      </span>
                       <div className="text-2xl font-extrabold text-white font-serif">
-                        {travelResult.isOverseasOrMaxDistance ? (
+                        {pricingConfig?.hidePrices ? (
+                          <span className="text-xl text-amber-400">{pricingConfig.poaLabel || 'Price on Application'}</span>
+                        ) : travelResult.isOverseasOrMaxDistance ? (
                           <span className="text-xl text-amber-400">Bespoke Quote</span>
                         ) : (
                           <>
@@ -440,44 +445,59 @@ export const BookingCalendar: React.FC = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="text-xs text-gray-400">Provisional Deposit:</span>
-                      <div className="text-lg font-bold text-tartan-gold">
-                        £{depositAmount} <span className="text-[10px] text-gray-300">(via PayPal upon approval)</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Itemised Breakdown Details */}
-                  <div className="pt-2 border-t border-tartan-border/60 flex flex-wrap items-center justify-between gap-2 text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-400">Base Service:</span>
-                      <span className="text-white font-bold">£{basePackagePrice}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-400">Travel ({travelResult.distanceMiles} mi):</span>
-                      <span className={`font-bold ${
-                        travelResult.isWithinFreeRadius 
-                          ? 'text-emerald-400' 
-                          : travelResult.isOverseasOrMaxDistance 
-                          ? 'text-amber-400' 
-                          : 'text-tartan-gold'
-                      }`}>
-                        {travelResult.isWithinFreeRadius 
-                          ? 'FREE (Included)' 
-                          : travelResult.isOverseasOrMaxDistance 
-                          ? 'Expedition Quote' 
-                          : `+£${travelResult.totalTravelExpense}`}
+                      <span className="text-xs text-gray-400">
+                        {pricingConfig?.hidePrices ? 'Payment & Invoicing:' : 'Provisional Deposit:'}
                       </span>
-                    </div>
-
-                    {travelResult.isOvernightTriggered && (
-                      <div className="flex items-center gap-1 text-blue-300">
-                        <BedDouble className="w-3.5 h-3.5" />
-                        <span>+£{travelResult.overnightCost} Overnight</span>
+                      <div className="text-lg font-bold text-tartan-gold">
+                        {pricingConfig?.hidePrices ? (
+                          <span className="text-sm text-tartan-gold font-bold">PayPal Deposit upon Approval</span>
+                        ) : (
+                          <>
+                            £{depositAmount} <span className="text-[10px] text-gray-300">(via PayPal upon approval)</span>
+                          </>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
+
+                  {/* Itemised Breakdown Details / POA Notice */}
+                  {!pricingConfig?.hidePrices ? (
+                    <div className="pt-2 border-t border-tartan-border/60 flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-400">Base Service:</span>
+                        <span className="text-white font-bold">£{basePackagePrice}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-400">Travel ({travelResult.distanceMiles} mi):</span>
+                        <span className={`font-bold ${
+                          travelResult.isWithinFreeRadius 
+                            ? 'text-emerald-400' 
+                            : travelResult.isOverseasOrMaxDistance 
+                            ? 'text-amber-400' 
+                            : 'text-tartan-gold'
+                        }`}>
+                          {travelResult.isWithinFreeRadius 
+                            ? 'FREE (Included)' 
+                            : travelResult.isOverseasOrMaxDistance 
+                            ? 'Expedition Quote' 
+                            : `+£${travelResult.totalTravelExpense}`}
+                        </span>
+                      </div>
+
+                      {travelResult.isOvernightTriggered && (
+                        <div className="flex items-center gap-1 text-blue-300">
+                          <BedDouble className="w-3.5 h-3.5" />
+                          <span>+£{travelResult.overnightCost} Overnight</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="pt-2 border-t border-tartan-border/60 text-xs text-gray-300 flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-tartan-gold shrink-0" />
+                      <span>{pricingConfig.poaDescription || 'Bespoke quote calculated upon inquiry based on your date, venue location & requirements.'}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Form Row 1: Event Type & Time */}
@@ -494,7 +514,7 @@ export const BookingCalendar: React.FC = () => {
                       {services && services.length > 0 ? (
                         services.map((srv) => (
                           <option key={srv.id} value={srv.title} className="bg-tartan-navy text-white">
-                            {srv.title} ({srv.priceEstimate || `£${srv.basePrice}`})
+                            {srv.title} {pricingConfig?.hidePrices ? '(POA)' : `(${srv.priceEstimate || `£${srv.basePrice}`})`}
                           </option>
                         ))
                       ) : (
