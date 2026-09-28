@@ -23,7 +23,8 @@ import {
   Compass,
   MapPin,
   ShieldCheck,
-  HelpCircle
+  HelpCircle,
+  BookOpen
 } from 'lucide-react';
 import { BrevoEmailModal } from './BrevoEmailModal';
 import { PayPalCheckoutModal } from './PayPalCheckoutModal';
@@ -53,6 +54,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
 
   const navItems = [
     { id: 'dashboard', label: 'Executive Dashboard', icon: LayoutDashboard },
+    { id: 'guide', label: "Spud's User Manual & Guide", icon: BookOpen, badge: 'New' },
     { id: 'services', label: 'Services & Packages Studio', icon: Sparkles },
     { id: 'travel-expenses', label: 'Travel & Additional Expenses', icon: Compass },
     { id: 'diary', label: 'Interactive Diary', icon: Calendar },

@@ -18,6 +18,7 @@ import { AdminMailingList } from '@/components/admin/AdminMailingList';
 import { AdminSeoStudio } from '@/components/admin/AdminSeoStudio';
 import { AdminNotifications } from '@/components/admin/AdminNotifications';
 import { AdminSecurityControl } from '@/components/admin/AdminSecurityControl';
+import { AdminGuide } from '@/components/admin/AdminGuide';
 import { AdminLoginModal } from '@/components/AdminLoginModal';
 import { ShieldAlert, ArrowLeft } from 'lucide-react';
 
@@ -68,6 +69,7 @@ export default function AdminPage() {
   return (
     <AdminLayout activeTab={activeTab} setActiveTab={setActiveTab}>
       {activeTab === 'dashboard' && <AdminDashboard onNavigateTab={setActiveTab} />}
+      {activeTab === 'guide' && <AdminGuide onNavigateTab={setActiveTab} />}
       {activeTab === 'services' && <AdminServices />}
       {activeTab === 'travel-expenses' && <AdminTravelExpenses />}
       {activeTab === 'diary' && <AdminDiary />}

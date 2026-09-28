@@ -21,7 +21,8 @@ import {
   Layers,
   Music,
   Search,
-  MessageSquare
+  MessageSquare,
+  BookOpen
 } from 'lucide-react';
 import { BookingEvent } from '@/types/spud';
 
@@ -67,6 +68,13 @@ export const AdminDashboard: React.FC<{ onNavigateTab: (tab: string) => void }> 
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={() => onNavigateTab('guide')}
+            className="px-5 py-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold text-xs uppercase tracking-wider border border-amber-500/40 flex items-center gap-2 shadow"
+          >
+            <BookOpen className="w-4 h-4 text-tartan-gold" />
+            <span>📖 Spud&apos;s User Manual</span>
+          </button>
           <button
             onClick={() => onNavigateTab('bookings')}
             className="px-5 py-3 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider shadow-lg hover:brightness-110 flex items-center gap-2"
