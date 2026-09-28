@@ -38,6 +38,8 @@ export const AdminDashboard: React.FC<{ onNavigateTab: (tab: string) => void }> 
     cmsBlocks,
     forumCategories,
     socialPosts,
+    pricingConfig,
+    updatePricingConfig,
     syncAllToFirestore,
     isSyncingFirestore 
   } = useApp();
@@ -130,6 +132,51 @@ export const AdminDashboard: React.FC<{ onNavigateTab: (tab: string) => void }> 
         <div className="px-5 py-3 rounded-2xl bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 font-bold text-xs flex items-center gap-2.5 shadow-lg shrink-0">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
           <span>Real-Time Cloud Sync Active</span>
+        </div>
+      </div>
+
+      {/* Quick Pricing & Price on Application (POA) Control Banner */}
+      <div className="bg-gradient-to-r from-amber-950/70 via-tartan-navy to-tartan-card rounded-3xl p-6 border border-tartan-accent/60 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">💰</span>
+            <h3 className="text-base font-bold text-white font-serif">Public Pricing & &quot;Price on Application&quot; (POA) Switch</h3>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+              pricingConfig?.hidePrices 
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' 
+                : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+            }`}>
+              {pricingConfig?.hidePrices ? 'POA Mode Active' : 'Fixed Prices Active'}
+            </span>
+          </div>
+          <p className="text-xs text-gray-300">
+            {pricingConfig?.hidePrices 
+              ? 'Fixed prices are currently HIDDEN. Services and booking calendar display "Price on Application" and bespoke quote notices.' 
+              : 'Fixed prices (e.g. £480) are currently VISIBLE publicly on all service cards and calculator.'}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          <button
+            onClick={async () => {
+              await updatePricingConfig({ hidePrices: !pricingConfig?.hidePrices });
+            }}
+            className={`px-4 py-2.5 rounded-xl font-extrabold text-xs uppercase tracking-wider shadow-lg transition-all flex items-center gap-2 ${
+              pricingConfig?.hidePrices
+                ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                : 'bg-amber-600 hover:bg-amber-500 text-white'
+            }`}
+          >
+            <span>{pricingConfig?.hidePrices ? 'Switch to Show Fixed Prices' : 'Switch to Hide Prices (POA)'}</span>
+          </button>
+          
+          <button
+            onClick={() => onNavigateTab('services')}
+            className="px-4 py-2.5 bg-tartan-dark hover:bg-slate-700 text-tartan-gold text-xs font-bold rounded-xl border border-tartan-border flex items-center gap-1.5 transition-colors"
+          >
+            <span>Customise Text</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 
