@@ -1447,38 +1447,60 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
             )}
 
             {/* Quick Share Buttons Grid */}
+            {/* Quick Share Buttons Grid */}
             <div className="space-y-3 mb-6">
               <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">
                 1-Click Social &amp; Messaging Share
               </label>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {/* WhatsApp */}
-                {(() => {
-                  const shareUrl = getShareUrlForTune(sharingTune);
-                  const waText = sharingTune
-                    ? `🎵 Listen to "${sharingTune.title}" played by Spud the Piper (Official Scottish Bagpiper) 🏴󠁧󠁢󠁳󠁣󠁴󠁿🏰\n\nListen here: ${shareUrl}`
-                    : `🏴󠁧󠁢󠁳󠁣󠁴󠁿 Listen to Spud the Piper's Scottish Bagpipe Jukebox & Repertoire:\n\n${shareUrl}`;
-                  const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
+              {/* WhatsApp Dedicated Sharing Card (Supports PC Desktop App, Mobile App & Web) */}
+              {(() => {
+                const shareUrl = getShareUrlForTune(sharingTune);
+                const waText = sharingTune
+                  ? `🎵 Listen to "${sharingTune.title}" played by Spud the Piper (Official Scottish Bagpiper) 🏴󠁧󠁢󠁳󠁣󠁴󠁿🏰\n\nListen here: ${shareUrl}`
+                  : `🏴󠁧󠁢󠁳󠁣󠁴󠁿 Listen to Spud the Piper's Scottish Bagpipe Jukebox & Repertoire:\n\n${shareUrl}`;
+                
+                const waDesktopAppUrl = `whatsapp://send?text=${encodeURIComponent(waText)}`;
+                const waWebUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
 
-                  return (
-                    <a
-                      href={waUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-4 py-3 bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/40 text-[#25D366] hover:text-emerald-300 rounded-2xl font-bold text-xs transition-all hover:scale-[1.02] shadow-sm"
-                    >
-                      <div className="w-8 h-8 rounded-xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow">
+                return (
+                  <div className="bg-[#25D366]/10 border border-[#25D366]/30 rounded-2xl p-3.5 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-[#25D366] font-bold text-xs">
                         <MessageCircle className="w-4 h-4 fill-current" />
+                        <span>WhatsApp Sharing</span>
                       </div>
-                      <div className="text-left">
-                        <span className="block font-bold">WhatsApp</span>
-                        <span className="text-[10px] text-gray-400 font-normal">Chat or Family Groups</span>
-                      </div>
-                    </a>
-                  );
-                })()}
+                      <span className="text-[10px] text-emerald-400/80 font-medium">Windows PC App &amp; Mobile</span>
+                    </div>
 
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {/* Option 1: Native Installed WhatsApp App (PC Desktop or Mobile) */}
+                      <a
+                        href={waDesktopAppUrl}
+                        className="flex items-center justify-center gap-2 px-3 py-2.5 bg-[#25D366] hover:bg-emerald-500 text-slate-950 rounded-xl font-bold text-xs transition-all shadow-md active:scale-95 text-center"
+                        title="Open directly in the WhatsApp Desktop App installed on your PC or Mobile"
+                      >
+                        <MessageCircle className="w-4 h-4 fill-current shrink-0" />
+                        <span>WhatsApp App (PC / Mobile)</span>
+                      </a>
+
+                      {/* Option 2: WhatsApp Web Browser Tab */}
+                      <a
+                        href={waWebUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-[#25D366]/40 rounded-xl font-semibold text-xs transition-all shadow active:scale-95 text-center"
+                        title="Open in WhatsApp Web browser tab"
+                      >
+                        <Globe className="w-3.5 h-3.5 shrink-0" />
+                        <span>WhatsApp Web</span>
+                      </a>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 {/* Facebook */}
                 {(() => {
                   const shareUrl = getShareUrlForTune(sharingTune);
@@ -1489,15 +1511,12 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                       href={fbUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-4 py-3 bg-[#1877F2]/15 hover:bg-[#1877F2]/25 border border-[#1877F2]/40 text-[#5890FF] hover:text-white rounded-2xl font-bold text-xs transition-all hover:scale-[1.02] shadow-sm"
+                      className="flex items-center gap-2.5 px-3 py-2.5 bg-[#1877F2]/15 hover:bg-[#1877F2]/25 border border-[#1877F2]/40 text-[#5890FF] hover:text-white rounded-xl font-bold text-xs transition-all hover:scale-[1.02] shadow-sm justify-center sm:justify-start"
                     >
-                      <div className="w-8 h-8 rounded-xl bg-[#1877F2] text-white flex items-center justify-center shrink-0 shadow font-bold text-sm">
+                      <div className="w-6 h-6 rounded-lg bg-[#1877F2] text-white flex items-center justify-center shrink-0 shadow font-bold text-xs">
                         f
                       </div>
-                      <div className="text-left">
-                        <span className="block font-bold">Facebook</span>
-                        <span className="text-[10px] text-gray-400 font-normal">Post or Message</span>
-                      </div>
+                      <span className="font-bold">Facebook</span>
                     </a>
                   );
                 })()}
@@ -1515,15 +1534,12 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                       href={twitterUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-4 py-3 bg-neutral-800/80 hover:bg-neutral-800 border border-neutral-700 text-white rounded-2xl font-bold text-xs transition-all hover:scale-[1.02] shadow-sm"
+                      className="flex items-center gap-2.5 px-3 py-2.5 bg-neutral-800/80 hover:bg-neutral-800 border border-neutral-700 text-white rounded-xl font-bold text-xs transition-all hover:scale-[1.02] shadow-sm justify-center sm:justify-start"
                     >
-                      <div className="w-8 h-8 rounded-xl bg-black text-white flex items-center justify-center shrink-0 border border-neutral-700 shadow font-extrabold text-xs">
+                      <div className="w-6 h-6 rounded-lg bg-black text-white flex items-center justify-center shrink-0 border border-neutral-700 shadow font-extrabold text-[10px]">
                         𝕏
                       </div>
-                      <div className="text-left">
-                        <span className="block font-bold">X (Twitter)</span>
-                        <span className="text-[10px] text-gray-400 font-normal">Share with Followers</span>
-                      </div>
+                      <span className="font-bold">X (Twitter)</span>
                     </a>
                   );
                 })()}
@@ -1542,15 +1558,12 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                   return (
                     <a
                       href={mailUrl}
-                      className="flex items-center gap-3 px-4 py-3 bg-amber-950/20 hover:bg-amber-950/40 border border-amber-500/30 text-amber-300 hover:text-white rounded-2xl font-bold text-xs transition-all hover:scale-[1.02] shadow-sm"
+                      className="flex items-center gap-2.5 px-3 py-2.5 bg-amber-950/20 hover:bg-amber-950/40 border border-amber-500/30 text-amber-300 hover:text-white rounded-xl font-bold text-xs transition-all hover:scale-[1.02] shadow-sm justify-center sm:justify-start"
                     >
-                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 text-tartan-dark flex items-center justify-center shrink-0 shadow">
-                        <Send className="w-4 h-4 text-tartan-dark" />
+                      <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 text-tartan-dark flex items-center justify-center shrink-0 shadow">
+                        <Send className="w-3.5 h-3.5 text-tartan-dark" />
                       </div>
-                      <div className="text-left">
-                        <span className="block font-bold text-amber-200">Email Link</span>
-                        <span className="text-[10px] text-gray-400 font-normal">Send to Wedding Planner/Friend</span>
-                      </div>
+                      <span className="font-bold text-amber-200">Email</span>
                     </a>
                   );
                 })()}
