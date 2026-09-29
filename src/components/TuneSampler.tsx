@@ -102,9 +102,16 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
     }
   }, [tunesList]);
 
-  // Share Handlers
-  const getShareUrlForTune = (tune?: BagpipeTune | null) => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.spudthepiper.com';
+  // Share Handlers (Ensures external social media platforms like Facebook/Twitter receive a live public URL to scrape and paste)
+  const getShareUrlForTune = (tune?: BagpipeTune | null, forcePublicDomain = true) => {
+    let origin = 'https://www.spudthepiper.com';
+    if (typeof window !== 'undefined' && !forcePublicDomain) {
+      const loc = window.location;
+      const isLocal = loc.hostname === 'localhost' || loc.hostname === '127.0.0.1' || loc.hostname.startsWith('192.168.') || loc.hostname.startsWith('10.');
+      if (!isLocal && loc.origin) {
+        origin = loc.origin;
+      }
+    }
     if (tune) {
       return `${origin}/tunes?tune=${encodeURIComponent(tune.title)}#tune-${tune.id}`;
     }
@@ -1500,10 +1507,10 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                 );
               })()}
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {/* Facebook */}
                 {(() => {
-                  const shareUrl = getShareUrlForTune(sharingTune);
+                  const shareUrl = getShareUrlForTune(sharingTune, true);
                   const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
 
                   return (
@@ -1511,42 +1518,66 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                       href={fbUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2.5 px-3 py-2.5 bg-[#1877F2]/15 hover:bg-[#1877F2]/25 border border-[#1877F2]/40 text-[#5890FF] hover:text-white rounded-xl font-bold text-xs transition-all hover:scale-[1.02] shadow-sm justify-center sm:justify-start"
+                      onClick={() => handleCopyLink(shareUrl, 'modal')}
+                      className="flex items-center gap-2 px-3 py-2.5 bg-[#1877F2]/15 hover:bg-[#1877F2]/25 border border-[#1877F2]/40 text-[#5890FF] hover:text-white rounded-xl font-bold text-xs transition-all hover:scale-[1.02] shadow-sm justify-center"
+                      title="Share to Facebook Feed or Story"
                     >
-                      <div className="w-6 h-6 rounded-lg bg-[#1877F2] text-white flex items-center justify-center shrink-0 shadow font-bold text-xs">
+                      <div className="w-5 h-5 rounded bg-[#1877F2] text-white flex items-center justify-center shrink-0 font-bold text-xs shadow">
                         f
                       </div>
-                      <span className="font-bold">Facebook</span>
+                      <span>Facebook</span>
                     </a>
                   );
                 })()}
 
                 {/* X (Twitter) */}
                 {(() => {
-                  const shareUrl = getShareUrlForTune(sharingTune);
+                  const shareUrl = getShareUrlForTune(sharingTune, true);
                   const tweetText = sharingTune
-                    ? `Listen to "${sharingTune.title}" by @SpudThePiper 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scottish Bagpiper #Bagpipes #Scotland #WeddingMusic`
-                    : `Listen to Spud the Piper's Scottish Bagpipe Collection 🏴󠁧󠁢󠁳󠁣󠁴󠁿 #SpudThePiper #ScottishBagpipes`;
-                  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shareUrl)}`;
+                    ? `🎵 Listen to "${sharingTune.title}" played by @SpudThePiper 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scottish Bagpiper:\n\n${shareUrl}\n\n#Bagpipes #Scotland #WeddingMusic`
+                    : `🏴󠁧󠁢󠁳󠁣󠁴󠁿 Listen to Spud the Piper's Scottish Bagpipe Collection:\n\n${shareUrl}\n\n#SpudThePiper #ScottishBagpipes`;
+                  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
 
                   return (
                     <a
                       href={twitterUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2.5 px-3 py-2.5 bg-neutral-800/80 hover:bg-neutral-800 border border-neutral-700 text-white rounded-xl font-bold text-xs transition-all hover:scale-[1.02] shadow-sm justify-center sm:justify-start"
+                      className="flex items-center gap-2 px-3 py-2.5 bg-neutral-800/80 hover:bg-neutral-800 border border-neutral-700 text-white rounded-xl font-bold text-xs transition-all hover:scale-[1.02] shadow-sm justify-center"
+                      title="Post to X (Twitter)"
                     >
-                      <div className="w-6 h-6 rounded-lg bg-black text-white flex items-center justify-center shrink-0 border border-neutral-700 shadow font-extrabold text-[10px]">
+                      <div className="w-5 h-5 rounded bg-black text-white flex items-center justify-center shrink-0 border border-neutral-700 font-extrabold text-[10px] shadow">
                         𝕏
                       </div>
-                      <span className="font-bold">X (Twitter)</span>
+                      <span>X / Post</span>
+                    </a>
+                  );
+                })()}
+
+                {/* LinkedIn */}
+                {(() => {
+                  const shareUrl = getShareUrlForTune(sharingTune, true);
+                  const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+
+                  return (
+                    <a
+                      href={linkedInUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-3 py-2.5 bg-[#0A66C2]/15 hover:bg-[#0A66C2]/25 border border-[#0A66C2]/40 text-[#499be4] hover:text-white rounded-xl font-bold text-xs transition-all hover:scale-[1.02] shadow-sm justify-center"
+                      title="Share to LinkedIn Network"
+                    >
+                      <div className="w-5 h-5 rounded bg-[#0A66C2] text-white flex items-center justify-center shrink-0 font-bold text-[10px] shadow">
+                        in
+                      </div>
+                      <span>LinkedIn</span>
                     </a>
                   );
                 })()}
 
                 {/* Email */}
                 {(() => {
-                  const shareUrl = getShareUrlForTune(sharingTune);
+                  const shareUrl = getShareUrlForTune(sharingTune, true);
                   const subject = sharingTune
                     ? `Bagpipe Tune recommendation: "${sharingTune.title}" - Spud the Piper`
                     : `Spud the Piper Scottish Bagpipe Music Collection`;
@@ -1558,12 +1589,13 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                   return (
                     <a
                       href={mailUrl}
-                      className="flex items-center gap-2.5 px-3 py-2.5 bg-amber-950/20 hover:bg-amber-950/40 border border-amber-500/30 text-amber-300 hover:text-white rounded-xl font-bold text-xs transition-all hover:scale-[1.02] shadow-sm justify-center sm:justify-start"
+                      className="flex items-center gap-2 px-3 py-2.5 bg-amber-950/20 hover:bg-amber-950/40 border border-amber-500/30 text-amber-300 hover:text-white rounded-xl font-bold text-xs transition-all hover:scale-[1.02] shadow-sm justify-center"
+                      title="Send link via Email"
                     >
-                      <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 text-tartan-dark flex items-center justify-center shrink-0 shadow">
-                        <Send className="w-3.5 h-3.5 text-tartan-dark" />
+                      <div className="w-5 h-5 rounded bg-gradient-to-br from-amber-500 to-amber-700 text-tartan-dark flex items-center justify-center shrink-0 shadow">
+                        <Send className="w-3 h-3 text-tartan-dark" />
                       </div>
-                      <span className="font-bold text-amber-200">Email</span>
+                      <span className="text-amber-200 font-bold">Email</span>
                     </a>
                   );
                 })()}
