@@ -1462,9 +1462,9 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
 
               {/* WhatsApp Dedicated Sharing Card (Supports PC Desktop App, Mobile App & Web) */}
               {(() => {
-                const shareUrl = getShareUrlForTune(sharingTune);
+                const shareUrl = getShareUrlForTune(sharingTune, true);
                 const waText = sharingTune
-                  ? `🎵 Listen to "${sharingTune.title}" played by Spud the Piper (Official Scottish Bagpiper) 🏴󠁧󠁢󠁳󠁣󠁴󠁿🏰\n\nListen here: ${shareUrl}`
+                  ? `🎵 *${sharingTune.title}* - Scottish Bagpipes by Spud the Piper 🏴󠁧󠁢󠁳󠁣󠁴󠁿🏰\n\n"${sharingTune.description || 'Authentic traditional Scottish Highland bagpipe recording.'}"\n\n▶️ *Listen to this track online:* ${shareUrl}`
                   : `🏴󠁧󠁢󠁳󠁣󠁴󠁿 Listen to Spud the Piper's Scottish Bagpipe Jukebox & Repertoire:\n\n${shareUrl}`;
                 
                 const waDesktopAppUrl = `whatsapp://send?text=${encodeURIComponent(waText)}`;
@@ -1534,7 +1534,7 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                 {(() => {
                   const shareUrl = getShareUrlForTune(sharingTune, true);
                   const tweetText = sharingTune
-                    ? `🎵 Listen to "${sharingTune.title}" played by @SpudThePiper 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scottish Bagpiper:\n\n${shareUrl}\n\n#Bagpipes #Scotland #WeddingMusic`
+                    ? `🎵 Listen to "${sharingTune.title}" played by @SpudThePiper 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scottish Bagpiper:\n\n${shareUrl}\n\n#Bagpipes #Scotland #WeddingMusic #SpudThePiper`
                     : `🏴󠁧󠁢󠁳󠁣󠁴󠁿 Listen to Spud the Piper's Scottish Bagpipe Collection:\n\n${shareUrl}\n\n#SpudThePiper #ScottishBagpipes`;
                   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
 
@@ -1579,10 +1579,10 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                 {(() => {
                   const shareUrl = getShareUrlForTune(sharingTune, true);
                   const subject = sharingTune
-                    ? `Bagpipe Tune recommendation: "${sharingTune.title}" - Spud the Piper`
+                    ? `🎵 Scottish Bagpipe Tune: "${sharingTune.title}" - Spud the Piper`
                     : `Spud the Piper Scottish Bagpipe Music Collection`;
                   const body = sharingTune
-                    ? `Hi,\n\nI thought you would love to hear this Scottish bagpipe performance of "${sharingTune.title}" by Spud the Piper:\n\n${shareUrl}\n\nEnjoy!`
+                    ? `Hi,\n\nI thought you'd love to hear this authentic Scottish bagpipe performance of "${sharingTune.title}" by Spud the Piper:\n\n"${sharingTune.description || ''}"\n\n▶️ Listen to the audio recording here:\n${shareUrl}\n\nBest regards,\nSpud the Piper`
                     : `Hi,\n\nHave a listen to Spud the Piper's authentic Scottish bagpipe repertoire and live recordings here:\n\n${shareUrl}\n\nBest regards!`;
                   const mailUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
