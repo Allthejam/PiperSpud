@@ -31,7 +31,14 @@ import {
   ArrowRight,
   HelpCircle,
   Filter,
-  Download
+  Download,
+  Share2,
+  Copy,
+  Check,
+  ExternalLink,
+  MessageCircle,
+  Globe,
+  Send
 } from 'lucide-react';
 import { BagpipeTune } from '@/types/spud';
 import { EditableElement } from './EditableElement';
@@ -61,8 +68,84 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
   const [showTimelineGuide, setShowTimelineGuide] = useState<boolean>(true);
   const [showSmallpipesGuide, setShowSmallpipesGuide] = useState<boolean>(false);
   const [downloadingTuneId, setDownloadingTuneId] = useState<string | null>(null);
-  
-  // Add / Edit Modal State
+  // Share Modal & Deep-Link State
+  const [sharingTune, setSharingTune] = useState<BagpipeTune | null>(null);
+  const [isSharingJukebox, setIsSharingJukebox] = useState<boolean>(false);
+  const [copiedShareId, setCopiedShareId] = useState<string | null>(null);
+  const [highlightedTuneId, setHighlightedTuneId] = useState<string | null>(null);
+
+  // Deep Linking from URL Parameters (e.g. /tunes?tune=Highland+Cathedral)
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tuneParam = params.get('tune');
+      const hashParam = window.location.hash.replace('#tune-', '').replace('#', '');
+      
+      const targetQuery = tuneParam || hashParam;
+      if (targetQuery) {
+        const matched = tunesList.find(t => 
+          t.title.toLowerCase() === targetQuery.toLowerCase() || 
+          t.id === targetQuery ||
+          t.title.toLowerCase().includes(targetQuery.toLowerCase())
+        );
+
+        if (matched) {
+          setHighlightedTuneId(matched.id);
+          setTimeout(() => {
+            const cardEl = document.getElementById(`tune-card-${matched.id}`);
+            if (cardEl) {
+              cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 400);
+        }
+      }
+    }
+  }, [tunesList]);
+
+  // Share Handlers
+  const getShareUrlForTune = (tune?: BagpipeTune | null) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.spudthepiper.com';
+    if (tune) {
+      return `${origin}/tunes?tune=${encodeURIComponent(tune.title)}#tune-${tune.id}`;
+    }
+    return `${origin}/tunes`;
+  };
+
+  const handleOpenShareTune = (tune: BagpipeTune) => {
+    setSharingTune(tune);
+    setIsSharingJukebox(false);
+  };
+
+  const handleOpenShareJukebox = () => {
+    setSharingTune(null);
+    setIsSharingJukebox(true);
+  };
+
+  const handleCopyLink = (url: string, id: string) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(url);
+      setCopiedShareId(id);
+      setTimeout(() => setCopiedShareId(null), 2500);
+    }
+  };
+
+  const handleNativeShare = async (tune?: BagpipeTune | null) => {
+    const url = getShareUrlForTune(tune);
+    const title = tune ? `🎵 ${tune.title} - Spud the Piper Scottish Bagpipes` : '🏴󠁧󠁢󠁳󠁣󠁴󠁿 Spud the Piper - Highland Bagpipe Jukebox';
+    const text = tune 
+      ? `Listen to "${tune.title}" performed by Spud the Piper in authentic Scottish Highland No. 1 dress:` 
+      : 'Listen to Spud the Piper\'s full Scottish bagpipe repertoire, wedding processionals, and Highland anthems:';
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title, text, url });
+      } catch (err) {
+        // User cancelled or share dismissed
+      }
+    } else {
+      handleCopyLink(url, tune ? tune.id : 'jukebox');
+    }
+  };
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingTuneId, setEditingTuneId] = useState<string | null>(null);
   const [tuneTitle, setTuneTitle] = useState<string>('');
@@ -649,15 +732,27 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                 )}
               </div>
 
-              {canManage && (
+              <div className="flex items-center gap-2 flex-wrap self-end sm:self-auto shrink-0">
                 <button
-                  onClick={handleOpenAddModal}
-                  className="px-3.5 py-1.5 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md hover:brightness-110 active:scale-95 transition-all self-end sm:self-auto shrink-0"
+                  type="button"
+                  onClick={handleOpenShareJukebox}
+                  className="px-3.5 py-1.5 rounded-xl bg-tartan-navy hover:bg-slate-700 text-tartan-gold border border-tartan-accent/40 font-bold text-xs flex items-center gap-1.5 shadow transition-all active:scale-95"
+                  title="Share Spud's Complete Bagpipe Jukebox Repertoire on WhatsApp, Social Media, etc."
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Track / Upload Audio</span>
+                  <Share2 className="w-3.5 h-3.5 text-tartan-gold" />
+                  <span>Share Jukebox</span>
                 </button>
-              )}
+
+                {canManage && (
+                  <button
+                    onClick={handleOpenAddModal}
+                    className="px-3.5 py-1.5 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md hover:brightness-110 active:scale-95 transition-all"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Track / Upload Audio</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -687,11 +782,16 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
             {displayedTunes.map((tune: BagpipeTune) => {
               const isThisPlaying = currentPlayingTune === tune.title;
 
+              const isHighlighted = highlightedTuneId === tune.id;
+
               return (
                 <div
                   key={tune.id}
+                  id={`tune-card-${tune.id}`}
                   className={`bg-tartan-card rounded-2xl p-6 border transition-all relative overflow-hidden flex flex-col justify-between shadow-xl group hover:border-tartan-accent/60 ${
-                    isThisPlaying 
+                    isHighlighted
+                      ? 'border-tartan-gold ring-4 ring-tartan-gold/60 bg-amber-950/30 shadow-2xl shadow-yellow-500/20'
+                      : isThisPlaying 
                       ? 'border-tartan-gold ring-2 ring-tartan-gold/50 shadow-yellow-500/10' 
                       : 'border-tartan-border/60'
                   }`}
@@ -699,6 +799,14 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                   {/* Active Playing Equalizer Bar */}
                   {isThisPlaying && (
                     <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-tartan-accent via-yellow-400 to-tartan-gold animate-pulse" />
+                  )}
+
+                  {/* Highlighted Shared Track Banner */}
+                  {isHighlighted && (
+                    <div className="mb-2 bg-gradient-to-r from-amber-500/20 to-tartan-dark px-3 py-1 rounded-xl border border-amber-500/40 text-[10px] text-amber-300 font-bold flex items-center gap-1.5">
+                      <Sparkles className="w-3 h-3 text-tartan-gold animate-spin" />
+                      <span>Shared Highland Track Selected</span>
+                    </div>
                   )}
 
                   <div className="space-y-3.5">
@@ -768,11 +876,11 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
 
                   </div>
 
-                  {/* Player Controls & Request CTA */}
+                  {/* Player Controls, Share & Request CTA */}
                   <div className="mt-6 pt-4 border-t border-tartan-border/50 space-y-3">
                     
                     <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <button
                           onClick={() => {
                             if (isThisPlaying) {
@@ -816,6 +924,16 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                             <span>Download MP3</span>
                           </button>
                         )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleOpenShareTune(tune)}
+                          className="px-3 py-2.5 rounded-xl bg-tartan-navy hover:bg-slate-700 text-gray-200 hover:text-tartan-gold border border-tartan-border hover:border-tartan-accent/60 transition-all flex items-center gap-1.5 text-xs font-semibold shadow"
+                          title={`Share "${tune.title}" on WhatsApp, Facebook, X, etc.`}
+                        >
+                          <Share2 className="w-3.5 h-3.5 text-tartan-gold" />
+                          <span>Share</span>
+                        </button>
                       </div>
 
                       {/* Request CTA for booking */}
@@ -1221,6 +1339,244 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Social & WhatsApp Sharing Modal */}
+      {(sharingTune || isSharingJukebox) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+          <div 
+            className="bg-tartan-navy border-2 border-tartan-gold/50 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative text-left text-white max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button 
+              type="button"
+              onClick={() => {
+                setSharingTune(null);
+                setIsSharingJukebox(false);
+              }}
+              className="absolute top-5 right-5 p-2 rounded-full bg-slate-800/80 hover:bg-slate-700 text-gray-400 hover:text-white transition-colors"
+              aria-label="Close share dialog"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header */}
+            <div className="flex items-center gap-3.5 mb-5 pb-4 border-b border-tartan-border">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-tartan-gold shrink-0">
+                <Share2 className="w-6 h-6" />
+              </div>
+              <div className="min-w-0 pr-6">
+                <span className="text-[11px] uppercase tracking-wider text-amber-400 font-bold block">
+                  {sharingTune ? 'Share Scottish Bagpipe Tune' : 'Share Bagpipe Jukebox'}
+                </span>
+                <h3 className="text-lg sm:text-xl font-bold font-serif text-white truncate">
+                  {sharingTune ? sharingTune.title : "Spud the Piper's Music Collection"}
+                </h3>
+              </div>
+            </div>
+
+            {/* Tune Details Preview Card */}
+            {sharingTune && (
+              <div className="bg-tartan-dark/90 border border-tartan-gold/20 rounded-2xl p-4 mb-5 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30">
+                      {sharingTune.instrumentRecommended || 'Bagpipes'}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-800 text-slate-300">
+                      {sharingTune.weddingMoment || sharingTune.category}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-300 line-clamp-2 italic">
+                    &ldquo;{sharingTune.description || 'Authentic traditional Scottish Highland bagpipe performance.'}&rdquo;
+                  </p>
+                </div>
+                {sharingTune.audioUrl && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (currentPlayingTune === sharingTune.title) {
+                        stopTune();
+                      } else {
+                        playTune(sharingTune.title);
+                      }
+                    }}
+                    className="w-10 h-10 rounded-full bg-tartan-gold text-tartan-dark flex items-center justify-center hover:scale-105 transition-transform shrink-0 shadow-md"
+                    title={currentPlayingTune === sharingTune.title ? 'Stop Playing' : 'Preview Tune'}
+                  >
+                    {currentPlayingTune === sharingTune.title ? (
+                      <Square className="w-4 h-4 fill-current" />
+                    ) : (
+                      <Play className="w-4 h-4 fill-current ml-0.5" />
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Quick Share Buttons Grid */}
+            <div className="space-y-3 mb-6">
+              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">
+                1-Click Social &amp; Messaging Share
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* WhatsApp */}
+                {(() => {
+                  const shareUrl = getShareUrlForTune(sharingTune);
+                  const waText = sharingTune
+                    ? `🎵 Listen to "${sharingTune.title}" played by Spud the Piper (Official Scottish Bagpiper) 🏴󠁧󠁢󠁳󠁣󠁴󠁿🏰\n\nListen here: ${shareUrl}`
+                    : `🏴󠁧󠁢󠁳󠁣󠁴󠁿 Listen to Spud the Piper's Scottish Bagpipe Jukebox & Repertoire:\n\n${shareUrl}`;
+                  const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
+
+                  return (
+                    <a
+                      href={waUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 px-4 py-3 bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/40 text-[#25D366] hover:text-emerald-300 rounded-2xl font-bold text-xs transition-all hover:scale-[1.02] shadow-sm"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow">
+                        <MessageCircle className="w-4 h-4 fill-current" />
+                      </div>
+                      <div className="text-left">
+                        <span className="block font-bold">WhatsApp</span>
+                        <span className="text-[10px] text-gray-400 font-normal">Chat or Family Groups</span>
+                      </div>
+                    </a>
+                  );
+                })()}
+
+                {/* Facebook */}
+                {(() => {
+                  const shareUrl = getShareUrlForTune(sharingTune);
+                  const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+
+                  return (
+                    <a
+                      href={fbUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 px-4 py-3 bg-[#1877F2]/15 hover:bg-[#1877F2]/25 border border-[#1877F2]/40 text-[#5890FF] hover:text-white rounded-2xl font-bold text-xs transition-all hover:scale-[1.02] shadow-sm"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-[#1877F2] text-white flex items-center justify-center shrink-0 shadow font-bold text-sm">
+                        f
+                      </div>
+                      <div className="text-left">
+                        <span className="block font-bold">Facebook</span>
+                        <span className="text-[10px] text-gray-400 font-normal">Post or Message</span>
+                      </div>
+                    </a>
+                  );
+                })()}
+
+                {/* X (Twitter) */}
+                {(() => {
+                  const shareUrl = getShareUrlForTune(sharingTune);
+                  const tweetText = sharingTune
+                    ? `Listen to "${sharingTune.title}" by @SpudThePiper 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scottish Bagpiper #Bagpipes #Scotland #WeddingMusic`
+                    : `Listen to Spud the Piper's Scottish Bagpipe Collection 🏴󠁧󠁢󠁳󠁣󠁴󠁿 #SpudThePiper #ScottishBagpipes`;
+                  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shareUrl)}`;
+
+                  return (
+                    <a
+                      href={twitterUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 px-4 py-3 bg-neutral-800/80 hover:bg-neutral-800 border border-neutral-700 text-white rounded-2xl font-bold text-xs transition-all hover:scale-[1.02] shadow-sm"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-black text-white flex items-center justify-center shrink-0 border border-neutral-700 shadow font-extrabold text-xs">
+                        𝕏
+                      </div>
+                      <div className="text-left">
+                        <span className="block font-bold">X (Twitter)</span>
+                        <span className="text-[10px] text-gray-400 font-normal">Share with Followers</span>
+                      </div>
+                    </a>
+                  );
+                })()}
+
+                {/* Email */}
+                {(() => {
+                  const shareUrl = getShareUrlForTune(sharingTune);
+                  const subject = sharingTune
+                    ? `Bagpipe Tune recommendation: "${sharingTune.title}" - Spud the Piper`
+                    : `Spud the Piper Scottish Bagpipe Music Collection`;
+                  const body = sharingTune
+                    ? `Hi,\n\nI thought you would love to hear this Scottish bagpipe performance of "${sharingTune.title}" by Spud the Piper:\n\n${shareUrl}\n\nEnjoy!`
+                    : `Hi,\n\nHave a listen to Spud the Piper's authentic Scottish bagpipe repertoire and live recordings here:\n\n${shareUrl}\n\nBest regards!`;
+                  const mailUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+                  return (
+                    <a
+                      href={mailUrl}
+                      className="flex items-center gap-3 px-4 py-3 bg-amber-950/20 hover:bg-amber-950/40 border border-amber-500/30 text-amber-300 hover:text-white rounded-2xl font-bold text-xs transition-all hover:scale-[1.02] shadow-sm"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 text-tartan-dark flex items-center justify-center shrink-0 shadow">
+                        <Send className="w-4 h-4 text-tartan-dark" />
+                      </div>
+                      <div className="text-left">
+                        <span className="block font-bold text-amber-200">Email Link</span>
+                        <span className="text-[10px] text-gray-400 font-normal">Send to Wedding Planner/Friend</span>
+                      </div>
+                    </a>
+                  );
+                })()}
+              </div>
+
+              {/* Native Mobile Share Sheet Button */}
+              <button
+                type="button"
+                onClick={() => handleNativeShare(sharingTune)}
+                className="w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-amber-400/10 to-amber-500/20 hover:from-amber-500/30 hover:to-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-bold transition-all hover:scale-[1.01]"
+              >
+                <Share2 className="w-4 h-4 text-tartan-gold" />
+                <span>More Share Options (Instagram, AirDrop, Messages, SMS)</span>
+              </button>
+            </div>
+
+            {/* Direct Deep-Link Copy Input */}
+            <div>
+              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">
+                Direct Music Link
+              </label>
+              <div className="flex items-center gap-2 bg-tartan-dark/90 p-1.5 rounded-2xl border border-tartan-border focus-within:border-tartan-gold">
+                <input
+                  type="text"
+                  readOnly
+                  value={getShareUrlForTune(sharingTune)}
+                  className="bg-transparent text-xs text-gray-200 px-3 py-2 w-full focus:outline-none font-mono selection:bg-amber-500/30 selection:text-white"
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleCopyLink(getShareUrlForTune(sharingTune), 'modal')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 transition-all ${
+                    copiedShareId === 'modal'
+                      ? 'bg-emerald-600 text-white shadow-lg'
+                      : 'bg-gold-gradient text-tartan-dark hover:brightness-110 shadow'
+                  }`}
+                >
+                  {copiedShareId === 'modal' ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              <p className="text-[11px] text-gray-400 mt-1.5">
+                Anyone opening this link will be taken straight to this specific tune with an instant playback ready.
+              </p>
+            </div>
           </div>
         </div>
       )}
