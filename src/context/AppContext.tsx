@@ -454,13 +454,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const initialMap = new Map(initialTunes.map(t => [t.id, t]));
             const initialTitleMap = new Map(initialTunes.map(t => [t.title.toLowerCase(), t]));
             
-            // Merge initial tunes with any user overrides while preserving audioUrl
+            // Merge initial tunes with any user overrides while preserving full rich fields and audioUrl
             const mergedInitial = initialTunes.map(initTune => {
               const userVer = parsedTunes.find(p => p.id === initTune.id || p.title.toLowerCase() === initTune.title.toLowerCase());
               if (userVer) {
                 return {
                   ...initTune,
                   ...userVer,
+                  description: (userVer.description && userVer.description.trim().length > 0) ? userVer.description : initTune.description,
+                  funFact: (userVer.funFact && userVer.funFact.trim().length > 0) ? userVer.funFact : initTune.funFact,
+                  weddingMoment: userVer.weddingMoment || initTune.weddingMoment,
+                  tempo: userVer.tempo || initTune.tempo,
+                  instrumentRecommended: userVer.instrumentRecommended || initTune.instrumentRecommended,
+                  duration: userVer.duration || initTune.duration,
                   showOnHomePage: userVer.showOnHomePage !== undefined ? userVer.showOnHomePage : initTune.showOnHomePage,
                   audioUrl: userVer.audioUrl && userVer.audioUrl.trim().length > 0 ? userVer.audioUrl : initTune.audioUrl
                 };
@@ -806,11 +812,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           snapshot.forEach((d) => remoteTunes.push(d.data() as BagpipeTune));
           if (remoteTunes.length > 0) {
             setTunesList(prev => {
-              const merged = [...prev];
+              const currentList = prev && prev.length > 0 ? prev : initialTunes;
+              const merged = [...currentList];
               remoteTunes.forEach(r => {
-                const idx = merged.findIndex(t => t.id === r.id);
-                if (idx >= 0) merged[idx] = r;
-                else merged.push(r);
+                const idx = merged.findIndex(t => t.id === r.id || t.title.toLowerCase() === r.title?.toLowerCase());
+                const initT = initialTunes.find(it => it.id === r.id || it.title.toLowerCase() === r.title?.toLowerCase());
+                if (idx >= 0) {
+                  const p = merged[idx];
+                  merged[idx] = {
+                    ...initT,
+                    ...p,
+                    ...r,
+                    title: r.title || p.title || initT?.title || '',
+                    category: r.category || p.category || initT?.category || 'Wedding',
+                    weddingMoment: r.weddingMoment || p.weddingMoment || initT?.weddingMoment,
+                    instrumentRecommended: r.instrumentRecommended || p.instrumentRecommended || initT?.instrumentRecommended,
+                    tempo: r.tempo || p.tempo || initT?.tempo,
+                    duration: r.duration || p.duration || initT?.duration || '2:30',
+                    description: (r.description && r.description.trim().length > 0) ? r.description : (p.description || initT?.description || ''),
+                    funFact: (r.funFact && r.funFact.trim().length > 0) ? r.funFact : (p.funFact || initT?.funFact || ''),
+                    audioUrl: (r.audioUrl && r.audioUrl.trim().length > 0) ? r.audioUrl : (p.audioUrl || initT?.audioUrl || ''),
+                    showOnHomePage: r.showOnHomePage !== undefined ? r.showOnHomePage : (p.showOnHomePage !== undefined ? p.showOnHomePage : initT?.showOnHomePage),
+                  };
+                } else {
+                  merged.push(r);
+                }
               });
               return merged;
             });

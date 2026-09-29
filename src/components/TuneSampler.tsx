@@ -404,21 +404,41 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
             section="tunes"
           />
           
-          {/* Home Page Featured Notice & See More Quick Pill */}
-          {isHomePage && (
-            <div className="pt-2 flex items-center justify-center gap-3 flex-wrap">
-              <span className="px-4 py-1.5 rounded-full bg-tartan-card text-tartan-gold border border-tartan-border text-xs font-semibold flex items-center gap-1.5 shadow">
-                <span>⭐ Featuring {displayedTunes.length} Hand-Picked Home Tracks</span>
-              </span>
+          {/* Header Action Pills: WhatsApp Share, Repertoire Links */}
+          <div className="pt-2 flex items-center justify-center gap-3 flex-wrap">
+            <button
+              type="button"
+              onClick={handleOpenShareJukebox}
+              className="px-4 py-2 rounded-full bg-emerald-950/80 hover:bg-emerald-900 text-[#25D366] hover:text-white border border-emerald-600/50 text-xs font-bold transition flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95"
+              title="Share Spud's Complete Bagpipe Jukebox on WhatsApp or Social Media"
+            >
+              <MessageCircle className="w-4 h-4 fill-current" />
+              <span>Share Jukebox on WhatsApp</span>
+            </button>
+
+            {isHomePage ? (
+              <>
+                <span className="px-4 py-2 rounded-full bg-tartan-card text-tartan-gold border border-tartan-border text-xs font-semibold flex items-center gap-1.5 shadow">
+                  <span>⭐ Featuring {displayedTunes.length} Hand-Picked Home Tracks</span>
+                </span>
+                <Link
+                  href="/tunes"
+                  className="px-4 py-2 rounded-full bg-tartan-navy hover:bg-slate-700 text-white border border-tartan-border hover:border-tartan-gold text-xs font-semibold transition flex items-center gap-1.5 shadow"
+                >
+                  <Music className="w-3.5 h-3.5 text-tartan-gold" />
+                  <span>See All {tunesList.length} Repertoire Tunes &rarr;</span>
+                </Link>
+              </>
+            ) : (
               <Link
-                href="/tunes"
-                className="px-4 py-1.5 rounded-full bg-tartan-navy hover:bg-slate-700 text-white border border-tartan-border hover:border-tartan-gold text-xs font-semibold transition flex items-center gap-1.5 shadow"
+                href="/booking?service=wedding"
+                className="px-4 py-2 rounded-full bg-gold-gradient text-tartan-dark font-extrabold text-xs transition flex items-center gap-1.5 shadow-lg hover:brightness-110"
               >
-                <Music className="w-3.5 h-3.5 text-tartan-gold" />
-                <span>See All {tunesList.length} Repertoire Tunes &rarr;</span>
+                <Heart className="w-3.5 h-3.5 fill-tartan-dark" />
+                <span>Request Tunes for Your Wedding</span>
               </Link>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* ── FULL MODE ONLY: 1. INTERACTIVE WEDDING TIMELINE MUSIC GUIDE (Collapsible) ── */}
@@ -830,7 +850,7 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                         )}
                       </div>
 
-                      <div className="flex items-center gap-1.5 text-xs text-gray-400 font-mono">
+                      <div className="flex items-center gap-2 text-xs text-gray-400 font-mono">
                         {tune.audioUrl && (
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-950/90 text-emerald-300 border border-emerald-500/40 flex items-center gap-1" title="High-res studio recording uploaded by Spud">
                             <Headphones className="w-2.5 h-2.5" />
@@ -841,6 +861,15 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                           <Clock className="w-3 h-3 text-gray-500" />
                           {tune.duration}
                         </span>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenShareTune(tune)}
+                          className="p-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 text-[#25D366] hover:text-white border border-emerald-700/40 transition-colors flex items-center gap-1 text-[10px] font-bold px-2 shadow-sm"
+                          title={`Share "${tune.title}" on WhatsApp or Social Media`}
+                        >
+                          <Share2 className="w-3 h-3" />
+                          <span>Share</span>
+                        </button>
                       </div>
                     </div>
 
@@ -928,11 +957,11 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                         <button
                           type="button"
                           onClick={() => handleOpenShareTune(tune)}
-                          className="px-3 py-2.5 rounded-xl bg-tartan-navy hover:bg-slate-700 text-gray-200 hover:text-tartan-gold border border-tartan-border hover:border-tartan-accent/60 transition-all flex items-center gap-1.5 text-xs font-semibold shadow"
+                          className="px-3.5 py-2.5 rounded-xl bg-[#25D366]/15 hover:bg-[#25D366]/25 text-[#25D366] hover:text-emerald-300 border border-[#25D366]/40 transition-all flex items-center gap-1.5 text-xs font-bold shadow-md active:scale-95"
                           title={`Share "${tune.title}" on WhatsApp, Facebook, X, etc.`}
                         >
-                          <Share2 className="w-3.5 h-3.5 text-tartan-gold" />
-                          <span>Share</span>
+                          <MessageCircle className="w-3.5 h-3.5 fill-current" />
+                          <span>Share / WhatsApp</span>
                         </button>
                       </div>
 
