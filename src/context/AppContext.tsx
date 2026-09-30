@@ -135,6 +135,8 @@ interface AppContextType {
   approveReview: (id: string) => void;
   rejectReview: (id: string) => void;
   toggleFeatureReview: (id: string) => void;
+  updateReview: (id: string, updates: Partial<Review>) => Promise<void>;
+  deleteReview: (id: string) => Promise<void>;
 
   // Social Community & Forum
   socialPosts: SocialPost[];
@@ -417,7 +419,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const savedReviews = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}reviews`);
-      if (savedReviews) setReviews(JSON.parse(savedReviews));
+      if (savedReviews) {
+        try {
+          const parsedReviews: Review[] = JSON.parse(savedReviews);
+          if (Array.isArray(parsedReviews) && parsedReviews.length > 0) {
+            const initialMap = new Map(initialReviews.map(r => [r.id, r]));
+            const merged = parsedReviews.map(r => {
+              const init = initialMap.get(r.id);
+              if (init && !r.photoUrl && init.photoUrl) {
+                return { ...r, photoUrl: init.photoUrl };
+              }
+              return r;
+            });
+            const existingIds = new Set(merged.map(r => r.id));
+            const missingInitials = initialReviews.filter(r => !existingIds.has(r.id));
+            setReviews([...merged, ...missingInitials]);
+          } else {
+            setReviews(initialReviews);
+          }
+        } catch (e) {
+          setReviews(initialReviews);
+        }
+      } else {
+        setReviews(initialReviews);
+      }
 
       const savedPosts = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}social`);
       if (savedPosts) {
@@ -1977,6 +2002,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const updateReview = async (id: string, updates: Partial<Review>) => {
+    let targetRev: Review | null = null;
+    setReviews(prev => {
+      const updated = prev.map(r => {
+        if (r.id === id) {
+          targetRev = { ...r, ...updates };
+          return targetRev;
+        }
+        return r;
+      });
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_PREFIX}reviews`, JSON.stringify(updated));
+        } catch (e) {}
+      }
+      return updated;
+    });
+    if (targetRev) {
+      await syncToFirestore('reviews', id, targetRev);
+    }
+    addNotification({
+      type: 'system',
+      title: 'Review Updated',
+      message: 'Testimonial details and photo were updated successfully.',
+      actionUrl: '/admin/reviews'
+    });
+  };
+
+  const deleteReview = async (id: string) => {
+    setReviews(prev => {
+      const updated = prev.filter(r => r.id !== id);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_PREFIX}reviews`, JSON.stringify(updated));
+        } catch (e) {}
+      }
+      return updated;
+    });
+    await deleteFromFirestore('reviews', id);
+  };
+
   // Social handlers
   const createSocialPost = async (postData: {
     postType?: 'feed' | 'forum';
@@ -3240,6 +3306,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       approveReview,
       rejectReview,
       toggleFeatureReview,
+      updateReview,
+      deleteReview,
       socialPosts,
       createSocialPost,
       likeSocialPost,

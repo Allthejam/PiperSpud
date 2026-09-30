@@ -73,6 +73,7 @@ export const initialReviews: Review[] = [
     rating: 5,
     date: 'September 2026',
     comment: 'Six of us rented a lodge in Scotland and booked Spud for a private Highland Bagpipe Experience. It was by far the highlight of our entire trip! Spud brought practice chanters, taught us how to play the scale, and let us all have a go at the big pipes. Unbelievable fun, huge laughs, and great stories. Truly the cutest piper this side of the Great Wall of China! Bedankt Spud!',
+    photoUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80',
     status: 'approved',
     isFeatured: true,
     location: 'Loch Lomond Holiday Rental'
@@ -84,6 +85,7 @@ export const initialReviews: Review[] = [
     rating: 5,
     date: 'August 2026',
     comment: 'Spud was the absolute highlight of our wedding! His presence, warmth, and masterful piping brought tears of joy to our guests. From welcoming everyone at the gates to piping us into the reception in full No. 1 dress, he was unforgettable. Worth every single penny!',
+    photoUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&auto=format&fit=crop&q=80',
     status: 'approved',
     isFeatured: true,
     location: 'Stirling Castle, Scotland'
@@ -95,6 +97,7 @@ export const initialReviews: Review[] = [
     rating: 5,
     date: 'Annual Awards',
     comment: 'Spud the Piper is one of the wedding industry\'s best known characters. Couples were simply bowled over by his obvious musicianship and highly toned performance skills.',
+    photoUrl: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=800&auto=format&fit=crop&q=80',
     status: 'approved',
     isFeatured: true,
     location: 'Voted Best Scottish Wedding Entertainer'
@@ -106,6 +109,7 @@ export const initialReviews: Review[] = [
     rating: 5,
     date: 'July 2026',
     comment: 'Having Spud play at our 50th Anniversary was magical. His repertoire of traditional Scottish tunes had everyone singing and tapping their feet. A true Scottish gentleman and extraordinary musician.',
+    photoUrl: 'https://images.unsplash.com/photo-1544077960-604201fe74bc?w=800&auto=format&fit=crop&q=80',
     status: 'approved',
     isFeatured: true,
     location: 'Aberdeen'
@@ -117,6 +121,7 @@ export const initialReviews: Review[] = [
     rating: 5,
     date: 'June 2026',
     comment: 'Spud performed "Flowers of the Forest" and "Going Home" with such heartfelt dignity and grace. It provided the most touching tribute for our grandfather. We cannot thank him enough.',
+    photoUrl: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800&auto=format&fit=crop&q=80',
     status: 'approved',
     isFeatured: false,
     location: 'Inverness'
