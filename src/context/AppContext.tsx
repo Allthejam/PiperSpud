@@ -451,12 +451,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try {
           const parsedTunes: BagpipeTune[] = JSON.parse(savedTunes);
           if (Array.isArray(parsedTunes) && parsedTunes.length > 0) {
+            const validParsed = parsedTunes.filter(Boolean);
             const initialMap = new Map(initialTunes.map(t => [t.id, t]));
-            const initialTitleMap = new Map(initialTunes.map(t => [t.title.toLowerCase(), t]));
+            const initialTitleMap = new Map(initialTunes.map(t => [(t.title || '').toLowerCase(), t]));
             
             // Merge initial tunes with any user overrides while preserving full rich fields and audioUrl
             const mergedInitial = initialTunes.map(initTune => {
-              const userVer = parsedTunes.find(p => p.id === initTune.id || p.title.toLowerCase() === initTune.title.toLowerCase());
+              const initTitle = (initTune.title || '').toLowerCase();
+              const userVer = validParsed.find(p => p && (p.id === initTune.id || ((p.title || '').toLowerCase() === initTitle)));
               if (userVer) {
                 return {
                   ...initTune,
@@ -475,7 +477,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             });
 
             // Keep any brand new tunes added by user
-            const customTunes = parsedTunes.filter(p => !initialMap.has(p.id) && !initialTitleMap.has(p.title.toLowerCase()));
+            const customTunes = validParsed.filter(p => p && !initialMap.has(p.id) && !initialTitleMap.has((p.title || '').toLowerCase()));
             setTunesList([...mergedInitial, ...customTunes]);
           } else {
             setTunesList(initialTunes);
@@ -809,16 +811,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubTunes = onSnapshot(collection(db, 'bagpipe_tunes'), (snapshot) => {
         if (!snapshot.empty) {
           const remoteTunes: BagpipeTune[] = [];
-          snapshot.forEach((d) => remoteTunes.push(d.data() as BagpipeTune));
+          snapshot.forEach((d) => {
+            const data = d.data() as BagpipeTune;
+            if (data) remoteTunes.push(data);
+          });
           if (remoteTunes.length > 0) {
             setTunesList(prev => {
               const currentList = prev && prev.length > 0 ? prev : initialTunes;
               const merged = [...currentList];
               remoteTunes.forEach(r => {
-                const idx = merged.findIndex(t => t.id === r.id || t.title.toLowerCase() === r.title?.toLowerCase());
-                const initT = initialTunes.find(it => it.id === r.id || it.title.toLowerCase() === r.title?.toLowerCase());
+                if (!r) return;
+                const rTitle = (r.title || '').toLowerCase();
+                const idx = merged.findIndex(t => t && (t.id === r.id || ((t.title || '').toLowerCase() === rTitle)));
+                const initT = initialTunes.find(it => it && (it.id === r.id || ((it.title || '').toLowerCase() === rTitle)));
                 if (idx >= 0) {
-                  const p = merged[idx];
+                  const p = merged[idx] || {};
                   merged[idx] = {
                     ...initT,
                     ...p,
@@ -2365,7 +2372,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Audio Bagpipe Player & Tune Manager
   const playTune = (titleOrId: string) => {
-    const tune = tunesList.find(t => t.id === titleOrId || t.title.toLowerCase() === titleOrId.toLowerCase());
+    const targetQuery = (titleOrId || '').toLowerCase();
+    const tune = (tunesList || []).find(t => 
+      t && (t.id === titleOrId || (t.title && t.title.toLowerCase() === targetQuery))
+    );
     
     // Stop any existing audio or synth first
     if (audioPlayerRef.current) {
@@ -2924,8 +2934,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setShowLiveStream(!showLiveStream);
   };
 
-  const unreadNotifCount = notifications.filter(n => !n.isRead).length;
-  const unreadChatCount = chatMessages.filter(m => !m.isRead && m.sender !== 'spud').length;
+  const unreadNotifCount = (notifications || []).filter(n => n && !n.isRead).length;
+  const unreadChatCount = (chatMessages || []).filter(m => m && !m.isRead && m.sender !== 'spud').length;
 
   return (
     <AppContext.Provider value={{

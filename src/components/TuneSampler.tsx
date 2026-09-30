@@ -83,10 +83,13 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
       
       const targetQuery = tuneParam || hashParam;
       if (targetQuery) {
-        const matched = tunesList.find(t => 
-          t.title.toLowerCase() === targetQuery.toLowerCase() || 
-          t.id === targetQuery ||
-          t.title.toLowerCase().includes(targetQuery.toLowerCase())
+        const targetLower = targetQuery.toLowerCase();
+        const matched = (tunesList || []).find(t => 
+          t && (
+            (t.title && t.title.toLowerCase() === targetLower) || 
+            t.id === targetQuery ||
+            (t.title && t.title.toLowerCase().includes(targetLower))
+          )
         );
 
         if (matched) {
@@ -112,7 +115,7 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
         origin = loc.origin;
       }
     }
-    if (tune) {
+    if (tune && tune.title) {
       return `${origin}/tunes?tune=${encodeURIComponent(tune.title)}#tune-${tune.id}`;
     }
     return `${origin}/tunes`;
@@ -207,28 +210,29 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
 
   // Wedding & Event Moments Definition
   const weddingMoments = [
-    { id: 'All', label: 'All Repertoire', emoji: '🎵', count: tunesList.length },
-    { id: 'Walking Up the Aisle', label: 'Walking Up Aisle', emoji: '👰', count: tunesList.filter(t => t.weddingMoment === 'Walking Up the Aisle').length },
-    { id: 'Newlyweds Exit / Recessional', label: 'Newlyweds Exit', emoji: '🎉', count: tunesList.filter(t => t.weddingMoment === 'Newlyweds Exit / Recessional').length },
-    { id: 'Signing the Register', label: 'Signing Register', emoji: '✍️', count: tunesList.filter(t => t.weddingMoment === 'Signing the Register').length },
-    { id: 'Confetti & Drinks', label: 'Confetti & Drinks', emoji: '🥂', count: tunesList.filter(t => t.weddingMoment === 'Confetti & Drinks').length },
-    { id: 'Top Table Entrance', label: 'Top Table Entrance', emoji: '👑', count: tunesList.filter(t => t.weddingMoment === 'Top Table Entrance').length },
-    { id: 'Guests Arrival', label: 'Guests Arrival', emoji: '👋', count: tunesList.filter(t => t.weddingMoment === 'Guests Arrival').length },
-    { id: 'Memorial & Lament', label: 'Memorials & Laments', emoji: '🕊️', count: tunesList.filter(t => t.weddingMoment === 'Memorial & Lament').length },
-    { id: 'Burns & Galas', label: 'Burns & Galas', emoji: '🥃', count: tunesList.filter(t => t.weddingMoment === 'Burns & Galas').length },
+    { id: 'All', label: 'All Repertoire', emoji: '🎵', count: (tunesList || []).filter(Boolean).length },
+    { id: 'Walking Up the Aisle', label: 'Walking Up Aisle', emoji: '👰', count: (tunesList || []).filter(t => t?.weddingMoment === 'Walking Up the Aisle').length },
+    { id: 'Newlyweds Exit / Recessional', label: 'Newlyweds Exit', emoji: '🎉', count: (tunesList || []).filter(t => t?.weddingMoment === 'Newlyweds Exit / Recessional').length },
+    { id: 'Signing the Register', label: 'Signing Register', emoji: '✍️', count: (tunesList || []).filter(t => t?.weddingMoment === 'Signing the Register').length },
+    { id: 'Confetti & Drinks', label: 'Confetti & Drinks', emoji: '🥂', count: (tunesList || []).filter(t => t?.weddingMoment === 'Confetti & Drinks').length },
+    { id: 'Top Table Entrance', label: 'Top Table Entrance', emoji: '👑', count: (tunesList || []).filter(t => t?.weddingMoment === 'Top Table Entrance').length },
+    { id: 'Guests Arrival', label: 'Guests Arrival', emoji: '👋', count: (tunesList || []).filter(t => t?.weddingMoment === 'Guests Arrival').length },
+    { id: 'Memorial & Lament', label: 'Memorials & Laments', emoji: '🕊️', count: (tunesList || []).filter(t => t?.weddingMoment === 'Memorial & Lament').length },
+    { id: 'Burns & Galas', label: 'Burns & Galas', emoji: '🥃', count: (tunesList || []).filter(t => t?.weddingMoment === 'Burns & Galas').length },
   ];
 
   // Filtered Tunes computation (Full Library)
   const filteredTunes = useMemo(() => {
-    return tunesList.filter((tune) => {
+    return (tunesList || []).filter((tune) => {
+      if (!tune) return false;
       // 1. Search Query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const matchesTitle = tune.title.toLowerCase().includes(q);
-        const matchesDesc = tune.description?.toLowerCase().includes(q);
-        const matchesMoment = tune.weddingMoment?.toLowerCase().includes(q);
-        const matchesFact = tune.funFact?.toLowerCase().includes(q);
-        const matchesCategory = tune.category?.toLowerCase().includes(q);
+        const matchesTitle = (tune.title || '').toLowerCase().includes(q);
+        const matchesDesc = (tune.description || '').toLowerCase().includes(q);
+        const matchesMoment = (tune.weddingMoment || '').toLowerCase().includes(q);
+        const matchesFact = (tune.funFact || '').toLowerCase().includes(q);
+        const matchesCategory = (tune.category || '').toLowerCase().includes(q);
         if (!matchesTitle && !matchesDesc && !matchesMoment && !matchesFact && !matchesCategory) {
           return false;
         }
@@ -257,12 +261,13 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
 
   // Displayed Tunes: Checked for Home Page, or Filtered Library for Full Page
   const displayedTunes = useMemo(() => {
+    const list = tunesList || [];
     if (isHomePage) {
-      const homePicked = tunesList.filter(t => t.showOnHomePage === true);
+      const homePicked = list.filter(t => t && t.showOnHomePage === true);
       if (homePicked.length > 0) {
         return homePicked;
       }
-      return tunesList.slice(0, 3);
+      return list.slice(0, 3);
     }
     return filteredTunes;
   }, [isHomePage, tunesList, filteredTunes]);
