@@ -4,33 +4,73 @@ import { BookingEvent } from '@/types/spud';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { type, booking, paypalLink } = body as {
-      type: 'booking_approved' | 'booking_created' | 'deposit_received' | 'custom';
-      booking: BookingEvent;
+    const { 
+      type, 
+      booking, 
+      paypalLink,
+      to,
+      name,
+      replyMessage,
+      recipientEmail: customRecipientEmail,
+      recipientName: customRecipientName,
+      subject: customSubject,
+      messageContent: customMessageContent,
+      originalQuestion
+    } = body as {
+      type: 'booking_approved' | 'booking_created' | 'deposit_received' | 'inquiry_reply' | 'custom';
+      booking?: BookingEvent;
       paypalLink?: string;
+      to?: string;
+      name?: string;
+      replyMessage?: string;
+      recipientEmail?: string;
+      recipientName?: string;
+      subject?: string;
+      messageContent?: string;
+      originalQuestion?: string;
     };
 
-    if (!booking) {
-      return NextResponse.json({ error: 'Missing booking information' }, { status: 400 });
-    }
-
     const apiKey = process.env.BREVO_API_KEY;
-    if (!apiKey) {
-      console.warn('BREVO_API_KEY is not configured in environment.');
-      return NextResponse.json({ warning: 'Brevo API key not set, simulated success' }, { status: 200 });
-    }
-
-    const senderEmail = process.env.BREVO_SENDER_EMAIL || 'info@spudthepiper.com';
+    const senderEmail = process.env.BREVO_SENDER_EMAIL || 'spud@spudthepiper.co.uk';
     const senderName = process.env.BREVO_SENDER_NAME || 'Spud the Piper';
 
     let subject = '';
     let htmlContent = '';
-    let recipientEmail = booking.clientEmail;
-    let recipientName = booking.clientName;
+    let recipientEmail = to || customRecipientEmail || booking?.clientEmail || '';
+    let recipientName = name || customRecipientName || booking?.clientName || 'Valued Client';
+    const finalMessageContent = replyMessage || customMessageContent || '';
 
-    const formattedDepositLink = paypalLink || `https://www.paypal.com/ncp/payment/spudthepiper-deposit-${booking.id}`;
+    if (type === 'inquiry_reply' || (!booking && recipientEmail)) {
+      subject = customSubject || `Regarding Your Bagpipe Inquiry - Spud the Piper`;
+      htmlContent = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background-color: #0d1527; color: #f8fafc; padding: 32px 24px; border-radius: 16px; border: 1px solid #c5a059;">
+          <div style="text-align: center; border-bottom: 1px solid #1e293b; padding-bottom: 20px; margin-bottom: 24px;">
+            <h1 style="color: #c5a059; margin: 0; font-size: 26px; font-family: Georgia, serif; letter-spacing: 0.5px;">Spud The Piper</h1>
+            <p style="color: #94a3b8; margin: 6px 0 0 0; font-size: 13px; letter-spacing: 1px; text-transform: uppercase;">Direct Reply from Spud</p>
+          </div>
 
-    if (type === 'booking_approved') {
+          <div style="background-color: #131d33; padding: 22px; border-radius: 12px; border: 1px solid #1e293b; margin-bottom: 24px;">
+            <p style="font-size: 15px; line-height: 1.6; margin-top: 0;">
+              Dear <strong style="color: #c5a059;">${recipientName}</strong>,
+            </p>
+            <div style="font-size: 14px; line-height: 1.7; color: #e2e8f0; white-space: pre-wrap; margin: 16px 0;">${finalMessageContent}</div>
+
+            ${originalQuestion ? `
+            <div style="background-color: #0b1120; border-radius: 10px; padding: 14px 16px; margin: 20px 0 10px 0; border-left: 3px solid #64748b;">
+              <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: bold;">Your Inquiry:</p>
+              <p style="margin: 0; font-size: 13px; color: #cbd5e1; font-style: italic;">"${originalQuestion}"</p>
+            </div>
+            ` : ''}
+          </div>
+
+          <div style="text-align: center; font-size: 12px; color: #94a3b8; line-height: 1.6;">
+            <p style="margin: 0 0 4px 0;"><strong style="color: #ffffff;">Callum Fraser (Spud the Piper)</strong> • Scotland & Worldwide</p>
+            <p style="margin: 0 0 4px 0;">📞 Phone / WhatsApp: <a href="tel:07793491367" style="color: #c5a059; text-decoration: none;">07793 491367</a> • 🌐 <a href="https://spudthepiper.com" style="color: #c5a059; text-decoration: none;">spudthepiper.com</a></p>
+          </div>
+        </div>
+      `;
+    } else if (type === 'booking_approved' && booking) {
+      const formattedDepositLink = paypalLink || (booking.depositAmount ? `https://paypal.me/spudthepiper/${booking.depositAmount}` : 'https://paypal.me/spudthepiper/50');
       subject = `🏴󠁧󠁢󠁳󠁣󠁴󠁿 Booking Approved: Spud the Piper for ${booking.eventType} on ${booking.date}`;
       htmlContent = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background-color: #0d1527; color: #f8fafc; padding: 32px 24px; border-radius: 16px; border: 1px solid #c5a059;">
@@ -77,7 +117,7 @@ export async function POST(req: NextRequest) {
             </div>
 
             <p style="font-size: 13px; line-height: 1.5; color: #cbd5e1;">
-              To secure and officially lock this date in Spud\'s diary, please complete your £${booking.depositAmount}.00 deposit payment using the secure PayPal button below:
+              To secure and officially lock this date in Spud's diary, please complete your £${booking.depositAmount}.00 deposit payment using the secure PayPal button below:
             </p>
 
             <div style="text-align: center; margin: 24px 0 16px 0;">
@@ -93,7 +133,7 @@ export async function POST(req: NextRequest) {
           </div>
         </div>
       `;
-    } else if (type === 'deposit_received') {
+    } else if (type === 'deposit_received' && booking) {
       subject = `✅ Deposit Received & Booking Locked: Spud the Piper (${booking.date})`;
       htmlContent = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background-color: #0d1527; color: #f8fafc; padding: 32px 24px; border-radius: 16px; border: 1px solid #22c55e;">
@@ -107,7 +147,7 @@ export async function POST(req: NextRequest) {
               Dear <strong style="color: #c5a059;">${booking.clientName}</strong>,
             </p>
             <p style="font-size: 14px; line-height: 1.6; color: #e2e8f0;">
-              Thank you! Your deposit payment of <strong style="color: #22c55e;">£${booking.depositAmount}.00</strong> has been successfully captured. Your booking date is now <strong style="color: #22c55e;">100% LOCKED IN</strong> on Spud\'s official diary.
+              Thank you! Your deposit payment of <strong style="color: #22c55e;">£${booking.depositAmount}.00</strong> has been successfully captured. Your booking date is now <strong style="color: #22c55e;">100% LOCKED IN</strong> on Spud's official diary.
             </p>
 
             <div style="background-color: #0b1120; border-radius: 10px; padding: 16px; margin: 18px 0; border-left: 4px solid #22c55e;">
@@ -127,7 +167,7 @@ export async function POST(req: NextRequest) {
           </div>
         </div>
       `;
-    } else {
+    } else if (booking) {
       // Notification to Spud on new booking creation
       recipientEmail = process.env.BREVO_FALLBACK_SENDER_EMAIL || 'piperspud@gmail.com';
       recipientName = 'Spud Fraser';
@@ -150,10 +190,14 @@ export async function POST(req: NextRequest) {
       `;
     }
 
+    if (!recipientEmail) {
+      return NextResponse.json({ error: 'No recipient email specified' }, { status: 400 });
+    }
+
     const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
-        'api-key': apiKey,
+        'api-key': apiKey || '',
         'Content-Type': 'application/json',
         'accept': 'application/json'
       },

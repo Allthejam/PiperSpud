@@ -65,6 +65,13 @@ export const AdminMessageCenter: React.FC = () => {
   const [qrFormCategory, setQrFormCategory] = useState<QuickResponse['category']>('Weddings');
   const [qrFormText, setQrFormText] = useState('');
 
+  // Email Reply Modal State
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailStatusMsg, setEmailStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   // Derive all active sessions including auto-synthesized sessions from orphaned messages
   const effectiveSessions = React.useMemo(() => {
     const sessionMap = new Map<string, ChatSession>();
@@ -147,6 +154,62 @@ export const AdminMessageCenter: React.FC = () => {
 
   const handleInsertQuickResponse = (content: string) => {
     setReplyText(content);
+  };
+
+  const handleOpenEmailModal = () => {
+    if (!activeSession?.visitorEmail) return;
+    setEmailSubject(`Regarding Your Bagpipe Inquiry - Spud the Piper`);
+    setEmailBody(
+      `Hi ${activeSession.visitorName || 'there'},\n\nThank you for reaching out regarding your inquiry.\n\n`
+    );
+    setEmailStatusMsg(null);
+    setIsEmailModalOpen(true);
+  };
+
+  const handleSendEmailReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeSession?.visitorEmail || !emailBody.trim() || isSendingEmail) return;
+
+    setIsSendingEmail(true);
+    setEmailStatusMsg(null);
+
+    try {
+      const res = await fetch('/api/brevo/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'inquiry_reply',
+          to: activeSession.visitorEmail,
+          name: activeSession.visitorName,
+          subject: emailSubject.trim() || 'Regarding Your Bagpipe Inquiry - Spud the Piper',
+          replyMessage: emailBody.trim(),
+          originalQuestion: activeSession.lastMessage || ''
+        })
+      });
+
+      const result = await res.json();
+      if (res.ok && result.success) {
+        setEmailStatusMsg({ type: 'success', text: 'Email reply sent successfully via Brevo!' });
+        
+        // Append to chat thread as a system/sent email log
+        const sentNote = `✉️ [Email Sent via Brevo to ${activeSession.visitorEmail}]:\n${emailBody.trim()}`;
+        sendChatMessage(sentNote, 'spud', activeSession.id);
+        
+        // Mark session resolved
+        markSessionResolved(activeSession.id);
+
+        setTimeout(() => {
+          setIsEmailModalOpen(false);
+          setEmailStatusMsg(null);
+        }, 1500);
+      } else {
+        setEmailStatusMsg({ type: 'error', text: result.error || 'Failed to send email. Please check your Brevo configuration.' });
+      }
+    } catch (err: any) {
+      setEmailStatusMsg({ type: 'error', text: err.message || 'Network error sending email.' });
+    } finally {
+      setIsSendingEmail(false);
+    }
   };
 
   const handleOpenNewQrModal = () => {
@@ -442,6 +505,16 @@ export const AdminMessageCenter: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
+              {activeSession?.visitorEmail && (
+                <button
+                  onClick={handleOpenEmailModal}
+                  className="px-2.5 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 shadow transition"
+                  title="Compose and send an email reply via Brevo"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Email Reply</span>
+                </button>
+              )}
               {activeSession?.status !== 'resolved' && (
                 <button
                   onClick={() => activeSession && markSessionResolved(activeSession.id)}
@@ -454,6 +527,23 @@ export const AdminMessageCenter: React.FC = () => {
               )}
             </div>
           </div>
+
+          {/* Offline Email Inquiry Alert Banner */}
+          {activeSession?.visitorEmail && (
+            <div className="bg-purple-950/40 border-b border-purple-500/30 px-4 py-2 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-[11px] text-purple-200">
+                <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+                <span>Visitor provided email: <strong className="text-white">{activeSession.visitorEmail}</strong></span>
+              </div>
+              <button
+                onClick={handleOpenEmailModal}
+                className="text-[11px] font-bold text-purple-300 hover:text-white underline flex items-center gap-1"
+              >
+                <Mail className="w-3 h-3" />
+                Reply via Email
+              </button>
+            </div>
+          )}
 
           {/* Messages Feed */}
           <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-tartan-dark/50 text-xs">
@@ -618,12 +708,23 @@ export const AdminMessageCenter: React.FC = () => {
               {/* Action Buttons */}
               <div className="space-y-2 pt-2 border-t border-tartan-border">
                 {activeSession.visitorEmail && (
+                  <button
+                    type="button"
+                    onClick={handleOpenEmailModal}
+                    className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-purple-900/40 transition"
+                  >
+                    <Mail className="w-4 h-4 text-white" />
+                    <span>Compose & Send Email Reply</span>
+                  </button>
+                )}
+
+                {activeSession.visitorEmail && (
                   <a
                     href={`mailto:${activeSession.visitorEmail}?subject=Regarding Your Bagpipe Inquiry - Spud the Piper`}
-                    className="w-full py-2 bg-tartan-navy hover:bg-slate-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-tartan-border transition"
+                    className="w-full py-2 bg-tartan-navy hover:bg-slate-700 text-gray-300 hover:text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-tartan-border transition"
                   >
                     <Mail className="w-3.5 h-3.5 text-tartan-gold" />
-                    <span>Send Follow-Up Email</span>
+                    <span>Open in Default Mail App</span>
                   </a>
                 )}
 
@@ -848,6 +949,174 @@ export const AdminMessageCenter: React.FC = () => {
                 Close Studio
               </button>
             </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: DIRECT EMAIL COMPOSER ================= */}
+      {isEmailModalOpen && activeSession && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-tartan-card border border-purple-500/40 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl shadow-purple-950/50 animate-in zoom-in-95 duration-200">
+            
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-purple-950 via-tartan-navy to-indigo-950 p-5 border-b border-purple-500/30 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-purple-600/30 border border-purple-400/40 flex items-center justify-center text-purple-300">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white font-serif flex items-center gap-2">
+                    Compose & Send Email Reply
+                  </h3>
+                  <p className="text-xs text-purple-200/80">
+                    Dispatched instantly via Brevo to <strong className="text-white">{activeSession.visitorEmail}</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (!isSendingEmail) {
+                    setIsEmailModalOpen(false);
+                    setEmailStatusMsg(null);
+                  }
+                }}
+                className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body / Form */}
+            <form onSubmit={handleSendEmailReply} className="p-6 space-y-4 max-h-[78vh] overflow-y-auto">
+              
+              {/* Recipient Details Pill */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-tartan-dark/70 p-3.5 rounded-2xl border border-tartan-border text-xs">
+                <div>
+                  <span className="text-[10px] text-gray-400 uppercase font-bold block">To:</span>
+                  <span className="text-white font-semibold">{activeSession.visitorName}</span>
+                  <span className="text-gray-400 text-[11px] block">{activeSession.visitorEmail}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-gray-400 uppercase font-bold block">From:</span>
+                  <span className="text-tartan-gold font-semibold">Spud the Piper</span>
+                  <span className="text-gray-400 text-[11px] block">spud@spudthepiper.co.uk</span>
+                </div>
+              </div>
+
+              {/* Subject Line */}
+              <div>
+                <label className="block text-[11px] font-bold text-gray-300 mb-1">
+                  Email Subject Line *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-400 font-medium"
+                />
+              </div>
+
+              {/* Original Visitor Question / Inquiry (Context Quote) */}
+              {activeSession.lastMessage && (
+                <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-700 text-xs space-y-1">
+                  <span className="text-[10px] text-gray-400 uppercase font-bold block">
+                    Original Visitor Inquiry:
+                  </span>
+                  <p className="text-gray-300 italic text-[11px] leading-relaxed line-clamp-3">
+                    "{activeSession.lastMessage}"
+                  </p>
+                </div>
+              )}
+
+              {/* Insert Quick Response Shortcuts */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-tartan-gold font-bold flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" /> Quick Template Insert:
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] no-scrollbar">
+                  {quickResponses.slice(0, 6).map((qr) => (
+                    <button
+                      key={qr.id}
+                      type="button"
+                      onClick={() => setEmailBody((prev) => `${prev.trim()}\n\n${qr.text}\n`)}
+                      className="bg-tartan-dark hover:bg-purple-900/50 hover:text-white text-gray-300 px-2.5 py-1 rounded-lg border border-tartan-border text-[11px] whitespace-nowrap transition"
+                      title={qr.text}
+                    >
+                      + {qr.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Message Body */}
+              <div>
+                <label className="block text-[11px] font-bold text-gray-300 mb-1">
+                  Message Content *
+                </label>
+                <textarea
+                  required
+                  rows={7}
+                  value={emailBody}
+                  onChange={(e) => setEmailBody(e.target.value)}
+                  placeholder="Type your official email reply to the client..."
+                  className="w-full bg-tartan-dark border border-tartan-border rounded-xl p-3.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-400 leading-relaxed font-sans"
+                />
+              </div>
+
+              {/* Status Message (Success / Error) */}
+              {emailStatusMsg && (
+                <div className={`p-3 rounded-xl text-xs font-semibold flex items-center gap-2 ${
+                  emailStatusMsg.type === 'success'
+                    ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-500/50'
+                    : 'bg-red-950/60 text-red-300 border border-red-500/50'
+                }`}>
+                  {emailStatusMsg.type === 'success' ? (
+                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+                  )}
+                  <span>{emailStatusMsg.text}</span>
+                </div>
+              )}
+
+              {/* Modal Footer Actions */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-tartan-border">
+                <button
+                  type="button"
+                  disabled={isSendingEmail}
+                  onClick={() => {
+                    setIsEmailModalOpen(false);
+                    setEmailStatusMsg(null);
+                  }}
+                  className="px-4 py-2.5 bg-tartan-dark text-gray-300 hover:text-white rounded-xl text-xs font-semibold border border-tartan-border transition disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isSendingEmail || !emailBody.trim()}
+                  className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-purple-900/50 transition disabled:opacity-50"
+                >
+                  {isSendingEmail ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Sending via Brevo...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Send Official Email Reply</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+            </form>
 
           </div>
         </div>

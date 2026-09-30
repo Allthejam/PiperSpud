@@ -53,6 +53,11 @@ export const LiveChatWidget: React.FC = () => {
     return !m.sessionId || m.sessionId === visitorSessionId;
   });
 
+  // Only count unread messages SENT BY SPUD to this visitor
+  const visitorUnreadCount = chatMessages.filter(m => 
+    m && !m.isRead && m.sender === 'spud' && (!visitorSessionId || m.sessionId === visitorSessionId)
+  ).length;
+
   // Offline / Inquiry Form State
   const [inquiryName, setInquiryName] = useState('');
   const [inquiryEmail, setInquiryEmail] = useState('');
@@ -69,10 +74,10 @@ export const LiveChatWidget: React.FC = () => {
   }, [isOpen, visitorMessages.length, activeTab]);
 
   useEffect(() => {
-    if (isOpen && activeTab === 'chat' && unreadChatCount > 0) {
+    if (isOpen && activeTab === 'chat' && visitorUnreadCount > 0) {
       markChatAsRead(visitorSessionId || undefined);
     }
-  }, [isOpen, activeTab, unreadChatCount, markChatAsRead, visitorSessionId]);
+  }, [isOpen, activeTab, visitorUnreadCount, markChatAsRead, visitorSessionId]);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,9 +156,9 @@ export const LiveChatWidget: React.FC = () => {
                 }`} 
               />
             </div>
-            {unreadChatCount > 0 && (
+            {visitorUnreadCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center border-2 border-white animate-bounce shadow">
-                {unreadChatCount}
+                {visitorUnreadCount}
               </span>
             )}
             <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out pl-0 group-hover:pl-2 text-xs font-extrabold uppercase tracking-wider">
@@ -253,8 +258,8 @@ export const LiveChatWidget: React.FC = () => {
             >
               <MessageCircle className="w-3.5 h-3.5" />
               <span>Live Chat</span>
-              {unreadChatCount > 0 && (
-                <span className="bg-red-600 text-white text-[10px] px-1 rounded-full">{unreadChatCount}</span>
+              {visitorUnreadCount > 0 && (
+                <span className="bg-red-600 text-white text-[10px] px-1 rounded-full">{visitorUnreadCount}</span>
               )}
             </button>
             <button
