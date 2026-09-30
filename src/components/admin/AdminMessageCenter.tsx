@@ -113,6 +113,13 @@ export const AdminMessageCenter: React.FC = () => {
   const activeSession = effectiveSessions.find(s => s.id === activeChatSessionId) || effectiveSessions[0];
   const currentSessionId = activeSession?.id || (chatMessages.length > 0 ? (chatMessages[0].sessionId || 'session-visitor-live') : '');
 
+  // Automatically mark the currently viewed session as read
+  React.useEffect(() => {
+    if (activeSession?.id) {
+      markChatAsRead(activeSession.id);
+    }
+  }, [activeSession?.id]);
+
   // Filter messages for current active session
   const activeSessionMessages = chatMessages.filter(m => {
     if (!m) return false;
@@ -326,6 +333,16 @@ export const AdminMessageCenter: React.FC = () => {
                 Conversations ({effectiveSessions.length})
               </span>
               <div className="flex items-center gap-2">
+                {unreadChatCount > 0 && (
+                  <button
+                    onClick={() => markChatAsRead()}
+                    className="text-[11px] text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-1 font-semibold"
+                    title="Mark all messages across all conversations as read"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Mark All Read
+                  </button>
+                )}
                 {effectiveSessions.length > 0 && (
                   <button
                     onClick={() => {

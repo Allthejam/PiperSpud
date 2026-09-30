@@ -2458,10 +2458,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     });
 
-    // Cloud Firestore synchronization
+    // Sync to Cloud Firestore
     syncToFirestore('chat_messages', newMsg.id, newMsg).catch(e => console.warn(e));
     if (sessionToSave) {
       syncToFirestore('chat_sessions', currentSessionId, sessionToSave).catch(e => console.warn(e));
+    }
+
+    // If Spud replies, automatically mark all prior unread messages in this session as read
+    if (sender === 'spud') {
+      setChatMessages(prev => {
+        const updated = prev.map(m => {
+          if (m && m.sessionId === currentSessionId && !m.isRead) {
+            if (db && m.id) {
+              setDoc(doc(db, 'chat_messages', m.id), { isRead: true }, { merge: true }).catch(e => console.warn(e));
+            }
+            return { ...m, isRead: true };
+          }
+          return m;
+        });
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(`${LOCAL_STORAGE_PREFIX}chat`, JSON.stringify(updated));
+          } catch (e) {}
+        }
+        return updated;
+      });
+
+      setChatSessions(prev => {
+        const updated = prev.map(s => {
+          if (s && s.id === currentSessionId) {
+            return { ...s, unreadCount: 0, isWaitingForSpud: false };
+          }
+          return s;
+        });
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(`${LOCAL_STORAGE_PREFIX}chat_sessions`, JSON.stringify(updated));
+          } catch (e) {}
+        }
+        return updated;
+      });
+
+      if (currentSessionId && db) {
+        setDoc(doc(db, 'chat_sessions', currentSessionId), { unreadCount: 0, isWaitingForSpud: false }, { merge: true }).catch(e => console.warn(e));
+      }
     }
 
     if (sender === 'client') {
@@ -2497,7 +2537,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             senderName: 'Spud the Piper (Away Notice)',
             text: `Failte! Spud is currently away performing at a Highland venue or event. Your question has been delivered to his Live Message Center. If you would like an email reply, please use the "Email Us / Leave Question" tab!`,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            isRead: false,
+            isRead: true,
             sessionId: currentSessionId
           };
           setChatMessages(c => [...c, offlineBotMsg]);
@@ -2531,7 +2571,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             senderName: 'Spud the Piper (Auto-Assist)',
             text: replyText,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            isRead: false,
+            isRead: true,
             sessionId: currentSessionId
           };
           setChatMessages(c => [...c, botMsg]);
@@ -2639,26 +2679,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const markChatAsRead = (sessionId?: string) => {
     const targetSessionId = sessionId || activeChatSessionId;
+    
+    // 1. Mark messages as read in state, Firestore & localStorage
     setChatMessages(prev => {
-      const hasUnread = prev.some(m => (!targetSessionId || m.sessionId === targetSessionId) && !m.isRead);
-      if (!hasUnread) return prev;
-      return prev.map(m => {
+      const updated = prev.map(m => {
+        if (!m) return m;
         if (!targetSessionId || m.sessionId === targetSessionId) {
-          return { ...m, isRead: true };
+          if (!m.isRead) {
+            if (db && m.id) {
+              setDoc(doc(db, 'chat_messages', m.id), { isRead: true }, { merge: true }).catch(e => console.warn(e));
+            }
+            return { ...m, isRead: true };
+          }
         }
         return m;
       });
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_PREFIX}chat`, JSON.stringify(updated));
+        } catch (e) {}
+      }
+      return updated;
     });
 
+    // 2. Mark sessions as read in state, Firestore & localStorage
     setChatSessions(prev => {
-      const hasUnread = prev.some(s => (!targetSessionId || s.id === targetSessionId) && s.unreadCount > 0);
-      if (!hasUnread) return prev;
-      return prev.map(s => {
+      const updated = prev.map(s => {
+        if (!s) return s;
         if (!targetSessionId || s.id === targetSessionId) {
-          return { ...s, unreadCount: 0 };
+          if (s.unreadCount > 0 || s.isWaitingForSpud) {
+            if (db && s.id) {
+              setDoc(doc(db, 'chat_sessions', s.id), { unreadCount: 0, isWaitingForSpud: false }, { merge: true }).catch(e => console.warn(e));
+            }
+            return { ...s, unreadCount: 0, isWaitingForSpud: false };
+          }
         }
         return s;
       });
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_PREFIX}chat_sessions`, JSON.stringify(updated));
+        } catch (e) {}
+      }
+      return updated;
     });
 
     if (targetSessionId && db) {
@@ -2667,12 +2730,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const markSessionResolved = (sessionId: string) => {
-    setChatSessions(prev => prev.map(s => {
-      if (s.id === sessionId) {
-        return { ...s, status: 'resolved', isWaitingForSpud: false, unreadCount: 0 };
+    markChatAsRead(sessionId);
+
+    setChatSessions(prev => {
+      const updated = prev.map(s => {
+        if (s && s.id === sessionId) {
+          return { ...s, status: 'resolved' as const, isWaitingForSpud: false, unreadCount: 0 };
+        }
+        return s;
+      });
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_PREFIX}chat_sessions`, JSON.stringify(updated));
+        } catch (e) {}
       }
-      return s;
-    }));
+      return updated;
+    });
 
     if (sessionId && db) {
       setDoc(doc(db, 'chat_sessions', sessionId), { status: 'resolved', isWaitingForSpud: false, unreadCount: 0 }, { merge: true }).catch(e => console.warn(e));
@@ -3367,7 +3440,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const unreadNotifCount = (notifications || []).filter(n => n && !n.isRead).length;
-  const unreadChatCount = (chatMessages || []).filter(m => m && !m.isRead && m.sender !== 'spud').length;
+  const unreadChatCount = (chatMessages || []).filter(m => m && !m.isRead && m.sender === 'client').length;
 
   return (
     <AppContext.Provider value={{
