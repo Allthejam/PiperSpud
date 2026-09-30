@@ -112,7 +112,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
       onClose();
       window.location.href = '/admin';
     } else {
-      setError('Incorrect passcode. Enter "spud123" or "admin".');
+      setError('Incorrect passcode. Please check your credentials and try again.');
     }
   };
 
@@ -362,7 +362,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
           {mode === 'passcode' && (
             <form onSubmit={handlePasscodeSubmit} className="space-y-4">
               <div className="bg-tartan-dark/60 rounded-xl p-3 border border-tartan-border/60 text-xs text-gray-300">
-                <span className="text-tartan-gold font-bold">Offline / Demo Passcode:</span> Use <code className="bg-slate-800 px-1.5 py-0.5 rounded text-tartan-gold font-mono font-bold">spud123</code> or <code className="bg-slate-800 px-1.5 py-0.5 rounded text-tartan-gold font-mono font-bold">admin</code> for quick offline bypass.
+                Enter your authorized administrative passcode to unlock Spud's back office.
               </div>
 
               <div>
