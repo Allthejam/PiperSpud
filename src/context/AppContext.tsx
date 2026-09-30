@@ -291,33 +291,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const adminWhitelist = users;
 
   // Listen to Firebase Live Auth state
+  const usersRef = React.useRef(users);
+  usersRef.current = users;
+
   useEffect(() => {
     if (!auth) return;
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user && user.email) {
-        const email = user.email.toLowerCase();
-        const isAllowed = 
-          email === 'piperspud@gmail.com' || 
-          (users || []).some(u => u && u.email && u.email.trim().toLowerCase() === email);
+      try {
+        if (user && user.email) {
+          const email = user.email.toLowerCase();
+          const currentUsers = usersRef.current || [];
+          const isAllowed = 
+            email === 'piperspud@gmail.com' || 
+            currentUsers.some(u => u && u.email && u.email.trim().toLowerCase() === email);
 
-        if (isAllowed) {
-          setFirebaseUser(user);
-          setIsLegacyAdminLoggedIn(true);
-        } else {
-          // If unauthorized Google/Email user tried to session persist
-          try {
-            if (auth) await signOut(auth);
-          } catch (e) {}
+          if (isAllowed) {
+            setFirebaseUser(user);
+            setIsLegacyAdminLoggedIn(true);
+          } else {
+            // If unauthorized Google/Email user tried to session persist
+            try {
+              if (auth) await signOut(auth);
+            } catch (e) {}
+            setFirebaseUser(null);
+            setIsLegacyAdminLoggedIn(false);
+            if (typeof window !== 'undefined') localStorage.removeItem(`${LOCAL_STORAGE_PREFIX}admin`);
+          }
+        } else if (!user) {
           setFirebaseUser(null);
-          setIsLegacyAdminLoggedIn(false);
-          if (typeof window !== 'undefined') localStorage.removeItem(`${LOCAL_STORAGE_PREFIX}admin`);
         }
-      } else if (!user) {
-        setFirebaseUser(null);
+      } catch (e) {
+        console.warn('onAuthStateChanged error:', e);
       }
     });
     return () => unsubscribe();
-  }, [users]);
+  }, []);
 
   // Core entities
   const [services, setServices] = useState<ServicePackage[]>(initialServices);
@@ -695,24 +703,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
         if (!snapshot.empty) {
           const remoteUsers: UserRecord[] = [];
-          snapshot.forEach((d) => remoteUsers.push(d.data() as UserRecord));
+          snapshot.forEach((d) => {
+            const data = d.data() as UserRecord;
+            if (data) remoteUsers.push({ ...data, id: data.id || d.id });
+          });
           if (remoteUsers.length > 0) {
             setUsers(prev => {
-              const merged = [...prev];
+              const merged = [...(prev || [])];
               remoteUsers.forEach(r => {
-                const idx = merged.findIndex(u => u.id === r.id || u.email.toLowerCase() === r.email.toLowerCase());
+                if (!r) return;
+                const rEmail = (r.email || '').toLowerCase();
+                const idx = merged.findIndex(u => u && (u.id === r.id || (rEmail && u.email && u.email.toLowerCase() === rEmail)));
                 if (idx >= 0) merged[idx] = { ...merged[idx], ...r };
                 else merged.push(r);
               });
               if (typeof window !== 'undefined') {
-                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}users`, JSON.stringify(merged));
-                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`, JSON.stringify(merged));
+                try {
+                  localStorage.setItem(`${LOCAL_STORAGE_PREFIX}users`, JSON.stringify(merged));
+                  localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`, JSON.stringify(merged));
+                } catch (e) {}
               }
               return merged;
             });
 
             // Check if primary owner or spud has isOnline set in users collection
-            const spudRemote = remoteUsers.find(u => u.email.toLowerCase() === 'piperspud@gmail.com' || u.role === 'owner');
+            const spudRemote = remoteUsers.find(u => u && (((u.email || '').toLowerCase() === 'piperspud@gmail.com') || u.role === 'owner'));
             if (spudRemote && typeof spudRemote.isOnline === 'boolean') {
               setIsSpudOnlineState(spudRemote.isOnline);
             }
@@ -890,10 +905,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubNotifications = onSnapshot(collection(db, 'notifications'), (snapshot) => {
         if (!snapshot.empty) {
           const remoteNotifs: NotificationItem[] = [];
-          snapshot.forEach((d) => remoteNotifs.push(d.data() as NotificationItem));
+          snapshot.forEach((d) => {
+            const data = d.data() as NotificationItem;
+            if (data) remoteNotifs.push({ ...data, id: data.id || d.id });
+          });
           if (remoteNotifs.length > 0) {
             const mockIds = new Set(['notif-1', 'notif-2', 'notif-3']);
-            const cleanNotifs = remoteNotifs.filter(n => !mockIds.has(n.id));
+            const cleanNotifs = remoteNotifs.filter(n => n && n.id && !mockIds.has(n.id));
             cleanNotifs.sort((a, b) => {
               const timeA = a.id?.startsWith('notif-') ? parseInt(a.id.split('-')[1]) || 0 : 0;
               const timeB = b.id?.startsWith('notif-') ? parseInt(b.id.split('-')[1]) || 0 : 0;
@@ -910,10 +928,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubMailing = onSnapshot(collection(db, 'mailing_contacts'), (snapshot) => {
         if (!snapshot.empty) {
           const remoteContacts: MailingContact[] = [];
-          snapshot.forEach((d) => remoteContacts.push(d.data() as MailingContact));
+          snapshot.forEach((d) => {
+            const data = d.data() as MailingContact;
+            if (data) remoteContacts.push({ ...data, id: data.id || d.id });
+          });
           const mockIds = new Set(['mc-1', 'mc-2', 'mc-3', 'mc-4', 'mc-5', 'mc-6']);
-          const clean = remoteContacts.filter(m => !mockIds.has(m.id));
-          clean.sort((a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime());
+          const clean = remoteContacts.filter(m => m && m.id && !mockIds.has(m.id));
+          clean.sort((a, b) => new Date(b.addedAt || 0).getTime() - new Date(a.addedAt || 0).getTime());
           setMailingContacts(clean);
         } else {
           setMailingContacts([]);
@@ -924,7 +945,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubCampaigns = onSnapshot(collection(db, 'email_campaigns'), (snapshot) => {
         if (!snapshot.empty) {
           const remoteCampaigns: EmailCampaign[] = [];
-          snapshot.forEach((d) => remoteCampaigns.push(d.data() as EmailCampaign));
+          snapshot.forEach((d) => {
+            const data = d.data() as EmailCampaign;
+            if (data) remoteCampaigns.push({ ...data, id: data.id || d.id });
+          });
           if (remoteCampaigns.length > 0) {
             setEmailCampaigns(remoteCampaigns);
           }
