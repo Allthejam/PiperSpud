@@ -34,6 +34,24 @@ export const LiveChatWidget: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'chat' | 'inquiry'>('chat');
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [visitorSessionId, setVisitorSessionId] = useState<string>('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      let storedId = localStorage.getItem('spud_the_piper_visitor_session_id');
+      if (!storedId) {
+        storedId = `session-visitor-${Date.now()}`;
+        localStorage.setItem('spud_the_piper_visitor_session_id', storedId);
+      }
+      setVisitorSessionId(storedId);
+    }
+  }, []);
+
+  const visitorMessages = chatMessages.filter(m => {
+    if (!m) return false;
+    if (!visitorSessionId) return true;
+    return !m.sessionId || m.sessionId === visitorSessionId;
+  });
 
   // Offline / Inquiry Form State
   const [inquiryName, setInquiryName] = useState('');
@@ -48,24 +66,24 @@ export const LiveChatWidget: React.FC = () => {
     if (isOpen && activeTab === 'chat') {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [isOpen, chatMessages.length, activeTab]);
+  }, [isOpen, visitorMessages.length, activeTab]);
 
   useEffect(() => {
     if (isOpen && activeTab === 'chat' && unreadChatCount > 0) {
-      markChatAsRead();
+      markChatAsRead(visitorSessionId || undefined);
     }
-  }, [isOpen, activeTab, unreadChatCount, markChatAsRead]);
+  }, [isOpen, activeTab, unreadChatCount, markChatAsRead, visitorSessionId]);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim()) return;
 
-    sendChatMessage(inputText, 'client');
+    sendChatMessage(inputText, 'client', visitorSessionId || undefined);
     setInputText('');
   };
 
   const handleQuickQuestion = (q: string) => {
-    sendChatMessage(q, 'client');
+    sendChatMessage(q, 'client', visitorSessionId || undefined);
   };
 
   const handleOfflineInquirySubmit = (e: React.FormEvent) => {
@@ -279,7 +297,7 @@ export const LiveChatWidget: React.FC = () => {
 
               {/* Messages Container */}
               <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-tartan-dark/50 text-xs">
-                {chatMessages.length === 0 ? (
+                {visitorMessages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
                     <div className="w-12 h-12 rounded-full bg-tartan-navy border border-tartan-accent/50 flex items-center justify-center text-tartan-gold font-serif font-bold text-xl shadow-lg">
                       S
@@ -294,7 +312,7 @@ export const LiveChatWidget: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  chatMessages.map((msg) => {
+                  visitorMessages.map((msg) => {
                     const isMe = msg.sender === 'client';
                     const isSpud = msg.sender === 'spud';
                     const isBot = msg.sender === 'system';

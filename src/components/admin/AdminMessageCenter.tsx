@@ -65,17 +65,56 @@ export const AdminMessageCenter: React.FC = () => {
   const [qrFormCategory, setQrFormCategory] = useState<QuickResponse['category']>('Weddings');
   const [qrFormText, setQrFormText] = useState('');
 
+  // Derive all active sessions including auto-synthesized sessions from orphaned messages
+  const effectiveSessions = React.useMemo(() => {
+    const sessionMap = new Map<string, ChatSession>();
+    
+    // 1. Add known chatSessions
+    (chatSessions || []).forEach(s => {
+      if (s && s.id) sessionMap.set(s.id, s);
+    });
+
+    // 2. Synthesize session if any chatMessage has a sessionId not yet in chatSessions
+    (chatMessages || []).forEach(m => {
+      if (!m) return;
+      const sId = m.sessionId || 'session-visitor-live';
+      if (!sessionMap.has(sId)) {
+        sessionMap.set(sId, {
+          id: sId,
+          visitorName: m.senderName && m.senderName !== 'Spud the Piper' ? m.senderName : 'Website Visitor',
+          visitorEmail: m.visitorEmail,
+          visitorPhone: m.visitorPhone,
+          lastMessage: m.text,
+          lastTimestamp: m.timestamp || 'Just now',
+          unreadCount: m.sender === 'client' && !m.isRead ? 1 : 0,
+          isWaitingForSpud: m.sender === 'client',
+          status: 'active',
+          activePage: 'Website Live Chat',
+          ipOrLocation: 'Online Session',
+          device: 'Online Visitor',
+          createdAt: new Date().toISOString()
+        });
+      }
+    });
+
+    return Array.from(sessionMap.values()).sort((a, b) => 
+      new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    );
+  }, [chatSessions, chatMessages]);
+
   // Active session object
-  const activeSession = chatSessions.find(s => s.id === activeChatSessionId) || chatSessions[0];
-  const currentSessionId = activeSession?.id || 'session-demo';
+  const activeSession = effectiveSessions.find(s => s.id === activeChatSessionId) || effectiveSessions[0];
+  const currentSessionId = activeSession?.id || (chatMessages.length > 0 ? (chatMessages[0].sessionId || 'session-visitor-live') : '');
 
   // Filter messages for current active session
-  const activeSessionMessages = chatMessages.filter(
-    m => !m.sessionId || m.sessionId === currentSessionId
-  );
+  const activeSessionMessages = chatMessages.filter(m => {
+    if (!m) return false;
+    if (!currentSessionId) return true;
+    return m.sessionId === currentSessionId || (!m.sessionId && effectiveSessions.length <= 1);
+  });
 
   // Filter sessions list
-  const filteredSessions = chatSessions.filter(s => {
+  const filteredSessions = effectiveSessions.filter(s => {
     // Category filter
     if (sessionFilter === 'waiting' && !s.isWaitingForSpud) return false;
     if (sessionFilter === 'inquiries' && s.status !== 'offline_inquiry') return false;
@@ -96,7 +135,8 @@ export const AdminMessageCenter: React.FC = () => {
     e.preventDefault();
     if (!replyText.trim()) return;
 
-    sendChatMessage(replyText, 'spud', currentSessionId);
+    const targetSession = currentSessionId || activeSession?.id || `session-visitor-${Date.now()}`;
+    sendChatMessage(replyText, 'spud', targetSession);
     setReplyText('');
   };
 
@@ -220,10 +260,10 @@ export const AdminMessageCenter: React.FC = () => {
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-white flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-tartan-gold" />
-                Conversations ({chatSessions.length})
+                Conversations ({effectiveSessions.length})
               </span>
               <div className="flex items-center gap-2">
-                {chatSessions.length > 0 && (
+                {effectiveSessions.length > 0 && (
                   <button
                     onClick={() => {
                       if (confirm('Clear all chat conversations & reset for live testing?')) {
@@ -303,7 +343,7 @@ export const AdminMessageCenter: React.FC = () => {
                 <MessageSquare className="w-8 h-8 mx-auto text-gray-600 mb-2" />
                 <p className="font-semibold text-gray-300">No active conversations</p>
                 <p className="text-[11px] text-gray-500">
-                  {chatSessions.length === 0 
+                  {effectiveSessions.length === 0 
                     ? 'When a visitor chats or submits a question on the site, their conversation will appear here live in real-time.' 
                     : 'No conversations match this filter.'}
                 </p>

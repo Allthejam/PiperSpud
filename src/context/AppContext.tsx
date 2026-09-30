@@ -693,6 +693,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubPricing = () => {};
     let unsubUsers = () => {};
     let unsubChatStatus = () => {};
+    let unsubChatSessions = () => {};
+    let unsubChatMessages = () => {};
     let unsubNotifications = () => {};
     let unsubMailing = () => {};
     let unsubCampaigns = () => {};
@@ -967,6 +969,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
       }, (err) => console.log('Firestore faqs listener:', err.message));
+
+      // Real-time Firestore listener for chat_sessions
+      unsubChatSessions = onSnapshot(collection(db, 'chat_sessions'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteSessions: ChatSession[] = [];
+          snapshot.forEach((d) => {
+            const data = d.data() as ChatSession;
+            if (data && data.id) remoteSessions.push({ ...data, id: data.id || d.id });
+          });
+          const mockSessionIds = new Set(['session-demo', 'session-calum', 'session-inquiry-1', 'session-lord-campbell']);
+          const cleanSessions = remoteSessions.filter(s => s && s.id && !mockSessionIds.has(s.id));
+          cleanSessions.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+          
+          if (cleanSessions.length > 0) {
+            setChatSessions(cleanSessions);
+            setActiveChatSessionId(prev => {
+              if (prev && cleanSessions.some(s => s.id === prev)) return prev;
+              return cleanSessions[0].id;
+            });
+            if (typeof window !== 'undefined') {
+              try {
+                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}chat_sessions`, JSON.stringify(cleanSessions));
+              } catch (e) {}
+            }
+          }
+        }
+      }, (err) => console.log('Firestore chat_sessions listener:', err.message));
+
+      // Real-time Firestore listener for chat_messages
+      unsubChatMessages = onSnapshot(collection(db, 'chat_messages'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteMsgs: ChatMessage[] = [];
+          snapshot.forEach((d) => {
+            const data = d.data() as ChatMessage;
+            if (data && data.id) remoteMsgs.push({ ...data, id: data.id || d.id });
+          });
+          const mockMsgIds = new Set(['msg-1', 'msg-2', 'msg-3', 'msg-c-1', 'msg-inq-1', 'msg-campbell-1', 'msg-campbell-2', 'msg-campbell-3']);
+          const cleanMsgs = remoteMsgs.filter(m => m && m.id && !mockMsgIds.has(m.id));
+          
+          cleanMsgs.sort((a, b) => {
+            const timeA = a.id?.startsWith('msg-') ? parseInt(a.id.split('-')[1]) || 0 : 0;
+            const timeB = b.id?.startsWith('msg-') ? parseInt(b.id.split('-')[1]) || 0 : 0;
+            return timeA - timeB;
+          });
+
+          if (cleanMsgs.length > 0) {
+            setChatMessages(cleanMsgs);
+            if (typeof window !== 'undefined') {
+              try {
+                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}chat`, JSON.stringify(cleanMsgs));
+              } catch (e) {}
+            }
+          }
+        }
+      }, (err) => console.log('Firestore chat_messages listener:', err.message));
     } catch (e) {
       console.warn('Firebase Firestore initialization:', e);
     }
@@ -985,6 +1042,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubPricing();
       unsubUsers();
       unsubChatStatus();
+      unsubChatSessions();
+      unsubChatMessages();
       unsubNotifications();
       unsubMailing();
       unsubCampaigns();
@@ -2170,25 +2229,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     // Update or create corresponding session
+    let sessionToSave: ChatSession | null = null;
     setChatSessions(prev => {
       const existing = prev.find(s => s.id === currentSessionId);
       if (existing) {
-        return prev.map(s => {
+        const updated = prev.map(s => {
           if (s.id === currentSessionId) {
-            return {
+            sessionToSave = {
               ...s,
               lastMessage: text,
               lastTimestamp: 'Just now',
               isWaitingForSpud: sender === 'client',
-              unreadCount: sender === 'client' ? s.unreadCount + 1 : 0,
+              unreadCount: sender === 'client' ? (s.unreadCount || 0) + 1 : 0,
               visitorEmail: visitorEmail || s.visitorEmail,
               visitorPhone: visitorPhone || s.visitorPhone
             };
+            return sessionToSave;
           }
           return s;
         });
+        return updated;
       } else {
-        const newSession: ChatSession = {
+        sessionToSave = {
           id: currentSessionId,
           visitorName,
           visitorEmail,
@@ -2203,9 +2265,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           device: typeof navigator !== 'undefined' ? (navigator.userAgent.includes('Mobile') ? 'Mobile Phone' : 'Desktop Browser') : 'Online Visitor',
           createdAt: new Date().toISOString()
         };
-        return [newSession, ...prev];
+        return [sessionToSave, ...prev];
       }
     });
+
+    // Cloud Firestore synchronization
+    syncToFirestore('chat_messages', newMsg.id, newMsg).catch(e => console.warn(e));
+    if (sessionToSave) {
+      syncToFirestore('chat_sessions', currentSessionId, sessionToSave).catch(e => console.warn(e));
+    }
 
     if (sender === 'client') {
       addNotification({
@@ -2229,6 +2297,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             sessionId: currentSessionId
           };
           setChatMessages(c => [...c, offlineBotMsg]);
+          syncToFirestore('chat_messages', offlineBotMsg.id, offlineBotMsg).catch(e => console.warn(e));
         }, 800);
       } else {
         // Auto-reply assistant if Spud is online but hasn't picked up after 1.5s
@@ -2262,6 +2331,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             sessionId: currentSessionId
           };
           setChatMessages(c => [...c, botMsg]);
+          syncToFirestore('chat_messages', botMsg.id, botMsg).catch(e => console.warn(e));
         }, 1500);
       }
     }
@@ -2317,6 +2387,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem(`${LOCAL_STORAGE_PREFIX}chat`, JSON.stringify(updatedMessages));
     }
 
+    // Sync to Cloud Firestore
+    syncToFirestore('chat_sessions', sessionId, newSession).catch(e => console.warn(e));
+    syncToFirestore('chat_messages', newMsg.id, newMsg).catch(e => console.warn(e));
+
     // Capture into mailing list contacts
     addMailingContact({
       name: inquiry.name,
@@ -2364,6 +2438,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return s;
       });
     });
+
+    if (targetSessionId && db) {
+      setDoc(doc(db, 'chat_sessions', targetSessionId), { unreadCount: 0, isWaitingForSpud: false }, { merge: true }).catch(e => console.warn(e));
+    }
   };
 
   const markSessionResolved = (sessionId: string) => {
@@ -2373,6 +2451,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return s;
     }));
+
+    if (sessionId && db) {
+      setDoc(doc(db, 'chat_sessions', sessionId), { status: 'resolved', isWaitingForSpud: false, unreadCount: 0 }, { merge: true }).catch(e => console.warn(e));
+    }
+
     addNotification({
       type: 'system',
       title: 'Chat Session Resolved',
@@ -2390,9 +2473,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return remaining;
     });
     setChatMessages(prev => prev.filter(m => m.sessionId !== sessionId));
+
+    if (sessionId && db) {
+      deleteDoc(doc(db, 'chat_sessions', sessionId)).catch(e => console.warn(e));
+    }
   };
 
   const clearAllChatHistory = () => {
+    chatSessions.forEach(s => {
+      if (s && s.id) deleteFromFirestore('chat_sessions', s.id).catch(e => console.warn(e));
+    });
+    chatMessages.forEach(m => {
+      if (m && m.id) deleteFromFirestore('chat_messages', m.id).catch(e => console.warn(e));
+    });
+
     setChatSessions([]);
     setChatMessages([]);
     setActiveChatSessionId('');
