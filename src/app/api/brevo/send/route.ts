@@ -15,9 +15,12 @@ export async function POST(req: NextRequest) {
       recipientName: customRecipientName,
       subject: customSubject,
       messageContent: customMessageContent,
-      originalQuestion
+      originalQuestion,
+      visitorPhone,
+      eventType,
+      eventDate
     } = body as {
-      type: 'booking_approved' | 'booking_created' | 'deposit_received' | 'inquiry_reply' | 'custom';
+      type: 'booking_approved' | 'booking_created' | 'deposit_received' | 'inquiry_reply' | 'admin_inquiry_alert' | 'admin_chat_alert' | 'custom';
       booking?: BookingEvent;
       paypalLink?: string;
       to?: string;
@@ -28,11 +31,15 @@ export async function POST(req: NextRequest) {
       subject?: string;
       messageContent?: string;
       originalQuestion?: string;
+      visitorPhone?: string;
+      eventType?: string;
+      eventDate?: string;
     };
 
     const apiKey = process.env.BREVO_API_KEY;
-    const senderEmail = process.env.BREVO_SENDER_EMAIL || 'spud@spudthepiper.co.uk';
+    const senderEmail = process.env.BREVO_SENDER_EMAIL || 'info@spudthepiper.com';
     const senderName = process.env.BREVO_SENDER_NAME || 'Spud the Piper';
+    const adminAlertEmail = process.env.BREVO_ADMIN_ALERT_EMAIL || 'Spud@spudthepiper.com';
 
     let subject = '';
     let htmlContent = '';
@@ -40,7 +47,8 @@ export async function POST(req: NextRequest) {
     let recipientName = name || customRecipientName || booking?.clientName || 'Valued Client';
     const finalMessageContent = replyMessage || customMessageContent || '';
 
-    if (type === 'inquiry_reply' || (!booking && recipientEmail)) {
+    // ================= 1. Direct Email Reply from Spud to Client =================
+    if (type === 'inquiry_reply' || (!booking && type !== 'admin_inquiry_alert' && type !== 'admin_chat_alert' && recipientEmail && recipientEmail !== adminAlertEmail)) {
       subject = customSubject || `Regarding Your Bagpipe Inquiry - Spud the Piper`;
       htmlContent = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background-color: #0d1527; color: #f8fafc; padding: 32px 24px; border-radius: 16px; border: 1px solid #c5a059;">
@@ -69,7 +77,100 @@ export async function POST(req: NextRequest) {
           </div>
         </div>
       `;
-    } else if (type === 'booking_approved' && booking) {
+    } 
+    // ================= 2. Instant Alert to Spud for Offline Email Inquiry / Contact Form =================
+    else if (type === 'admin_inquiry_alert') {
+      recipientEmail = adminAlertEmail;
+      recipientName = 'Spud Fraser';
+      subject = `🔔 New Website Inquiry: ${name || 'Visitor'} ${eventDate ? `(${eventDate})` : ''}`;
+      htmlContent = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0d1527; color: #f8fafc; padding: 28px 24px; border-radius: 16px; border: 1px solid #c5a059;">
+          <div style="border-bottom: 1px solid #1e293b; padding-bottom: 16px; margin-bottom: 20px;">
+            <span style="background-color: #9333ea; color: #ffffff; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">New Website Inquiry</span>
+            <h2 style="color: #c5a059; margin: 12px 0 4px 0; font-size: 22px; font-family: Georgia, serif;">Inquiry Received on spudthepiper.com</h2>
+            <p style="color: #94a3b8; margin: 0; font-size: 13px;">A potential client has submitted an inquiry via your website:</p>
+          </div>
+
+          <div style="background-color: #131d33; padding: 20px; border-radius: 12px; border: 1px solid #1e293b; margin-bottom: 20px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <tr>
+                <td style="padding: 6px 0; color: #94a3b8; width: 35%;">Client Name:</td>
+                <td style="padding: 6px 0; font-weight: bold; color: #ffffff;">${name || 'Website Visitor'}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #94a3b8;">Email Address:</td>
+                <td style="padding: 6px 0; font-weight: bold;"><a href="mailto:${customRecipientEmail || to}" style="color: #c5a059; text-decoration: underline;">${customRecipientEmail || to || 'Not provided'}</a></td>
+              </tr>
+              ${visitorPhone ? `
+              <tr>
+                <td style="padding: 6px 0; color: #94a3b8;">Phone Number:</td>
+                <td style="padding: 6px 0; font-weight: bold;"><a href="tel:${visitorPhone}" style="color: #22c55e; text-decoration: none;">${visitorPhone}</a></td>
+              </tr>
+              ` : ''}
+              ${eventType ? `
+              <tr>
+                <td style="padding: 6px 0; color: #94a3b8;">Event / Occasion:</td>
+                <td style="padding: 6px 0; color: #ffffff;">${eventType}</td>
+              </tr>
+              ` : ''}
+              ${eventDate ? `
+              <tr>
+                <td style="padding: 6px 0; color: #94a3b8;">Event Date:</td>
+                <td style="padding: 6px 0; color: #facc15; font-weight: bold;">${eventDate}</td>
+              </tr>
+              ` : ''}
+            </table>
+
+            <div style="margin-top: 16px; padding-top: 14px; border-top: 1px dashed #334155;">
+              <span style="font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: bold; display: block; margin-bottom: 6px;">Client's Question / Message:</span>
+              <div style="background-color: #0b1120; border-radius: 8px; padding: 14px; color: #e2e8f0; font-size: 14px; line-height: 1.6; border-left: 3px solid #c5a059;">
+                ${finalMessageContent || originalQuestion || 'No message provided'}
+              </div>
+            </div>
+          </div>
+
+          <div style="text-align: center; margin: 24px 0 10px 0;">
+            <a href="https://spudthepiper.com/admin" target="_blank" style="background: linear-gradient(135deg, #c5a059 0%, #dfb76c 100%); color: #0b1120; font-weight: bold; font-size: 13px; text-decoration: none; padding: 12px 24px; border-radius: 8px; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px;">
+              Open Message Center to Reply
+            </a>
+          </div>
+        </div>
+      `;
+    }
+    // ================= 3. Instant Alert to Spud for Live Chat Messages =================
+    else if (type === 'admin_chat_alert') {
+      recipientEmail = adminAlertEmail;
+      recipientName = 'Spud Fraser';
+      subject = `💬 Live Chat from ${name || 'Website Visitor'}`;
+      htmlContent = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0d1527; color: #f8fafc; padding: 28px 24px; border-radius: 16px; border: 1px solid #38bdf8;">
+          <div style="border-bottom: 1px solid #1e293b; padding-bottom: 16px; margin-bottom: 20px;">
+            <span style="background-color: #0284c7; color: #ffffff; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">Live Chat Message</span>
+            <h2 style="color: #38bdf8; margin: 12px 0 4px 0; font-size: 22px; font-family: Georgia, serif;">Incoming Live Message from ${name || 'Visitor'}</h2>
+            <p style="color: #94a3b8; margin: 0; font-size: 13px;">A visitor is waiting on your live website chat right now:</p>
+          </div>
+
+          <div style="background-color: #131d33; padding: 20px; border-radius: 12px; border: 1px solid #1e293b; margin-bottom: 20px;">
+            <div style="background-color: #0b1120; border-radius: 8px; padding: 16px; color: #f8fafc; font-size: 15px; line-height: 1.6; border-left: 4px solid #38bdf8;">
+              "${finalMessageContent}"
+            </div>
+
+            <div style="margin-top: 14px; font-size: 12px; color: #94a3b8;">
+              ${to || customRecipientEmail ? `<p style="margin: 4px 0;"><strong>Email:</strong> ${to || customRecipientEmail}</p>` : ''}
+              ${visitorPhone ? `<p style="margin: 4px 0;"><strong>Phone:</strong> ${visitorPhone}</p>` : ''}
+            </div>
+          </div>
+
+          <div style="text-align: center; margin: 24px 0 10px 0;">
+            <a href="https://spudthepiper.com/admin" target="_blank" style="background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%); color: #ffffff; font-weight: bold; font-size: 13px; text-decoration: none; padding: 12px 24px; border-radius: 8px; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px;">
+              Reply Live in Back Office
+            </a>
+          </div>
+        </div>
+      `;
+    }
+    // ================= 4. Booking Approved by Spud =================
+    else if (type === 'booking_approved' && booking) {
       const formattedDepositLink = paypalLink || (booking.depositAmount ? `https://paypal.me/spudthepiper/${booking.depositAmount}` : 'https://paypal.me/spudthepiper/50');
       subject = `🏴󠁧󠁢󠁳󠁣󠁴󠁿 Booking Approved: Spud the Piper for ${booking.eventType} on ${booking.date}`;
       htmlContent = `
@@ -133,7 +234,9 @@ export async function POST(req: NextRequest) {
           </div>
         </div>
       `;
-    } else if (type === 'deposit_received' && booking) {
+    } 
+    // ================= 5. Deposit Receipt Confirmed =================
+    else if (type === 'deposit_received' && booking) {
       subject = `✅ Deposit Received & Booking Locked: Spud the Piper (${booking.date})`;
       htmlContent = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background-color: #0d1527; color: #f8fafc; padding: 32px 24px; border-radius: 16px; border: 1px solid #22c55e;">
@@ -167,9 +270,10 @@ export async function POST(req: NextRequest) {
           </div>
         </div>
       `;
-    } else if (booking) {
-      // Notification to Spud on new booking creation
-      recipientEmail = process.env.BREVO_FALLBACK_SENDER_EMAIL || 'piperspud@gmail.com';
+    } 
+    // ================= 6. New Booking Enquiry Alert to Spud =================
+    else if (booking) {
+      recipientEmail = adminAlertEmail;
       recipientName = 'Spud Fraser';
       subject = `🔔 New Booking Enquiry from ${booking.clientName} (${booking.date})`;
       htmlContent = `
@@ -185,7 +289,11 @@ export async function POST(req: NextRequest) {
             <li><strong>Travel Logistics:</strong> ${booking.travelBreakdownText || 'Standard'}</li>
             <li><strong>Total Fee:</strong> £${booking.estimatedPrice}.00 (Deposit: £${booking.depositAmount}.00)</li>
           </ul>
-          <p style="font-size: 13px; color: #94a3b8;">Log into your Back Office Admin Diary to review and approve with 1 click.</p>
+          <div style="text-align: center; margin: 20px 0 10px 0;">
+            <a href="https://spudthepiper.com/admin/bookings" target="_blank" style="background: linear-gradient(135deg, #c5a059 0%, #dfb76c 100%); color: #0b1120; font-weight: bold; font-size: 13px; text-decoration: none; padding: 10px 20px; border-radius: 6px; display: inline-block; text-transform: uppercase;">
+              Review & Approve in Diary
+            </a>
+          </div>
         </div>
       `;
     }

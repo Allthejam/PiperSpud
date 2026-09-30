@@ -216,6 +216,8 @@ interface AppContextType {
   clearAllNotifs: () => void;
   deleteNotification: (id: string) => void;
   addNotification: (item: Omit<NotificationItem, 'id' | 'timestamp' | 'isRead'>) => void;
+  testDeviceNotificationAlert: () => void;
+  requestNotificationPermission: () => Promise<boolean>;
 
   // Multi-Page SEO & Structured Data Studio
   seoPages: SeoPageConfig[];
@@ -1092,11 +1094,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isRead: false
     };
     setNotifications(prev => [newNotif, ...prev]);
+    
+    // 1. Audio Chime Ping (Synthesized Multi-Tone Web Audio API)
     if (bagpipeSynth) {
       try {
         bagpipeSynth.playAlertSound();
+      } catch (e) {
+        console.warn('Notification audio alert error:', e);
+      }
+    }
+
+    // 2. Mobile Device Haptic Vibration Ping
+    if (typeof window !== 'undefined' && 'navigator' in window && navigator.vibrate) {
+      try {
+        navigator.vibrate([250, 100, 250, 100, 300]);
       } catch (e) {}
     }
+
+    // 3. Browser & Desktop Push Notification (if permission is granted)
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      try {
+        new Notification(`Spud the Piper: ${item.title}`, {
+          body: item.message,
+          icon: '/apple-touch-icon.png',
+          badge: '/favicon.ico',
+          tag: newNotif.id
+        });
+      } catch (e) {
+        console.warn('Browser desktop notification error:', e);
+      }
+    }
+
     if (typeof window !== 'undefined') {
       try {
         const currentSaved = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}notifs`);
@@ -1108,6 +1136,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (db) {
       await setDoc(doc(db, 'notifications', newNotif.id), newNotif).catch(e => console.warn(e));
     }
+  };
+
+  const requestNotificationPermission = async (): Promise<boolean> => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return false;
+    try {
+      const perm = await Notification.requestPermission();
+      return perm === 'granted';
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const testDeviceNotificationAlert = () => {
+    if (bagpipeSynth) {
+      bagpipeSynth.playAlertSound();
+    }
+    if (typeof window !== 'undefined' && 'navigator' in window && navigator.vibrate) {
+      try {
+        navigator.vibrate([250, 100, 250, 100, 300]);
+      } catch (e) {}
+    }
+    addNotification({
+      type: 'system',
+      title: '🔔 Test Notification & Audio Ping',
+      message: 'Your browser audio chime and mobile vibration ping are working perfectly!',
+      actionUrl: '/admin'
+    });
   };
 
   const markNotifAsRead = async (id: string) => {
@@ -2295,6 +2350,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         relatedId: currentSessionId
       });
 
+      // Dispatch instant Brevo alert to Spud@spudthepiper.com
+      if (typeof window !== 'undefined') {
+        fetch('/api/brevo/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'admin_chat_alert',
+            name: visitorName,
+            recipientEmail: visitorEmail,
+            visitorPhone,
+            messageContent: text
+          })
+        }).catch(err => console.warn('Brevo admin chat alert error:', err));
+      }
+
       // If Spud is offline, post an immediate courteous system reply
       if (!isSpudOnline) {
         setTimeout(() => {
@@ -2424,6 +2494,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       actionUrl: '/admin/messages',
       relatedId: sessionId
     });
+
+    // Dispatch instant Brevo alert to Spud@spudthepiper.com
+    if (typeof window !== 'undefined') {
+      fetch('/api/brevo/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'admin_inquiry_alert',
+          name: inquiry.name,
+          recipientEmail: inquiry.email,
+          visitorPhone: inquiry.phone,
+          eventType: inquiry.eventType,
+          eventDate: inquiry.eventDate,
+          originalQuestion: inquiry.question,
+          messageContent: inquiry.question
+        })
+      }).catch(err => console.warn('Brevo admin inquiry alert error:', err));
+    }
   };
 
   const markChatAsRead = (sessionId?: string) => {
@@ -3199,6 +3287,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       clearAllNotifs,
       deleteNotification,
       addNotification,
+      testDeviceNotificationAlert,
+      requestNotificationPermission,
       seoPages,
       seoConfig,
       getSeoForPage,

@@ -21,7 +21,15 @@ import { NotificationItem } from '@/types/spud';
 type NotifFilter = 'all' | 'unread' | 'bookings' | 'chat' | 'reviews' | 'system';
 
 export const AdminNotifications: React.FC<{ onNavigateTab: (tab: string) => void }> = ({ onNavigateTab }) => {
-  const { notifications, markNotifAsRead, clearAllNotifs, deleteNotification, unreadNotifCount } = useApp();
+  const { 
+    notifications, 
+    markNotifAsRead, 
+    clearAllNotifs, 
+    deleteNotification, 
+    unreadNotifCount,
+    testDeviceNotificationAlert,
+    requestNotificationPermission
+  } = useApp();
   const [activeFilter, setActiveFilter] = useState<NotifFilter>('all');
 
   const handleNotificationClick = (notif: NotificationItem) => {
@@ -70,7 +78,28 @@ export const AdminNotifications: React.FC<{ onNavigateTab: (tab: string) => void
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            onClick={() => {
+              if (requestNotificationPermission) {
+                requestNotificationPermission().then(granted => {
+                  if (granted) {
+                    testDeviceNotificationAlert();
+                  } else {
+                    testDeviceNotificationAlert();
+                  }
+                });
+              } else {
+                testDeviceNotificationAlert();
+              }
+            }}
+            className="px-3.5 py-2 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-tartan-dark rounded-xl text-xs font-extrabold shadow-lg flex items-center gap-1.5 transition"
+            title="Test audio chime ping and mobile vibration"
+          >
+            <Bell className="w-4 h-4 animate-bounce" />
+            <span>Test Device Ping & Sound</span>
+          </button>
+
           {unreadNotifCount > 0 && (
             <button
               onClick={clearAllNotifs}
@@ -82,6 +111,27 @@ export const AdminNotifications: React.FC<{ onNavigateTab: (tab: string) => void
             </button>
           )}
         </div>
+      </div>
+
+      {/* Spud Notification Guard & Backup Banner */}
+      <div className="bg-gradient-to-r from-purple-950/60 via-tartan-navy to-indigo-950/60 p-4 rounded-2xl border border-purple-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-3">
+          <span className="w-9 h-9 rounded-xl bg-purple-600/30 border border-purple-400/40 flex items-center justify-center text-purple-300 shrink-0 text-base">
+            ✉️
+          </span>
+          <div>
+            <span className="text-white font-bold block">Spud Fail-Safe Email Alerts (Brevo Active)</span>
+            <span className="text-gray-300 text-[11px]">
+              Incoming live chats, offline questions & bookings are delivered instantly to <strong className="text-purple-300">Spud@spudthepiper.com</strong> so you never miss an inquiry on iOS or mobile.
+            </span>
+          </div>
+        </div>
+        <button
+          onClick={testDeviceNotificationAlert}
+          className="px-3 py-1.5 bg-purple-900/40 hover:bg-purple-800/60 border border-purple-500/40 text-purple-200 rounded-xl text-[11px] font-bold shrink-0 transition"
+        >
+          🔊 Ping Sound Test
+        </button>
       </div>
 
       {/* Filter Tabs */}
