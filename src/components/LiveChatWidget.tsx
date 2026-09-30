@@ -46,10 +46,15 @@ export const LiveChatWidget: React.FC = () => {
 
   useEffect(() => {
     if (isOpen && activeTab === 'chat') {
-      markChatAsRead();
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [isOpen, chatMessages, activeTab, markChatAsRead]);
+  }, [isOpen, chatMessages.length, activeTab]);
+
+  useEffect(() => {
+    if (isOpen && activeTab === 'chat' && unreadChatCount > 0) {
+      markChatAsRead();
+    }
+  }, [isOpen, activeTab, unreadChatCount, markChatAsRead]);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();

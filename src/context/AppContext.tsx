@@ -2092,7 +2092,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     visitorEmail?: string,
     visitorPhone?: string
   ) => {
-    const currentSessionId = targetSessionId || activeChatSessionId || 'session-demo';
+    let currentSessionId = targetSessionId || activeChatSessionId;
+    if (!currentSessionId) {
+      if (typeof window !== 'undefined') {
+        let storedId = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}visitor_session_id`);
+        if (!storedId) {
+          storedId = `session-visitor-${Date.now()}`;
+          localStorage.setItem(`${LOCAL_STORAGE_PREFIX}visitor_session_id`, storedId);
+        }
+        currentSessionId = storedId;
+      } else {
+        currentSessionId = `session-visitor-${Date.now()}`;
+      }
+    }
 
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
@@ -2286,19 +2298,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const markChatAsRead = (sessionId?: string) => {
     const targetSessionId = sessionId || activeChatSessionId;
-    setChatMessages(prev => prev.map(m => {
-      if (!targetSessionId || m.sessionId === targetSessionId) {
-        return { ...m, isRead: true };
-      }
-      return m;
-    }));
+    setChatMessages(prev => {
+      const hasUnread = prev.some(m => (!targetSessionId || m.sessionId === targetSessionId) && !m.isRead);
+      if (!hasUnread) return prev;
+      return prev.map(m => {
+        if (!targetSessionId || m.sessionId === targetSessionId) {
+          return { ...m, isRead: true };
+        }
+        return m;
+      });
+    });
 
-    setChatSessions(prev => prev.map(s => {
-      if (!targetSessionId || s.id === targetSessionId) {
-        return { ...s, unreadCount: 0 };
-      }
-      return s;
-    }));
+    setChatSessions(prev => {
+      const hasUnread = prev.some(s => (!targetSessionId || s.id === targetSessionId) && s.unreadCount > 0);
+      if (!hasUnread) return prev;
+      return prev.map(s => {
+        if (!targetSessionId || s.id === targetSessionId) {
+          return { ...s, unreadCount: 0 };
+        }
+        return s;
+      });
+    });
   };
 
   const markSessionResolved = (sessionId: string) => {
