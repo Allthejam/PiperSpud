@@ -552,7 +552,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const parsedNotifs: NotificationItem[] = JSON.parse(savedNotifs);
           if (Array.isArray(parsedNotifs)) {
             const mockIds = new Set(['notif-1', 'notif-2', 'notif-3']);
-            setNotifications(parsedNotifs.filter(n => !mockIds.has(n.id)));
+            const clean = parsedNotifs.filter(n => 
+              n && n.id && !mockIds.has(n.id) && 
+              !(n.title && (n.title.includes('Spud is Now ONLINE') || n.title.includes('Spud is Now OFFLINE') || n.title.includes('Live Chat Status') || n.title.includes('ONLINE') || n.title.includes('OFFLINE')))
+            );
+            setNotifications(clean);
           }
         } catch (e) {}
       }
@@ -913,7 +917,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
           if (remoteNotifs.length > 0) {
             const mockIds = new Set(['notif-1', 'notif-2', 'notif-3']);
-            const cleanNotifs = remoteNotifs.filter(n => n && n.id && !mockIds.has(n.id));
+            const cleanNotifs = remoteNotifs.filter(n => 
+              n && n.id && !mockIds.has(n.id) && 
+              !(n.title && (n.title.includes('Spud is Now ONLINE') || n.title.includes('Spud is Now OFFLINE') || n.title.includes('Live Chat Status') || n.title.includes('ONLINE') || n.title.includes('OFFLINE')))
+            );
             cleanNotifs.sort((a, b) => {
               const timeA = a.id?.startsWith('notif-') ? parseInt(a.id.split('-')[1]) || 0 : 0;
               const timeB = b.id?.startsWith('notif-') ? parseInt(b.id.split('-')[1]) || 0 : 0;
@@ -2096,46 +2103,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setSpudOnline = (online: boolean) => {
     setIsSpudOnlineState(online);
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}spud_online`, online ? 'true' : 'false');
+      try {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}spud_online`, online ? 'true' : 'false');
+      } catch (e) {}
     }
     
-    // Update active Spud / Owner user state
+    // Update active Spud / Owner user state safely
     setUsers(prev => {
-      const updated = prev.map(u => {
-        if (u.email.toLowerCase() === 'piperspud@gmail.com' || u.role === 'owner') {
+      const currentList = Array.isArray(prev) ? prev : [];
+      const updated = currentList.map(u => {
+        if (!u) return u;
+        const uEmail = (u.email || '').toLowerCase();
+        if (uEmail === 'piperspud@gmail.com' || u.role === 'owner') {
           return { ...u, isOnline: online, status: (online ? 'online' : 'offline') as 'online' | 'offline', lastActive: new Date().toISOString() };
         }
         return u;
       });
       if (typeof window !== 'undefined') {
-        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}users`, JSON.stringify(updated));
-        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`, JSON.stringify(updated));
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_PREFIX}users`, JSON.stringify(updated));
+          localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`, JSON.stringify(updated));
+        } catch (e) {}
       }
       return updated;
     });
 
     if (db) {
-      // 1. Sync global chat status setting
-      setDoc(doc(db, 'settings', 'chat_status'), { isSpudOnline: online, updatedAt: new Date().toISOString() }, { merge: true }).catch(e => console.warn(e));
-      
-      // 2. Sync to Spud's user doc in 'users' collection
-      const spudUser = users.find(u => u.email.toLowerCase() === 'piperspud@gmail.com' || u.role === 'owner') || users[0];
-      const spudDocId = spudUser?.id || 'user-spud';
-      setDoc(doc(db, 'users', spudDocId), { 
-        isOnline: online, 
-        status: online ? 'online' : 'offline', 
-        lastActive: new Date().toISOString() 
-      }, { merge: true }).catch(e => console.warn(e));
+      try {
+        // 1. Sync global chat status setting
+        setDoc(doc(db, 'settings', 'chat_status'), { isSpudOnline: online, updatedAt: new Date().toISOString() }, { merge: true }).catch(e => console.warn(e));
+        
+        // 2. Sync to Spud's user doc in 'users' collection
+        const currentUsers = Array.isArray(users) ? users : [];
+        const spudUser = currentUsers.find(u => u && (((u.email || '').toLowerCase() === 'piperspud@gmail.com') || u.role === 'owner')) || currentUsers[0];
+        const spudDocId = spudUser?.id || 'user-spud';
+        setDoc(doc(db, 'users', spudDocId), { 
+          isOnline: online, 
+          status: online ? 'online' : 'offline', 
+          lastActive: new Date().toISOString() 
+        }, { merge: true }).catch(e => console.warn(e));
+      } catch (e) {
+        console.warn('Firestore setSpudOnline error:', e);
+      }
     }
-
-    addNotification({
-      type: 'system',
-      title: online ? 'Spud is Now ONLINE' : 'Spud is Now OFFLINE',
-      message: online 
-        ? 'Live chat is active for all website visitors.' 
-        : 'Live chat switched to offline email inquiry mode.',
-      actionUrl: '/admin/messages'
-    });
+    // Note: Online/offline notifications intentionally omitted per user request
   };
 
   const toggleSpudOnline = () => {
