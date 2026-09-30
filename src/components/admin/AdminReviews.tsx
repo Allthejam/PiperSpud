@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
+import { uploadToStorage } from '@/lib/firebase';
 import { 
   Star, 
   CheckCircle, 
@@ -15,7 +16,9 @@ import {
   Edit2, 
   Plus, 
   X, 
-  Image as ImageIcon 
+  Image as ImageIcon,
+  Loader2,
+  Cloud
 } from 'lucide-react';
 import { Review } from '@/types/spud';
 
@@ -25,6 +28,8 @@ export const AdminReviews: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingReview, setEditingReview] = useState<Partial<Review> | null>(null);
   const [editPhotoPreview, setEditPhotoPreview] = useState<string | null>(null);
+  const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const pendingReviews = reviews.filter(r => r.status === 'pending');
   const approvedReviews = reviews.filter(r => r.status === 'approved');
@@ -32,6 +37,7 @@ export const AdminReviews: React.FC = () => {
   const handleOpenEdit = (rev: Review) => {
     setEditingReview({ ...rev });
     setEditPhotoPreview(rev.photoUrl || null);
+    setSelectedPhotoFile(null);
     setIsEditModalOpen(true);
   };
 
@@ -47,6 +53,7 @@ export const AdminReviews: React.FC = () => {
       isFeatured: true
     });
     setEditPhotoPreview(null);
+    setSelectedPhotoFile(null);
     setIsEditModalOpen(true);
   };
 
@@ -54,48 +61,57 @@ export const AdminReviews: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Photo is larger than 5MB. Please choose a smaller image.');
+    if (file.size > 25 * 1024 * 1024) {
+      alert('Photo is larger than 25MB. Please choose a smaller image.');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64 = reader.result as string;
-      setEditPhotoPreview(base64);
-      setEditingReview(prev => prev ? { ...prev, photoUrl: base64 } : null);
-    };
-    reader.readAsDataURL(file);
+    setSelectedPhotoFile(file);
+    setEditPhotoPreview(URL.createObjectURL(file));
   };
 
   const handleSaveReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingReview || !editingReview.authorName || !editingReview.comment) return;
 
-    if (editingReview.id) {
-      await updateReview(editingReview.id, {
-        authorName: editingReview.authorName,
-        eventType: editingReview.eventType,
-        location: editingReview.location,
-        rating: editingReview.rating,
-        comment: editingReview.comment,
-        photoUrl: editingReview.photoUrl || undefined,
-        isFeatured: editingReview.isFeatured
-      });
-    } else {
-      submitReview({
-        authorName: editingReview.authorName,
-        eventType: editingReview.eventType || 'Wedding Ceremony',
-        location: editingReview.location || 'Scotland',
-        rating: editingReview.rating || 5,
-        comment: editingReview.comment,
-        photoUrl: editingReview.photoUrl || undefined
-      });
-    }
+    setIsSaving(true);
+    try {
+      let finalPhotoUrl = editingReview.photoUrl || '';
 
-    setIsEditModalOpen(false);
-    setEditingReview(null);
-    setEditPhotoPreview(null);
+      if (selectedPhotoFile) {
+        finalPhotoUrl = await uploadToStorage(selectedPhotoFile, 'reviews_photos');
+      }
+
+      if (editingReview.id) {
+        await updateReview(editingReview.id, {
+          authorName: editingReview.authorName,
+          eventType: editingReview.eventType,
+          location: editingReview.location,
+          rating: editingReview.rating,
+          comment: editingReview.comment,
+          photoUrl: finalPhotoUrl || undefined,
+          isFeatured: editingReview.isFeatured
+        });
+      } else {
+        submitReview({
+          authorName: editingReview.authorName,
+          eventType: editingReview.eventType || 'Wedding Ceremony',
+          location: editingReview.location || 'Scotland',
+          rating: editingReview.rating || 5,
+          comment: editingReview.comment,
+          photoUrl: finalPhotoUrl || undefined
+        });
+      }
+
+      setIsEditModalOpen(false);
+      setEditingReview(null);
+      setEditPhotoPreview(null);
+      setSelectedPhotoFile(null);
+    } catch (err: any) {
+      alert(`Error saving testimonial: ${err?.message || err}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { GalleryItem } from '@/types/spud';
+import { uploadToStorage } from '@/lib/firebase';
 import { 
   Camera, 
   Plus, 
@@ -21,7 +22,9 @@ import {
   Image as ImageIcon,
   ExternalLink,
   Sparkles,
-  Filter
+  Filter,
+  Loader2,
+  Cloud
 } from 'lucide-react';
 
 const COMMON_EVENT_TYPES = [
@@ -54,9 +57,11 @@ export const AdminGallery: React.FC = () => {
   const [formDescription, setFormDescription] = useState('');
   const [formDate, setFormDate] = useState(new Date().toISOString().split('T')[0]);
   const [formImageUrl, setFormImageUrl] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [formIsFeatured, setFormIsFeatured] = useState(false);
   const [imageUploadMode, setImageUploadMode] = useState<'upload' | 'url'>('upload');
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string>('');
 
   // Stats
   const totalCount = galleryItems.length;
@@ -85,8 +90,10 @@ export const AdminGallery: React.FC = () => {
     setFormDescription('');
     setFormDate(new Date().toISOString().split('T')[0]);
     setFormImageUrl('');
+    setSelectedFile(null);
     setFormIsFeatured(false);
     setImageUploadMode('upload');
+    setUploadStatus('');
     setIsModalOpen(true);
   };
 
@@ -99,23 +106,23 @@ export const AdminGallery: React.FC = () => {
     setFormDescription(item.description || '');
     setFormDate(item.date || new Date().toISOString().split('T')[0]);
     setFormImageUrl(item.imageUrl || '');
+    setSelectedFile(null);
     setFormIsFeatured(!!item.isFeatured);
-    setImageUploadMode(item.imageUrl?.startsWith('data:') ? 'upload' : 'url');
+    setImageUploadMode('url');
+    setUploadStatus('');
     setIsModalOpen(true);
   };
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size exceeds 5MB limit. Please choose a smaller photo.');
+      if (file.size > 25 * 1024 * 1024) {
+        alert('File size exceeds 25MB limit. Please choose a photo under 25MB.');
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormImageUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setSelectedFile(file);
+      // Instant local preview
+      setFormImageUrl(URL.createObjectURL(file));
     }
   };
 
@@ -125,14 +132,23 @@ export const AdminGallery: React.FC = () => {
       alert('Please enter a title for the photo.');
       return;
     }
-    if (!formImageUrl.trim()) {
-      alert('Please upload a photo or enter an image URL.');
+    if (!formImageUrl.trim() && !selectedFile) {
+      alert('Please select a photo to upload or enter an image URL.');
       return;
     }
 
     setIsSaving(true);
     try {
+      let finalImageUrl = formImageUrl.trim();
+
+      // If user selected a local file, upload to Firebase Storage Bucket
+      if (selectedFile) {
+        setUploadStatus('Uploading photo to Firebase Storage Bucket...');
+        finalImageUrl = await uploadToStorage(selectedFile, 'gallery_photos');
+      }
+
       if (editingItemId) {
+        setUploadStatus('Updating gallery record...');
         await updateGalleryItem(editingItemId, {
           title: formTitle.trim(),
           martOrVenueName: formMartOrVenue.trim(),
@@ -140,10 +156,11 @@ export const AdminGallery: React.FC = () => {
           location: formLocation.trim(),
           description: formDescription.trim(),
           date: formDate,
-          imageUrl: formImageUrl.trim(),
+          imageUrl: finalImageUrl,
           isFeatured: formIsFeatured
         });
       } else {
+        setUploadStatus('Publishing to cloud gallery...');
         await addGalleryItem({
           title: formTitle.trim(),
           martOrVenueName: formMartOrVenue.trim(),
@@ -151,7 +168,7 @@ export const AdminGallery: React.FC = () => {
           location: formLocation.trim(),
           description: formDescription.trim(),
           date: formDate,
-          imageUrl: formImageUrl.trim(),
+          imageUrl: finalImageUrl,
           isFeatured: formIsFeatured
         });
       }
@@ -160,6 +177,7 @@ export const AdminGallery: React.FC = () => {
       alert(`Error saving photo: ${err?.message || err}`);
     } finally {
       setIsSaving(false);
+      setUploadStatus('');
     }
   };
 
@@ -437,7 +455,11 @@ export const AdminGallery: React.FC = () => {
                     />
                     <Upload className="w-6 h-6 text-tartan-gold mx-auto mb-1.5" />
                     <p className="text-xs text-white font-medium">Click or Drag & Drop image here</p>
-                    <p className="text-[10px] text-gray-400">Supports JPG, PNG, WebP up to 5MB</p>
+                    <p className="text-[10px] text-gray-400">Supports high-res mobile photos JPG, PNG, WebP up to 25MB</p>
+                    <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-950/60 border border-emerald-500/30 text-[10px] text-emerald-300 font-medium">
+                      <Cloud className="w-3 h-3 text-emerald-400" />
+                      <span>Direct Firebase Storage Bucket Upload</span>
+                    </div>
                   </div>
                 ) : (
                   <input
@@ -447,6 +469,14 @@ export const AdminGallery: React.FC = () => {
                     onChange={(e) => setFormImageUrl(e.target.value)}
                     className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-tartan-gold"
                   />
+                )}
+
+                {/* Upload Status Alert */}
+                {isSaving && uploadStatus && (
+                  <div className="p-3 rounded-xl bg-tartan-dark border border-tartan-gold/40 flex items-center gap-2.5 text-xs text-tartan-gold animate-pulse">
+                    <Loader2 className="w-4 h-4 animate-spin text-tartan-gold shrink-0" />
+                    <span>{uploadStatus}</span>
+                  </div>
                 )}
 
                 {/* Live Image Preview */}
@@ -459,7 +489,10 @@ export const AdminGallery: React.FC = () => {
                     />
                     <button
                       type="button"
-                      onClick={() => setFormImageUrl('')}
+                      onClick={() => {
+                        setFormImageUrl('');
+                        setSelectedFile(null);
+                      }}
                       className="absolute top-2 right-2 p-1 rounded-full bg-black/70 hover:bg-rose-900 text-white text-xs"
                       title="Remove image"
                     >

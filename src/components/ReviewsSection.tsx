@@ -17,10 +17,12 @@ import {
   X,
   LayoutGrid,
   Sliders,
-  Camera
+  Camera,
+  Loader2
 } from 'lucide-react';
 import { Review } from '@/types/spud';
 import { EditableElement } from './EditableElement';
+import { uploadToStorage } from '@/lib/firebase';
 
 export const ReviewsSection: React.FC = () => {
   const { reviews, submitReview, socialLinks } = useApp();
@@ -38,6 +40,8 @@ export const ReviewsSection: React.FC = () => {
   const [comment, setComment] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   // Filter approved reviews for public view
@@ -67,43 +71,52 @@ export const ReviewsSection: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Photo file is too large. Please select an image under 5MB.');
+    if (file.size > 25 * 1024 * 1024) {
+      alert('Photo file is too large. Please select an image under 25MB.');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64 = reader.result as string;
-      setPhotoPreview(base64);
-      setPhotoUrl(base64);
-    };
-    reader.readAsDataURL(file);
+    setSelectedFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!authorName || !comment) return;
+    if (!authorName || !comment || isSubmitting) return;
 
-    submitReview({
-      authorName,
-      eventType,
-      rating,
-      comment,
-      location: location || 'Scotland',
-      photoUrl: photoUrl || undefined
-    });
+    setIsSubmitting(true);
+    try {
+      let finalPhoto = photoUrl || undefined;
 
-    setIsSubmitted(true);
-    setTimeout(() => {
-      setIsSubmitted(false);
-      setIsModalOpen(false);
-      setAuthorName('');
-      setComment('');
-      setLocation('');
-      setPhotoUrl('');
-      setPhotoPreview(null);
-    }, 2000);
+      if (selectedFile) {
+        finalPhoto = await uploadToStorage(selectedFile, 'reviews_photos');
+      }
+
+      submitReview({
+        authorName,
+        eventType,
+        rating,
+        comment,
+        location: location || 'Scotland',
+        photoUrl: finalPhoto
+      });
+
+      setIsSubmitted(true);
+      setTimeout(() => {
+        setIsSubmitted(false);
+        setIsModalOpen(false);
+        setAuthorName('');
+        setComment('');
+        setLocation('');
+        setPhotoUrl('');
+        setPhotoPreview(null);
+        setSelectedFile(null);
+      }, 2000);
+    } catch (err: any) {
+      alert(`Error uploading testimonial photo: ${err?.message || err}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Helper indices for carousel (center, left, right)
