@@ -2803,6 +2803,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await setDoc(doc(db, 'settings', 'chat_status'), { isSpudOnline, updatedAt: new Date().toISOString() }, { merge: true });
       totalSynced++;
 
+      // 14. Sync Chat Sessions & Messages
+      for (const session of chatSessions) {
+        if (session && session.id) {
+          await setDoc(doc(db, 'chat_sessions', session.id), JSON.parse(JSON.stringify(session)), { merge: true });
+          totalSynced++;
+        }
+      }
+      for (const msg of chatMessages) {
+        if (msg && msg.id) {
+          await setDoc(doc(db, 'chat_messages', msg.id), JSON.parse(JSON.stringify(msg)), { merge: true });
+          totalSynced++;
+        }
+      }
+
       console.log(`[Firestore SUCCESS] Full Cloud Sync Complete: ${totalSynced} documents verified in Firestore!`);
       addNotification({
         type: 'system',

@@ -24,10 +24,11 @@ let analytics: Analytics | null = null;
 
 try {
   app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  db = getFirestore(app);
+  auth = getAuth(app);
+  storage = getStorage(app);
+
   if (typeof window !== 'undefined') {
-    db = getFirestore(app);
-    auth = getAuth(app);
-    storage = getStorage(app);
     isSupported().then((yes) => {
       if (yes) {
         analytics = getAnalytics(app);

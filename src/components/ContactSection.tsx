@@ -28,7 +28,8 @@ export const ContactSection: React.FC = () => {
     showLiveStream, 
     toggleLiveStream, 
     setShowLiveStream,
-    addMailingContact 
+    addMailingContact,
+    submitOfflineInquiry
   } = useApp();
 
   const [name, setName] = useState('');
@@ -39,23 +40,19 @@ export const ContactSection: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !message) return;
+    if (!name.trim() || !email.trim() || !message.trim()) return;
 
-    // Capture contact into mailing list
+    // Send direct offline inquiry to Back Office Message Center & Firestore
     try {
-      addMailingContact({
-        name,
-        email,
-        phone: phone || undefined,
-        source: 'enquiry',
-        status: 'subscribed',
-        tags: ['Website Enquiry', 'Direct Contact'],
-        notes: message,
-        addedAt: new Date().toISOString(),
-        brevoSynced: true
+      submitOfflineInquiry({
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim() || undefined,
+        eventType: 'Website Contact Form',
+        question: message.trim()
       });
     } catch (err) {
-      console.warn('Could not auto-add enquiry contact:', err);
+      console.warn('Could not submit contact inquiry:', err);
     }
 
     setIsSent(true);
