@@ -37,8 +37,8 @@ export const EditableElement: React.FC<EditableElementProps> = ({
   const { isMounted, isVisualEditMode, cmsBlocks, setEditingBlock } = useApp();
 
   const canEdit = isMounted && isVisualEditMode;
-  const block = cmsBlocks.find(b => b.id === id);
-  const content = block ? block.content : defaultContent;
+  const block = Array.isArray(cmsBlocks) ? cmsBlocks.find(b => b && b.id === id) : undefined;
+  const content = (block && block.content !== undefined) ? block.content : defaultContent;
   const imageUrl = block?.imageUrl || defaultImageUrl;
   const altText = block?.altText || defaultAlt;
   const linkUrl = block?.linkUrl || defaultLinkUrl;

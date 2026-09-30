@@ -298,7 +298,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const email = user.email.toLowerCase();
         const isAllowed = 
           email === 'piperspud@gmail.com' || 
-          users.some(u => u.email.trim().toLowerCase() === email);
+          (users || []).some(u => u && u.email && u.email.trim().toLowerCase() === email);
 
         if (isAllowed) {
           setFirebaseUser(user);
@@ -550,15 +550,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const savedCms = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}cms`);
-      if (savedCms) setCmsBlocks(JSON.parse(savedCms));
+      if (savedCms) {
+        try {
+          const parsed = JSON.parse(savedCms);
+          if (Array.isArray(parsed) && parsed.length > 0) setCmsBlocks(parsed);
+        } catch (e) {}
+      }
 
       const savedSeoPages = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}seo_pages`);
       if (savedSeoPages) {
-        setSeoPages(JSON.parse(savedSeoPages));
+        try {
+          const parsed = JSON.parse(savedSeoPages);
+          if (Array.isArray(parsed) && parsed.length > 0) setSeoPages(parsed);
+        } catch (e) {}
       }
 
       const savedSeo = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}seo`);
-      if (savedSeo) setSeoConfig(JSON.parse(savedSeo));
+      if (savedSeo) {
+        try {
+          const parsed = JSON.parse(savedSeo);
+          if (parsed && typeof parsed === 'object') setSeoConfig(parsed);
+        } catch (e) {}
+      }
 
       const savedTravel = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}travel_config`);
       if (savedTravel) {
@@ -599,7 +612,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedCampaigns = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}campaigns`);
       if (savedCampaigns) {
         try {
-          setEmailCampaigns(JSON.parse(savedCampaigns));
+          const parsedCamp = JSON.parse(savedCampaigns);
+          if (Array.isArray(parsedCamp)) setEmailCampaigns(parsedCamp);
         } catch (e) {}
       }
 
@@ -634,15 +648,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (Array.isArray(parsedWhitelist) && parsedWhitelist.length > 0) {
               const converted: UserRecord[] = parsedWhitelist.map((w: any) => ({
                 id: w.id || `user-${Date.now()}`,
-                email: w.email,
-                name: w.name || w.email.split('@')[0],
-                displayName: w.displayName || w.name || w.email.split('@')[0],
+                email: w.email || '',
+                name: w.name || w.email?.split('@')[0] || 'Admin',
+                displayName: w.displayName || w.name || w.email?.split('@')[0] || 'Admin',
                 role: w.role || 'admin',
                 isOnline: w.isOnline || false,
                 status: w.status || 'offline',
                 addedAt: w.addedAt || new Date().toISOString(),
                 lastActive: w.lastActive || new Date().toISOString(),
-                permissions: w.permissions || defaultPermissions[w.role as 'owner' | 'admin' | 'editor' || 'admin']
+                permissions: w.permissions || (defaultPermissions[w.role as 'owner' | 'admin' | 'editor'] || defaultPermissions.admin)
               }));
               setUsers(converted);
             }
@@ -1108,7 +1122,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const clean = emailToCheck.trim().toLowerCase();
     // Default authorized primary owner
     if (clean === 'piperspud@gmail.com') return true;
-    return users.some(u => u.email.trim().toLowerCase() === clean);
+    return (users || []).some(u => u && u.email && u.email.trim().toLowerCase() === clean);
   };
 
   const addUser = async (
@@ -1117,12 +1131,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     role: 'owner' | 'admin' | 'editor' = 'admin',
     permissions?: Partial<UserPermissions>
   ): Promise<boolean> => {
-    const cleanEmail = emailToAdd.trim().toLowerCase();
+    const cleanEmail = (emailToAdd || '').trim().toLowerCase();
     if (!cleanEmail || !cleanEmail.includes('@')) return false;
 
-    const existing = users.find(a => a.email.toLowerCase() === cleanEmail);
+    const existing = (users || []).find(a => a && a.email && a.email.toLowerCase() === cleanEmail);
     const userPerms: UserPermissions = {
-      ...defaultPermissions[role],
+      ...(defaultPermissions[role] || defaultPermissions.admin),
       ...(permissions || {})
     };
 
@@ -1140,7 +1154,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       permissions: userPerms
     };
 
-    const updated = existing ? users.map(u => u.id === id ? newUser : u) : [...users, newUser];
+    const updated = existing ? (users || []).map(u => u.id === id ? newUser : u) : [...(users || []), newUser];
     setUsers(updated);
     if (typeof window !== 'undefined') {
       localStorage.setItem(`${LOCAL_STORAGE_PREFIX}users`, JSON.stringify(updated));
@@ -1165,7 +1179,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateUser = async (id: string, updates: Partial<UserRecord>): Promise<boolean> => {
     let targetUser: UserRecord | null = null;
-    const updated = users.map(u => {
+    const updated = (users || []).map(u => {
       if (u.id === id) {
         targetUser = { ...u, ...updates, lastActive: new Date().toISOString() };
         return targetUser;
@@ -1183,7 +1197,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         await setDoc(doc(db, 'settings', 'admin_whitelist'), { admins: updated }, { merge: true });
         
         // If updating online status for primary owner or spud, also keep settings/chat_status synchronized
-        if (updates.isOnline !== undefined && ((targetUser as UserRecord).role === 'owner' || (targetUser as UserRecord).email.toLowerCase() === 'piperspud@gmail.com')) {
+        if (updates.isOnline !== undefined && ((targetUser as UserRecord).role === 'owner' || ((targetUser as UserRecord).email && (targetUser as UserRecord).email.toLowerCase() === 'piperspud@gmail.com'))) {
           setIsSpudOnlineState(updates.isOnline);
           await setDoc(doc(db, 'settings', 'chat_status'), { isSpudOnline: updates.isOnline, updatedAt: new Date().toISOString() }, { merge: true });
         }
@@ -1195,7 +1209,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateUserPermissions = async (id: string, permissions: Partial<UserPermissions>): Promise<boolean> => {
-    const target = users.find(u => u.id === id);
+    const target = (users || []).find(u => u && u.id === id);
     if (!target) return false;
     const newPerms: UserPermissions = { ...target.permissions, ...permissions };
     return await updateUser(id, { permissions: newPerms });
@@ -1206,13 +1220,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const removeUser = async (idOrEmail: string): Promise<boolean> => {
-    const clean = idOrEmail.trim().toLowerCase();
-    const target = users.find(a => a.id === idOrEmail || a.email.toLowerCase() === clean);
-    if (target && target.email.toLowerCase() === 'piperspud@gmail.com' && target.role === 'owner') {
+    const clean = (idOrEmail || '').trim().toLowerCase();
+    const target = (users || []).find(a => a && (a.id === idOrEmail || (a.email && a.email.toLowerCase() === clean)));
+    if (target && target.email && target.email.toLowerCase() === 'piperspud@gmail.com' && target.role === 'owner') {
       return false; // Cannot delete primary owner
     }
 
-    const updated = users.filter(a => a.id !== idOrEmail && a.email.toLowerCase() !== clean);
+    const updated = (users || []).filter(a => a && a.id !== idOrEmail && (!a.email || a.email.toLowerCase() !== clean));
     setUsers(updated);
     if (typeof window !== 'undefined') {
       localStorage.setItem(`${LOCAL_STORAGE_PREFIX}users`, JSON.stringify(updated));
@@ -1472,8 +1486,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const getCmsContent = (id: string, defaultVal: string): string => {
-    const block = cmsBlocks.find(b => b.id === id);
-    return block ? block.content : defaultVal;
+    const block = Array.isArray(cmsBlocks) ? cmsBlocks.find(b => b && b.id === id) : undefined;
+    return (block && block.content !== undefined) ? block.content : defaultVal;
   };
 
   // Service Management Handlers
