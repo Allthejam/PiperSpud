@@ -23,6 +23,7 @@ import {
   UserRecord,
   UserPermissions,
   FaqItem,
+  GalleryItem,
   PricingConfig
 } from '@/types/spud';
 import { 
@@ -47,6 +48,7 @@ import {
   initialUsers,
   defaultPermissions,
   initialFaqs,
+  initialGallery,
   initialPricingConfig
 } from '@/lib/initialData';
 import { bagpipeSynth } from '@/lib/bagpipeSynth';
@@ -238,6 +240,12 @@ interface AppContextType {
   deleteFaq: (id: string) => Promise<void>;
   reorderFaqs: (newOrderedList: FaqItem[]) => Promise<void>;
 
+  // Public & Admin Photo Gallery
+  galleryItems: GalleryItem[];
+  addGalleryItem: (item: Omit<GalleryItem, 'id' | 'createdAt'>) => Promise<void>;
+  updateGalleryItem: (id: string, updates: Partial<GalleryItem>) => Promise<void>;
+  deleteGalleryItem: (id: string) => Promise<void>;
+
   // Cloud Database Sync
   isSyncingFirestore: boolean;
   syncAllToFirestore: () => Promise<{ success: boolean; count: number; error?: string }>;
@@ -355,6 +363,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [mailingContacts, setMailingContacts] = useState<MailingContact[]>(initialMailingContacts);
   const [emailCampaigns, setEmailCampaigns] = useState<EmailCampaign[]>(initialCampaigns);
   const [faqs, setFaqs] = useState<FaqItem[]>(initialFaqs);
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(initialGallery);
   const [showLiveStream, setShowLiveStreamState] = useState<boolean>(true);
   const [isSyncingFirestore, setIsSyncingFirestore] = useState<boolean>(false);
 
@@ -666,6 +675,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } catch (e) {}
       }
 
+      const savedGallery = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}gallery`);
+      if (savedGallery) {
+        try {
+          const parsedGallery: GalleryItem[] = JSON.parse(savedGallery);
+          if (Array.isArray(parsedGallery) && parsedGallery.length > 0) {
+            const initialIds = new Set(initialGallery.map(g => g.id));
+            const userAdded = parsedGallery.filter(g => !initialIds.has(g.id));
+            const merged = initialGallery.map(initG => {
+              const u = parsedGallery.find(p => p.id === initG.id);
+              return u ? { ...initG, ...u } : initG;
+            });
+            setGalleryItems([...merged, ...userAdded]);
+          } else {
+            setGalleryItems(initialGallery);
+          }
+        } catch (e) {
+          setGalleryItems(initialGallery);
+        }
+      } else {
+        setGalleryItems(initialGallery);
+      }
+
       const savedStream = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}show_livestream`);
       if (savedStream !== null) {
         setShowLiveStreamState(savedStream === 'true');
@@ -730,6 +761,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubMailing = () => {};
     let unsubCampaigns = () => {};
     let unsubFaqs = () => {};
+    let unsubGallery = () => {};
 
     try {
       // Real-time Firestore listener for 'users' collection
@@ -1004,6 +1036,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }, (err) => console.log('Firestore faqs listener:', err.message));
 
+      // Real-time Firestore listener for gallery
+      unsubGallery = onSnapshot(collection(db, 'gallery'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteGallery: GalleryItem[] = [];
+          snapshot.forEach((d) => remoteGallery.push({ ...(d.data() as GalleryItem), id: d.id }));
+          if (remoteGallery.length > 0) {
+            const initialMap = new Map(initialGallery.map(g => [g.id, g]));
+            const merged = remoteGallery.map(r => {
+              const init = initialMap.get(r.id);
+              return init ? { ...init, ...r } : r;
+            });
+            const existingIds = new Set(merged.map(g => g.id));
+            const missing = initialGallery.filter(g => !existingIds.has(g.id));
+            const allItems = [...merged, ...missing];
+            setGalleryItems(allItems);
+            if (typeof window !== 'undefined') {
+              try {
+                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}gallery`, JSON.stringify(allItems));
+              } catch (e) {}
+            }
+          }
+        }
+      }, (err) => console.log('Firestore gallery listener:', err.message));
+
       // Real-time Firestore listener for chat_sessions
       unsubChatSessions = onSnapshot(collection(db, 'chat_sessions'), (snapshot) => {
         if (!snapshot.empty) {
@@ -1082,6 +1138,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubMailing();
       unsubCampaigns();
       unsubFaqs();
+      unsubGallery();
     };
   }, []);
 
@@ -2971,6 +3028,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
+      // 15. Sync Gallery Items
+      const galleryToSync = galleryItems && galleryItems.length > 0 ? galleryItems : initialGallery;
+      for (const g of galleryToSync) {
+        if (g && g.id) {
+          await setDoc(doc(db, 'gallery', g.id), JSON.parse(JSON.stringify(g)), { merge: true });
+          totalSynced++;
+        }
+      }
+
       console.log(`[Firestore SUCCESS] Full Cloud Sync Complete: ${totalSynced} documents verified in Firestore!`);
       addNotification({
         type: 'system',
@@ -3204,6 +3270,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // Gallery item handlers
+  const addGalleryItem = async (item: Omit<GalleryItem, 'id' | 'createdAt'>) => {
+    const id = `gal-${Date.now()}`;
+    const newItem: GalleryItem = {
+      ...item,
+      id,
+      createdAt: new Date().toISOString()
+    };
+    setGalleryItems(prev => {
+      const updated = [newItem, ...(prev || [])];
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}gallery`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+    await syncToFirestore('gallery', id, newItem);
+    addNotification({
+      type: 'system',
+      title: 'New Gallery Photo Added',
+      message: `Added: "${newItem.title}" (${newItem.martOrVenueName || newItem.location})`,
+      actionUrl: '/gallery'
+    });
+  };
+
+  const updateGalleryItem = async (id: string, updates: Partial<GalleryItem>) => {
+    let targetItem: GalleryItem | null = null;
+    setGalleryItems(prev => {
+      const updated = (prev || []).map(g => {
+        if (g.id === id) {
+          targetItem = { ...g, ...updates };
+          return targetItem;
+        }
+        return g;
+      });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}gallery`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+    if (targetItem) {
+      await syncToFirestore('gallery', id, targetItem);
+    }
+  };
+
+  const deleteGalleryItem = async (id: string) => {
+    setGalleryItems(prev => {
+      const updated = (prev || []).filter(g => g.id !== id);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}gallery`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+    await deleteFromFirestore('gallery', id);
+  };
+
   // Modal handlers
   const openBrevoPreview = (booking: BookingEvent) => {
     const paypalLink = `https://www.paypal.com/checkout/spudthepiper/pay?id=${booking.id}`;
@@ -3370,6 +3491,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateFaq,
       deleteFaq,
       reorderFaqs,
+      galleryItems,
+      addGalleryItem,
+      updateGalleryItem,
+      deleteGalleryItem,
       isSyncingFirestore,
       syncAllToFirestore,
       activeBrevoEmail,

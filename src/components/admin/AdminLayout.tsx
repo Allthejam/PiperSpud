@@ -24,7 +24,8 @@ import {
   MapPin,
   ShieldCheck,
   HelpCircle,
-  BookOpen
+  BookOpen,
+  Camera
 } from 'lucide-react';
 import { BrevoEmailModal } from './BrevoEmailModal';
 import { PayPalCheckoutModal } from './PayPalCheckoutModal';
@@ -55,6 +56,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
   const navItems = [
     { id: 'dashboard', label: 'Executive Dashboard', icon: LayoutDashboard },
     { id: 'guide', label: "Spud's User Manual & Guide", icon: BookOpen, badge: 'New' },
+    { id: 'gallery', label: 'Photo Gallery Manager', icon: Camera },
     { id: 'services', label: 'Services, Pricing & POA Studio', icon: Sparkles },
     { id: 'travel-expenses', label: 'Travel & Additional Expenses', icon: Compass },
     { id: 'diary', label: 'Interactive Diary', icon: Calendar },

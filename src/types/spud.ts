@@ -346,4 +346,18 @@ export interface FaqItem {
   updatedAt?: string;
 }
 
+export interface GalleryItem {
+  id: string;
+  title: string;
+  martOrVenueName: string;
+  eventType: string;
+  location: string;
+  description: string;
+  date: string;
+  imageUrl: string;
+  isFeatured?: boolean;
+  createdAt?: string;
+}
+
+
 

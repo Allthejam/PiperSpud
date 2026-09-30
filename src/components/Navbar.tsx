@@ -23,7 +23,8 @@ import {
   Compass, 
   Info,
   Smartphone,
-  Download
+  Download,
+  Camera
 } from 'lucide-react';
 
 import { SpudHeritageLogo } from '@/components/SpudHeritageLogo';
@@ -83,6 +84,7 @@ export const Navbar: React.FC = () => {
       href: '/',
       children: [
         { label: 'Welcome / Home', href: '/', desc: 'Main Highland Overview & Hero', icon: Compass },
+        { label: 'Photo Gallery', href: '/gallery', desc: 'Weddings, Castle Venues & Highland Gatherings', icon: Camera },
         { label: 'About Spud', href: '/about', desc: '40+ Years of Piping Heritage', icon: Info },
         { label: 'How to Install App (PWA)', href: '/install', desc: '1-Tap Offline Bagpipe Music on Phone & PC', icon: Smartphone },
       ]

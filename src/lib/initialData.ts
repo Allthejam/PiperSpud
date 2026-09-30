@@ -19,6 +19,7 @@ import {
   UserRecord,
   UserPermissions,
   FaqItem,
+  GalleryItem,
   PricingConfig
 } from '@/types/spud';
 
@@ -1748,6 +1749,106 @@ export const initialFaqs: FaqItem[] = [
     order: 7
   }
 ];
+
+export const initialGallery: GalleryItem[] = [
+  {
+    id: 'gal-1',
+    title: 'Stirling Castle Portcullis Wedding Welcome',
+    martOrVenueName: 'Stirling Castle Great Hall',
+    eventType: 'Castle Wedding',
+    location: 'Stirling, Scotland',
+    description: 'Greeting the bridal party and 150 guests at the historic castle entrance in Full Ceremonial No. 1 Dress with Feather Bonnet and Royal Stewart tartan.',
+    date: '2026-08-15',
+    imageUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&auto=format&fit=crop&q=80',
+    isFeatured: true,
+    createdAt: '2026-08-16T10:00:00.000Z'
+  },
+  {
+    id: 'gal-2',
+    title: 'Eilean Donan Bridge Bridal Procession',
+    martOrVenueName: 'Eilean Donan Castle',
+    eventType: 'Castle Wedding',
+    location: 'Kyle of Lochalsh, Highlands',
+    description: 'Solemn bridal processional piping across the iconic stone bridge over Loch Duich as morning mountain mist cleared.',
+    date: '2026-07-22',
+    imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&auto=format&fit=crop&q=80',
+    isFeatured: true,
+    createdAt: '2026-07-23T11:00:00.000Z'
+  },
+  {
+    id: 'gal-3',
+    title: 'Edinburgh Castle Esplanade VIP Procession',
+    martOrVenueName: 'Edinburgh Castle Esplanade',
+    eventType: 'VIP Civic & Banquet',
+    location: 'Edinburgh Royal Mile, Midlothian',
+    description: 'Piping in international state delegates and leading the royal procession down the historic cobbled Royal Mile.',
+    date: '2026-06-18',
+    imageUrl: 'https://images.unsplash.com/photo-1565008447742-97f6f38c985c?w=1200&auto=format&fit=crop&q=80',
+    isFeatured: true,
+    createdAt: '2026-06-19T09:30:00.000Z'
+  },
+  {
+    id: 'gal-4',
+    title: 'Aviemore Highland Games & Gathering',
+    martOrVenueName: 'Cairngorms Highland Arena',
+    eventType: 'Highland Gathering',
+    location: 'Aviemore, Highlands',
+    description: 'Stirring solo bagpipe fanfare opening the annual Highland Games heavyweight events and traditional dance competition.',
+    date: '2026-05-30',
+    imageUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200&auto=format&fit=crop&q=80',
+    isFeatured: false,
+    createdAt: '2026-05-31T14:00:00.000Z'
+  },
+  {
+    id: 'gal-5',
+    title: 'Loch Lomond Private Lodge Experience',
+    martOrVenueName: 'Cameron Lodges Estate',
+    eventType: 'Highland Bagpipe Experience',
+    location: 'Loch Lomond, Dunbartonshire',
+    description: 'Hands-on interactive bagpipe workshop and private lochside recital for a holiday group having their first Scottish highland piping lesson.',
+    date: '2026-09-04',
+    imageUrl: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=1200&auto=format&fit=crop&q=80',
+    isFeatured: true,
+    createdAt: '2026-09-05T16:00:00.000Z'
+  },
+  {
+    id: 'gal-6',
+    title: 'Gleneagles Luxury Gala Burns Supper',
+    martOrVenueName: 'Gleneagles Hotel Grand Ballroom',
+    eventType: 'Corporate Gala & Dinner',
+    location: 'Auchterarder, Perthshire',
+    description: 'Piping in the Great Chieftain o the Puddin-race with full ceremonial fanfare and theatrical address to the Haggis.',
+    date: '2026-01-25',
+    imageUrl: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=1200&auto=format&fit=crop&q=80',
+    isFeatured: false,
+    createdAt: '2026-01-26T20:00:00.000Z'
+  },
+  {
+    id: 'gal-7',
+    title: 'Isle of Skye Dramatic Cliffside Elopement',
+    martOrVenueName: 'Quiraing & Neist Point Cliffs',
+    eventType: 'Destination Elopement',
+    location: 'Isle of Skye, Inner Hebrides',
+    description: 'Intimate cliffside sunset ceremony in Isle of Skye Modern Tweed tartan with panoramic views over the Atlantic Ocean.',
+    date: '2026-04-12',
+    imageUrl: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1200&auto=format&fit=crop&q=80',
+    isFeatured: true,
+    createdAt: '2026-04-13T12:00:00.000Z'
+  },
+  {
+    id: 'gal-8',
+    title: 'Royal Deeside Highland Gathering Fanfare',
+    martOrVenueName: 'Braemar Royal Arena',
+    eventType: 'Highland Gathering',
+    location: 'Braemar, Aberdeenshire',
+    description: 'Performing massed pipe band favorites and solo reels in ceremonial Black Watch government tartan dress.',
+    date: '2026-09-12',
+    imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&auto=format&fit=crop&q=80',
+    isFeatured: false,
+    createdAt: '2026-09-13T10:00:00.000Z'
+  }
+];
+
 
 
 
