@@ -122,7 +122,7 @@ export const Navbar: React.FC = () => {
   return (
     <>
       {/* 1. TOP UTILITY HEADER BAR */}
-      <div className={`bg-tartan-dark border-b border-tartan-border/60 py-1 px-3 sm:px-4 text-xs font-sans transition-all duration-300 ${isRealAdmin ? 'mt-12 sm:mt-10' : ''}`}>
+      <div className={`bg-tartan-dark border-b border-tartan-border/60 py-1 px-3 sm:px-4 text-xs font-sans transition-all duration-300 ${isRealAdmin ? 'mt-0 md:mt-10' : ''}`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
           
           {/* Left Direct Contact Quick Links */}

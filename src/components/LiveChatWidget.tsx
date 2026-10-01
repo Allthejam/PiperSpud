@@ -122,10 +122,10 @@ export const LiveChatWidget: React.FC = () => {
       {!isOpen && (
         <div className="fixed bottom-6 right-4 sm:right-6 z-40 flex flex-col items-end gap-2 group">
           
-          {/* Teaser pill / status chip */}
+          {/* Teaser pill / status chip - Visible on desktop, hidden on mobile */}
           <div 
             onClick={() => setIsOpen(true)}
-            className={`cursor-pointer px-3 py-1.5 rounded-full shadow-lg border text-xs font-bold flex items-center gap-2 backdrop-blur-md transition-all hover:scale-105 ${
+            className={`hidden sm:flex cursor-pointer px-3 py-1.5 rounded-full shadow-lg border text-xs font-bold items-center gap-2 backdrop-blur-md transition-all hover:scale-105 ${
               isSpudOnline 
                 ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-300' 
                 : 'bg-red-950/90 border-red-500/50 text-red-300'
