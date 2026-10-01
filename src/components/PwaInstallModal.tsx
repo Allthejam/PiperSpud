@@ -97,7 +97,7 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
                 Install Spud the Piper App
               </h3>
               <p className="text-xs text-gray-300">
-                1-tap access, offline bagpipe jukebox, live diary and instant wedding bookings
+                1-tap access, offline bagpipe jukebox, and instant event bookings
               </p>
             </div>
           </div>
@@ -123,7 +123,7 @@ export const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
           </div>
           <div className="flex items-center justify-center gap-1.5">
             <Calendar className="w-3.5 h-3.5 text-tartan-gold shrink-0" />
-            <span className="font-semibold text-white">Fast Diary Bookings</span>
+            <span className="font-semibold text-white">Fast Event Bookings</span>
           </div>
         </div>
 

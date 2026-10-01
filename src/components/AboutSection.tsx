@@ -209,7 +209,7 @@ export const AboutSection: React.FC = () => {
               <EditableElement
                 id="about-btn-diary"
                 tag="a"
-                defaultContent="Check Spud's Diary Availability"
+                defaultContent="Request Your Event Date"
                 defaultLinkUrl="#booking"
                 className="px-6 py-3.5 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs tracking-wider uppercase shadow-xl hover:brightness-110 transition-all inline-block text-center"
                 label="About Diary Availability Button"

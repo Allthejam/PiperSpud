@@ -92,7 +92,7 @@ export const PwaInstallBanner: React.FC = () => {
               <h4 className="text-xs font-bold text-white truncate">Install Spud the Piper</h4>
             </div>
             <p className="text-[11px] text-gray-300 truncate mt-0.5">
-              Add to Home Screen for offline music & quick diary
+              Add to Home Screen for offline music & quick bookings
             </p>
           </div>
 

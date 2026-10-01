@@ -309,7 +309,7 @@ export const Navbar: React.FC = () => {
               >
                 <Calendar className="w-3.5 h-3.5 shrink-0" />
                 <span className="inline sm:hidden">Book</span>
-                <span className="hidden sm:inline">Diary &amp; Booking</span>
+                <span className="hidden sm:inline">Book Spud</span>
               </Link>
 
               {/* Mobile Menu Toggle Button */}

@@ -181,7 +181,7 @@ export default function HomePage() {
               <EditableElement
                 id="explore-card-booking-sub"
                 tag="p"
-                defaultContent="Diary & PayPal"
+                defaultContent="Rates & Date Request"
                 className="text-[10px] text-gray-300"
                 label="Explore Card 5 Subtitle"
                 section="explore"
