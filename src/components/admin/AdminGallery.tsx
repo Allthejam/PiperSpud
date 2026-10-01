@@ -18,13 +18,18 @@ import {
   Star, 
   X, 
   Save, 
-  Check, 
   Image as ImageIcon,
   ExternalLink,
-  Sparkles,
   Filter,
   Loader2,
-  Cloud
+  Cloud,
+  LayoutGrid,
+  Grid,
+  Table as TableIcon,
+  List as ListIcon,
+  Eye,
+  SlidersHorizontal,
+  ArrowUpDown
 } from 'lucide-react';
 
 const COMMON_EVENT_TYPES = [
@@ -39,11 +44,18 @@ const COMMON_EVENT_TYPES = [
   'Birthday & Anniversary'
 ];
 
+type ViewMode = 'cards' | 'thumbnails' | 'table' | 'list';
+
 export const AdminGallery: React.FC = () => {
   const { galleryItems, addGalleryItem, updateGalleryItem, deleteGalleryItem } = useApp();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'venue-asc'>('date-desc');
+  const [viewMode, setViewMode] = useState<ViewMode>('cards');
+
+  // Preview Lightbox for Admin
+  const [previewItem, setPreviewItem] = useState<GalleryItem | null>(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -68,18 +80,31 @@ export const AdminGallery: React.FC = () => {
   const featuredCount = galleryItems.filter(g => g.isFeatured).length;
   const venueSet = new Set(galleryItems.map(g => g.martOrVenueName).filter(Boolean));
 
-  // Filtered Items
-  const filteredItems = galleryItems.filter(item => {
-    const matchesType = filterType === 'all' || item.eventType === filterType;
-    const q = searchTerm.toLowerCase().trim();
-    const matchesSearch = !q || (
-      item.title.toLowerCase().includes(q) ||
-      (item.martOrVenueName && item.martOrVenueName.toLowerCase().includes(q)) ||
-      (item.location && item.location.toLowerCase().includes(q)) ||
-      (item.description && item.description.toLowerCase().includes(q))
-    );
-    return matchesType && matchesSearch;
-  });
+  // Filtered & Sorted Items
+  const filteredItems = galleryItems
+    .filter(item => {
+      const matchesType = filterType === 'all' || item.eventType === filterType;
+      const q = searchTerm.toLowerCase().trim();
+      const matchesSearch = !q || (
+        item.title.toLowerCase().includes(q) ||
+        (item.martOrVenueName && item.martOrVenueName.toLowerCase().includes(q)) ||
+        (item.location && item.location.toLowerCase().includes(q)) ||
+        (item.description && item.description.toLowerCase().includes(q))
+      );
+      return matchesType && matchesSearch;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'date-desc') {
+        return (b.date || '').localeCompare(a.date || '');
+      } else if (sortBy === 'date-asc') {
+        return (a.date || '').localeCompare(b.date || '');
+      } else if (sortBy === 'title-asc') {
+        return a.title.localeCompare(b.title);
+      } else if (sortBy === 'venue-asc') {
+        return (a.martOrVenueName || '').localeCompare(b.martOrVenueName || '');
+      }
+      return 0;
+    });
 
   const handleOpenAddModal = () => {
     setEditingItemId(null);
@@ -269,151 +294,701 @@ export const AdminGallery: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search gallery by mart name, venue, location, title..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-tartan-navy/90 border border-tartan-border rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-gray-400 focus:outline-none focus:border-tartan-gold"
-          />
+      {/* Control Bar: Search, Category, Sort & VIEW MODES Switcher */}
+      <div className="bg-tartan-navy/80 p-4 rounded-2xl border border-tartan-border shadow-md space-y-3">
+        <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
+          
+          {/* Search Input */}
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search by title, venue / mart, location, story..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-tartan-dark border border-tartan-border rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-gray-400 focus:outline-none focus:border-tartan-gold"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Filters & Sorting */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Category Filter */}
+            <div className="flex items-center gap-1.5 bg-tartan-dark px-3 py-1.5 rounded-xl border border-tartan-border">
+              <Filter className="w-3.5 h-3.5 text-tartan-gold shrink-0" />
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="bg-transparent text-xs text-white focus:outline-none cursor-pointer pr-1"
+              >
+                <option value="all" className="bg-tartan-dark text-white">All Categories ({galleryItems.length})</option>
+                {COMMON_EVENT_TYPES.map(t => {
+                  const count = galleryItems.filter(g => g.eventType === t).length;
+                  return (
+                    <option key={t} value={t} className="bg-tartan-dark text-white">
+                      {t} ({count})
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            {/* Sort Dropdown */}
+            <div className="flex items-center gap-1.5 bg-tartan-dark px-3 py-1.5 rounded-xl border border-tartan-border">
+              <ArrowUpDown className="w-3.5 h-3.5 text-tartan-gold shrink-0" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="bg-transparent text-xs text-white focus:outline-none cursor-pointer pr-1"
+              >
+                <option value="date-desc" className="bg-tartan-dark text-white">Newest Date First</option>
+                <option value="date-asc" className="bg-tartan-dark text-white">Oldest Date First</option>
+                <option value="title-asc" className="bg-tartan-dark text-white">Title (A-Z)</option>
+                <option value="venue-asc" className="bg-tartan-dark text-white">Venue / Mart (A-Z)</option>
+              </select>
+            </div>
+
+            {/* View Mode Toggle Button Group */}
+            <div className="flex items-center bg-tartan-dark p-1 rounded-xl border border-tartan-border shadow-inner">
+              <button
+                onClick={() => setViewMode('cards')}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === 'cards'
+                    ? 'bg-gold-gradient text-tartan-dark shadow-md'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+                title="Cards View (Detailed visual cards)"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Cards</span>
+              </button>
+
+              <button
+                onClick={() => setViewMode('thumbnails')}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === 'thumbnails'
+                    ? 'bg-gold-gradient text-tartan-dark shadow-md'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+                title="Thumbnails Grid (Dense photo catalog)"
+              >
+                <Grid className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Thumbnails</span>
+              </button>
+
+              <button
+                onClick={() => setViewMode('table')}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === 'table'
+                    ? 'bg-gold-gradient text-tartan-dark shadow-md'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+                title="Table View (Data spreadsheet style with quick actions)"
+              >
+                <TableIcon className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Table</span>
+              </button>
+
+              <button
+                onClick={() => setViewMode('list')}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === 'list'
+                    ? 'bg-gold-gradient text-tartan-dark shadow-md'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+                title="Detailed List View (Horizontal row cards)"
+              >
+                <ListIcon className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">List</span>
+              </button>
+            </div>
+
+          </div>
+
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <Filter className="w-3.5 h-3.5 text-tartan-gold" />
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="bg-tartan-navy/90 border border-tartan-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-tartan-gold cursor-pointer"
-          >
-            <option value="all">All Event Categories</option>
-            {COMMON_EVENT_TYPES.map(t => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
+        {/* Results summary bar */}
+        <div className="flex items-center justify-between text-[11px] text-gray-400 px-1 pt-1 border-t border-tartan-border/40">
+          <span>
+            Showing <strong className="text-white">{filteredItems.length}</strong> of {galleryItems.length} items
+          </span>
+          <span className="capitalize text-tartan-gold">
+            Current View: <strong>{viewMode}</strong>
+          </span>
         </div>
       </div>
 
-      {/* Gallery Photos Grid in Admin */}
+      {/* Empty State */}
       {filteredItems.length === 0 ? (
         <div className="text-center py-16 bg-tartan-navy/40 rounded-2xl border border-dashed border-tartan-border p-8 space-y-3">
           <Camera className="w-10 h-10 text-gray-500 mx-auto opacity-50" />
-          <p className="text-xs text-gray-400 font-medium">No photos found matching your search.</p>
-          <button
-            onClick={handleOpenAddModal}
-            className="px-3.5 py-1.5 bg-tartan-accent text-white text-xs font-semibold rounded-lg hover:bg-tartan-gold hover:text-tartan-dark"
-          >
-            Upload First Photo
-          </button>
+          <p className="text-xs text-gray-400 font-medium">No photos found matching your search or filters.</p>
+          <div className="flex items-center justify-center gap-3">
+            {(searchTerm || filterType !== 'all') && (
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setFilterType('all');
+                }}
+                className="px-3.5 py-1.5 bg-tartan-dark border border-tartan-border text-gray-300 text-xs font-semibold rounded-lg hover:text-white"
+              >
+                Clear Filters
+              </button>
+            )}
+            <button
+              onClick={handleOpenAddModal}
+              className="px-3.5 py-1.5 bg-gold-gradient text-tartan-dark text-xs font-bold rounded-lg hover:brightness-110 shadow-md"
+            >
+              Upload First Photo
+            </button>
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {filteredItems.map((item) => (
-            <div
-              key={item.id}
-              className="bg-tartan-navy rounded-xl overflow-hidden border border-tartan-border hover:border-tartan-gold/40 shadow-md flex flex-col justify-between transition-all"
-            >
-              {/* Photo Thumbnail */}
-              <div className="relative aspect-[16/9] w-full bg-slate-900 overflow-hidden">
-                <img
-                  src={item.imageUrl}
-                  alt={item.title}
-                  className="w-full h-full object-cover"
-                />
-                
-                {/* Event Type Badge */}
-                <div className="absolute top-2 left-2">
-                  <span className="px-2 py-0.5 rounded-full bg-black/80 text-[10px] font-bold text-tartan-gold border border-tartan-gold/30">
-                    {item.eventType}
-                  </span>
-                </div>
-
-                {/* Featured Badge Button */}
-                <button
-                  onClick={() => handleToggleFeatured(item)}
-                  title={item.isFeatured ? 'Featured on homepage/top' : 'Click to feature'}
-                  className={`absolute top-2 right-2 p-1.5 rounded-full backdrop-blur-md transition-all ${
-                    item.isFeatured 
-                      ? 'bg-yellow-500/90 text-black shadow-md ring-1 ring-yellow-300' 
-                      : 'bg-black/60 text-gray-400 hover:text-yellow-400'
-                  }`}
+        <>
+          {/* ========================================================= */}
+          {/* 1. CARDS VIEW (Rich Card Grid)                             */}
+          {/* ========================================================= */}
+          {viewMode === 'cards' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {filteredItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-tartan-navy rounded-2xl overflow-hidden border border-tartan-border hover:border-tartan-gold/50 shadow-lg flex flex-col justify-between transition-all group"
                 >
-                  <Star className="w-3.5 h-3.5 fill-current" />
-                </button>
+                  {/* Photo Thumbnail */}
+                  <div className="relative aspect-[16/9] w-full bg-slate-900 overflow-hidden">
+                    <img
+                      src={item.imageUrl}
+                      alt={item.title}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                    
+                    {/* Event Type Badge */}
+                    <div className="absolute top-2 left-2 z-10">
+                      <span className="px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-md text-[10px] font-bold text-tartan-gold border border-tartan-gold/30 shadow-md">
+                        {item.eventType}
+                      </span>
+                    </div>
 
-                {/* Date overlay */}
-                {item.date && (
-                  <div className="absolute bottom-2 right-2">
-                    <span className="px-2 py-0.5 rounded-md bg-black/80 text-[10px] font-medium text-gray-200 flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-tartan-gold" />
-                      {item.date}
+                    {/* Quick Preview Button */}
+                    <button
+                      onClick={() => setPreviewItem(item)}
+                      className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200 z-10"
+                      title="Click to view full photo preview"
+                    >
+                      <span className="px-3 py-1.5 rounded-full bg-tartan-dark/90 border border-tartan-gold text-tartan-gold text-xs font-bold flex items-center gap-1.5 shadow-xl">
+                        <Eye className="w-3.5 h-3.5" />
+                        Quick Preview
+                      </span>
+                    </button>
+
+                    {/* Featured Badge Button */}
+                    <button
+                      onClick={() => handleToggleFeatured(item)}
+                      title={item.isFeatured ? 'Featured (Click to unfeature)' : 'Click to feature on top'}
+                      className={`absolute top-2 right-2 p-1.5 rounded-full backdrop-blur-md transition-all z-20 ${
+                        item.isFeatured 
+                          ? 'bg-yellow-500/95 text-black shadow-md ring-2 ring-yellow-300' 
+                          : 'bg-black/60 text-gray-400 hover:text-yellow-400'
+                      }`}
+                    >
+                      <Star className="w-3.5 h-3.5 fill-current" />
+                    </button>
+
+                    {/* Date overlay */}
+                    {item.date && (
+                      <div className="absolute bottom-2 right-2 z-10">
+                        <span className="px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-[10px] font-medium text-gray-200 flex items-center gap-1 border border-white/10">
+                          <Calendar className="w-3 h-3 text-tartan-gold" />
+                          {item.date}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
+                    <div className="space-y-1.5">
+                      {item.martOrVenueName && (
+                        <div className="flex items-center gap-1 text-[11px] font-bold text-tartan-gold">
+                          <Building2 className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{item.martOrVenueName}</span>
+                        </div>
+                      )}
+
+                      <h4 className="text-sm font-bold text-white font-serif line-clamp-1 group-hover:text-tartan-gold transition-colors">
+                        {item.title}
+                      </h4>
+
+                      {item.location && (
+                        <div className="flex items-center gap-1 text-[11px] text-gray-300">
+                          <MapPin className="w-3 h-3 text-rose-400 shrink-0" />
+                          <span className="truncate">{item.location}</span>
+                        </div>
+                      )}
+
+                      {item.description && (
+                        <p className="text-[11px] text-gray-400 line-clamp-2 leading-relaxed pt-1">
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="pt-3 mt-2 border-t border-tartan-border/60 flex items-center justify-between gap-2">
+                      <span className="text-[10px] text-gray-500 font-mono truncate max-w-[120px]">
+                        ID: {item.id}
+                      </span>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => handleOpenEditModal(item)}
+                          className="px-2.5 py-1 rounded-lg bg-tartan-dark hover:bg-tartan-accent text-gray-300 hover:text-white transition-colors text-xs font-medium flex items-center gap-1 border border-tartan-border"
+                          title="Edit photo details"
+                        >
+                          <Edit3 className="w-3.5 h-3.5 text-tartan-gold" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteItem(item.id, item.title)}
+                          className="p-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900 text-rose-300 hover:text-white transition-colors border border-rose-800/40"
+                          title="Delete photo"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* 2. THUMBNAILS GRID VIEW (Dense Photo Grid)                 */}
+          {/* ========================================================= */}
+          {viewMode === 'thumbnails' && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              {filteredItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="group relative aspect-square rounded-xl overflow-hidden bg-slate-900 border border-tartan-border hover:border-tartan-gold shadow-md transition-all hover:scale-[1.02]"
+                >
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+
+                  {/* Top Badges */}
+                  <div className="absolute top-1.5 left-1.5 right-1.5 flex items-center justify-between pointer-events-none">
+                    {item.isFeatured ? (
+                      <span className="p-1 rounded-md bg-yellow-500 text-black shadow-md">
+                        <Star className="w-3 h-3 fill-current" />
+                      </span>
+                    ) : <span />}
+
+                    <span className="px-1.5 py-0.5 rounded bg-black/80 text-[9px] font-bold text-tartan-gold backdrop-blur-sm truncate max-w-[90px]">
+                      {item.eventType}
                     </span>
                   </div>
-                )}
-              </div>
 
-              {/* Body */}
-              <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">
-                <div className="space-y-1.5">
-                  {item.martOrVenueName && (
-                    <div className="flex items-center gap-1 text-[11px] font-bold text-tartan-gold">
-                      <Building2 className="w-3 h-3 shrink-0" />
-                      <span className="truncate">{item.martOrVenueName}</span>
+                  {/* Full Hover Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/70 to-black/30 opacity-0 group-hover:opacity-100 transition-opacity p-2.5 flex flex-col justify-between">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => handleToggleFeatured(item)}
+                        className={`p-1 rounded-md transition-colors ${
+                          item.isFeatured ? 'bg-yellow-500 text-black' : 'bg-black/60 text-gray-300 hover:text-yellow-400'
+                        }`}
+                        title={item.isFeatured ? 'Unfeature' : 'Feature'}
+                      >
+                        <Star className="w-3 h-3 fill-current" />
+                      </button>
+                      <button
+                        onClick={() => setPreviewItem(item)}
+                        className="p-1 rounded-md bg-black/60 text-gray-300 hover:text-white"
+                        title="Quick View"
+                      >
+                        <Eye className="w-3 h-3" />
+                      </button>
                     </div>
-                  )}
 
-                  <h4 className="text-sm font-bold text-white font-serif line-clamp-1">
-                    {item.title}
-                  </h4>
+                    <div className="space-y-1">
+                      <h5 className="text-[11px] font-bold text-white font-serif line-clamp-1">
+                        {item.title}
+                      </h5>
+                      {item.martOrVenueName && (
+                        <p className="text-[10px] text-tartan-gold font-medium truncate">
+                          {item.martOrVenueName}
+                        </p>
+                      )}
+                      {item.date && (
+                        <p className="text-[9px] text-gray-400">
+                          {item.date}
+                        </p>
+                      )}
 
-                  {item.location && (
-                    <div className="flex items-center gap-1 text-[11px] text-gray-300">
-                      <MapPin className="w-3 h-3 text-rose-400 shrink-0" />
-                      <span className="truncate">{item.location}</span>
+                      <div className="flex items-center justify-between pt-1 border-t border-white/10 mt-1">
+                        <button
+                          onClick={() => handleOpenEditModal(item)}
+                          className="px-2 py-0.5 rounded bg-tartan-accent hover:bg-tartan-gold hover:text-tartan-dark text-[10px] font-bold text-white transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteItem(item.id, item.title)}
+                          className="p-1 rounded text-rose-400 hover:text-rose-200 hover:bg-rose-950/60 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
-                  )}
-
-                  {item.description && (
-                    <p className="text-[11px] text-gray-400 line-clamp-2 leading-relaxed pt-1">
-                      {item.description}
-                    </p>
-                  )}
+                  </div>
                 </div>
+              ))}
+            </div>
+          )}
 
-                {/* Actions */}
-                <div className="pt-3 mt-2 border-t border-tartan-border/60 flex items-center justify-between gap-2">
-                  <span className="text-[10px] text-gray-500 font-mono">
-                    ID: {item.id}
-                  </span>
+          {/* ========================================================= */}
+          {/* 3. TABLE VIEW (Structured Admin Spreadsheet Table)         */}
+          {/* ========================================================= */}
+          {viewMode === 'table' && (
+            <div className="bg-tartan-navy rounded-2xl border border-tartan-border shadow-xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-tartan-card border-b border-tartan-border text-gray-400 text-[11px] uppercase tracking-wider font-bold">
+                      <th className="py-3 px-4 w-16 text-center">Photo</th>
+                      <th className="py-3 px-4">Title & Description</th>
+                      <th className="py-3 px-4">Category</th>
+                      <th className="py-3 px-4">Venue / Mart</th>
+                      <th className="py-3 px-4">Location</th>
+                      <th className="py-3 px-4">Date</th>
+                      <th className="py-3 px-4 text-center w-20">Featured</th>
+                      <th className="py-3 px-4 text-right w-28">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-tartan-border/60">
+                    {filteredItems.map((item) => (
+                      <tr 
+                        key={item.id}
+                        className="hover:bg-tartan-dark/70 transition-colors group"
+                      >
+                        {/* Thumbnail */}
+                        <td className="py-2.5 px-4">
+                          <button
+                            onClick={() => setPreviewItem(item)}
+                            className="relative w-12 h-12 rounded-lg overflow-hidden border border-tartan-border hover:border-tartan-gold block bg-black shadow-sm group-hover:scale-105 transition-transform"
+                            title="Click to preview"
+                          >
+                            <img
+                              src={item.imageUrl}
+                              alt={item.title}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center">
+                              <Eye className="w-3 h-3 text-white" />
+                            </div>
+                          </button>
+                        </td>
 
-                  <div className="flex items-center gap-1.5">
+                        {/* Title & Story */}
+                        <td className="py-2.5 px-4 max-w-xs">
+                          <div className="font-bold text-white text-xs font-serif group-hover:text-tartan-gold transition-colors">
+                            {item.title}
+                          </div>
+                          {item.description && (
+                            <p className="text-[11px] text-gray-400 line-clamp-1 mt-0.5">
+                              {item.description}
+                            </p>
+                          )}
+                          <span className="text-[9px] text-gray-500 font-mono">
+                            ID: {item.id}
+                          </span>
+                        </td>
+
+                        {/* Category */}
+                        <td className="py-2.5 px-4 whitespace-nowrap">
+                          <span className="px-2 py-0.5 rounded-md bg-black/60 border border-tartan-border text-[10px] font-bold text-tartan-gold">
+                            {item.eventType}
+                          </span>
+                        </td>
+
+                        {/* Mart / Venue */}
+                        <td className="py-2.5 px-4 whitespace-nowrap">
+                          {item.martOrVenueName ? (
+                            <div className="flex items-center gap-1.5 font-medium text-gray-200">
+                              <Building2 className="w-3.5 h-3.5 text-tartan-gold shrink-0" />
+                              <span>{item.martOrVenueName}</span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-500 italic">—</span>
+                          )}
+                        </td>
+
+                        {/* Location */}
+                        <td className="py-2.5 px-4 whitespace-nowrap">
+                          {item.location ? (
+                            <div className="flex items-center gap-1 text-gray-300">
+                              <MapPin className="w-3 h-3 text-rose-400 shrink-0" />
+                              <span>{item.location}</span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-500 italic">—</span>
+                          )}
+                        </td>
+
+                        {/* Date */}
+                        <td className="py-2.5 px-4 whitespace-nowrap text-gray-300 font-mono text-[11px]">
+                          {item.date || '—'}
+                        </td>
+
+                        {/* Featured Star Toggle */}
+                        <td className="py-2.5 px-4 text-center">
+                          <button
+                            onClick={() => handleToggleFeatured(item)}
+                            className={`p-1.5 rounded-lg transition-all ${
+                              item.isFeatured 
+                                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-400/40 hover:bg-yellow-500/40' 
+                                : 'text-gray-600 hover:text-yellow-400 hover:bg-white/5'
+                            }`}
+                            title={item.isFeatured ? 'Featured (Click to unfeature)' : 'Click to feature'}
+                          >
+                            <Star className={`w-4 h-4 ${item.isFeatured ? 'fill-current' : ''}`} />
+                          </button>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-2.5 px-4 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => handleOpenEditModal(item)}
+                              className="p-1.5 rounded-lg bg-tartan-dark hover:bg-tartan-accent text-gray-300 hover:text-white transition-colors border border-tartan-border"
+                              title="Edit photo details"
+                            >
+                              <Edit3 className="w-3.5 h-3.5 text-tartan-gold" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteItem(item.id, item.title)}
+                              className="p-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900 text-rose-300 hover:text-white transition-colors border border-rose-800/40"
+                              title="Delete photo"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* 4. DETAILED LIST VIEW (Horizontal Rows)                    */}
+          {/* ========================================================= */}
+          {viewMode === 'list' && (
+            <div className="space-y-3">
+              {filteredItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-tartan-navy rounded-2xl border border-tartan-border hover:border-tartan-gold/50 shadow-md p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all group"
+                >
+                  {/* Left: Image Thumbnail */}
+                  <div className="flex items-start sm:items-center gap-3.5 w-full sm:w-auto">
+                    <div 
+                      onClick={() => setPreviewItem(item)}
+                      className="relative w-28 h-20 sm:w-32 sm:h-22 rounded-xl overflow-hidden bg-slate-900 border border-tartan-border hover:border-tartan-gold shrink-0 cursor-pointer shadow-md"
+                    >
+                      <img
+                        src={item.imageUrl}
+                        alt={item.title}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <Eye className="w-4 h-4 text-white" />
+                      </div>
+                      {item.isFeatured && (
+                        <div className="absolute top-1 left-1 p-0.5 rounded bg-yellow-500 text-black shadow">
+                          <Star className="w-2.5 h-2.5 fill-current" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Middle: Details */}
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-2 py-0.5 rounded-full bg-black/60 border border-tartan-gold/30 text-[10px] font-bold text-tartan-gold">
+                          {item.eventType}
+                        </span>
+                        {item.date && (
+                          <span className="text-[10px] text-gray-400 flex items-center gap-1 font-mono">
+                            <Calendar className="w-3 h-3 text-tartan-gold" />
+                            {item.date}
+                          </span>
+                        )}
+                        <span className="text-[9px] text-gray-500 font-mono">
+                          ID: {item.id}
+                        </span>
+                      </div>
+
+                      <h4 className="text-sm font-bold text-white font-serif group-hover:text-tartan-gold transition-colors truncate">
+                        {item.title}
+                      </h4>
+
+                      <div className="flex items-center gap-3 flex-wrap text-xs text-gray-300">
+                        {item.martOrVenueName && (
+                          <div className="flex items-center gap-1 font-semibold text-tartan-gold text-[11px]">
+                            <Building2 className="w-3 h-3 shrink-0" />
+                            <span>{item.martOrVenueName}</span>
+                          </div>
+                        )}
+                        {item.location && (
+                          <div className="flex items-center gap-1 text-gray-300 text-[11px]">
+                            <MapPin className="w-3 h-3 text-rose-400 shrink-0" />
+                            <span>{item.location}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {item.description && (
+                        <p className="text-[11px] text-gray-400 line-clamp-1 leading-relaxed">
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right: Quick Actions */}
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-tartan-border/50 shrink-0">
+                    <button
+                      onClick={() => handleToggleFeatured(item)}
+                      className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                        item.isFeatured
+                          ? 'bg-yellow-500/20 text-yellow-400 border-yellow-400/40'
+                          : 'bg-tartan-dark text-gray-400 border-tartan-border hover:text-yellow-400'
+                      }`}
+                      title={item.isFeatured ? 'Featured on top' : 'Feature on top'}
+                    >
+                      <Star className={`w-3.5 h-3.5 ${item.isFeatured ? 'fill-current' : ''}`} />
+                      <span className="text-[11px]">{item.isFeatured ? 'Featured' : 'Feature'}</span>
+                    </button>
+
                     <button
                       onClick={() => handleOpenEditModal(item)}
-                      className="p-1.5 rounded-lg bg-tartan-dark hover:bg-tartan-accent text-gray-300 hover:text-white transition-colors"
-                      title="Edit photo details"
+                      className="px-3 py-1.5 rounded-xl bg-tartan-dark hover:bg-tartan-accent border border-tartan-border text-gray-200 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
                     >
-                      <Edit3 className="w-3.5 h-3.5" />
+                      <Edit3 className="w-3.5 h-3.5 text-tartan-gold" />
+                      <span>Edit</span>
                     </button>
+
                     <button
                       onClick={() => handleDeleteItem(item.id, item.title)}
-                      className="p-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/80 text-rose-300 hover:text-white transition-colors"
+                      className="p-1.5 rounded-xl bg-rose-950/40 hover:bg-rose-900 border border-rose-800/40 text-rose-300 hover:text-white transition-colors"
                       title="Delete photo"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ========================================================= */}
+      {/* QUICK LIGHTBOX PREVIEW MODAL FOR ADMIN                    */}
+      {/* ========================================================= */}
+      {previewItem && (
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="relative max-w-4xl w-full bg-tartan-card rounded-2xl border border-tartan-border overflow-hidden shadow-2xl">
+            {/* Header */}
+            <div className="p-4 bg-tartan-dark/90 border-b border-tartan-border flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-full bg-black/80 text-[10px] font-bold text-tartan-gold border border-tartan-gold/30">
+                  {previewItem.eventType}
+                </span>
+                <h3 className="text-sm font-bold text-white font-serif truncate">
+                  {previewItem.title}
+                </h3>
+              </div>
+              <button
+                onClick={() => setPreviewItem(null)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* HD Image */}
+            <div className="relative max-h-[65vh] bg-black flex items-center justify-center overflow-hidden">
+              <img
+                src={previewItem.imageUrl}
+                alt={previewItem.title}
+                className="max-h-[65vh] w-auto max-w-full object-contain"
+              />
+            </div>
+
+            {/* Info Footer */}
+            <div className="p-4 bg-tartan-dark border-t border-tartan-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="space-y-1">
+                {previewItem.martOrVenueName && (
+                  <div className="text-xs font-bold text-tartan-gold flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5" />
+                    <span>{previewItem.martOrVenueName}</span>
+                    {previewItem.location && <span className="text-gray-400">({previewItem.location})</span>}
+                  </div>
+                )}
+                {previewItem.description && (
+                  <p className="text-xs text-gray-300 max-w-xl">
+                    {previewItem.description}
+                  </p>
+                )}
               </div>
 
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => {
+                    const it = previewItem;
+                    setPreviewItem(null);
+                    handleOpenEditModal(it);
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl bg-gold-gradient text-tartan-dark font-bold text-xs flex items-center gap-1.5 hover:brightness-110 shadow-md"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Edit Photo</span>
+                </button>
+                <button
+                  onClick={() => setPreviewItem(null)}
+                  className="px-3 py-1.5 rounded-xl bg-tartan-navy border border-tartan-border text-gray-300 text-xs font-semibold hover:text-white"
+                >
+                  Close
+                </button>
+              </div>
             </div>
-          ))}
+          </div>
         </div>
       )}
 
-      {/* Add / Edit Photo Modal */}
+      {/* ========================================================= */}
+      {/* ADD / EDIT PHOTO MODAL                                    */}
+      {/* ========================================================= */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-tartan-card max-w-2xl w-full rounded-2xl border border-tartan-border shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -573,7 +1148,7 @@ export const AdminGallery: React.FC = () => {
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-gray-200">
-                    Event Date (for public sorting)
+                    Event Date (for sorting)
                   </label>
                   <input
                     type="date"
