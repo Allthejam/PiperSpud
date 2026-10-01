@@ -81,6 +81,19 @@ export const AdminForumControl: React.FC = () => {
     }
   };
 
+  const mockPostIds = ['feed-exp-1', 'feed-1', 'feed-2', 'feed-3', 'feed-4', 'feed-5', 'feed-6', 'forum-1', 'forum-2', 'forum-3', 'forum-4', 'post-1', 'post-2', 'post-3', 'post-4', 'post-5', 'post-6', 'post-7', 'post-8'];
+  const hasDemoPosts = socialPosts.some(p => mockPostIds.includes(p.id));
+
+  const handlePurgeDemoPosts = async () => {
+    if (confirm("Delete all demo placeholder social posts and sample questions from the database? Spud's live shared posts will remain untouched.")) {
+      for (const id of mockPostIds) {
+        if (deleteSocialPost) {
+          await deleteSocialPost(id);
+        }
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       
@@ -92,14 +105,25 @@ export const AdminForumControl: React.FC = () => {
             <span>Spud Back Office Exclusive</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white font-serif">
-            Forum & Category Control
+            Forum & Social Feed Control
           </h1>
           <p className="text-xs sm:text-sm text-gray-400 max-w-2xl leading-relaxed">
-            Create and manage official Scottish discussion categories. The public can only post topics inside categories you set up here.
+            Manage public discussions, moderate questions, and review live social posts shared from the Photo Gallery.
           </p>
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex items-center gap-3 flex-wrap w-full md:w-auto">
+          {hasDemoPosts && (
+            <button
+              onClick={handlePurgeDemoPosts}
+              className="px-3.5 py-2 rounded-xl bg-rose-950/70 border border-rose-600/40 text-rose-300 hover:text-white hover:bg-rose-900 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              title="Remove all initial placeholder demo posts"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+              <span>Purge Demo Posts</span>
+            </button>
+          )}
+
           <button
             onClick={() => setActiveTab('categories')}
             className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all ${

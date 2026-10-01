@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useApp } from '@/context/AppContext';
-import { GalleryItem } from '@/types/spud';
+import { GalleryItem, SocialPost } from '@/types/spud';
 import { uploadToStorage } from '@/lib/firebase';
 import { 
   Camera, 
@@ -31,7 +32,14 @@ import {
   SlidersHorizontal,
   ArrowUpDown,
   Heart,
-  Flame
+  Flame,
+  Share2,
+  Send,
+  Sparkles,
+  CheckCircle2,
+  MessageSquare,
+  Music,
+  Pin
 } from 'lucide-react';
 
 const COMMON_EVENT_TYPES = [
@@ -49,7 +57,7 @@ const COMMON_EVENT_TYPES = [
 type ViewMode = 'cards' | 'thumbnails' | 'table' | 'list';
 
 export const AdminGallery: React.FC = () => {
-  const { galleryItems, addGalleryItem, updateGalleryItem, deleteGalleryItem } = useApp();
+  const { galleryItems, addGalleryItem, updateGalleryItem, deleteGalleryItem, createSocialPost } = useApp();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -59,9 +67,20 @@ export const AdminGallery: React.FC = () => {
   // Preview Lightbox for Admin
   const [previewItem, setPreviewItem] = useState<GalleryItem | null>(null);
 
-  // Modal State
+  // Add / Edit Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+
+  // Share to /social Feed Modal State
+  const [sharingItem, setSharingItem] = useState<GalleryItem | null>(null);
+  const [shareTitle, setShareTitle] = useState('');
+  const [shareCategory, setShareCategory] = useState<'Weddings' | 'Castle Galas' | 'Tune Requests' | 'Highland Stories' | 'Tuition & Tips'>('Weddings');
+  const [shareLocation, setShareLocation] = useState('');
+  const [shareTune, setShareTune] = useState('');
+  const [shareContent, setShareContent] = useState('');
+  const [shareIsPinned, setShareIsPinned] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareSuccessToast, setShareSuccessToast] = useState(false);
 
   // Form State
   const [formTitle, setFormTitle] = useState('');
@@ -147,6 +166,68 @@ export const AdminGallery: React.FC = () => {
     setImageUploadMode('url');
     setUploadStatus('');
     setIsModalOpen(true);
+  };
+
+  // Open Share to Social Modal
+  const handleOpenShareModal = (item: GalleryItem) => {
+    setSharingItem(item);
+    setShareTitle(item.title);
+    
+    // Map event type to social category
+    let cat: 'Weddings' | 'Castle Galas' | 'Tune Requests' | 'Highland Stories' | 'Tuition & Tips' = 'Weddings';
+    if (item.eventType.toLowerCase().includes('castle') || item.eventType.toLowerCase().includes('gala') || item.eventType.toLowerCase().includes('civic') || item.eventType.toLowerCase().includes('corporate')) {
+      cat = 'Castle Galas';
+    } else if (item.eventType.toLowerCase().includes('highland') || item.eventType.toLowerCase().includes('burns') || item.eventType.toLowerCase().includes('memorial') || item.eventType.toLowerCase().includes('experience')) {
+      cat = 'Highland Stories';
+    }
+    setShareCategory(cat);
+    
+    const locParts = [item.martOrVenueName, item.location].filter(Boolean);
+    setShareLocation(locParts.join(', '));
+    setShareTune('Highland Cathedral');
+    setShareContent(item.description || `Special piping performance at ${locParts.join(', ') || item.title}! Masterful Great Highland Bagpipe tunes, authentic Highland attire, and unforgettable Scottish celebration.`);
+    setShareIsPinned(false);
+  };
+
+  // Publish to /social Feed
+  const handlePublishToSocial = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sharingItem) return;
+    if (!shareContent.trim()) {
+      alert('Please enter a story or caption for the social feed post.');
+      return;
+    }
+
+    setIsSharing(true);
+    try {
+      await createSocialPost({
+        postType: 'feed',
+        title: shareTitle.trim() || sharingItem.title,
+        authorName: 'Spud the Piper',
+        authorRole: 'Spud the Piper',
+        authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&q=80',
+        content: shareContent.trim(),
+        imageUrl: sharingItem.imageUrl,
+        eventLocation: shareLocation.trim() || undefined,
+        region: sharingItem.location || undefined,
+        category: shareCategory,
+        tunePlayed: shareTune.trim() || undefined,
+        tags: [
+          `#${(shareCategory || 'ScottishPiping').replace(/\s+/g, '')}`,
+          '#SpudThePiper',
+          '#HighlandBagpiper',
+          ...(sharingItem.martOrVenueName ? [`#${sharingItem.martOrVenueName.replace(/[^a-zA-Z0-9]/g, '')}`] : [])
+        ]
+      });
+
+      setSharingItem(null);
+      setShareSuccessToast(true);
+      setTimeout(() => setShareSuccessToast(false), 5000);
+    } catch (err: any) {
+      alert(`Error publishing to social page: ${err?.message || err}`);
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -243,6 +324,27 @@ export const AdminGallery: React.FC = () => {
   return (
     <div className="space-y-6">
       
+      {/* Toast Notification for Social Share */}
+      {shareSuccessToast && (
+        <div className="p-4 rounded-2xl bg-emerald-950/90 border border-emerald-500/50 shadow-2xl flex items-center justify-between gap-4 animate-in slide-in-from-top duration-300">
+          <div className="flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            <div>
+              <p className="text-xs font-bold text-white">Successfully Published to /social Feed!</p>
+              <p className="text-[11px] text-emerald-300">Your photo and story are now live for fans and clients to like and comment.</p>
+            </div>
+          </div>
+          <Link
+            href="/social"
+            target="_blank"
+            className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-extrabold flex items-center gap-1 shrink-0 transition-colors"
+          >
+            <span>View Feed</span>
+            <ExternalLink className="w-3 h-3" />
+          </Link>
+        </div>
+      )}
+
       {/* Header & Stats Banner */}
       <div className="bg-gradient-to-r from-tartan-card via-tartan-navy to-tartan-dark p-6 rounded-2xl border border-tartan-border shadow-xl">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -254,7 +356,7 @@ export const AdminGallery: React.FC = () => {
               </h2>
             </div>
             <p className="text-xs text-gray-300">
-              Upload and manage Scottish venue photos, castle weddings, mart names, locations, likes, and event dates for the public gallery.
+              Upload Scottish venue photos, manage gallery content, and 1-click share real performance photos directly to the public <strong>/social</strong> community feed!
             </p>
           </div>
 
@@ -270,6 +372,15 @@ export const AdminGallery: React.FC = () => {
               </button>
             )}
 
+            <Link
+              href="/social"
+              target="_blank"
+              className="px-3.5 py-2 rounded-xl bg-tartan-dark border border-tartan-border text-gray-300 hover:text-white hover:border-tartan-gold text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-amber-400" />
+              <span>View /social Feed</span>
+            </Link>
+
             <a
               href="/gallery"
               target="_blank"
@@ -277,7 +388,7 @@ export const AdminGallery: React.FC = () => {
               className="px-3.5 py-2 rounded-xl bg-tartan-dark border border-tartan-border text-gray-300 hover:text-white hover:border-tartan-gold text-xs font-semibold flex items-center gap-1.5 transition-colors"
             >
               <ExternalLink className="w-3.5 h-3.5 text-tartan-gold" />
-              <span>View Live Public Gallery</span>
+              <span>View Public Gallery</span>
             </a>
 
             <button
@@ -571,10 +682,10 @@ export const AdminGallery: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Actions & Likes summary */}
+                    {/* Actions & Share button */}
                     <div className="pt-3 mt-2 border-t border-tartan-border/60 flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-gray-500 font-mono truncate max-w-[90px]">
+                        <span className="text-[10px] text-gray-500 font-mono truncate max-w-[80px]">
                           ID: {item.id}
                         </span>
                         <span className="text-[10px] text-rose-400 font-semibold flex items-center gap-0.5">
@@ -584,14 +695,24 @@ export const AdminGallery: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-1.5">
+                        {/* Share to Social Feed Button */}
+                        <button
+                          onClick={() => handleOpenShareModal(item)}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 hover:text-white transition-colors text-xs font-semibold flex items-center gap-1"
+                          title="Share to /social feed for public interaction"
+                        >
+                          <Share2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Share</span>
+                        </button>
+
                         <button
                           onClick={() => handleOpenEditModal(item)}
-                          className="px-2.5 py-1 rounded-lg bg-tartan-dark hover:bg-tartan-accent text-gray-300 hover:text-white transition-colors text-xs font-medium flex items-center gap-1 border border-tartan-border"
+                          className="p-1.5 rounded-lg bg-tartan-dark hover:bg-tartan-accent text-gray-300 hover:text-white transition-colors text-xs font-medium border border-tartan-border"
                           title="Edit photo details"
                         >
                           <Edit3 className="w-3.5 h-3.5 text-tartan-gold" />
-                          <span>Edit</span>
                         </button>
+
                         <button
                           onClick={() => handleDeleteItem(item.id, item.title)}
                           className="p-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900 text-rose-300 hover:text-white transition-colors border border-rose-800/40"
@@ -651,9 +772,16 @@ export const AdminGallery: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-rose-300 font-bold flex items-center gap-1">
                         <Heart className="w-3 h-3 fill-rose-400" />
-                        {typeof item.likes === 'number' ? item.likes : 0} likes
+                        {typeof item.likes === 'number' ? item.likes : 0}
                       </span>
                       <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleOpenShareModal(item)}
+                          className="p-1 rounded-md bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 hover:text-white"
+                          title="Share to /social"
+                        >
+                          <Share2 className="w-3 h-3" />
+                        </button>
                         <button
                           onClick={() => handleToggleFeatured(item)}
                           className={`p-1 rounded-md transition-colors ${
@@ -727,7 +855,7 @@ export const AdminGallery: React.FC = () => {
                       <th className="py-3 px-4">Date</th>
                       <th className="py-3 px-4 text-center w-20">Likes</th>
                       <th className="py-3 px-4 text-center w-20">Featured</th>
-                      <th className="py-3 px-4 text-right w-28">Actions</th>
+                      <th className="py-3 px-4 text-right w-36">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-tartan-border/60">
@@ -832,6 +960,16 @@ export const AdminGallery: React.FC = () => {
                         {/* Actions */}
                         <td className="py-2.5 px-4 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
+                            {/* Share to Social */}
+                            <button
+                              onClick={() => handleOpenShareModal(item)}
+                              className="px-2 py-1 rounded-lg bg-emerald-950/50 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 hover:text-white transition-colors text-xs font-semibold flex items-center gap-1"
+                              title="Share to /social Feed"
+                            >
+                              <Share2 className="w-3 h-3 text-emerald-400" />
+                              <span className="text-[10px]">Share</span>
+                            </button>
+
                             <button
                               onClick={() => handleOpenEditModal(item)}
                               className="p-1.5 rounded-lg bg-tartan-dark hover:bg-tartan-accent text-gray-300 hover:text-white transition-colors border border-tartan-border"
@@ -839,6 +977,7 @@ export const AdminGallery: React.FC = () => {
                             >
                               <Edit3 className="w-3.5 h-3.5 text-tartan-gold" />
                             </button>
+
                             <button
                               onClick={() => handleDeleteItem(item.id, item.title)}
                               className="p-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900 text-rose-300 hover:text-white transition-colors border border-rose-800/40"
@@ -939,6 +1078,15 @@ export const AdminGallery: React.FC = () => {
                   {/* Right: Quick Actions */}
                   <div className="flex items-center gap-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-tartan-border/50 shrink-0">
                     <button
+                      onClick={() => handleOpenShareModal(item)}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                      title="Share to /social feed"
+                    >
+                      <Share2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Share to Social</span>
+                    </button>
+
+                    <button
                       onClick={() => handleToggleFeatured(item)}
                       className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all ${
                         item.isFeatured
@@ -1028,7 +1176,19 @@ export const AdminGallery: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                <button
+                  onClick={() => {
+                    const it = previewItem;
+                    setPreviewItem(null);
+                    handleOpenShareModal(it);
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md transition-colors"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>Share to /social</span>
+                </button>
+
                 <button
                   onClick={() => {
                     const it = previewItem;
@@ -1040,6 +1200,7 @@ export const AdminGallery: React.FC = () => {
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>Edit Photo</span>
                 </button>
+
                 <button
                   onClick={() => setPreviewItem(null)}
                   className="px-3 py-1.5 rounded-xl bg-tartan-navy border border-tartan-border text-gray-300 text-xs font-semibold hover:text-white"
@@ -1048,6 +1209,187 @@ export const AdminGallery: React.FC = () => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* SHARE GALLERY PHOTO TO /SOCIAL FEED MODAL                 */}
+      {/* ========================================================= */}
+      {sharingItem && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-tartan-card max-w-2xl w-full rounded-3xl border border-tartan-border shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            
+            {/* Modal Header */}
+            <div className="p-5 bg-gradient-to-r from-emerald-950 via-tartan-navy to-tartan-dark border-b border-tartan-border flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  <Share2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white font-serif">
+                    Share Photo to Live Social Feed
+                  </h3>
+                  <p className="text-[11px] text-emerald-300">
+                    Publish this performance photo directly to the public <strong>/social</strong> page for community discussion and likes.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSharingItem(null)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handlePublishToSocial} className="p-5 sm:p-6 space-y-4 max-h-[78vh] overflow-y-auto">
+              
+              {/* Photo Preview Strip */}
+              <div className="p-3 rounded-2xl bg-tartan-dark/80 border border-tartan-border flex items-center gap-3.5">
+                <div className="w-20 h-20 rounded-xl overflow-hidden bg-black shrink-0 border border-tartan-border">
+                  <img
+                    src={sharingItem.imageUrl}
+                    alt={sharingItem.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="space-y-1 min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="px-2 py-0.5 rounded-md bg-black/60 text-[10px] font-bold text-tartan-gold border border-tartan-gold/30">
+                      {sharingItem.eventType}
+                    </span>
+                    {sharingItem.date && (
+                      <span className="text-[10px] text-gray-400 font-mono">
+                        {sharingItem.date}
+                      </span>
+                    )}
+                  </div>
+                  <h4 className="text-xs font-bold text-white truncate font-serif">
+                    {sharingItem.title}
+                  </h4>
+                  <p className="text-[11px] text-gray-400 truncate">
+                    {sharingItem.martOrVenueName || sharingItem.location}
+                  </p>
+                </div>
+              </div>
+
+              {/* Post Title & Category */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-200">
+                    Post Headline / Title <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={shareTitle}
+                    onChange={(e) => setShareTitle(e.target.value)}
+                    required
+                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-400"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-200">
+                    Social Feed Category
+                  </label>
+                  <select
+                    value={shareCategory}
+                    onChange={(e) => setShareCategory(e.target.value as any)}
+                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-400 cursor-pointer"
+                  >
+                    <option value="Weddings">Weddings</option>
+                    <option value="Castle Galas">Castle Galas</option>
+                    <option value="Highland Stories">Highland Stories</option>
+                    <option value="Tune Requests">Tune Requests</option>
+                    <option value="Tuition & Tips">Tuition & Tips</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Location & Tune Played */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-200 flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Venue Location Tag</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={shareLocation}
+                    onChange={(e) => setShareLocation(e.target.value)}
+                    placeholder="e.g. Stirling Castle, Scotland"
+                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-200 flex items-center gap-1">
+                    <Music className="w-3.5 h-3.5 text-tartan-gold" />
+                    <span>Featured Tune Played</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={shareTune}
+                    onChange={(e) => setShareTune(e.target.value)}
+                    placeholder="e.g. Highland Cathedral or Scotland the Brave"
+                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400"
+                  />
+                </div>
+              </div>
+
+              {/* Story / Post Caption Content */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-200">
+                  Feed Story & Caption <span className="text-rose-400">*</span>
+                </label>
+                <textarea
+                  rows={4}
+                  value={shareContent}
+                  onChange={(e) => setShareContent(e.target.value)}
+                  required
+                  placeholder="Tell your fans and followers about the event, the crowd reaction, Highland attire worn..."
+                  className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400"
+                />
+              </div>
+
+              {/* Author Preview Note */}
+              <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/20 flex items-center gap-2.5 text-xs text-emerald-300">
+                <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>This post will be published under <strong>Spud the Piper (Verified Author)</strong> with public comments and likes enabled on <strong>/social</strong>.</span>
+              </div>
+
+              {/* Actions Footer */}
+              <div className="pt-4 border-t border-tartan-border flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSharingItem(null)}
+                  className="px-4 py-2 rounded-xl bg-tartan-dark border border-tartan-border text-gray-300 hover:text-white text-xs font-semibold"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isSharing}
+                  className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs uppercase tracking-wider shadow-lg flex items-center gap-2 disabled:opacity-50 transition-all"
+                >
+                  {isSharing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Publishing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      <span>Publish to /social</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+            </form>
           </div>
         </div>
       )}

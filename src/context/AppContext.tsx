@@ -458,16 +458,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (savedPosts) {
         try {
           const parsed: SocialPost[] = JSON.parse(savedPosts);
-          const initialIds = new Set(initialSocialPosts.map(p => p.id));
-          // Filter out stale legacy initial post IDs so the fresh initialSocialPosts (including all forum Q&As) load
-          const legacyIds = new Set(['post-1', 'post-2', 'post-3', 'post-4', 'post-5', 'post-6', 'post-7', 'post-8']);
-          const userCreated = parsed.filter(p => !initialIds.has(p.id) && !legacyIds.has(p.id));
-          setSocialPosts([...userCreated, ...initialSocialPosts]);
+          const demoIds = new Set(['feed-exp-1', 'feed-1', 'feed-2', 'feed-3', 'feed-4', 'feed-5', 'feed-6', 'forum-1', 'forum-2', 'forum-3', 'forum-4', 'post-1', 'post-2', 'post-3', 'post-4', 'post-5', 'post-6', 'post-7', 'post-8']);
+          const clean = Array.isArray(parsed) ? parsed.filter(p => !demoIds.has(p.id)) : [];
+          setSocialPosts(clean);
+          localStorage.setItem(`${LOCAL_STORAGE_PREFIX}social`, JSON.stringify(clean));
         } catch (e) {
-          setSocialPosts(initialSocialPosts);
+          setSocialPosts([]);
         }
       } else {
-        setSocialPosts(initialSocialPosts);
+        setSocialPosts([]);
       }
 
       const savedCats = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}forum_categories`);
@@ -840,10 +839,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubSocial = onSnapshot(collection(db, 'social_posts'), (snapshot) => {
         if (!snapshot.empty) {
           const remotePosts: SocialPost[] = [];
-          snapshot.forEach((d) => remotePosts.push(d.data() as SocialPost));
-          if (remotePosts.length > 0) {
-            setSocialPosts(remotePosts);
-          }
+          const demoIds = new Set(['feed-exp-1', 'feed-1', 'feed-2', 'feed-3', 'feed-4', 'feed-5', 'feed-6', 'forum-1', 'forum-2', 'forum-3', 'forum-4', 'post-1', 'post-2', 'post-3', 'post-4', 'post-5', 'post-6', 'post-7', 'post-8']);
+          snapshot.forEach((d) => {
+            const data = d.data() as SocialPost;
+            if (data && !demoIds.has(data.id)) {
+              remotePosts.push(data);
+            }
+          });
+          setSocialPosts(remotePosts);
+        } else {
+          setSocialPosts([]);
         }
       }, (err) => console.log('Firestore social_posts listener:', err.message));
 
