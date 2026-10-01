@@ -45,11 +45,30 @@ import {
   ExternalLink,
   ShieldCheck,
   Sparkle,
-  Upload
+  Upload,
+  Copy
 } from 'lucide-react';
 import { SocialPost, ForumCategoryItem } from '@/types/spud';
 import { EmojiBar } from '@/components/EmojiBar';
 import { uploadToStorage } from '@/lib/firebase';
+
+const WhatsAppIcon = () => (
+  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.969.528 1.954.81 2.8.81 3.179 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.772-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.694.07-1.11-.065-.27-.087-.624-.22-1.077-.42-.924-.407-1.528-1.34-1.574-1.401-.047-.061-.371-.493-.371-.94 0-.447.234-.667.317-.753.084-.085.183-.106.244-.106.061 0 .122.001.176.003.056.003.131-.021.205.157.076.183.259.633.282.68.023.047.038.102.008.163-.03.061-.045.1-.091.153-.045.053-.095.118-.136.159-.045.045-.092.095-.04.183.053.088.234.385.502.624.345.307.636.402.727.447.091.045.144.038.198-.023.053-.061.229-.267.29-.358.061-.091.122-.076.205-.045.084.03.533.251.624.297.092.045.153.068.176.106.023.038.023.22-.121.625zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.98-1.306A9.957 9.957 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.162c-1.584 0-3.07-.442-4.346-1.21l-.312-.188-2.953.774.788-2.879-.204-.325A8.134 8.134 0 013.84 12c0-4.5 3.66-8.162 8.16-8.162 4.502 0 8.162 3.662 8.162 8.162 0 4.5-3.66 8.162-8.162 8.162z" />
+  </svg>
+);
+
+const FacebookIcon = () => (
+  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+  </svg>
+);
+
+const XTwitterIcon = () => (
+  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
 
 const getCategoryIcon = (iconName?: string) => {
   switch (iconName) {
@@ -369,12 +388,85 @@ export const SocialHub: React.FC = () => {
     setCommentInputs(prev => ({ ...prev, [postId]: '' }));
   };
 
-  const handleSharePost = (postId: string) => {
-    const url = typeof window !== 'undefined' ? `${window.location.origin}/social#${postId}` : '';
+  // Rich Share Modal State
+  const [sharingPost, setSharingPost] = useState<SocialPost | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [shareTextCopied, setShareTextCopied] = useState(false);
+
+  const getPostShareUrl = (post: SocialPost) => {
+    if (typeof window === 'undefined') return '';
+    return `${window.location.origin}/social#${post.id}`;
+  };
+
+  const getPostShareText = (post: SocialPost) => {
+    const lines: string[] = [];
+    lines.push(`🎵 Spud the Piper - Live Update`);
+    if (post.title) lines.push(`"${post.title}"`);
+    lines.push(`"${post.content}"`);
+    if (post.eventLocation) lines.push(`📍 Venue: ${post.eventLocation}`);
+    if (post.tunePlayed) lines.push(`🎶 Tune: ${post.tunePlayed}`);
+    if (post.imageUrl) lines.push(`📸 Photo: ${post.imageUrl}`);
+    lines.push(`🔗 View post & comments:\n${getPostShareUrl(post)}`);
+    return lines.join('\n\n');
+  };
+
+  const openShareModal = (post: SocialPost) => {
+    setSharingPost(post);
+    setShareCopied(false);
+    setShareTextCopied(false);
+  };
+
+  const handleWhatsAppShare = (post: SocialPost) => {
+    const text = getPostShareText(post);
+    const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleFacebookShare = (post: SocialPost) => {
+    const url = getPostShareUrl(post);
+    const quote = `${post.authorName}: "${post.content.slice(0, 200)}${post.content.length > 200 ? '...' : ''}" ${post.eventLocation ? `(${post.eventLocation})` : ''}`;
+    const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(quote)}`;
+    window.open(fbUrl, '_blank', 'noopener,noreferrer,width=620,height=520');
+  };
+
+  const handleTwitterShare = (post: SocialPost) => {
+    const url = getPostShareUrl(post);
+    const text = `🎵 Spud the Piper: "${post.content.slice(0, 150)}${post.content.length > 150 ? '...' : ''}"`;
+    const twUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+    window.open(twUrl, '_blank', 'noopener,noreferrer,width=620,height=520');
+  };
+
+  const handleNativeShare = async (post: SocialPost) => {
+    const url = getPostShareUrl(post);
+    const text = post.content.length > 200 ? `${post.content.slice(0, 197)}...` : post.content;
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: post.title || `Spud the Piper Update by ${post.authorName}`,
+          text: `${text}\n${post.eventLocation ? '📍 ' + post.eventLocation : ''}`,
+          url: url,
+        });
+      } catch (err) {
+        // User cancelled or dismissed share dialog
+      }
+    }
+  };
+
+  const handleCopyLink = (post: SocialPost) => {
+    const url = getPostShareUrl(post);
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url);
-      setCopiedPostId(postId);
-      setTimeout(() => setCopiedPostId(null), 2500);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2500);
+    }
+  };
+
+  const handleCopyFullText = (post: SocialPost) => {
+    const text = getPostShareText(post);
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setShareTextCopied(true);
+      setTimeout(() => setShareTextCopied(false), 2500);
     }
   };
 
@@ -887,20 +979,11 @@ export const SocialHub: React.FC = () => {
                       </button>
 
                       <button
-                        onClick={() => handleSharePost(post.id)}
-                        className="py-2.5 rounded-2xl flex items-center justify-center gap-2 hover:bg-tartan-navy transition-colors text-gray-300"
+                        onClick={() => openShareModal(post)}
+                        className="py-2.5 rounded-2xl flex items-center justify-center gap-2 hover:bg-tartan-navy transition-colors text-gray-300 hover:text-white group"
                       >
-                        {copiedPostId === post.id ? (
-                          <>
-                            <Check className="w-4 h-4 text-green-400" />
-                            <span className="text-green-400">Copied!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Share2 className="w-4 h-4 text-tartan-gold" />
-                            <span>Share</span>
-                          </>
-                        )}
+                        <Share2 className="w-4 h-4 text-tartan-gold group-hover:scale-110 transition-transform" />
+                        <span>Share</span>
                       </button>
                     </div>
 
@@ -1265,26 +1348,36 @@ export const SocialHub: React.FC = () => {
                       </div>
 
                       <div className="pt-4 border-t border-tartan-border/50 flex items-center justify-between flex-wrap gap-3">
-                        <button
-                          onClick={() => likeSocialPost(activeThread.id)}
-                          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                            activeThread.likedByMe
-                              ? 'bg-amber-950/80 text-amber-300 border border-amber-500'
-                              : 'bg-tartan-navy hover:bg-slate-800 text-gray-300 border border-tartan-border/60'
-                          }`}
-                        >
-                          <ThumbsUp className={`w-4 h-4 ${activeThread.likedByMe ? 'fill-amber-400' : ''}`} />
-                          <span>{activeThread.likes} Helpful / Slàinte 🥃</span>
-                        </button>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button
+                            onClick={() => likeSocialPost(activeThread.id)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                              activeThread.likedByMe
+                                ? 'bg-amber-950/80 text-amber-300 border border-amber-500'
+                                : 'bg-tartan-navy hover:bg-slate-800 text-gray-300 border border-tartan-border/60'
+                            }`}
+                          >
+                            <ThumbsUp className={`w-4 h-4 ${activeThread.likedByMe ? 'fill-amber-400' : ''}`} />
+                            <span>{activeThread.likes} Helpful / Slàinte 🥃</span>
+                          </button>
+
+                          <button
+                            onClick={() => openShareModal(activeThread)}
+                            className="flex items-center gap-1.5 px-4 py-2 bg-tartan-navy hover:bg-slate-800 text-gray-300 hover:text-white rounded-xl border border-tartan-border/60 text-xs font-bold transition-all"
+                          >
+                            <Share2 className="w-4 h-4 text-tartan-gold" />
+                            <span>Share Topic</span>
+                          </button>
+                        </div>
 
                         <button
                           onClick={() => {
                             const el = document.getElementById('thread-reply-box');
                             el?.scrollIntoView({ behavior: 'smooth' });
                           }}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-tartan-navy hover:bg-slate-800 text-gray-300 hover:text-white rounded-xl border border-tartan-border/60 text-xs font-bold transition-all"
+                          className="flex items-center gap-1.5 px-4 py-2 bg-gold-gradient text-tartan-dark hover:brightness-110 rounded-xl text-xs font-extrabold shadow transition-all"
                         >
-                          <MessageCircle className="w-4 h-4 text-tartan-gold" />
+                          <MessageCircle className="w-4 h-4" />
                           <span>Reply to Thread</span>
                         </button>
                       </div>
@@ -1894,6 +1987,173 @@ export const SocialHub: React.FC = () => {
                   </button>
                 </div>
               </form>
+
+            </div>
+          </div>
+        )}
+
+        {/* ═════════════════════════════════════════════════════════════ */}
+        {/* RICH SHARE POST MODAL (WhatsApp, Facebook, X, Native & Link)  */}
+        {/* ═════════════════════════════════════════════════════════════ */}
+        {sharingPost && (
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
+            <div className="bg-tartan-dark border border-tartan-gold/40 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-6 relative max-h-[90vh] overflow-y-auto">
+              
+              {/* Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-tartan-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gold-gradient text-tartan-dark flex items-center justify-center shadow">
+                    <Share2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white font-serif">Share Live Post</h3>
+                    <p className="text-xs text-tartan-gold font-medium">Share this moment directly with friends & guests</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSharingPost(null)}
+                  className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-white/10 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Post Preview Box */}
+              <div className="p-4 rounded-2xl bg-tartan-navy/70 border border-tartan-border/70 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gold-gradient text-tartan-dark flex items-center justify-center font-serif font-bold text-sm shrink-0">
+                    {sharingPost.authorRole === 'Spud the Piper' ? 'S' : sharingPost.authorName.slice(0, 1)}
+                  </div>
+                  <div>
+                    <div className="font-bold text-white text-sm flex items-center gap-1.5">
+                      <span>{sharingPost.authorName}</span>
+                      {sharingPost.authorRole === 'Spud the Piper' && (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-tartan-gold fill-tartan-gold" />
+                      )}
+                    </div>
+                    <div className="text-[11px] text-gray-400">{sharingPost.authorRole}</div>
+                  </div>
+                </div>
+
+                {sharingPost.title && (
+                  <h4 className="text-sm font-bold text-tartan-gold font-serif">
+                    {sharingPost.title}
+                  </h4>
+                )}
+
+                <p className="text-xs sm:text-sm text-gray-200 line-clamp-3 leading-relaxed whitespace-pre-wrap italic">
+                  "{sharingPost.content}"
+                </p>
+
+                {(sharingPost.eventLocation || sharingPost.tunePlayed) && (
+                  <div className="flex items-center gap-2 flex-wrap pt-1 text-[11px]">
+                    {sharingPost.eventLocation && (
+                      <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-tartan-gold border border-slate-700 flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        <span>{sharingPost.eventLocation}</span>
+                      </span>
+                    )}
+                    {sharingPost.tunePlayed && (
+                      <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-gray-300 border border-slate-700 flex items-center gap-1">
+                        <Music className="w-3 h-3 text-tartan-gold" />
+                        <span>{sharingPost.tunePlayed}</span>
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {sharingPost.imageUrl && (
+                  <div className="rounded-xl overflow-hidden max-h-40 border border-tartan-border/50">
+                    <img src={sharingPost.imageUrl} alt="Post preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+
+              {/* Share Actions Grid */}
+              <div className="space-y-3">
+                <label className="block text-xs font-bold uppercase tracking-wider text-tartan-gold">
+                  Select Share Destination
+                </label>
+
+                {/* WhatsApp Button */}
+                <button
+                  onClick={() => handleWhatsAppShare(sharingPost)}
+                  className="w-full py-3.5 px-4 bg-[#25D366] hover:bg-[#20ba59] text-white font-bold rounded-2xl flex items-center justify-center gap-3 shadow-lg hover:shadow-green-500/20 active:scale-[0.99] transition-all"
+                >
+                  <WhatsAppIcon />
+                  <span>Share to WhatsApp (Full Story + Link)</span>
+                </button>
+
+                {/* Facebook Button */}
+                <button
+                  onClick={() => handleFacebookShare(sharingPost)}
+                  className="w-full py-3.5 px-4 bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold rounded-2xl flex items-center justify-center gap-3 shadow-lg hover:shadow-blue-500/20 active:scale-[0.99] transition-all"
+                >
+                  <FacebookIcon />
+                  <span>Share on Facebook</span>
+                </button>
+
+                {/* Twitter / X */}
+                <button
+                  onClick={() => handleTwitterShare(sharingPost)}
+                  className="w-full py-3 px-4 bg-slate-900 hover:bg-black text-white font-semibold rounded-2xl flex items-center justify-center gap-3 border border-slate-700 active:scale-[0.99] transition-all text-xs sm:text-sm"
+                >
+                  <XTwitterIcon />
+                  <span>Share on X (Twitter)</span>
+                </button>
+
+                {/* Mobile Native Share Sheet */}
+                {typeof navigator !== 'undefined' && typeof navigator.share === 'function' && (
+                  <button
+                    onClick={() => handleNativeShare(sharingPost)}
+                    className="w-full py-3 px-4 bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 hover:brightness-110 text-tartan-dark font-extrabold rounded-2xl flex items-center justify-center gap-2.5 shadow-md active:scale-[0.99] transition-all text-xs sm:text-sm"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    <span>More Apps (Instagram, Messages, Email...)</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Copy Link & Copy Full Text Options */}
+              <div className="pt-2 border-t border-tartan-border/70 space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={getPostShareUrl(sharingPost)}
+                    className="flex-1 bg-tartan-navy text-gray-300 text-xs px-3 py-2.5 rounded-xl border border-tartan-border focus:outline-none select-all"
+                  />
+                  <button
+                    onClick={() => handleCopyLink(sharingPost)}
+                    className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-tartan-gold font-bold text-xs rounded-xl border border-tartan-border flex items-center gap-1.5 transition-all shrink-0"
+                  >
+                    {shareCopied ? (
+                      <>
+                        <Check className="w-4 h-4 text-green-400" />
+                        <span className="text-green-400">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        <span>Copy Link</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => handleCopyFullText(sharingPost)}
+                  className="w-full py-2 text-center text-xs text-gray-400 hover:text-tartan-gold transition-colors flex items-center justify-center gap-1.5"
+                >
+                  {shareTextCopied ? (
+                    <span className="text-green-400 font-bold flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5" /> Full post story copied to clipboard!
+                    </span>
+                  ) : (
+                    <span>Copy full post story & location to clipboard</span>
+                  )}
+                </button>
+              </div>
 
             </div>
           </div>
