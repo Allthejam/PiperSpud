@@ -33,11 +33,20 @@ import { initialTravelConfig } from '@/lib/initialData';
 export const BookingCalendar: React.FC = () => {
   const { createBooking, tunesList, travelConfig, services, pricingConfig } = useApp();
 
-  // Calendar view state (Current month: September/October 2026)
-  const [currentYear, setCurrentYear] = useState(2026);
-  const [currentMonth, setCurrentMonth] = useState(8); // 8 is September (0-indexed)
+  // Dynamic Real-time Date references
+  const today = new Date();
+  const currentRealYear = today.getFullYear();
+  const currentRealMonth = today.getMonth(); // 0 is January
+  const currentRealDay = today.getDate();
+  const todayFormatted = `${currentRealYear}-${String(currentRealMonth + 1).padStart(2, '0')}-${String(currentRealDay).padStart(2, '0')}`;
 
-  const [selectedDate, setSelectedDate] = useState<string>('2026-10-24');
+  // Calendar view state (starts at current month & year)
+  const [currentYear, setCurrentYear] = useState(currentRealYear);
+  const [currentMonth, setCurrentMonth] = useState(currentRealMonth);
+
+  // Selected date is mandatory and must be strictly in the future
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [dateError, setDateError] = useState<string>('');
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('13:30 - 16:30');
   
   // Form fields - default to first active service package title
@@ -123,7 +132,12 @@ export const BookingCalendar: React.FC = () => {
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
+  const isPrevMonthDisabled = 
+    currentYear < currentRealYear || 
+    (currentYear === currentRealYear && currentMonth <= currentRealMonth);
+
   const handlePrevMonth = () => {
+    if (isPrevMonthDisabled) return;
     if (currentMonth === 0) {
       setCurrentMonth(11);
       setCurrentYear(currentYear - 1);
@@ -151,6 +165,15 @@ export const BookingCalendar: React.FC = () => {
 
   const handleSubmitBooking = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!selectedDate || selectedDate <= todayFormatted) {
+      setDateError('Event date is mandatory. Please select a valid future date on the calendar.');
+      const calendarEl = document.getElementById('booking-calendar-card');
+      if (calendarEl) calendarEl.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    setDateError('');
+
     if (!clientName || !clientEmail || !clientPhone || !venueName) {
       alert('Please complete all required fields.');
       return;
@@ -297,7 +320,7 @@ export const BookingCalendar: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
             {/* Left: Interactive Calendar */}
-            <div className="lg:col-span-5 bg-tartan-card rounded-3xl p-6 border border-tartan-accent/40 shadow-2xl space-y-6">
+            <div id="booking-calendar-card" className="lg:col-span-5 bg-tartan-card rounded-3xl p-6 border border-tartan-accent/40 shadow-2xl space-y-6 scroll-mt-24">
               
               {/* Calendar Month Navigation */}
               <div className="flex items-center justify-between">
@@ -305,20 +328,27 @@ export const BookingCalendar: React.FC = () => {
                   <h3 className="text-lg font-bold text-white font-serif">
                     {monthNames[currentMonth]} {currentYear}
                   </h3>
-                  <p className="text-xs text-tartan-gold">Click any date to select your event day</p>
+                  <p className="text-xs text-tartan-gold">Select your event date (Future dates only)</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
+                    disabled={isPrevMonthDisabled}
                     onClick={handlePrevMonth}
-                    className="p-2 rounded-lg bg-tartan-navy hover:bg-slate-700 text-gray-300 border border-tartan-border"
+                    className={`p-2 rounded-lg border transition ${
+                      isPrevMonthDisabled
+                        ? 'bg-tartan-dark/40 text-gray-600 border-transparent cursor-not-allowed opacity-40'
+                        : 'bg-tartan-navy hover:bg-slate-700 text-gray-300 border-tartan-border'
+                    }`}
+                    title={isPrevMonthDisabled ? 'Cannot navigate to past months' : 'Previous month'}
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     type="button"
                     onClick={handleNextMonth}
-                    className="p-2 rounded-lg bg-tartan-navy hover:bg-slate-700 text-gray-300 border border-tartan-border"
+                    className="p-2 rounded-lg bg-tartan-navy hover:bg-slate-700 text-gray-300 border border-tartan-border transition"
+                    title="Next month"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -334,7 +364,7 @@ export const BookingCalendar: React.FC = () => {
               <div className="grid grid-cols-7 gap-1 text-center">
                 {/* Empty padding days */}
                 {[...Array(firstDayIndex)].map((_, i) => (
-                  <div key={`empty-${i}`} className="h-10"></div>
+                  <div key={`empty-${i}`} className="h-11"></div>
                 ))}
 
                 {/* Days of Month */}
@@ -344,46 +374,108 @@ export const BookingCalendar: React.FC = () => {
                   const dayFormatted = String(dayNum).padStart(2, '0');
                   const dateString = `${currentYear}-${monthFormatted}-${dayFormatted}`;
 
+                  const isPast = dateString < todayFormatted;
+                  const isToday = dateString === todayFormatted;
+                  const isSelectableFuture = dateString > todayFormatted;
                   const isSelected = selectedDate === dateString;
 
-                  let btnStyle = 'bg-tartan-navy/70 text-gray-200 hover:bg-tartan-accent/25 hover:text-white hover:border-tartan-gold/60 border border-tartan-border/50';
+                  let btnStyle = '';
                   if (isSelected) {
-                    btnStyle = 'bg-gold-gradient text-tartan-dark font-extrabold ring-2 ring-yellow-400 shadow-lg scale-105 z-10';
+                    btnStyle = 'bg-gold-gradient text-tartan-dark font-extrabold ring-2 ring-yellow-400 shadow-xl scale-105 z-10';
+                  } else if (isToday) {
+                    btnStyle = 'bg-tartan-dark/80 text-gray-400 border border-tartan-gold/50 cursor-not-allowed opacity-60';
+                  } else if (isPast) {
+                    btnStyle = 'bg-tartan-dark/30 text-gray-600 border border-transparent cursor-not-allowed opacity-30';
+                  } else {
+                    btnStyle = 'bg-tartan-navy/70 text-gray-200 hover:bg-tartan-accent/25 hover:text-white hover:border-tartan-gold/60 border border-tartan-border/50 cursor-pointer active:scale-95';
                   }
 
                   return (
                     <button
                       key={dayNum}
                       type="button"
-                      onClick={() => setSelectedDate(dateString)}
-                      className={`h-10 rounded-xl text-xs font-semibold flex flex-col items-center justify-center transition-all relative ${btnStyle}`}
-                      title={`Select ${dayNum} ${monthNames[currentMonth]} ${currentYear}`}
+                      disabled={!isSelectableFuture}
+                      onClick={() => {
+                        if (isSelectableFuture) {
+                          setSelectedDate(dateString);
+                          setDateError('');
+                        }
+                      }}
+                      className={`h-11 rounded-xl text-xs font-semibold flex flex-col items-center justify-center transition-all relative ${btnStyle}`}
+                      title={
+                        isToday
+                          ? `Today (${dayNum} ${monthNames[currentMonth]}) - Events must be booked for future dates`
+                          : isPast
+                          ? `Past date (${dayNum} ${monthNames[currentMonth]}) - Unavailable`
+                          : `Select ${dayNum} ${monthNames[currentMonth]} ${currentYear}`
+                      }
                     >
                       <span>{dayNum}</span>
-                      {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-tartan-dark mt-0.5"></span>}
+                      {isToday && (
+                        <span className="text-[8px] font-bold text-tartan-gold uppercase leading-none tracking-tighter mt-0.5">Today</span>
+                      )}
+                      {isSelected && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-tartan-dark mt-0.5"></span>
+                      )}
                     </button>
                   );
                 })}
               </div>
 
               {/* Privacy & Selection Legend */}
-              <div className="pt-4 border-t border-tartan-border/60 flex items-center justify-between text-[11px] text-gray-300">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-tartan-gold"></span>
-                  <span className="font-semibold text-white">Chosen Date</span>
+              <div className="pt-4 border-t border-tartan-border/60 flex items-center justify-between text-[11px] text-gray-300 flex-wrap gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-tartan-gold"></span>
+                    <span className="font-semibold text-white">Selected</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-gray-500">
+                    <span className="w-2.5 h-2.5 rounded-full bg-slate-600 opacity-40"></span>
+                    <span>Past (Closed)</span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-1.5 text-tartan-gold font-medium">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Private Diary Review</span>
+                  <span>Private Diary</span>
                 </div>
               </div>
 
-              {/* Live Slot Summary */}
-              <div className="bg-tartan-navy rounded-2xl p-4 border border-tartan-border space-y-2">
-                <p className="text-xs text-tartan-gold font-bold uppercase tracking-wider">Currently Chosen Date:</p>
-                <div className="flex items-center justify-between text-sm font-bold text-white">
-                  <span>{new Date(selectedDate).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+              {/* Live Chosen Date Summary & Alert */}
+              <div className={`p-4 rounded-2xl border space-y-2 transition-all ${
+                selectedDate 
+                  ? 'bg-tartan-navy border-tartan-border' 
+                  : dateError
+                  ? 'bg-red-950/60 border-rose-500 ring-2 ring-rose-500/40 animate-pulse'
+                  : 'bg-amber-950/40 border-amber-500/60'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-tartan-gold">
+                    <CalendarIcon className="w-3.5 h-3.5" />
+                    <span>Chosen Event Date (Mandatory):</span>
+                  </p>
+                  {selectedDate ? (
+                    <span className="text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span>Date Selected</span>
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold bg-amber-950 text-yellow-300 border border-yellow-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 text-yellow-400" />
+                      <span>Action Required</span>
+                    </span>
+                  )}
                 </div>
+
+                {selectedDate ? (
+                  <div className="text-sm font-bold text-white flex items-center justify-between">
+                    <span>{new Date(selectedDate).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                  </div>
+                ) : (
+                  <div className="text-xs text-amber-200 space-y-0.5">
+                    <p className="font-semibold">👈 Please click a future date on the calendar above.</p>
+                    <p className="text-[11px] text-gray-400">Past dates and same-day bookings are not permitted to prevent booking errors.</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -773,6 +865,14 @@ export const BookingCalendar: React.FC = () => {
                     className="w-full bg-tartan-dark border border-tartan-border rounded-xl p-3 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-tartan-accent"
                   />
                 </div>
+
+                {/* Date Validation Alert Banner */}
+                {dateError && (
+                  <div className="p-3.5 bg-red-950/80 border border-rose-600 rounded-xl text-xs text-rose-300 flex items-center gap-2.5 animate-bounce">
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                    <span className="font-semibold">{dateError}</span>
+                  </div>
+                )}
 
                 {/* Submit CTA */}
                 <div className="pt-2">
