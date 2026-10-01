@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import Image from 'next/image';
+import React, { useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -21,9 +20,13 @@ import {
   X, 
   ChevronLeft, 
   ChevronRight, 
-  Sparkles,
-  ChevronDown
+  ChevronDown,
+  ChevronsLeft,
+  ChevronsRight,
+  Layers
 } from 'lucide-react';
+
+const ITEMS_PER_PAGE = 15; // 5 rows of 3 on desktop
 
 export default function GalleryPage() {
   const { galleryItems } = useApp();
@@ -31,13 +34,18 @@ export default function GalleryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [sortOption, setSortOption] = useState<'date-desc' | 'date-asc' | 'venue-asc' | 'title-asc'>('date-desc');
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const [activeLightboxIndex, setActiveLightboxIndex] = useState<number | null>(null);
 
-  // Extract unique categories for filter tabs
+  const galleryGridRef = useRef<HTMLDivElement>(null);
+
+  // Extract unique categories for filter dropdown
   const categories = useMemo(() => {
     const set = new Set<string>();
     galleryItems.forEach(item => {
-      if (item.eventType) set.add(item.eventType);
+      if (item.eventType && item.eventType.trim()) {
+        set.add(item.eventType.trim());
+      }
     });
     return ['All', ...Array.from(set)];
   }, [galleryItems]);
@@ -72,6 +80,34 @@ export default function GalleryPage() {
     });
   }, [galleryItems, selectedCategory, searchQuery, sortOption]);
 
+  // Total pages calculation
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE));
+
+  // Current page items (5 rows max)
+  const paginatedItems = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredItems.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredItems, currentPage]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    setCurrentPage(newPage);
+    if (galleryGridRef.current) {
+      galleryGridRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const handleCategoryChange = (cat: string) => {
+    setSelectedCategory(cat);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    setCurrentPage(1);
+  };
+
+  // Lightbox navigation
   const activePhoto: GalleryItem | null = activeLightboxIndex !== null ? filteredItems[activeLightboxIndex] || null : null;
 
   const handlePrevPhoto = () => {
@@ -82,6 +118,11 @@ export default function GalleryPage() {
   const handleNextPhoto = () => {
     if (activeLightboxIndex === null || filteredItems.length === 0) return;
     setActiveLightboxIndex((activeLightboxIndex + 1) % filteredItems.length);
+  };
+
+  const openLightboxForPaginatedItem = (indexInPaginatedList: number) => {
+    const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + indexInPaginatedList;
+    setActiveLightboxIndex(globalIndex);
   };
 
   return (
@@ -110,108 +151,139 @@ export default function GalleryPage() {
       </section>
 
       {/* Main Gallery Workspace */}
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
+      <main ref={galleryGridRef} className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
         
-        {/* Filter & Sort Controls Bar */}
-        <div className="bg-tartan-navy/70 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-tartan-border shadow-xl space-y-4 mb-10">
-          <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+        {/* Filter & Sort Controls Bar (No Horizontal Scroll - Clean Dropdowns & Search) */}
+        <div className="bg-tartan-navy/80 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-tartan-border shadow-xl space-y-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
             
-            {/* Search Input */}
-            <div className="relative flex-1">
+            {/* Search Input (6 cols on md) */}
+            <div className="md:col-span-6 relative">
               <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search by venue name, mart, location, or keyword..."
+                placeholder="Search by venue name, mart, location, keyword..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-tartan-dark/90 border border-tartan-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-tartan-gold transition-colors"
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="w-full bg-tartan-dark/95 border border-tartan-border rounded-xl pl-10 pr-9 py-2.5 text-xs sm:text-sm text-white placeholder-gray-400 focus:outline-none focus:border-tartan-gold transition-colors"
               />
               {searchQuery && (
                 <button 
-                  onClick={() => setSearchQuery('')}
+                  onClick={() => handleSearchChange('')}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-1"
+                  title="Clear search"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
 
-            {/* Sort Selector */}
-            <div className="flex items-center gap-2 shrink-0">
-              <ArrowUpDown className="w-4 h-4 text-tartan-gold shrink-0 hidden sm:inline" />
-              <span className="text-xs text-gray-300 font-medium shrink-0">Sort By:</span>
-              <div className="relative">
-                <select
-                  value={sortOption}
-                  onChange={(e) => setSortOption(e.target.value as any)}
-                  className="appearance-none bg-tartan-dark/90 border border-tartan-border rounded-xl px-4 py-2.5 pr-8 text-xs font-semibold text-white focus:outline-none focus:border-tartan-gold transition-colors cursor-pointer"
-                >
-                  <option value="date-desc">Date (Newest First)</option>
-                  <option value="date-asc">Date (Oldest First)</option>
-                  <option value="venue-asc">Mart / Venue Name (A-Z)</option>
-                  <option value="title-asc">Photo Title (A-Z)</option>
-                </select>
-                <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            {/* Category Filter Dropdown (3 cols on md) */}
+            <div className="md:col-span-3 relative">
+              <div className="flex items-center gap-1.5 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-tartan-gold">
+                <Filter className="w-3.5 h-3.5" />
               </div>
+              <select
+                value={selectedCategory}
+                onChange={(e) => handleCategoryChange(e.target.value)}
+                className="w-full appearance-none bg-tartan-dark/95 border border-tartan-border rounded-xl pl-8 pr-8 py-2.5 text-xs font-semibold text-white focus:outline-none focus:border-tartan-gold transition-colors cursor-pointer"
+              >
+                <option value="All">All Categories ({galleryItems.length})</option>
+                {categories.filter(c => c !== 'All').map(cat => {
+                  const count = galleryItems.filter(g => g.eventType === cat).length;
+                  return (
+                    <option key={cat} value={cat}>
+                      {cat} ({count})
+                    </option>
+                  );
+                })}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
+
+            {/* Sort Selector Dropdown (3 cols on md) */}
+            <div className="md:col-span-3 relative">
+              <div className="flex items-center gap-1.5 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-tartan-gold">
+                <ArrowUpDown className="w-3.5 h-3.5" />
+              </div>
+              <select
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value as any)}
+                className="w-full appearance-none bg-tartan-dark/95 border border-tartan-border rounded-xl pl-8 pr-8 py-2.5 text-xs font-semibold text-white focus:outline-none focus:border-tartan-gold transition-colors cursor-pointer"
+              >
+                <option value="date-desc">Date (Newest First)</option>
+                <option value="date-asc">Date (Oldest First)</option>
+                <option value="venue-asc">Mart / Venue (A - Z)</option>
+                <option value="title-asc">Photo Title (A - Z)</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
           </div>
 
-          {/* Category Filter Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-            <Filter className="w-3.5 h-3.5 text-tartan-gold shrink-0 ml-1 mr-1" />
-            {categories.map((cat) => {
-              const active = selectedCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all shrink-0 ${
-                    active
-                      ? 'bg-tartan-accent text-white font-bold shadow-md ring-1 ring-tartan-gold'
-                      : 'bg-tartan-dark/70 text-gray-300 hover:text-white hover:bg-tartan-dark border border-tartan-border/70'
-                  }`}
-                >
-                  {cat}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Gallery Results Count */}
-        <div className="flex items-center justify-between text-xs text-gray-400 mb-6 px-1">
-          <span>Showing <strong className="text-tartan-gold">{filteredItems.length}</strong> photo{filteredItems.length === 1 ? '' : 's'}</span>
-          {selectedCategory !== 'All' && (
-            <button 
-              onClick={() => setSelectedCategory('All')} 
-              className="text-tartan-gold hover:underline text-xs font-semibold"
-            >
-              Reset Category
-            </button>
+          {/* Active Filter Indicators */}
+          {(selectedCategory !== 'All' || searchQuery) && (
+            <div className="flex items-center gap-2 pt-2 border-t border-tartan-border/50 text-xs flex-wrap">
+              <span className="text-gray-400 text-[11px]">Active Filters:</span>
+              {selectedCategory !== 'All' && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-tartan-accent/30 text-tartan-gold border border-tartan-gold/30 text-[11px]">
+                  Category: {selectedCategory}
+                  <button onClick={() => handleCategoryChange('All')} className="hover:text-white">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {searchQuery && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-tartan-accent/30 text-tartan-gold border border-tartan-gold/30 text-[11px]">
+                  Search: &quot;{searchQuery}&quot;
+                  <button onClick={() => handleSearchChange('')} className="hover:text-white">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              <button 
+                onClick={() => { handleCategoryChange('All'); handleSearchChange(''); }}
+                className="text-[11px] text-gray-400 hover:text-white underline ml-auto"
+              >
+                Reset All
+              </button>
+            </div>
           )}
         </div>
 
-        {/* Gallery Grid */}
-        {filteredItems.length === 0 ? (
+        {/* Gallery Results Count & Page Summary */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-gray-400 mb-6 px-1 gap-2">
+          <div>
+            Showing <strong className="text-tartan-gold">{filteredItems.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}</strong> to <strong className="text-tartan-gold">{Math.min(currentPage * ITEMS_PER_PAGE, filteredItems.length)}</strong> of <strong className="text-white">{filteredItems.length}</strong> photos
+          </div>
+          {totalPages > 1 && (
+            <div className="text-gray-400 text-[11px]">
+              Page <strong className="text-tartan-gold">{currentPage}</strong> of <strong className="text-white">{totalPages}</strong> (5 rows per page)
+            </div>
+          )}
+        </div>
+
+        {/* Gallery Grid (Up to 5 rows of 3 columns = 15 cards per page) */}
+        {paginatedItems.length === 0 ? (
           <div className="text-center py-20 bg-tartan-navy/40 rounded-3xl border border-dashed border-tartan-border p-8 space-y-3">
             <Camera className="w-12 h-12 text-gray-500 mx-auto opacity-50" />
             <h3 className="text-lg font-bold text-white font-serif">No Photos Found</h3>
             <p className="text-xs text-gray-400 max-w-md mx-auto">
-              No gallery images match your current search query or filter. Try clearing your filters or search for another venue.
+              No gallery images match your current search query or filter. Try choosing another category or clearing your search.
             </p>
             <button
-              onClick={() => { setSearchQuery(''); setSelectedCategory('All'); }}
+              onClick={() => { handleSearchChange(''); handleCategoryChange('All'); }}
               className="mt-2 px-4 py-2 rounded-xl bg-tartan-accent text-white text-xs font-semibold hover:bg-tartan-gold hover:text-tartan-dark transition-all"
             >
-              Clear All Filters
+              Clear Filters
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {filteredItems.map((item, idx) => (
+            {paginatedItems.map((item, idx) => (
               <div
                 key={item.id}
-                onClick={() => setActiveLightboxIndex(idx)}
+                onClick={() => openLightboxForPaginatedItem(idx)}
                 className="group relative bg-tartan-navy rounded-2xl overflow-hidden border border-tartan-border shadow-lg hover:shadow-2xl hover:border-tartan-gold/50 transition-all duration-300 cursor-pointer flex flex-col transform hover:-translate-y-1"
               >
                 {/* Photo Frame */}
@@ -282,13 +354,103 @@ export default function GalleryPage() {
 
                   <div className="pt-2 flex items-center justify-between text-[11px] text-gray-400 border-t border-tartan-border/60">
                     <span className="text-tartan-gold font-medium group-hover:underline">Click to view in full HD</span>
-                    <span className="text-gray-300">#{(idx + 1).toString().padStart(2, '0')}</span>
+                    <span className="text-gray-400 font-mono">#{( (currentPage - 1) * ITEMS_PER_PAGE + idx + 1 ).toString().padStart(2, '0')}</span>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         )}
+
+        {/* Multi-Page Pagination Bar (5 Rows per Page) */}
+        {totalPages > 1 && (
+          <div className="mt-12 pt-6 border-t border-tartan-border flex flex-col sm:flex-row items-center justify-between gap-4">
+            
+            <div className="text-xs text-gray-400">
+              Page <strong className="text-white">{currentPage}</strong> of <strong className="text-white">{totalPages}</strong> (showing 15 photos / 5 rows per page)
+            </div>
+
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              
+              {/* First Page Button */}
+              <button
+                onClick={() => handlePageChange(1)}
+                disabled={currentPage === 1}
+                className="p-2 rounded-xl bg-tartan-navy border border-tartan-border text-gray-300 hover:text-white hover:border-tartan-gold disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                title="Go to first page"
+              >
+                <ChevronsLeft className="w-4 h-4" />
+              </button>
+
+              {/* Previous Page Button */}
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-3.5 py-2 rounded-xl bg-tartan-navy border border-tartan-border text-xs font-semibold text-gray-300 hover:text-white hover:border-tartan-gold disabled:opacity-30 disabled:pointer-events-none transition-colors flex items-center gap-1"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Prev</span>
+              </button>
+
+              {/* Numbered Page Buttons */}
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                  const isCurrent = pageNum === currentPage;
+                  // Show current, +/- 1 neighbor, first, and last page
+                  if (
+                    pageNum === 1 || 
+                    pageNum === totalPages || 
+                    Math.abs(pageNum - currentPage) <= 1
+                  ) {
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`w-9 h-9 rounded-xl text-xs font-bold transition-all ${
+                          isCurrent
+                            ? 'bg-gold-gradient text-tartan-dark shadow-md scale-105'
+                            : 'bg-tartan-navy border border-tartan-border text-gray-300 hover:text-white hover:border-tartan-gold'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  }
+                  if (
+                    pageNum === currentPage - 2 || 
+                    pageNum === currentPage + 2
+                  ) {
+                    return <span key={pageNum} className="text-gray-500 px-1 text-xs">...</span>;
+                  }
+                  return null;
+                })}
+              </div>
+
+              {/* Next Page Button */}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-3.5 py-2 rounded-xl bg-tartan-navy border border-tartan-border text-xs font-semibold text-gray-300 hover:text-white hover:border-tartan-gold disabled:opacity-30 disabled:pointer-events-none transition-colors flex items-center gap-1"
+              >
+                <span>Next</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+
+              {/* Last Page Button */}
+              <button
+                onClick={() => handlePageChange(totalPages)}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-xl bg-tartan-navy border border-tartan-border text-gray-300 hover:text-white hover:border-tartan-gold disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                title="Go to last page"
+              >
+                <ChevronsRight className="w-4 h-4" />
+              </button>
+
+            </div>
+
+          </div>
+        )}
+
       </main>
 
       {/* Lightbox Modal */}
