@@ -259,7 +259,7 @@ export const Footer: React.FC = () => {
                 <li><Link href="/services" className="hover:text-tartan-gold transition-colors">Services & Packages</Link></li>
                 <li><Link href="/tunes" className="hover:text-tartan-gold transition-colors">Bagpipe Tune Jukebox</Link></li>
                 <li><Link href="/attire" className="hover:text-tartan-gold transition-colors">Tartan & Attire Studio</Link></li>
-                <li><Link href="/booking" className="hover:text-tartan-gold transition-colors">Live Diary & Booking</Link></li>
+                <li><Link href="/booking" className="hover:text-tartan-gold transition-colors">Bookings & Date Request</Link></li>
                 <li><Link href="/social" className="hover:text-tartan-gold transition-colors">Social Wall & Stream</Link></li>
                 <li><Link href="/reviews" className="hover:text-tartan-gold transition-colors">Client Reviews</Link></li>
                 <li><Link href="/faq" className="hover:text-tartan-gold transition-colors">FAQ</Link></li>

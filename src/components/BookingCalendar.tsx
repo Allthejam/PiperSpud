@@ -30,7 +30,7 @@ import { EventType, HighlandDressOption } from '@/types/spud';
 import { calculateTravelCosts } from '@/lib/travelCalculator';
 
 export const BookingCalendar: React.FC = () => {
-  const { bookings, createBooking, tunesList, travelConfig, services, pricingConfig } = useApp();
+  const { createBooking, tunesList, travelConfig, services, pricingConfig } = useApp();
 
   // Calendar view state (Current month: September/October 2026)
   const [currentYear, setCurrentYear] = useState(2026);
@@ -154,14 +154,6 @@ export const BookingCalendar: React.FC = () => {
     }
   };
 
-  const isDateBooked = (dateStr: string) => {
-    return bookings.some(b => b.date === dateStr && (b.status === 'deposit_paid' || b.status === 'approved'));
-  };
-
-  const isDatePending = (dateStr: string) => {
-    return bookings.some(b => b.date === dateStr && b.status === 'pending');
-  };
-
   const handleTuneToggle = (tuneTitle: string) => {
     if (selectedTunes.includes(tuneTitle)) {
       setSelectedTunes(selectedTunes.filter(t => t !== tuneTitle));
@@ -218,14 +210,14 @@ export const BookingCalendar: React.FC = () => {
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-14">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-tartan-accent/15 border border-tartan-accent/40 text-tartan-gold text-xs font-semibold">
-            <CalendarIcon className="w-4 h-4" />
-            <span>Interactive Availability & Diary</span>
+            <ShieldCheck className="w-4 h-4" />
+            <span>Direct Date Request & Custom Estimate</span>
           </div>
           <h2 className="text-3xl sm:text-5xl font-extrabold text-white font-serif tracking-tight">
-            Check Live Dates & Request a Provisional Booking
+            Choose Your Event Date & Request Booking
           </h2>
           <p className="text-base text-gray-300">
-            Select an open date on Spud\'s diary below to reserve your slot. Once submitted, Spud will review your booking and an official Brevo confirmation email with a secure PayPal deposit link will be sent to you.
+            Select your preferred date on the calendar below. Spud personally reviews each inquiry against his private diary and will email you directly to confirm availability, travel logistics, and finalize details.
           </p>
         </div>
 
@@ -290,17 +282,17 @@ export const BookingCalendar: React.FC = () => {
               </h4>
               <div className="flex items-start gap-3">
                 <div className="w-5 h-5 rounded-full bg-tartan-accent text-tartan-dark font-bold flex items-center justify-center shrink-0">1</div>
-                <p className="text-gray-200">Spud reviews the diary details, venue location, and travel logistics in his Back Office.</p>
+                <p className="text-gray-200">Spud reviews your event details, venue location, and travel logistics in his private Back Office diary.</p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-5 h-5 rounded-full bg-tartan-accent text-tartan-dark font-bold flex items-center justify-center shrink-0">2</div>
                 <p className="text-gray-200">
-                  You will receive an official <strong className="text-white">Brevo email</strong> containing your confirmed booking summary, travel details, and a secure <strong className="text-white">PayPal link</strong> to pay the £{bookingSuccess.depositAmount} deposit.
+                  You will receive an official <strong className="text-white">Brevo confirmation email</strong> with your booking summary, travel details, and a secure <strong className="text-white">PayPal link</strong> to pay the £{bookingSuccess.depositAmount} deposit.
                 </p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-5 h-5 rounded-full bg-tartan-accent text-tartan-dark font-bold flex items-center justify-center shrink-0">3</div>
-                <p className="text-gray-200">Upon deposit payment, your date is locked in the diary and full receipts are delivered.</p>
+                <p className="text-gray-200">Upon deposit payment, your date is locked in Spud's private diary and full receipts are delivered.</p>
               </div>
             </div>
 
@@ -309,7 +301,7 @@ export const BookingCalendar: React.FC = () => {
                 onClick={() => setBookingSuccess(null)}
                 className="px-6 py-3 rounded-xl bg-gold-gradient text-tartan-dark font-bold text-xs uppercase tracking-wider shadow-lg hover:brightness-110"
               >
-                Book Another Date
+                Request Another Date
               </button>
             </div>
           </div>
@@ -326,16 +318,18 @@ export const BookingCalendar: React.FC = () => {
                   <h3 className="text-lg font-bold text-white font-serif">
                     {monthNames[currentMonth]} {currentYear}
                   </h3>
-                  <p className="text-xs text-tartan-gold">Select a vacant date to start</p>
+                  <p className="text-xs text-tartan-gold">Click any date to select your event day</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
+                    type="button"
                     onClick={handlePrevMonth}
                     className="p-2 rounded-lg bg-tartan-navy hover:bg-slate-700 text-gray-300 border border-tartan-border"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
+                    type="button"
                     onClick={handleNextMonth}
                     className="p-2 rounded-lg bg-tartan-navy hover:bg-slate-700 text-gray-300 border border-tartan-border"
                   >
@@ -363,52 +357,37 @@ export const BookingCalendar: React.FC = () => {
                   const dayFormatted = String(dayNum).padStart(2, '0');
                   const dateString = `${currentYear}-${monthFormatted}-${dayFormatted}`;
 
-                  const booked = isDateBooked(dateString);
-                  const pending = isDatePending(dateString);
                   const isSelected = selectedDate === dateString;
 
-                  let btnStyle = 'bg-tartan-navy/60 text-gray-200 hover:bg-tartan-accent/20 border border-tartan-border/40';
-                  if (booked) {
-                    btnStyle = 'bg-red-950/70 text-red-300 border border-red-800 cursor-not-allowed opacity-75';
-                  } else if (pending) {
-                    btnStyle = 'bg-amber-950/70 text-yellow-300 border border-yellow-800';
-                  } else if (isSelected) {
-                    btnStyle = 'bg-tartan-gold text-tartan-dark font-extrabold ring-2 ring-yellow-300 shadow-md';
+                  let btnStyle = 'bg-tartan-navy/70 text-gray-200 hover:bg-tartan-accent/25 hover:text-white hover:border-tartan-gold/60 border border-tartan-border/50';
+                  if (isSelected) {
+                    btnStyle = 'bg-gold-gradient text-tartan-dark font-extrabold ring-2 ring-yellow-400 shadow-lg scale-105 z-10';
                   }
 
                   return (
                     <button
                       key={dayNum}
-                      disabled={booked}
-                      onClick={() => !booked && setSelectedDate(dateString)}
-                      className={`h-10 rounded-xl text-xs font-medium flex flex-col items-center justify-center transition-all relative ${btnStyle}`}
-                      title={booked ? 'Already Booked' : pending ? 'Provisional Request Pending' : 'Vacant Slot'}
+                      type="button"
+                      onClick={() => setSelectedDate(dateString)}
+                      className={`h-10 rounded-xl text-xs font-semibold flex flex-col items-center justify-center transition-all relative ${btnStyle}`}
+                      title={`Select ${dayNum} ${monthNames[currentMonth]} ${currentYear}`}
                     >
                       <span>{dayNum}</span>
-                      {booked && <span className="w-1 h-1 rounded-full bg-red-400 mt-0.5"></span>}
-                      {pending && <span className="w-1 h-1 rounded-full bg-yellow-400 mt-0.5"></span>}
+                      {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-tartan-dark mt-0.5"></span>}
                     </button>
                   );
                 })}
               </div>
 
-              {/* Legend */}
-              <div className="pt-4 border-t border-tartan-border/60 flex items-center justify-between text-[11px] text-gray-400">
+              {/* Privacy & Selection Legend */}
+              <div className="pt-4 border-t border-tartan-border/60 flex items-center justify-between text-[11px] text-gray-300">
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-tartan-gold"></span>
-                  <span>Selected</span>
+                  <span className="font-semibold text-white">Chosen Date</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-tartan-navy border border-tartan-border"></span>
-                  <span>Vacant</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
-                  <span>Booked</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
-                  <span>Pending</span>
+                <div className="flex items-center gap-1.5 text-tartan-gold font-medium">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Private Diary Review</span>
                 </div>
               </div>
 
