@@ -44,7 +44,8 @@ import {
   ExternalLink,
   FileImage,
   CheckCircle2,
-  ChevronDown
+  ChevronDown,
+  EyeOff
 } from 'lucide-react';
 import { EditableCmsBlock } from '@/types/spud';
 import { uploadToStorage } from '@/lib/firebase';
@@ -96,6 +97,11 @@ export const VisualPencilOverlay: React.FC = () => {
   const [seoSchemaType, setSeoSchemaType] = useState('LocalBusiness');
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile' | 'social'>('mobile');
   const [isSavedSuccess, setIsSavedSuccess] = useState(false);
+  
+  // Responsive Admin Bar Visibility State
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [isDesktopMinimized, setIsDesktopMinimized] = useState(false);
+  const [isSeoDockDismissed, setIsSeoDockDismissed] = useState(false);
 
   // Derive current page ID from URL pathname
   const currentPageId = pathname === '/' ? 'home' : pathname.replace(/^\//, '');
@@ -349,87 +355,229 @@ export const VisualPencilOverlay: React.FC = () => {
   const schemaJsonObj = generateSchemaJson();
   const activeCurrentSeo = getSeoForPage(currentPageId);
 
+  // If not logged in as Admin or not mounted, never render any admin overlay
+  if (!isMounted || !isAdminLoggedIn) {
+    return null;
+  }
+
   return (
     <>
-      {/* 1. TOP ADMIN MASTER BAR */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-tartan-dark via-tartan-navy to-tartan-card border-b border-tartan-accent/40 px-4 py-2 text-white shadow-2xl flex items-center justify-between flex-wrap gap-2 text-xs md:text-sm">
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-green-400 animate-ping"></span>
-          <span className="font-bold text-tartan-gold tracking-wide flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-tartan-gold" />
-            Spud Admin Mode
-          </span>
-          <span className="hidden sm:inline-block text-[11px] text-gray-400 border-l border-slate-700 pl-2">
-            Page: <span className="text-white font-mono">{pathname}</span>
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-          {/* Visual In-Page Edit Toggle */}
-          <button
-            onClick={toggleVisualEditMode}
-            className={`px-3 py-1.5 rounded-md font-semibold flex items-center gap-1.5 transition-all text-xs ${
-              isVisualEditMode 
-                ? 'bg-tartan-gold text-tartan-dark ring-2 ring-yellow-300 shadow-md font-bold' 
-                : 'bg-slate-800 text-gray-200 hover:bg-slate-700 border border-slate-600'
-            }`}
-          >
-            <Edit3 className="w-3.5 h-3.5" />
-            <span>{isVisualEditMode ? 'Pencil Edit: ON' : 'Enable Pencil Edit'}</span>
-          </button>
-
-          {/* Quick Page SEO & Schema Modal Trigger */}
-          <button
-            onClick={() => openSeoDrawer(currentPageId)}
-            className="px-3 py-1.5 rounded-md bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-800 hover:to-indigo-800 text-blue-100 border border-blue-600 font-semibold flex items-center gap-1.5 transition-all text-xs shadow"
-          >
-            <Search className="w-3.5 h-3.5 text-blue-300" />
-            <span>SEO & Schema Studio</span>
-          </button>
-
-          <a
-            href="/admin"
-            className="px-3 py-1.5 rounded-md bg-tartan-accent/20 hover:bg-tartan-accent/30 text-tartan-goldLight border border-tartan-accent/50 font-semibold flex items-center gap-1.5 transition-colors text-xs"
-          >
-            <LayoutDashboard className="w-3.5 h-3.5" />
-            <span>Back Office CRM</span>
-          </a>
-
-          <button
-            onClick={logoutAdmin}
-            className="px-2.5 py-1.5 rounded-md bg-red-900/40 hover:bg-red-800 text-red-200 border border-red-700 font-medium flex items-center gap-1 transition-colors text-xs"
-            title="Log Out Admin"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Logout</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 2. BOTTOM FLOATING PAGE SEO DOCK (Visible on all live public pages when admin logged in) */}
-      <div className="fixed bottom-4 left-4 z-40 bg-tartan-card/95 backdrop-blur-md border border-tartan-accent/60 rounded-2xl p-3 shadow-2xl flex items-center gap-3 text-xs max-w-md animate-in slide-in-from-bottom duration-200">
-        <div className="p-2 rounded-xl bg-tartan-navy border border-tartan-border text-tartan-gold">
-          <Globe className="w-4 h-4" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-tartan-navy text-tartan-gold border border-tartan-border">
-              Page SEO
+      {/* 1. DESKTOP TOP ADMIN MASTER BAR (Hidden on mobile) */}
+      {!isDesktopMinimized ? (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-tartan-dark via-tartan-navy to-tartan-card border-b border-tartan-accent/40 px-4 py-2 text-white shadow-2xl hidden md:flex items-center justify-between flex-wrap gap-2 text-xs md:text-sm animate-in slide-in-from-top duration-200">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-green-400 animate-ping"></span>
+            <span className="font-bold text-tartan-gold tracking-wide flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-tartan-gold" />
+              Spud Admin Mode
             </span>
-            <span className="text-white font-semibold truncate">{activeCurrentSeo.pageName}</span>
+            <span className="hidden sm:inline-block text-[11px] text-gray-400 border-l border-slate-700 pl-2">
+              Page: <span className="text-white font-mono">{pathname}</span>
+            </span>
           </div>
-          <p className="text-[11px] text-gray-400 truncate mt-0.5" title={activeCurrentSeo.title}>
-            &lt;title&gt;: {activeCurrentSeo.title}
-          </p>
+
+          <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+            {/* Visual In-Page Edit Toggle */}
+            <button
+              onClick={toggleVisualEditMode}
+              className={`px-3 py-1.5 rounded-md font-semibold flex items-center gap-1.5 transition-all text-xs ${
+                isVisualEditMode 
+                  ? 'bg-tartan-gold text-tartan-dark ring-2 ring-yellow-300 shadow-md font-bold' 
+                  : 'bg-slate-800 text-gray-200 hover:bg-slate-700 border border-slate-600'
+              }`}
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>{isVisualEditMode ? 'Pencil Edit: ON' : 'Enable Pencil Edit'}</span>
+            </button>
+
+            {/* Quick Page SEO & Schema Modal Trigger */}
+            <button
+              onClick={() => openSeoDrawer(currentPageId)}
+              className="px-3 py-1.5 rounded-md bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-800 hover:to-indigo-800 text-blue-100 border border-blue-600 font-semibold flex items-center gap-1.5 transition-all text-xs shadow"
+            >
+              <Search className="w-3.5 h-3.5 text-blue-300" />
+              <span>SEO & Schema Studio</span>
+            </button>
+
+            <a
+              href="/admin"
+              className="px-3 py-1.5 rounded-md bg-tartan-accent/20 hover:bg-tartan-accent/30 text-tartan-goldLight border border-tartan-accent/50 font-semibold flex items-center gap-1.5 transition-colors text-xs"
+            >
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              <span>Back Office CRM</span>
+            </a>
+
+            <button
+              onClick={logoutAdmin}
+              className="px-2.5 py-1.5 rounded-md bg-red-900/40 hover:bg-red-800 text-red-200 border border-red-700 font-medium flex items-center gap-1 transition-colors text-xs"
+              title="Log Out Admin"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+
+            {/* Minimize / Hide Bar for Clean View */}
+            <button
+              onClick={() => setIsDesktopMinimized(true)}
+              className="px-2 py-1.5 rounded-md bg-slate-800/80 hover:bg-slate-700 text-gray-400 hover:text-white border border-slate-700 text-xs flex items-center gap-1 transition-colors ml-1"
+              title="Hide top bar to view website cleanly"
+            >
+              <EyeOff className="w-3.5 h-3.5" />
+              <span>Hide Bar</span>
+            </button>
+          </div>
         </div>
+      ) : (
+        /* DESKTOP MINIMIZED FLOATING PILL (Top-Right) */
+        <div className="fixed top-3 right-4 z-50 hidden md:flex items-center gap-2 animate-in fade-in">
+          <button
+            onClick={() => setIsDesktopMinimized(false)}
+            className="px-3.5 py-1.5 rounded-full bg-tartan-dark/95 border border-tartan-accent/60 text-tartan-gold hover:bg-tartan-navy shadow-2xl backdrop-blur-md flex items-center gap-2 text-xs font-bold transition-all hover:scale-105"
+            title="Expand Admin Toolbar"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-tartan-gold" />
+            <span>Admin Toolbar</span>
+            {isVisualEditMode && (
+              <span className="px-1.5 py-0.2 text-[9px] rounded bg-amber-400 text-tartan-dark font-extrabold uppercase">
+                Pencil ON
+              </span>
+            )}
+            <ChevronDown className="w-3 h-3 text-gray-400" />
+          </button>
+        </div>
+      )}
+
+      {/* 2. MOBILE COMPACT FLOATING ADMIN BUTTON & DRAWER (Leaves mobile header & menu 100% unobstructed) */}
+      <div className="fixed bottom-20 right-4 z-50 md:hidden animate-in fade-in">
         <button
-          onClick={() => openSeoDrawer(currentPageId)}
-          className="px-3 py-1.5 bg-gold-gradient text-tartan-dark font-bold text-xs rounded-xl shadow hover:brightness-110 flex items-center gap-1 shrink-0"
+          onClick={() => setIsMobileDrawerOpen(true)}
+          className="w-12 h-12 rounded-full bg-gold-gradient text-tartan-dark shadow-2xl border-2 border-tartan-dark flex items-center justify-center font-extrabold active:scale-95 transition-transform relative"
+          title="Open Admin Tools"
+          aria-label="Admin Tools"
         >
-          <Search className="w-3.5 h-3.5" />
-          <span>Edit SEO</span>
+          <Sparkles className="w-5 h-5 text-tartan-dark" />
+          {isVisualEditMode && (
+            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-white animate-pulse" />
+          )}
         </button>
       </div>
+
+      {/* MOBILE ADMIN DRAWER SHEET */}
+      {isMobileDrawerOpen && (
+        <div className="fixed inset-0 z-[100] md:hidden bg-black/80 backdrop-blur-sm flex items-end justify-center p-0 animate-in fade-in duration-150">
+          <div 
+            className="w-full bg-tartan-card border-t border-tartan-accent/50 rounded-t-3xl p-6 space-y-4 shadow-2xl animate-in slide-in-from-bottom duration-200"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-tartan-border">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-tartan-accent/20 text-tartan-gold flex items-center justify-center font-bold">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Spud Admin Actions</h3>
+                  <p className="text-[11px] text-gray-400">Page: <span className="text-tartan-gold font-mono">{pathname}</span></p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsMobileDrawerOpen(false)}
+                className="p-2 rounded-xl bg-tartan-navy text-gray-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2.5">
+              <button
+                onClick={() => {
+                  toggleVisualEditMode();
+                  setIsMobileDrawerOpen(false);
+                }}
+                className={`w-full py-3.5 px-4 rounded-2xl font-bold text-xs flex items-center justify-between border transition-all ${
+                  isVisualEditMode
+                    ? 'bg-tartan-gold text-tartan-dark border-yellow-300 shadow'
+                    : 'bg-tartan-navy text-gray-200 border-tartan-border'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Edit3 className="w-4 h-4" />
+                  <span>In-Page Pencil Edit Mode</span>
+                </div>
+                <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded bg-black/30">
+                  {isVisualEditMode ? 'Active (ON)' : 'Disabled (OFF)'}
+                </span>
+              </button>
+
+              <button
+                onClick={() => {
+                  openSeoDrawer(currentPageId);
+                  setIsMobileDrawerOpen(false);
+                }}
+                className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-blue-950 to-indigo-950 border border-blue-700/60 text-blue-200 font-bold text-xs flex items-center gap-3"
+              >
+                <Search className="w-4 h-4 text-blue-400" />
+                <span>Page SEO & Schema Studio</span>
+              </button>
+
+              <a
+                href="/admin"
+                className="w-full py-3.5 px-4 rounded-2xl bg-tartan-navy border border-tartan-accent/50 text-tartan-gold font-bold text-xs flex items-center gap-3"
+              >
+                <LayoutDashboard className="w-4 h-4 text-tartan-gold" />
+                <span>Back Office CRM & Operations</span>
+              </a>
+
+              <button
+                onClick={logoutAdmin}
+                className="w-full py-3 px-4 rounded-2xl bg-red-950/60 border border-red-800 text-red-300 font-bold text-xs flex items-center justify-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Log Out of Admin</span>
+              </button>
+            </div>
+
+            <button
+              onClick={() => setIsMobileDrawerOpen(false)}
+              className="w-full py-2.5 text-center text-xs font-semibold text-gray-400 hover:text-white"
+            >
+              Close & Continue Browsing
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 3. DESKTOP BOTTOM FLOATING PAGE SEO DOCK (Only visible on large screens when not dismissed) */}
+      {!isSeoDockDismissed && (
+        <div className="fixed bottom-4 left-4 z-40 bg-tartan-card/95 backdrop-blur-md border border-tartan-accent/60 rounded-2xl p-3 shadow-2xl hidden lg:flex items-center gap-3 text-xs max-w-md animate-in slide-in-from-bottom duration-200">
+          <div className="p-2 rounded-xl bg-tartan-navy border border-tartan-border text-tartan-gold">
+            <Globe className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-tartan-navy text-tartan-gold border border-tartan-border">
+                Page SEO
+              </span>
+              <span className="text-white font-semibold truncate">{activeCurrentSeo.pageName}</span>
+            </div>
+            <p className="text-[11px] text-gray-400 truncate mt-0.5" title={activeCurrentSeo.title}>
+              &lt;title&gt;: {activeCurrentSeo.title}
+            </p>
+          </div>
+          <button
+            onClick={() => openSeoDrawer(currentPageId)}
+            className="px-3 py-1.5 bg-gold-gradient text-tartan-dark font-bold text-xs rounded-xl shadow hover:brightness-110 flex items-center gap-1 shrink-0"
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span>Edit SEO</span>
+          </button>
+          <button
+            onClick={() => setIsSeoDockDismissed(true)}
+            className="p-1 text-gray-400 hover:text-white rounded-lg hover:bg-slate-700/50"
+            title="Dismiss SEO Dock"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* 3. ELEMENT PENCIL & HEADING/TAG MODAL */}
       {editingBlock && (
