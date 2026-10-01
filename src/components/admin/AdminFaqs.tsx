@@ -47,16 +47,19 @@ export const AdminFaqs: React.FC = () => {
   const [formShowOnHome, setFormShowOnHome] = useState(true);
 
   // Filtered FAQs
-  const filteredFaqs = faqs.filter(f => {
+  const filteredFaqs = (faqs || []).filter(f => {
+    if (!f) return false;
     const matchesCategory = filterCategory === 'all' || f.category === filterCategory;
+    const q = (searchTerm || '').toLowerCase().trim();
+    if (!q) return matchesCategory;
     const matchesSearch = 
-      f.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      f.answer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      f.category.toLowerCase().includes(searchTerm.toLowerCase());
+      (f.question || '').toLowerCase().includes(q) ||
+      (f.answer || '').toLowerCase().includes(q) ||
+      (f.category || '').toLowerCase().includes(q);
     return matchesCategory && matchesSearch;
   });
 
-  const homeCount = faqs.filter(f => f.showOnHome !== false).length;
+  const homeCount = (faqs || []).filter(f => f && f.showOnHome !== false).length;
 
   const handleOpenAddModal = () => {
     setEditingFaqId(null);

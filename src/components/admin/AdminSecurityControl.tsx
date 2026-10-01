@@ -119,16 +119,18 @@ export const AdminSecurityControl: React.FC = () => {
   };
 
   const handleRemove = async (user: UserRecord) => {
-    if (user.email.toLowerCase() === 'piperspud@gmail.com') {
+    const userEmail = (user.email || '').toLowerCase().trim();
+    if (userEmail === 'piperspud@gmail.com') {
       alert('The primary owner email (piperspud@gmail.com) cannot be removed.');
       return;
     }
 
-    if (confirm(`Are you sure you want to revoke Back Office access and delete user record for ${user.email}?`)) {
+    const displayName = user.email || user.name || 'this administrator';
+    if (confirm(`Are you sure you want to revoke Back Office access and delete user record for ${displayName}?`)) {
       await removeUser(user.id);
       setFeedback({ 
         type: 'success', 
-        message: `Revoked access and deleted ${user.email} from Firestore 'users' collection.` 
+        message: `Revoked access and deleted ${displayName} from Firestore 'users' collection.` 
       });
     }
   };
@@ -351,20 +353,23 @@ export const AdminSecurityControl: React.FC = () => {
           </div>
 
           <div className="space-y-3.5">
-            {users.map((user) => {
-              const isSpudPrimary = user.email.toLowerCase() === 'piperspud@gmail.com';
+            {(users || []).map((user) => {
+              const userEmail = (user?.email || '').trim();
+              const isSpudPrimary = userEmail.toLowerCase() === 'piperspud@gmail.com';
               const isEditing = editingUserId === user.id;
+              const displayName = user?.name || user?.displayName || (userEmail ? userEmail.split('@')[0] : 'Admin User');
+              const initialLetter = (user?.name || userEmail || 'A')[0].toUpperCase();
 
               return (
                 <div 
-                  key={user.id || user.email}
+                  key={user.id || userEmail || Math.random().toString()}
                   className="bg-tartan-navy/60 border border-tartan-border rounded-2xl p-4 space-y-3 hover:border-tartan-accent/40 transition-colors"
                 >
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div className="relative">
                         <div className="w-11 h-11 rounded-xl bg-tartan-accent/20 border border-tartan-accent/40 text-tartan-gold flex items-center justify-center font-bold text-base shrink-0">
-                          {(user.name || user.email)[0].toUpperCase()}
+                          {initialLetter}
                         </div>
                         <span 
                           className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-tartan-navy shadow ${
@@ -375,7 +380,7 @@ export const AdminSecurityControl: React.FC = () => {
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-sm font-bold text-white">
-                            {user.name || user.displayName || user.email.split('@')[0]}
+                            {displayName}
                           </p>
                           {user.role === 'owner' ? (
                             <span className="bg-amber-500/20 text-yellow-300 border border-amber-500/40 text-[10px] font-bold px-2 py-0.5 rounded-full">
@@ -398,7 +403,7 @@ export const AdminSecurityControl: React.FC = () => {
                         </div>
                         <p className="text-xs text-gray-300 flex items-center gap-1.5 mt-0.5">
                           <Mail className="w-3 h-3 text-gray-500" />
-                          <span>{user.email}</span>
+                          <span>{userEmail || 'No email attached'}</span>
                         </p>
                       </div>
                     </div>

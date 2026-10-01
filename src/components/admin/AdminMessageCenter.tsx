@@ -128,18 +128,19 @@ export const AdminMessageCenter: React.FC = () => {
   });
 
   // Filter sessions list
-  const filteredSessions = effectiveSessions.filter(s => {
+  const filteredSessions = (effectiveSessions || []).filter(s => {
+    if (!s) return false;
     // Category filter
     if (sessionFilter === 'waiting' && !s.isWaitingForSpud) return false;
     if (sessionFilter === 'inquiries' && s.status !== 'offline_inquiry') return false;
     if (sessionFilter === 'resolved' && s.status !== 'resolved') return false;
     
     // Search filter
-    if (searchTerm.trim()) {
-      const q = searchTerm.toLowerCase();
-      const matchName = s.visitorName.toLowerCase().includes(q);
-      const matchMsg = s.lastMessage.toLowerCase().includes(q);
-      const matchEmail = s.visitorEmail?.toLowerCase().includes(q);
+    const q = (searchTerm || '').toLowerCase().trim();
+    if (q) {
+      const matchName = (s.visitorName || '').toLowerCase().includes(q);
+      const matchMsg = (s.lastMessage || '').toLowerCase().includes(q);
+      const matchEmail = (s.visitorEmail || '').toLowerCase().includes(q);
       if (!matchName && !matchMsg && !matchEmail) return false;
     }
     return true;

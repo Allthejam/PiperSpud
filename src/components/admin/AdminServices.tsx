@@ -193,11 +193,16 @@ export const AdminServices: React.FC = () => {
     }
   };
 
-  const filteredServices = services.filter(s =>
-    s.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.tagline.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.slug.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredServices = (services || []).filter(s => {
+    if (!s) return false;
+    const q = (searchTerm || '').toLowerCase().trim();
+    if (!q) return true;
+    return (
+      (s.title || '').toLowerCase().includes(q) ||
+      (s.tagline || '').toLowerCase().includes(q) ||
+      (s.slug || '').toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div className="space-y-6">

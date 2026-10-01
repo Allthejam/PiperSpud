@@ -301,12 +301,17 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
     }
   ];
 
-  const filteredSections = guideSections.filter(section => 
-    section.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    section.shortDesc.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    section.steps.some(s => s.title.toLowerCase().includes(searchQuery.toLowerCase()) || s.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    section.faq.some(f => f.q.toLowerCase().includes(searchQuery.toLowerCase()) || f.a.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredSections = guideSections.filter(section => {
+    if (!section) return false;
+    const q = (searchQuery || '').toLowerCase().trim();
+    if (!q) return true;
+    return (
+      (section.title || '').toLowerCase().includes(q) ||
+      (section.shortDesc || '').toLowerCase().includes(q) ||
+      (section.steps || []).some(s => s && ((s.title || '').toLowerCase().includes(q) || (s.description || '').toLowerCase().includes(q))) ||
+      (section.faq || []).some(f => f && ((f.q || '').toLowerCase().includes(q) || (f.a || '').toLowerCase().includes(q)))
+    );
+  });
 
   const activeSection = guideSections.find(s => s.id === activeSectionId) || guideSections[0];
 
