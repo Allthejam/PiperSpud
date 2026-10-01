@@ -18,6 +18,7 @@ import {
   Filter
 } from 'lucide-react';
 import { BookingEvent, BookingStatus } from '@/types/spud';
+import { BookingDetailModal } from '@/components/admin/BookingDetailModal';
 
 export const AdminDiary: React.FC = () => {
   const { bookings, openBrevoPreview, openPayPalModal, createBooking } = useApp();
@@ -216,74 +217,13 @@ export const AdminDiary: React.FC = () => {
 
       </div>
 
-      {/* Selected Event Details Modal */}
+      {/* Selected Event Full Details & Actions Modal */}
       {selectedEvent && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-tartan-card border border-tartan-accent/50 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95">
-            <div className="bg-tartan-navy px-6 py-4 border-b border-tartan-border flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CalendarIcon className="w-5 h-5 text-tartan-gold" />
-                <h3 className="text-base font-bold text-white font-serif">Diary Event Inspector</h3>
-              </div>
-              <button onClick={() => setSelectedEvent(null)} className="text-gray-400 hover:text-white">✕</button>
-            </div>
-
-            <div className="p-6 space-y-4 text-xs">
-              <div className="flex items-center justify-between border-b border-tartan-border pb-3">
-                <div>
-                  <h4 className="text-base font-bold text-white font-serif">{selectedEvent.clientName}</h4>
-                  <p className="text-tartan-gold">{selectedEvent.eventType}</p>
-                </div>
-                <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase border ${
-                  selectedEvent.status === 'deposit_paid' ? 'bg-green-950 text-green-400 border-green-800' : 'bg-amber-950 text-yellow-400 border-yellow-800'
-                }`}>
-                  {selectedEvent.status.replace('_', ' ')}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 text-gray-300">
-                <div><span className="text-gray-500">Date:</span> <strong>{selectedEvent.date}</strong></div>
-                <div><span className="text-gray-500">Time:</span> <strong>{selectedEvent.timeSlot}</strong></div>
-                <div><span className="text-gray-500">Venue:</span> <strong>{selectedEvent.venueName}</strong></div>
-                <div><span className="text-gray-500">Postcode:</span> <strong>{selectedEvent.venuePostcode}</strong></div>
-                <div><span className="text-gray-500">Phone:</span> <strong>{selectedEvent.clientPhone}</strong></div>
-                <div><span className="text-gray-500">Email:</span> <strong>{selectedEvent.clientEmail}</strong></div>
-                <div><span className="text-gray-500">Tartan Dress:</span> <strong>{selectedEvent.tartanChoice}</strong></div>
-                <div><span className="text-gray-500">Fee / Deposit:</span> <strong>£{selectedEvent.estimatedPrice} / £{selectedEvent.depositAmount}</strong></div>
-              </div>
-
-              {selectedEvent.notes && (
-                <div className="bg-tartan-dark p-3 rounded-xl border border-tartan-border text-gray-300">
-                  <span className="text-gray-500 font-bold block mb-1">Notes:</span>
-                  <p>{selectedEvent.notes}</p>
-                </div>
-              )}
-
-              <div className="pt-3 border-t border-tartan-border flex items-center justify-between gap-3">
-                <button
-                  onClick={() => openBrevoPreview(selectedEvent)}
-                  className="px-4 py-2 bg-tartan-navy hover:bg-slate-700 text-white rounded-xl border border-tartan-border flex items-center gap-2 font-bold"
-                >
-                  <Mail className="w-3.5 h-3.5 text-blue-400" />
-                  <span>View Brevo Email</span>
-                </button>
-
-                {selectedEvent.status !== 'deposit_paid' && (
-                  <button
-                    onClick={() => {
-                      setSelectedEvent(null);
-                      openPayPalModal(selectedEvent);
-                    }}
-                    className="px-4 py-2 bg-gold-gradient text-tartan-dark rounded-xl font-bold shadow flex items-center gap-2"
-                  >
-                    <CreditCard className="w-3.5 h-3.5" />
-                    <span>Pay Deposit (PayPal)</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <BookingDetailModal
+          booking={selectedEvent}
+          isOpen={!!selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+        />
       )}
 
       {/* Manual Add Event Modal */}

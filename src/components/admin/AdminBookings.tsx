@@ -16,9 +16,18 @@ import {
   Trash2,
   ExternalLink,
   Sparkles,
-  Phone
+  Phone,
+  Music,
+  Eye,
+  MessageSquare,
+  History,
+  Shield,
+  Tag,
+  Compass,
+  AlertCircle
 } from 'lucide-react';
 import { BookingEvent, BookingStatus } from '@/types/spud';
+import { BookingDetailModal } from '@/components/admin/BookingDetailModal';
 
 export const AdminBookings: React.FC = () => {
   const { 
@@ -32,6 +41,8 @@ export const AdminBookings: React.FC = () => {
 
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedBookingForModal, setSelectedBookingForModal] = useState<BookingEvent | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const safeBookings = bookings || [];
   const filteredBookings = safeBookings.filter(b => {
@@ -42,9 +53,21 @@ export const AdminBookings: React.FC = () => {
       (b.clientName || '').toLowerCase().includes(q) ||
       (b.venueName || '').toLowerCase().includes(q) ||
       (b.eventType || '').toLowerCase().includes(q) ||
-      (b.clientEmail || '').toLowerCase().includes(q);
+      (b.clientEmail || '').toLowerCase().includes(q) ||
+      (b.venuePostcode || '').toLowerCase().includes(q) ||
+      (b.specialTunes || []).some(t => t.toLowerCase().includes(q));
     return matchesStatus && matchesSearch;
   });
+
+  const handleOpenDetailModal = (booking: BookingEvent) => {
+    setSelectedBookingForModal(booking);
+    setIsDetailModalOpen(true);
+  };
+
+  // Re-synchronize selected modal booking when bookings state changes
+  const currentModalBooking = selectedBookingForModal 
+    ? safeBookings.find(b => b.id === selectedBookingForModal.id) || selectedBookingForModal
+    : null;
 
   return (
     <div className="space-y-6">
@@ -53,7 +76,7 @@ export const AdminBookings: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white font-serif">Booking Approvals & Deposit Pipeline</h2>
-          <p className="text-xs text-gray-400">Automated Brevo email generation and PayPal deposit tracking</p>
+          <p className="text-xs text-gray-400">Review event details, adjust surcharges, message clients, and dispatch Brevo invoices</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -74,7 +97,7 @@ export const AdminBookings: React.FC = () => {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by client, venue, or email..."
+            placeholder="Search by client, venue, tune, or postcode..."
             className="w-full bg-tartan-dark border border-tartan-border rounded-xl pl-9 pr-4 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent"
           />
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
@@ -107,7 +130,7 @@ export const AdminBookings: React.FC = () => {
             <h4 className="text-sm font-bold text-white font-serif">No Bookings Found</h4>
             <p className="max-w-md mx-auto text-gray-400 leading-relaxed">
               {bookings.length === 0 
-                ? 'All demo mock bookings have been purged. Real-time Firebase Firestore database sync is active. When clients submit booking inquiries on the website or checkout, they will appear here instantly across all devices.'
+                ? 'When clients submit booking inquiries on the website or checkout, they will appear here instantly with full event logistics, requested tunes, and approval actions.'
                 : 'No bookings match your current search or filter query.'}
             </p>
           </div>
@@ -149,13 +172,26 @@ export const AdminBookings: React.FC = () => {
             return (
               <div
                 key={bk.id}
-                className="bg-tartan-card rounded-3xl p-6 border border-tartan-border shadow-xl space-y-4 hover:border-tartan-accent/50 transition-all"
+                className="bg-tartan-card rounded-3xl p-6 border border-tartan-border shadow-xl space-y-4 hover:border-tartan-accent/60 transition-all cursor-pointer"
+                onClick={() => handleOpenDetailModal(bk)}
               >
+                {/* Header Row */}
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-tartan-border/60 pb-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2.5 flex-wrap">
                       <h3 className="text-lg font-bold text-white font-serif">{bk.clientName}</h3>
                       {statusBadge}
+                      {bk.travelWaived && (
+                        <span className="bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+                          Travel Fee Waived
+                        </span>
+                      )}
+                      {(bk.messages?.length || 0) > 0 && (
+                        <span className="bg-blue-950/80 text-blue-300 border border-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <MessageSquare className="w-3 h-3" />
+                          <span>{bk.messages?.length} msgs</span>
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-tartan-gold font-serif">{bk.eventType}</p>
                   </div>
@@ -172,15 +208,20 @@ export const AdminBookings: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Details Row */}
+                {/* Details Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs text-gray-300 bg-tartan-dark/70 p-4 rounded-2xl border border-tartan-border/50">
                   <div>
-                    <span className="text-gray-500 font-semibold block">Date & Slot:</span>
-                    <strong className="text-white">{bk.date}</strong> ({bk.timeSlot})
+                    <span className="text-gray-500 font-semibold block">Date & Preferred Time Slot:</span>
+                    <strong className="text-white text-sm block">{bk.date}</strong>
+                    <span className="text-tartan-gold font-medium inline-flex items-center gap-1 mt-0.5">
+                      <Clock className="w-3 h-3 text-tartan-gold" />
+                      <span>{bk.timeSlot}</span>
+                    </span>
                   </div>
                   <div>
                     <span className="text-gray-500 font-semibold block">Venue & Postcode:</span>
-                    <strong className="text-white">{bk.venueName}</strong> ({bk.venuePostcode})
+                    <strong className="text-white text-sm block">{bk.venueName}</strong>
+                    <span className="text-gray-400 font-mono text-[11px]">{bk.venuePostcode || 'Postcode not specified'}</span>
                   </div>
                   <div>
                     <span className="text-gray-500 font-semibold block">Highland Attire:</span>
@@ -192,7 +233,7 @@ export const AdminBookings: React.FC = () => {
                     <span className="inline-flex items-center gap-1 text-[11px] text-tartan-gold font-medium mt-0.5">
                       {bk.preferredContactMethod === 'telephone' ? (
                         <>
-                          <Phone className="w-3 h-3 text-tartan-gold" />
+                          <Phone className="w-3 h-3 text-emerald-400" />
                           <span>Prefers Telephone</span>
                         </>
                       ) : (
@@ -205,6 +246,28 @@ export const AdminBookings: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Requested Bagpipe Tunes Preview Badge */}
+                <div className="bg-tartan-dark/50 p-3 rounded-xl border border-tartan-border/70 flex items-center justify-between gap-3 text-xs flex-wrap">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <Music className="w-4 h-4 text-tartan-gold shrink-0" />
+                    <span className="text-gray-400 font-semibold shrink-0">Requested Tunes:</span>
+                    {(!bk.specialTunes || bk.specialTunes.length === 0) ? (
+                      <span className="text-gray-400 italic">Standard Scottish bagpipe repertoire</span>
+                    ) : (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {bk.specialTunes.map((tune, idx) => (
+                          <span 
+                            key={idx} 
+                            className="bg-tartan-navy text-gray-200 border border-tartan-border px-2 py-0.5 rounded-lg text-[11px] font-medium"
+                          >
+                            {tune}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Travel & Distance Logistics Badge */}
                 <div className="bg-tartan-navy/70 p-3 rounded-xl border border-tartan-border flex items-center justify-between gap-3 text-xs flex-wrap">
                   <div className="flex items-center gap-2">
@@ -214,13 +277,17 @@ export const AdminBookings: React.FC = () => {
                     </span>
                   </div>
                   <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                    bk.isOverseasOrCustomQuote
+                    bk.travelWaived
+                      ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                      : bk.isOverseasOrCustomQuote
                       ? 'bg-amber-950 text-amber-300 border border-amber-800'
                       : (bk.travelExpense || 0) === 0
                       ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                       : 'bg-yellow-950 text-yellow-300 border border-yellow-800'
                   }`}>
-                    {bk.isOverseasOrCustomQuote
+                    {bk.travelWaived
+                      ? 'Travel Waived'
+                      : bk.isOverseasOrCustomQuote
                       ? 'Bespoke Enquiry'
                       : (bk.travelExpense || 0) === 0
                       ? 'FREE Travel Radius'
@@ -230,13 +297,15 @@ export const AdminBookings: React.FC = () => {
 
                 {bk.notes && (
                   <p className="text-xs text-gray-300 italic bg-tartan-navy/40 p-3 rounded-xl border border-slate-800">
-                    <strong className="text-tartan-gold not-italic">Notes: </strong>{bk.notes}
+                    <strong className="text-tartan-gold not-italic">Client Notes: </strong>"{bk.notes}"
                   </p>
                 )}
 
                 {/* Actions Toolbar */}
-                <div className="flex items-center justify-between gap-3 pt-2 flex-wrap">
-                  
+                <div 
+                  className="flex items-center justify-between gap-3 pt-2 flex-wrap"
+                  onClick={(e) => e.stopPropagation()} // Prevent card click when clicking specific buttons
+                >
                   {/* Brevo Email Log Indicator */}
                   <div className="flex items-center gap-2 text-xs">
                     {bk.brevoEmailSent ? (
@@ -245,7 +314,7 @@ export const AdminBookings: React.FC = () => {
                         className="text-blue-400 hover:underline flex items-center gap-1 font-semibold"
                       >
                         <Mail className="w-3.5 h-3.5" />
-                        <span>Brevo Email Delivered (Click to Preview)</span>
+                        <span>Brevo Email Delivered (Preview)</span>
                       </button>
                     ) : (
                       <span className="text-gray-500 flex items-center gap-1">
@@ -256,18 +325,29 @@ export const AdminBookings: React.FC = () => {
                   </div>
 
                   {/* Operational Action Buttons */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    
+                    {/* Open Full Details / Manage Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleOpenDetailModal(bk)}
+                      className="px-3.5 py-2 rounded-xl bg-tartan-navy hover:bg-slate-700 text-tartan-gold text-xs font-bold border border-tartan-border flex items-center gap-1.5 transition shadow"
+                    >
+                      <Eye className="w-4 h-4 text-tartan-gold" />
+                      <span>Open & Manage Request</span>
+                    </button>
+
                     {isPending && (
                       <>
                         <button
-                          onClick={() => approveBooking(bk.id)}
+                          onClick={() => handleOpenDetailModal(bk)}
                           className="px-4 py-2 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs shadow hover:brightness-110 flex items-center gap-1.5"
                         >
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>Approve & Send Brevo Invoice</span>
+                          <CheckCircle2 className="w-4 h-4 text-tartan-dark" />
+                          <span>Approve Request</span>
                         </button>
                         <button
-                          onClick={() => rejectBooking(bk.id)}
+                          onClick={() => handleOpenDetailModal(bk)}
                           className="px-3 py-2 rounded-xl bg-red-950/80 hover:bg-red-900 text-red-300 text-xs font-semibold border border-red-800"
                         >
                           Decline
@@ -282,14 +362,7 @@ export const AdminBookings: React.FC = () => {
                           className="px-4 py-2 rounded-xl bg-[#0070BA] hover:bg-[#003087] text-white font-extrabold text-xs shadow flex items-center gap-1.5"
                         >
                           <CreditCard className="w-4 h-4 text-yellow-300" />
-                          <span>Test PayPal Deposit Payment</span>
-                        </button>
-                        <button
-                          onClick={() => openBrevoPreview(bk)}
-                          className="px-3 py-2 rounded-xl bg-tartan-navy hover:bg-slate-700 text-gray-200 text-xs font-semibold border border-tartan-border flex items-center gap-1"
-                        >
-                          <Mail className="w-3.5 h-3.5 text-blue-400" />
-                          <span>View Email</span>
+                          <span>Test PayPal Deposit</span>
                         </button>
                       </>
                     )}
@@ -300,13 +373,13 @@ export const AdminBookings: React.FC = () => {
                         className="px-3 py-2 rounded-xl bg-green-950 hover:bg-green-900 text-green-300 text-xs font-semibold border border-green-800 flex items-center gap-1"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>View Confirmed Receipt</span>
+                        <span>View Receipt</span>
                       </button>
                     )}
 
                     <button
                       onClick={() => deleteBooking(bk.id)}
-                      className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-950/40 rounded-xl"
+                      className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-950/40 rounded-xl transition"
                       title="Delete Record"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -320,6 +393,18 @@ export const AdminBookings: React.FC = () => {
           })
         )}
       </div>
+
+      {/* Full Booking Details Modal with Surcharge Controls, In-App Messaging, and Audit Trail */}
+      {isDetailModalOpen && currentModalBooking && (
+        <BookingDetailModal
+          booking={currentModalBooking}
+          isOpen={isDetailModalOpen}
+          onClose={() => {
+            setIsDetailModalOpen(false);
+            setSelectedBookingForModal(null);
+          }}
+        />
+      )}
 
     </div>
   );

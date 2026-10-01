@@ -22,7 +22,8 @@ import {
   Music,
   Search,
   MessageSquare,
-  BookOpen
+  BookOpen,
+  Eye
 } from 'lucide-react';
 import { BookingEvent } from '@/types/spud';
 
@@ -308,13 +309,20 @@ export const AdminDashboard: React.FC<{ onNavigateTab: (tab: string) => void }> 
                     </p>
                   )}
 
-                  <div className="flex items-center justify-end gap-3 pt-1">
+                  <div className="flex items-center justify-end gap-2 pt-1 flex-wrap">
+                    <button
+                      onClick={() => onNavigateTab('bookings')}
+                      className="px-3.5 py-2 bg-tartan-navy hover:bg-slate-700 text-tartan-gold font-bold text-xs rounded-xl border border-tartan-border flex items-center gap-1.5 transition"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Review Details</span>
+                    </button>
                     <button
                       onClick={() => approveBooking(bk.id)}
-                      className="px-4 py-2 bg-gold-gradient text-tartan-dark font-extrabold text-xs rounded-xl shadow-md hover:brightness-110 flex items-center gap-1.5"
+                      className="px-4 py-2 bg-gold-gradient text-tartan-dark font-extrabold text-xs rounded-xl shadow-md hover:brightness-110 flex items-center gap-1.5 transition"
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Approve & Send Brevo Email</span>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-tartan-dark" />
+                      <span>Approve</span>
                     </button>
                   </div>
                 </div>

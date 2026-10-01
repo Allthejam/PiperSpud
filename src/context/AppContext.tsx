@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   BookingEvent, 
+  BookingAuditEntry,
+  BookingMessage,
   Review, 
   SocialPost, 
   ChatMessage, 
@@ -118,8 +120,11 @@ interface AppContextType {
   // Bookings & Diary
   bookings: BookingEvent[];
   createBooking: (newBooking: Omit<BookingEvent, 'id' | 'createdAt' | 'status' | 'brevoEmailSent'>) => BookingEvent;
-  approveBooking: (id: string) => void;
-  rejectBooking: (id: string) => void;
+  updateBooking: (id: string, updates: Partial<BookingEvent>) => Promise<void>;
+  addBookingAudit: (id: string, action: string, actor?: string, details?: string, type?: BookingAuditEntry['type']) => Promise<void>;
+  sendBookingMessage: (id: string, msg: { body: string; subject?: string; channel?: 'email' | 'chat'; senderName?: string }) => Promise<{ success: boolean; error?: string }>;
+  approveBooking: (id: string, customOptions?: { note?: string }) => void;
+  rejectBooking: (id: string, reason?: string, sendEmail?: boolean) => void;
   markDepositPaid: (id: string, paypalOrderId?: string) => void;
   deleteBooking: (id: string) => void;
 
@@ -1844,13 +1849,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Booking handlers
   const createBooking = (newBookingData: Omit<BookingEvent, 'id' | 'createdAt' | 'status' | 'brevoEmailSent'>) => {
     const id = `spud-bk-${Date.now().toString().slice(-4)}`;
+    const nowIso = new Date().toISOString();
+    
+    const initialAudit: BookingAuditEntry = {
+      id: `audit-${Date.now()}-0`,
+      timestamp: nowIso,
+      action: 'Provisional Booking Requested',
+      actor: `${newBookingData.clientName} (Website Booking Form)`,
+      details: `${newBookingData.eventType} on ${newBookingData.date} at ${newBookingData.venueName} (${newBookingData.timeSlot}). Requested Tunes: ${(newBookingData.specialTunes || []).join(', ') || 'Standard Selection'}. Preferred contact: ${newBookingData.preferredContactMethod || 'Email'}.`,
+      type: 'system'
+    };
+
     const newBooking: BookingEvent = {
       ...newBookingData,
       id,
       status: 'pending',
-      createdAt: new Date().toISOString(),
+      createdAt: nowIso,
       brevoEmailSent: false,
-      brevoEmailHistory: []
+      brevoEmailHistory: [],
+      auditTrail: [initialAudit],
+      messages: [],
+      travelWaived: false,
+      customSurcharge: 0,
+      discountAmount: 0,
+      basePackagePrice: newBookingData.estimatedPrice - (newBookingData.travelExpense || 0)
     };
 
     setBookings(prev => [newBooking, ...prev]);
@@ -1884,19 +1906,155 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return newBooking;
   };
 
-  const approveBooking = async (id: string) => {
+  const updateBooking = async (id: string, updates: Partial<BookingEvent>) => {
+    let targetBooking: BookingEvent | null = null;
+    setBookings(prev => {
+      return prev.map(b => {
+        if (b.id === id) {
+          targetBooking = { ...b, ...updates };
+          return targetBooking;
+        }
+        return b;
+      });
+    });
+    if (targetBooking) {
+      await syncToFirestore('bookings', id, targetBooking);
+    }
+  };
+
+  const addBookingAudit = async (
+    id: string, 
+    action: string, 
+    actor: string = 'Spud The Piper (Admin)', 
+    details?: string, 
+    type: BookingAuditEntry['type'] = 'system'
+  ) => {
+    const auditEntry: BookingAuditEntry = {
+      id: `audit-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      timestamp: new Date().toISOString(),
+      action,
+      actor,
+      details,
+      type
+    };
+
+    let targetBooking: BookingEvent | null = null;
+    setBookings(prev => {
+      return prev.map(b => {
+        if (b.id === id) {
+          const currentAudit = b.auditTrail || [];
+          targetBooking = {
+            ...b,
+            auditTrail: [auditEntry, ...currentAudit]
+          };
+          return targetBooking;
+        }
+        return b;
+      });
+    });
+
+    if (targetBooking) {
+      await syncToFirestore('bookings', id, targetBooking);
+    }
+  };
+
+  const sendBookingMessage = async (
+    id: string, 
+    msg: { body: string; subject?: string; channel?: 'email' | 'chat'; senderName?: string }
+  ): Promise<{ success: boolean; error?: string }> => {
+    const bk = bookings.find(b => b.id === id);
+    if (!bk) return { success: false, error: 'Booking not found' };
+
+    const newMsg: BookingMessage = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      timestamp: new Date().toISOString(),
+      sender: 'spud',
+      senderName: msg.senderName || 'Spud The Piper',
+      channel: msg.channel || 'email',
+      subject: msg.subject || `Message regarding your ${bk.eventType} booking with Spud the Piper`,
+      body: msg.body,
+      status: 'sent'
+    };
+
+    const auditEntry: BookingAuditEntry = {
+      id: `audit-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      action: `Email Message Sent to ${bk.clientName}`,
+      actor: 'Spud The Piper (Admin)',
+      details: `Subject: "${newMsg.subject}" • Body preview: "${msg.body.slice(0, 100)}${msg.body.length > 100 ? '...' : ''}"`,
+      type: 'message_sent'
+    };
+
+    let updatedBooking: BookingEvent | null = null;
+    setBookings(prev => {
+      return prev.map(b => {
+        if (b.id === id) {
+          const currentMsgs = b.messages || [];
+          const currentAudit = b.auditTrail || [];
+          updatedBooking = {
+            ...b,
+            messages: [...currentMsgs, newMsg],
+            auditTrail: [auditEntry, ...currentAudit]
+          };
+          return updatedBooking;
+        }
+        return b;
+      });
+    });
+
+    if (updatedBooking) {
+      await syncToFirestore('bookings', id, updatedBooking);
+    }
+
+    // Send actual transactional email via Brevo
+    try {
+      if (typeof window !== 'undefined') {
+        await fetch('/api/brevo/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'inquiry_reply',
+            to: bk.clientEmail,
+            name: bk.clientName,
+            subject: newMsg.subject,
+            replyMessage: msg.body,
+            eventType: bk.eventType,
+            eventDate: bk.date
+          })
+        });
+      }
+      return { success: true };
+    } catch (e: any) {
+      console.error('Error dispatching message via Brevo:', e);
+      return { success: true };
+    }
+  };
+
+  const approveBooking = async (id: string, customOptions?: { note?: string }) => {
     const paypalLink = `https://www.paypal.com/checkout/spudthepiper/pay?id=${id}`;
     let updatedBooking: BookingEvent | null = null;
+
+    const existingBk = bookings.find(b => b.id === id);
+    const auditEntry: BookingAuditEntry = {
+      id: `audit-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      action: 'Booking Request Approved',
+      actor: 'Spud The Piper (Admin)',
+      details: `Approved date ${existingBk?.date || ''}. Official Brevo invoice & PayPal deposit link (£${existingBk?.depositAmount || 100}) dispatched to client.${customOptions?.note ? ` Admin Note: "${customOptions.note}"` : ''}`,
+      type: 'status_change'
+    };
 
     setBookings(prev => {
       const updatedList = prev.map(b => {
         if (b.id === id) {
           const history = b.brevoEmailHistory || [];
+          const currentAudit = b.auditTrail || [];
           updatedBooking = {
             ...b,
             status: 'approved' as BookingStatus,
             approvedAt: new Date().toISOString(),
             brevoEmailSent: true,
+            auditTrail: [auditEntry, ...currentAudit],
             brevoEmailHistory: [
               ...history,
               {
@@ -1929,7 +2087,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             body: JSON.stringify({
               type: 'booking_approved',
               booking: { ...bk, status: 'approved' },
-              paypalLink
+              paypalLink,
+              replyMessage: customOptions?.note
             })
           }).catch(err => console.warn('Live Brevo dispatch warning:', err));
         }
@@ -1955,12 +2114,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const rejectBooking = async (id: string) => {
+  const rejectBooking = async (id: string, reason?: string, sendEmail: boolean = false) => {
+    const existingBk = bookings.find(b => b.id === id);
+    const auditEntry: BookingAuditEntry = {
+      id: `audit-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      action: 'Booking Request Declined',
+      actor: 'Spud The Piper (Admin)',
+      details: reason ? `Reason: "${reason}"` : 'Declined availability in diary.',
+      type: 'status_change'
+    };
+
     let updatedBooking: BookingEvent | null = null;
     setBookings(prev => {
       const updatedList = prev.map(b => {
         if (b.id === id) {
-          updatedBooking = { ...b, status: 'cancelled' as BookingStatus };
+          const currentAudit = b.auditTrail || [];
+          updatedBooking = { 
+            ...b, 
+            status: 'cancelled' as BookingStatus,
+            declineReason: reason || b.declineReason,
+            auditTrail: [auditEntry, ...currentAudit]
+          };
           return updatedBooking;
         }
         return b;
@@ -1971,19 +2146,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (updatedBooking) {
       await syncToFirestore('bookings', id, updatedBooking);
     }
+
+    if (existingBk && sendEmail && reason) {
+      try {
+        if (typeof window !== 'undefined') {
+          fetch('/api/brevo/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'inquiry_reply',
+              to: existingBk.clientEmail,
+              name: existingBk.clientName,
+              subject: `Update regarding your ${existingBk.eventType} booking request on ${existingBk.date}`,
+              replyMessage: `Thank you for inquiring with Spud the Piper for your event on ${existingBk.date}. Unfortunately, Callum is unable to accept this booking request due to: ${reason}.\n\nWe wish you all the very best with your celebration!`,
+              eventType: existingBk.eventType,
+              eventDate: existingBk.date
+            })
+          }).catch(err => console.warn('Brevo decline email warning:', err));
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+    }
   };
 
   const markDepositPaid = async (id: string, paypalOrderId: string = `PP-TX-${Date.now().toString().slice(-6)}`) => {
+    const existingBk = bookings.find(b => b.id === id);
+    const auditEntry: BookingAuditEntry = {
+      id: `audit-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      action: 'PayPal Deposit Confirmed & Locked',
+      actor: 'PayPal Gateway / Admin Confirmation',
+      details: `Deposit payment of £${existingBk?.depositAmount || 100}.00 verified. Transaction ID: #${paypalOrderId}. Event date officially LOCKED in diary.`,
+      type: 'status_change'
+    };
+
     let updatedBooking: BookingEvent | null = null;
     setBookings(prev => {
       const updatedList = prev.map(b => {
         if (b.id === id) {
           const history = b.brevoEmailHistory || [];
+          const currentAudit = b.auditTrail || [];
           updatedBooking = {
             ...b,
             status: 'deposit_paid' as BookingStatus,
             depositPaidAt: new Date().toISOString(),
             paypalOrderId,
+            auditTrail: [auditEntry, ...currentAudit],
             brevoEmailHistory: [
               ...history,
               {
@@ -3591,6 +3800,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       getCmsContent,
       bookings,
       createBooking,
+      updateBooking,
+      addBookingAudit,
+      sendBookingMessage,
       approveBooking,
       rejectBooking,
       markDepositPaid,

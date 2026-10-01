@@ -13,15 +13,18 @@ import {
   Download, 
   ExternalLink,
   CheckCircle2,
-  Clock
+  Clock,
+  Eye
 } from 'lucide-react';
 import { BookingEvent } from '@/types/spud';
+import { BookingDetailModal } from '@/components/admin/BookingDetailModal';
 
 export const AdminCRM: React.FC = () => {
   const { bookings, openBrevoPreview } = useApp();
   const safeBookings = bookings || [];
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<BookingEvent | null>(safeBookings[0] || null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   React.useEffect(() => {
     if (!selectedClient && safeBookings.length > 0) {
@@ -148,13 +151,23 @@ export const AdminCRM: React.FC = () => {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => openBrevoPreview(selectedClient)}
-                  className="px-4 py-2 bg-tartan-navy hover:bg-slate-700 text-white rounded-xl border border-tartan-border flex items-center gap-2 text-xs font-bold"
-                >
-                  <Mail className="w-4 h-4 text-blue-400" />
-                  <span>View Brevo Email & Invoice</span>
-                </button>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={() => setIsDetailModalOpen(true)}
+                    className="px-4 py-2 bg-gold-gradient text-tartan-dark rounded-xl font-bold shadow hover:brightness-110 flex items-center gap-1.5 text-xs transition"
+                  >
+                    <Eye className="w-4 h-4 text-tartan-dark" />
+                    <span>Open Request & Messages</span>
+                  </button>
+
+                  <button
+                    onClick={() => openBrevoPreview(selectedClient)}
+                    className="px-4 py-2 bg-tartan-navy hover:bg-slate-700 text-white rounded-xl border border-tartan-border flex items-center gap-2 text-xs font-bold"
+                  >
+                    <Mail className="w-4 h-4 text-blue-400" />
+                    <span>View Brevo Email</span>
+                  </button>
+                </div>
               </div>
 
               {/* Contact Info Cards */}
@@ -275,6 +288,15 @@ export const AdminCRM: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Full Booking Details & Surcharges / Messaging Modal */}
+      {isDetailModalOpen && selectedClient && (
+        <BookingDetailModal
+          booking={safeBookings.find(b => b.id === selectedClient.id) || selectedClient}
+          isOpen={isDetailModalOpen}
+          onClose={() => setIsDetailModalOpen(false)}
+        />
+      )}
 
     </div>
   );

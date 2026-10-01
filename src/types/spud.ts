@@ -9,6 +9,26 @@ export type HighlandDressOption =
   | 'Modern Day Highland Tweed Jacket'
   | 'Isle of Skye Tartan (Purple/Heather/Green)';
 
+export interface BookingAuditEntry {
+  id: string;
+  timestamp: string;
+  action: string;
+  actor: string; // e.g. "Spud (Admin)" | "Client (Website)" | "System / PayPal"
+  details?: string;
+  type?: 'system' | 'status_change' | 'price_adjustment' | 'message_sent' | 'surcharge_adjusted' | 'note_added';
+}
+
+export interface BookingMessage {
+  id: string;
+  timestamp: string;
+  sender: 'spud' | 'client' | 'admin' | 'system';
+  senderName: string;
+  channel: 'email' | 'chat' | 'sms' | 'portal';
+  subject?: string;
+  body: string;
+  status?: 'queued' | 'sent' | 'delivered' | 'read';
+}
+
 export interface BookingEvent {
   id: string;
   clientName: string;
@@ -45,6 +65,17 @@ export interface BookingEvent {
   isOverseasOrCustomQuote?: boolean;
   travelBreakdownText?: string;
   preferredContactMethod?: 'email' | 'telephone';
+  // Comprehensive Back Office Management & Audit Log
+  auditTrail?: BookingAuditEntry[];
+  messages?: BookingMessage[];
+  adminNotes?: string;
+  travelWaived?: boolean;
+  customSurcharge?: number;
+  customSurchargeReason?: string;
+  discountAmount?: number;
+  discountReason?: string;
+  declineReason?: string;
+  basePackagePrice?: number;
 }
 
 export interface CustomTravelZone {
