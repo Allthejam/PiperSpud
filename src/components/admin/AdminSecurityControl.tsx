@@ -135,21 +135,6 @@ export const AdminSecurityControl: React.FC = () => {
     }
   };
 
-  const handlePurgeMockups = async () => {
-    if (confirm("Remove corrupted/placeholder user documents from Firestore? Real administrator profiles with verified email addresses will be preserved.")) {
-      const invalidUsers = (users || []).filter(u => !u.email || !u.email.includes('@') || u.id === 'admin-spud');
-      for (const u of invalidUsers) {
-        await removeUser(u.id);
-      }
-      setFeedback({
-        type: 'success',
-        message: 'Successfully purged invalid mockup user documents from Firestore.'
-      });
-    }
-  };
-
-  const hasInvalidMockups = (users || []).some(u => !u.email || !u.email.includes('@') || u.id === 'admin-spud');
-
   return (
     <div className="space-y-6 max-w-6xl mx-auto animate-in fade-in duration-200">
       
@@ -169,18 +154,7 @@ export const AdminSecurityControl: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0 flex-wrap">
-            {hasInvalidMockups && (
-              <button
-                onClick={handlePurgeMockups}
-                className="px-4 py-2.5 rounded-2xl bg-rose-950/80 border border-rose-600/50 text-rose-200 hover:text-white hover:bg-rose-900 text-xs font-bold flex items-center gap-2 transition-colors shadow"
-                title="Purge mockup or dummy entries from Firestore"
-              >
-                <Trash2 className="w-4 h-4 text-rose-400" />
-                <span>Purge Mockup Records</span>
-              </button>
-            )}
-
+          <div className="flex items-center gap-3 shrink-0">
             <div className="flex items-center gap-3 bg-tartan-dark/80 border border-tartan-border p-3.5 rounded-2xl">
               <div className="w-12 h-12 rounded-xl bg-tartan-accent/20 text-tartan-gold flex items-center justify-center font-serif text-xl font-bold border border-tartan-accent/30">
                 {users.length}
