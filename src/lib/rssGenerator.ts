@@ -1,3 +1,5 @@
+import { initialServices, initialReviews, initialTunes } from '@/lib/initialData';
+
 const PROJECT_ID = 'piperspud-56c0a';
 const SITE_URL = 'https://www.spudthepiper.com';
 
@@ -11,39 +13,6 @@ export interface RssFeedItem {
   category?: string;
   author?: string;
 }
-
-const DEFAULT_ITEMS: RssFeedItem[] = [
-  {
-    id: 'spud-showcase-1',
-    title: 'Scottish Castle Weddings & Ceremony Pipe-In',
-    link: `${SITE_URL}/services/castle-weddings`,
-    description: 'Highland Cathedral entrance, bridal party pipe-in, and grand castle banquet ceremonies across Scotland with World-Class Highland Bagpiper Spud the Piper.',
-    pubDate: new Date('2026-09-28T12:00:00Z').toUTCString(),
-    imageUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&auto=format&fit=crop&q=85',
-    category: 'Scottish Weddings',
-    author: 'Spud the Piper'
-  },
-  {
-    id: 'spud-showcase-2',
-    title: 'Full No. 1 Highland Dress with Feather Bonnet & Plaid',
-    link: `${SITE_URL}/attire`,
-    description: 'Explore authentic Scottish Highland regalia, Royal Stewart & Modern Tartans, feather bonnet, and ceremonial piper dress for luxury events.',
-    pubDate: new Date('2026-09-26T14:30:00Z').toUTCString(),
-    imageUrl: 'https://images.unsplash.com/photo-1546707012-c518410e5e7e?w=1200&auto=format&fit=crop&q=85',
-    category: 'Highland Attire',
-    author: 'Spud the Piper'
-  },
-  {
-    id: 'spud-showcase-3',
-    title: 'Spud the Piper - Highland Cathedral & Scotland the Brave Jukebox',
-    link: `${SITE_URL}/tunes`,
-    description: 'Listen to Spud the Piper perform Scotland\'s most beloved traditional tunes including Highland Cathedral, Scotland the Brave, and Flower of Scotland.',
-    pubDate: new Date('2026-09-24T10:00:00Z').toUTCString(),
-    imageUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=1200&auto=format&fit=crop&q=85',
-    category: 'Bagpipe Tunes',
-    author: 'Spud the Piper'
-  }
-];
 
 function escapeXml(unsafe: string): string {
   if (!unsafe) return '';
@@ -134,8 +103,89 @@ export async function generateRssFeedXml(): Promise<string> {
     console.warn('[RSS] Failed fetching gallery from Firestore:', err);
   }
 
-  // Combine with fallback showcase items
-  const allItems = items.length > 0 ? [...items, ...DEFAULT_ITEMS] : DEFAULT_ITEMS;
+  // 3. Include All Core Services & Wedding Packages
+  if (initialServices && Array.isArray(initialServices)) {
+    initialServices.forEach(srv => {
+      items.push({
+        id: `service-${srv.id}`,
+        title: srv.title,
+        link: `${SITE_URL}/services/${srv.slug}`,
+        description: `${srv.description} ${srv.tagline ? '• ' + srv.tagline : ''}`,
+        pubDate: new Date('2026-09-28T12:00:00Z').toUTCString(),
+        imageUrl: srv.heroImage || srv.galleryImages?.[0] || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&auto=format&fit=crop&q=85',
+        category: 'Piping Services',
+        author: 'Spud the Piper'
+      });
+    });
+  }
+
+  // 4. Include Featured Reviews & Real Wedding Stories
+  if (initialReviews && Array.isArray(initialReviews)) {
+    initialReviews.filter(r => r.photoUrl).forEach(rev => {
+      items.push({
+        id: `review-${rev.id}`,
+        title: `${rev.eventType} - ${rev.authorName} (${rev.location || 'Scotland'})`,
+        link: `${SITE_URL}/reviews`,
+        description: `"${rev.comment}" — ${rev.authorName}, 5-Star Review for Spud the Piper.`,
+        pubDate: new Date('2026-09-25T10:00:00Z').toUTCString(),
+        imageUrl: rev.photoUrl,
+        category: 'Client Stories & Reviews',
+        author: rev.authorName
+      });
+    });
+  }
+
+  // 5. Include Popular Highland Bagpipe Tunes
+  if (initialTunes && Array.isArray(initialTunes)) {
+    initialTunes.slice(0, 6).forEach(tune => {
+      items.push({
+        id: `tune-${tune.id}`,
+        title: `${tune.title} - Scottish Bagpipe Tune`,
+        link: `${SITE_URL}/tunes?tune=${encodeURIComponent(tune.title)}`,
+        description: `${tune.description} ${tune.funFact ? '• ' + tune.funFact : ''}`,
+        pubDate: new Date('2026-09-20T09:00:00Z').toUTCString(),
+        imageUrl: 'https://images.unsplash.com/photo-1546707012-c518410e5e7e?w=1200&auto=format&fit=crop&q=85',
+        category: 'Bagpipe Jukebox',
+        author: 'Spud the Piper'
+      });
+    });
+  }
+
+  // 6. Include Highland Attire & Regalia Showcases
+  const attireShowcases: RssFeedItem[] = [
+    {
+      id: 'attire-no1-feather-bonnet',
+      title: 'Full No. 1 Ceremonial Highland Dress with Feather Bonnet & Plaid',
+      link: `${SITE_URL}/attire`,
+      description: 'Authentic Scottish Highland regalia featuring traditional feather bonnet, full shoulder plaid with Celtic brooch, horsehair sporran, and ceremonial spats.',
+      pubDate: new Date('2026-09-27T15:00:00Z').toUTCString(),
+      imageUrl: 'https://images.unsplash.com/photo-1546707012-c518410e5e7e?w=1200&auto=format&fit=crop&q=85',
+      category: 'Highland Attire & Tartans',
+      author: 'Spud the Piper'
+    },
+    {
+      id: 'attire-royal-stewart',
+      title: 'Royal Stewart Red Tartan Highland Wedding Dress',
+      link: `${SITE_URL}/attire`,
+      description: 'The iconic vibrant Royal Stewart tartan paired with tailored Argyll tweed jacket and silver highland dress accessories.',
+      pubDate: new Date('2026-09-26T14:00:00Z').toUTCString(),
+      imageUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&auto=format&fit=crop&q=85',
+      category: 'Highland Attire & Tartans',
+      author: 'Spud the Piper'
+    },
+    {
+      id: 'attire-black-watch',
+      title: 'Black Watch Military Tartan & Day Dress',
+      link: `${SITE_URL}/attire`,
+      description: 'Historic Black Watch military tartan, classic glengarry cap, and day tweed jacket for lochside ceremonies, banquets, and ceilidh events.',
+      pubDate: new Date('2026-09-25T13:00:00Z').toUTCString(),
+      imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&auto=format&fit=crop&q=85',
+      category: 'Highland Attire & Tartans',
+      author: 'Spud the Piper'
+    }
+  ];
+
+  const allItems = [...items, ...attireShowcases];
 
   // Build RSS 2.0 XML
   const itemsXml = allItems.map(item => {
