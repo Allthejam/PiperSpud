@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -23,19 +23,50 @@ import {
   ChevronDown,
   ChevronsLeft,
   ChevronsRight,
-  Layers
+  Heart,
+  Flame,
+  Sparkles
 } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 15; // 5 rows of 3 on desktop
 
 export default function GalleryPage() {
-  const { galleryItems } = useApp();
+  const { galleryItems, likeGalleryItem } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [sortOption, setSortOption] = useState<'date-desc' | 'date-asc' | 'venue-asc' | 'title-asc'>('date-desc');
+  const [sortOption, setSortOption] = useState<'likes-desc' | 'date-desc' | 'date-asc' | 'venue-asc' | 'title-asc'>('likes-desc');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [activeLightboxIndex, setActiveLightboxIndex] = useState<number | null>(null);
+
+  // Track liked photo IDs in browser local storage
+  const [likedIds, setLikedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('spud_liked_gallery_photos');
+      if (stored) {
+        setLikedIds(JSON.parse(stored));
+      }
+    } catch (e) {}
+  }, []);
+
+  const handleToggleLike = (e: React.MouseEvent, item: GalleryItem) => {
+    e.stopPropagation();
+    const isCurrentlyLiked = likedIds.includes(item.id);
+    let updated: string[];
+    if (isCurrentlyLiked) {
+      updated = likedIds.filter(id => id !== item.id);
+      likeGalleryItem(item.id, -1);
+    } else {
+      updated = [...likedIds, item.id];
+      likeGalleryItem(item.id, 1);
+    }
+    setLikedIds(updated);
+    try {
+      localStorage.setItem('spud_liked_gallery_photos', JSON.stringify(updated));
+    } catch (e) {}
+  };
 
   const galleryGridRef = useRef<HTMLDivElement>(null);
 
@@ -64,6 +95,15 @@ export default function GalleryPage() {
       );
       return matchesCategory && matchesSearch;
     }).sort((a, b) => {
+      if (sortOption === 'likes-desc') {
+        const likesA = typeof a.likes === 'number' ? a.likes : 0;
+        const likesB = typeof b.likes === 'number' ? b.likes : 0;
+        if (likesB !== likesA) {
+          return likesB - likesA;
+        }
+        // Fallback to date
+        return new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
+      }
       if (sortOption === 'date-desc') {
         return new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
       }
@@ -211,6 +251,7 @@ export default function GalleryPage() {
                 onChange={(e) => setSortOption(e.target.value as any)}
                 className="w-full appearance-none bg-tartan-dark/95 border border-tartan-border rounded-xl pl-8 pr-8 py-2.5 text-xs font-semibold text-white focus:outline-none focus:border-tartan-gold transition-colors cursor-pointer"
               >
+                <option value="likes-desc">🔥 Most Popular (Most Liked)</option>
                 <option value="date-desc">Date (Newest First)</option>
                 <option value="date-asc">Date (Oldest First)</option>
                 <option value="venue-asc">Mart / Venue (A - Z)</option>
@@ -222,7 +263,7 @@ export default function GalleryPage() {
           </div>
 
           {/* Active Filter Indicators */}
-          {(selectedCategory !== 'All' || searchQuery) && (
+          {(selectedCategory !== 'All' || searchQuery || sortOption !== 'likes-desc') && (
             <div className="flex items-center gap-2 pt-2 border-t border-tartan-border/50 text-xs flex-wrap">
               <span className="text-gray-400 text-[11px]">Active Filters:</span>
               {selectedCategory !== 'All' && (
@@ -241,8 +282,14 @@ export default function GalleryPage() {
                   </button>
                 </span>
               )}
+              {sortOption === 'likes-desc' && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-950/60 text-rose-300 border border-rose-500/30 text-[11px]">
+                  <Flame className="w-3 h-3 text-rose-400" />
+                  Sorted by Most Popular
+                </span>
+              )}
               <button 
-                onClick={() => { handleCategoryChange('All'); handleSearchChange(''); }}
+                onClick={() => { handleCategoryChange('All'); handleSearchChange(''); setSortOption('likes-desc'); }}
                 className="text-[11px] text-gray-400 hover:text-white underline ml-auto"
               >
                 Reset All
@@ -280,85 +327,115 @@ export default function GalleryPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {paginatedItems.map((item, idx) => (
-              <div
-                key={item.id}
-                onClick={() => openLightboxForPaginatedItem(idx)}
-                className="group relative bg-tartan-navy rounded-2xl overflow-hidden border border-tartan-border shadow-lg hover:shadow-2xl hover:border-tartan-gold/50 transition-all duration-300 cursor-pointer flex flex-col transform hover:-translate-y-1"
-              >
-                {/* Photo Frame */}
-                <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-900">
-                  <img
-                    src={item.imageUrl}
-                    alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-                    loading="lazy"
-                  />
-                  
-                  {/* Top Badge: Event Type */}
-                  <div className="absolute top-3 left-3 z-10">
-                    <span className="px-2.5 py-1 rounded-full bg-black/75 backdrop-blur-md text-[11px] font-bold text-tartan-gold border border-tartan-gold/30 shadow-md">
-                      {item.eventType || 'Scottish Event'}
-                    </span>
-                  </div>
+            {paginatedItems.map((item, idx) => {
+              const isLiked = likedIds.includes(item.id);
+              const likeCount = typeof item.likes === 'number' ? item.likes : 0;
 
-                  {/* Top Date Badge */}
-                  {item.date && (
-                    <div className="absolute top-3 right-3 z-10">
-                      <span className="px-2.5 py-1 rounded-full bg-black/75 backdrop-blur-md text-[11px] font-medium text-gray-200 border border-white/10 shadow-md flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-tartan-gold" />
-                        {new Date(item.date).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => openLightboxForPaginatedItem(idx)}
+                  className="group relative bg-tartan-navy rounded-2xl overflow-hidden border border-tartan-border shadow-lg hover:shadow-2xl hover:border-tartan-gold/50 transition-all duration-300 cursor-pointer flex flex-col transform hover:-translate-y-1"
+                >
+                  {/* Photo Frame */}
+                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-900">
+                    <img
+                      src={item.imageUrl}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                      loading="lazy"
+                    />
+                    
+                    {/* Top Badge: Event Type */}
+                    <div className="absolute top-3 left-3 z-10">
+                      <span className="px-2.5 py-1 rounded-full bg-black/75 backdrop-blur-md text-[11px] font-bold text-tartan-gold border border-tartan-gold/30 shadow-md">
+                        {item.eventType || 'Scottish Event'}
                       </span>
                     </div>
-                  )}
 
-                  {/* Hover Zoom Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="w-11 h-11 rounded-full bg-tartan-gold/90 text-tartan-dark flex items-center justify-center shadow-xl transform scale-75 group-hover:scale-100 transition-transform">
-                      <Maximize2 className="w-5 h-5" />
+                    {/* Top Right: LIKE BUTTON */}
+                    <div className="absolute top-3 right-3 z-20">
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleLike(e, item)}
+                        className={`px-2.5 py-1 rounded-full text-xs font-bold backdrop-blur-md flex items-center gap-1.5 transition-all shadow-lg active:scale-95 ${
+                          isLiked
+                            ? 'bg-rose-600 text-white ring-2 ring-rose-400/80 shadow-rose-600/50'
+                            : 'bg-black/75 text-gray-200 hover:text-rose-300 hover:bg-black/90 border border-white/20'
+                        }`}
+                        title={isLiked ? 'Liked! Click to remove like' : 'Like this photo'}
+                      >
+                        <Heart className={`w-3.5 h-3.5 transition-transform ${isLiked ? 'fill-white text-white scale-110' : 'text-rose-400'}`} />
+                        <span className="font-sans font-semibold">{likeCount}</span>
+                      </button>
+                    </div>
+
+                    {/* Bottom Right Date Badge */}
+                    {item.date && (
+                      <div className="absolute bottom-3 right-3 z-10">
+                        <span className="px-2.5 py-1 rounded-full bg-black/75 backdrop-blur-md text-[11px] font-medium text-gray-200 border border-white/10 shadow-md flex items-center gap-1">
+                          <Calendar className="w-3 h-3 text-tartan-gold" />
+                          {new Date(item.date).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Hover Zoom Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="w-11 h-11 rounded-full bg-tartan-gold/90 text-tartan-dark flex items-center justify-center shadow-xl transform scale-75 group-hover:scale-100 transition-transform">
+                        <Maximize2 className="w-5 h-5" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Content Card Body */}
+                  <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
+                    <div className="space-y-2">
+                      {/* Venue / Mart Name */}
+                      {item.martOrVenueName && (
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-tartan-gold">
+                          <Building2 className="w-3.5 h-3.5 shrink-0 text-tartan-gold" />
+                          <span className="truncate">{item.martOrVenueName}</span>
+                        </div>
+                      )}
+
+                      {/* Title */}
+                      <h3 className="text-base font-bold text-white font-serif group-hover:text-tartan-gold transition-colors line-clamp-1">
+                        {item.title}
+                      </h3>
+
+                      {/* Location */}
+                      {item.location && (
+                        <div className="flex items-center gap-1.5 text-xs text-gray-300">
+                          <MapPin className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                          <span className="truncate">{item.location}</span>
+                        </div>
+                      )}
+
+                      {/* Description */}
+                      {item.description && (
+                        <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed pt-1">
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="pt-2.5 flex items-center justify-between text-[11px] text-gray-400 border-t border-tartan-border/60">
+                      <span className="text-tartan-gold font-medium group-hover:underline">Click to view in full HD</span>
+                      <div className="flex items-center gap-2">
+                        {likeCount > 0 && (
+                          <span className="text-rose-400 font-semibold flex items-center gap-1">
+                            <Heart className="w-3 h-3 fill-rose-400 text-rose-400" />
+                            {likeCount} {likeCount === 1 ? 'like' : 'likes'}
+                          </span>
+                        )}
+                        <span className="text-gray-500 font-mono">#{( (currentPage - 1) * ITEMS_PER_PAGE + idx + 1 ).toString().padStart(2, '0')}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-
-                {/* Content Card Body */}
-                <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
-                  <div className="space-y-2">
-                    {/* Venue / Mart Name */}
-                    {item.martOrVenueName && (
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-tartan-gold">
-                        <Building2 className="w-3.5 h-3.5 shrink-0 text-tartan-gold" />
-                        <span className="truncate">{item.martOrVenueName}</span>
-                      </div>
-                    )}
-
-                    {/* Title */}
-                    <h3 className="text-base font-bold text-white font-serif group-hover:text-tartan-gold transition-colors line-clamp-1">
-                      {item.title}
-                    </h3>
-
-                    {/* Location */}
-                    {item.location && (
-                      <div className="flex items-center gap-1.5 text-xs text-gray-300">
-                        <MapPin className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                        <span className="truncate">{item.location}</span>
-                      </div>
-                    )}
-
-                    {/* Description */}
-                    {item.description && (
-                      <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed pt-1">
-                        {item.description}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="pt-2 flex items-center justify-between text-[11px] text-gray-400 border-t border-tartan-border/60">
-                    <span className="text-tartan-gold font-medium group-hover:underline">Click to view in full HD</span>
-                    <span className="text-gray-400 font-mono">#{( (currentPage - 1) * ITEMS_PER_PAGE + idx + 1 ).toString().padStart(2, '0')}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -517,6 +594,22 @@ export default function GalleryPage() {
                 <h2 className="text-2xl font-extrabold text-white font-serif leading-tight">
                   {activePhoto.title}
                 </h2>
+
+                {/* Like Button in Lightbox */}
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={(e) => handleToggleLike(e, activePhoto)}
+                    className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all border ${
+                      likedIds.includes(activePhoto.id)
+                        ? 'bg-rose-950/80 border-rose-500 text-rose-300 shadow-lg shadow-rose-950/50'
+                        : 'bg-tartan-dark border-tartan-border text-gray-300 hover:text-rose-400 hover:border-rose-500/50'
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 ${likedIds.includes(activePhoto.id) ? 'fill-rose-500 text-rose-500' : 'text-rose-400'}`} />
+                    <span>{likedIds.includes(activePhoto.id) ? 'Liked by you' : 'Like this photo'} ({typeof activePhoto.likes === 'number' ? activePhoto.likes : 0} likes)</span>
+                  </button>
+                </div>
 
                 {/* Mart / Venue Name */}
                 {activePhoto.martOrVenueName && (

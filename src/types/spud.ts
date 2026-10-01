@@ -356,6 +356,7 @@ export interface GalleryItem {
   date: string;
   imageUrl: string;
   isFeatured?: boolean;
+  likes?: number;
   createdAt?: string;
 }
 

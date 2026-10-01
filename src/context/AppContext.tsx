@@ -245,6 +245,7 @@ interface AppContextType {
   addGalleryItem: (item: Omit<GalleryItem, 'id' | 'createdAt'>) => Promise<void>;
   updateGalleryItem: (id: string, updates: Partial<GalleryItem>) => Promise<void>;
   deleteGalleryItem: (id: string) => Promise<void>;
+  likeGalleryItem: (id: string, delta?: number) => Promise<void>;
 
   // Cloud Database Sync
   isSyncingFirestore: boolean;
@@ -3382,6 +3383,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await deleteFromFirestore('gallery', id);
   };
 
+  const likeGalleryItem = async (id: string, delta: number = 1) => {
+    let targetItem: GalleryItem | null = null;
+    setGalleryItems(prev => {
+      const updated = (prev || []).map(g => {
+        if (g.id === id) {
+          const currentLikes = typeof g.likes === 'number' ? g.likes : 0;
+          const nextLikes = Math.max(0, currentLikes + delta);
+          targetItem = { ...g, likes: nextLikes };
+          return targetItem;
+        }
+        return g;
+      });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}gallery`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+    if (targetItem) {
+      await syncToFirestore('gallery', id, targetItem);
+    }
+  };
+
   // Modal handlers
   const openBrevoPreview = (booking: BookingEvent) => {
     const paypalLink = `https://www.paypal.com/checkout/spudthepiper/pay?id=${booking.id}`;
@@ -3552,6 +3575,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addGalleryItem,
       updateGalleryItem,
       deleteGalleryItem,
+      likeGalleryItem,
       isSyncingFirestore,
       syncAllToFirestore,
       activeBrevoEmail,

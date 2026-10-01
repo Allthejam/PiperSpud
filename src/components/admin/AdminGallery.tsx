@@ -29,7 +29,9 @@ import {
   List as ListIcon,
   Eye,
   SlidersHorizontal,
-  ArrowUpDown
+  ArrowUpDown,
+  Heart,
+  Flame
 } from 'lucide-react';
 
 const COMMON_EVENT_TYPES = [
@@ -51,7 +53,7 @@ export const AdminGallery: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
-  const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'venue-asc'>('date-desc');
+  const [sortBy, setSortBy] = useState<'likes-desc' | 'date-desc' | 'date-asc' | 'title-asc' | 'venue-asc'>('likes-desc');
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
 
   // Preview Lightbox for Admin
@@ -71,6 +73,7 @@ export const AdminGallery: React.FC = () => {
   const [formImageUrl, setFormImageUrl] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [formIsFeatured, setFormIsFeatured] = useState(false);
+  const [formLikes, setFormLikes] = useState<number>(0);
   const [imageUploadMode, setImageUploadMode] = useState<'upload' | 'url'>('upload');
   const [isSaving, setIsSaving] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string>('');
@@ -78,6 +81,7 @@ export const AdminGallery: React.FC = () => {
   // Stats
   const totalCount = galleryItems.length;
   const featuredCount = galleryItems.filter(g => g.isFeatured).length;
+  const totalLikes = galleryItems.reduce((acc, g) => acc + (typeof g.likes === 'number' ? g.likes : 0), 0);
   const venueSet = new Set(galleryItems.map(g => g.martOrVenueName).filter(Boolean));
 
   // Filtered & Sorted Items
@@ -94,7 +98,12 @@ export const AdminGallery: React.FC = () => {
       return matchesType && matchesSearch;
     })
     .sort((a, b) => {
-      if (sortBy === 'date-desc') {
+      if (sortBy === 'likes-desc') {
+        const likesA = typeof a.likes === 'number' ? a.likes : 0;
+        const likesB = typeof b.likes === 'number' ? b.likes : 0;
+        if (likesB !== likesA) return likesB - likesA;
+        return (b.date || '').localeCompare(a.date || '');
+      } else if (sortBy === 'date-desc') {
         return (b.date || '').localeCompare(a.date || '');
       } else if (sortBy === 'date-asc') {
         return (a.date || '').localeCompare(b.date || '');
@@ -117,6 +126,7 @@ export const AdminGallery: React.FC = () => {
     setFormImageUrl('');
     setSelectedFile(null);
     setFormIsFeatured(false);
+    setFormLikes(0);
     setImageUploadMode('upload');
     setUploadStatus('');
     setIsModalOpen(true);
@@ -133,6 +143,7 @@ export const AdminGallery: React.FC = () => {
     setFormImageUrl(item.imageUrl || '');
     setSelectedFile(null);
     setFormIsFeatured(!!item.isFeatured);
+    setFormLikes(typeof item.likes === 'number' ? item.likes : 0);
     setImageUploadMode('url');
     setUploadStatus('');
     setIsModalOpen(true);
@@ -182,7 +193,8 @@ export const AdminGallery: React.FC = () => {
           description: formDescription.trim(),
           date: formDate,
           imageUrl: finalImageUrl,
-          isFeatured: formIsFeatured
+          isFeatured: formIsFeatured,
+          likes: Number(formLikes) || 0
         });
       } else {
         setUploadStatus('Publishing to cloud gallery...');
@@ -194,7 +206,8 @@ export const AdminGallery: React.FC = () => {
           description: formDescription.trim(),
           date: formDate,
           imageUrl: finalImageUrl,
-          isFeatured: formIsFeatured
+          isFeatured: formIsFeatured,
+          likes: Number(formLikes) || 0
         });
       }
       setIsModalOpen(false);
@@ -241,7 +254,7 @@ export const AdminGallery: React.FC = () => {
               </h2>
             </div>
             <p className="text-xs text-gray-300">
-              Upload and manage Scottish venue photos, castle weddings, mart names, locations, and event dates for the public gallery.
+              Upload and manage Scottish venue photos, castle weddings, mart names, locations, likes, and event dates for the public gallery.
             </p>
           </div>
 
@@ -278,7 +291,7 @@ export const AdminGallery: React.FC = () => {
         </div>
 
         {/* Quick Stat Badges */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-5 mt-5 border-t border-tartan-border/60">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5 mt-5 border-t border-tartan-border/60">
           <div className="p-3 rounded-xl bg-tartan-dark/70 border border-tartan-border">
             <div className="text-[10px] uppercase font-bold text-gray-400">Total Photos</div>
             <div className="text-lg font-bold text-white font-serif">{totalCount}</div>
@@ -287,8 +300,15 @@ export const AdminGallery: React.FC = () => {
             <div className="text-[10px] uppercase font-bold text-gray-400">Featured on Top</div>
             <div className="text-lg font-bold text-tartan-gold font-serif">{featuredCount}</div>
           </div>
-          <div className="p-3 rounded-xl bg-tartan-dark/70 border border-tartan-border col-span-2 sm:col-span-1">
-            <div className="text-[10px] uppercase font-bold text-gray-400">Castles & Mart Venues</div>
+          <div className="p-3 rounded-xl bg-tartan-dark/70 border border-tartan-border">
+            <div className="text-[10px] uppercase font-bold text-gray-400">Visitor Likes</div>
+            <div className="text-lg font-bold text-rose-400 font-serif flex items-center gap-1">
+              <Heart className="w-4 h-4 fill-rose-400" />
+              <span>{totalLikes}</span>
+            </div>
+          </div>
+          <div className="p-3 rounded-xl bg-tartan-dark/70 border border-tartan-border">
+            <div className="text-[10px] uppercase font-bold text-gray-400">Castles & Marts</div>
             <div className="text-lg font-bold text-emerald-400 font-serif">{venueSet.size}</div>
           </div>
         </div>
@@ -348,6 +368,7 @@ export const AdminGallery: React.FC = () => {
                 onChange={(e) => setSortBy(e.target.value as any)}
                 className="bg-transparent text-xs text-white focus:outline-none cursor-pointer pr-1"
               >
+                <option value="likes-desc" className="bg-tartan-dark text-white">🔥 Most Popular (Most Liked)</option>
                 <option value="date-desc" className="bg-tartan-dark text-white">Newest Date First</option>
                 <option value="date-asc" className="bg-tartan-dark text-white">Oldest Date First</option>
                 <option value="title-asc" className="bg-tartan-dark text-white">Title (A-Z)</option>
@@ -420,7 +441,7 @@ export const AdminGallery: React.FC = () => {
             Showing <strong className="text-white">{filteredItems.length}</strong> of {galleryItems.length} items
           </span>
           <span className="capitalize text-tartan-gold">
-            Current View: <strong>{viewMode}</strong>
+            Current View: <strong>{viewMode}</strong> {sortBy === 'likes-desc' && '(Sorted by Likes)'}
           </span>
         </div>
       </div>
@@ -475,6 +496,14 @@ export const AdminGallery: React.FC = () => {
                     <div className="absolute top-2 left-2 z-10">
                       <span className="px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-md text-[10px] font-bold text-tartan-gold border border-tartan-gold/30 shadow-md">
                         {item.eventType}
+                      </span>
+                    </div>
+
+                    {/* Likes Badge on Top Right */}
+                    <div className="absolute top-2 right-10 z-10">
+                      <span className="px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-md text-[10px] font-bold text-rose-300 border border-rose-500/30 flex items-center gap-1 shadow-md">
+                        <Heart className="w-3 h-3 fill-rose-400 text-rose-400" />
+                        {typeof item.likes === 'number' ? item.likes : 0}
                       </span>
                     </div>
 
@@ -542,11 +571,17 @@ export const AdminGallery: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Actions */}
+                    {/* Actions & Likes summary */}
                     <div className="pt-3 mt-2 border-t border-tartan-border/60 flex items-center justify-between gap-2">
-                      <span className="text-[10px] text-gray-500 font-mono truncate max-w-[120px]">
-                        ID: {item.id}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-gray-500 font-mono truncate max-w-[90px]">
+                          ID: {item.id}
+                        </span>
+                        <span className="text-[10px] text-rose-400 font-semibold flex items-center gap-0.5">
+                          <Heart className="w-3 h-3 fill-rose-400" />
+                          {typeof item.likes === 'number' ? item.likes : 0}
+                        </span>
+                      </div>
 
                       <div className="flex items-center gap-1.5">
                         <button
@@ -598,30 +633,44 @@ export const AdminGallery: React.FC = () => {
                       </span>
                     ) : <span />}
 
-                    <span className="px-1.5 py-0.5 rounded bg-black/80 text-[9px] font-bold text-tartan-gold backdrop-blur-sm truncate max-w-[90px]">
-                      {item.eventType}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      {typeof item.likes === 'number' && item.likes > 0 && (
+                        <span className="px-1.5 py-0.5 rounded bg-black/80 text-[9px] font-bold text-rose-300 backdrop-blur-sm flex items-center gap-0.5">
+                          <Heart className="w-2.5 h-2.5 fill-rose-400 text-rose-400" />
+                          {item.likes}
+                        </span>
+                      )}
+                      <span className="px-1.5 py-0.5 rounded bg-black/80 text-[9px] font-bold text-tartan-gold backdrop-blur-sm truncate max-w-[80px]">
+                        {item.eventType}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Full Hover Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/70 to-black/30 opacity-0 group-hover:opacity-100 transition-opacity p-2.5 flex flex-col justify-between">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => handleToggleFeatured(item)}
-                        className={`p-1 rounded-md transition-colors ${
-                          item.isFeatured ? 'bg-yellow-500 text-black' : 'bg-black/60 text-gray-300 hover:text-yellow-400'
-                        }`}
-                        title={item.isFeatured ? 'Unfeature' : 'Feature'}
-                      >
-                        <Star className="w-3 h-3 fill-current" />
-                      </button>
-                      <button
-                        onClick={() => setPreviewItem(item)}
-                        className="p-1 rounded-md bg-black/60 text-gray-300 hover:text-white"
-                        title="Quick View"
-                      >
-                        <Eye className="w-3 h-3" />
-                      </button>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-rose-300 font-bold flex items-center gap-1">
+                        <Heart className="w-3 h-3 fill-rose-400" />
+                        {typeof item.likes === 'number' ? item.likes : 0} likes
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleToggleFeatured(item)}
+                          className={`p-1 rounded-md transition-colors ${
+                            item.isFeatured ? 'bg-yellow-500 text-black' : 'bg-black/60 text-gray-300 hover:text-yellow-400'
+                          }`}
+                          title={item.isFeatured ? 'Unfeature' : 'Feature'}
+                        >
+                          <Star className="w-3 h-3 fill-current" />
+                        </button>
+                        <button
+                          onClick={() => setPreviewItem(item)}
+                          className="p-1 rounded-md bg-black/60 text-gray-300 hover:text-white"
+                          title="Quick View"
+                        >
+                          <Eye className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="space-y-1">
@@ -676,6 +725,7 @@ export const AdminGallery: React.FC = () => {
                       <th className="py-3 px-4">Venue / Mart</th>
                       <th className="py-3 px-4">Location</th>
                       <th className="py-3 px-4">Date</th>
+                      <th className="py-3 px-4 text-center w-20">Likes</th>
                       <th className="py-3 px-4 text-center w-20">Featured</th>
                       <th className="py-3 px-4 text-right w-28">Actions</th>
                     </tr>
@@ -754,6 +804,14 @@ export const AdminGallery: React.FC = () => {
                         {/* Date */}
                         <td className="py-2.5 px-4 whitespace-nowrap text-gray-300 font-mono text-[11px]">
                           {item.date || '—'}
+                        </td>
+
+                        {/* Likes Count Column */}
+                        <td className="py-2.5 px-4 text-center whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-950/60 border border-rose-500/30 text-[11px] font-bold text-rose-300">
+                            <Heart className="w-3 h-3 fill-rose-400" />
+                            {typeof item.likes === 'number' ? item.likes : 0}
+                          </span>
                         </td>
 
                         {/* Featured Star Toggle */}
@@ -835,6 +893,10 @@ export const AdminGallery: React.FC = () => {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="px-2 py-0.5 rounded-full bg-black/60 border border-tartan-gold/30 text-[10px] font-bold text-tartan-gold">
                           {item.eventType}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-rose-950/60 border border-rose-500/30 text-[10px] font-bold text-rose-300 flex items-center gap-1">
+                          <Heart className="w-2.5 h-2.5 fill-rose-400" />
+                          {typeof item.likes === 'number' ? item.likes : 0} likes
                         </span>
                         {item.date && (
                           <span className="text-[10px] text-gray-400 flex items-center gap-1 font-mono">
@@ -923,6 +985,10 @@ export const AdminGallery: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 rounded-full bg-black/80 text-[10px] font-bold text-tartan-gold border border-tartan-gold/30">
                   {previewItem.eventType}
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-rose-950/80 text-[10px] font-bold text-rose-300 border border-rose-500/30 flex items-center gap-1">
+                  <Heart className="w-3 h-3 fill-rose-400" />
+                  {typeof previewItem.likes === 'number' ? previewItem.likes : 0} likes
                 </span>
                 <h3 className="text-sm font-bold text-white font-serif truncate">
                   {previewItem.title}
@@ -1159,18 +1225,35 @@ export const AdminGallery: React.FC = () => {
                 </div>
               </div>
 
-              {/* Location */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-200">
-                  Location (Town, Region, Castle)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Stirling, Scotland or Aviemore, Highlands"
-                  value={formLocation}
-                  onChange={(e) => setFormLocation(e.target.value)}
-                  className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-tartan-gold"
-                />
+              {/* Location & Likes Count */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-200">
+                    Location (Town, Region, Castle)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Stirling, Scotland or Aviemore, Highlands"
+                    value={formLocation}
+                    onChange={(e) => setFormLocation(e.target.value)}
+                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-tartan-gold"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-200 flex items-center gap-1">
+                    <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400" />
+                    <span>Visitor Likes Count</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formLikes}
+                    onChange={(e) => setFormLikes(parseInt(e.target.value) || 0)}
+                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-tartan-gold"
+                  />
+                </div>
               </div>
 
               {/* Description */}
