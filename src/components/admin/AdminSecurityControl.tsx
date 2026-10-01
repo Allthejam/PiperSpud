@@ -135,6 +135,21 @@ export const AdminSecurityControl: React.FC = () => {
     }
   };
 
+  const handlePurgeMockups = async () => {
+    if (confirm("Remove corrupted/placeholder user documents from Firestore? Real administrator profiles with verified email addresses will be preserved.")) {
+      const invalidUsers = (users || []).filter(u => !u.email || !u.email.includes('@') || u.id === 'admin-spud');
+      for (const u of invalidUsers) {
+        await removeUser(u.id);
+      }
+      setFeedback({
+        type: 'success',
+        message: 'Successfully purged invalid mockup user documents from Firestore.'
+      });
+    }
+  };
+
+  const hasInvalidMockups = (users || []).some(u => !u.email || !u.email.includes('@') || u.id === 'admin-spud');
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto animate-in fade-in duration-200">
       
@@ -150,11 +165,22 @@ export const AdminSecurityControl: React.FC = () => {
               Users Collection & Access Control
             </h1>
             <p className="text-xs sm:text-sm text-gray-300 max-w-2xl leading-relaxed">
-              Manage authorized administrators in the Firestore <code className="text-tartan-gold font-mono bg-black/40 px-1.5 py-0.5 rounded">users</code> collection. Control real-time Online/Offline chat availability, roles, and granular module permissions.
+              Manage authorized administrators in the Firestore <code className="text-tartan-gold font-mono bg-black/40 px-1.5 py-0.5 rounded">users</code> collection. Real-time Online/Offline chat availability, roles, and granular module permissions are synced directly with your live login sessions.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-3 shrink-0 flex-wrap">
+            {hasInvalidMockups && (
+              <button
+                onClick={handlePurgeMockups}
+                className="px-4 py-2.5 rounded-2xl bg-rose-950/80 border border-rose-600/50 text-rose-200 hover:text-white hover:bg-rose-900 text-xs font-bold flex items-center gap-2 transition-colors shadow"
+                title="Purge mockup or dummy entries from Firestore"
+              >
+                <Trash2 className="w-4 h-4 text-rose-400" />
+                <span>Purge Mockup Records</span>
+              </button>
+            )}
+
             <div className="flex items-center gap-3 bg-tartan-dark/80 border border-tartan-border p-3.5 rounded-2xl">
               <div className="w-12 h-12 rounded-xl bg-tartan-accent/20 text-tartan-gold flex items-center justify-center font-serif text-xl font-bold border border-tartan-accent/30">
                 {users.length}
@@ -356,6 +382,7 @@ export const AdminSecurityControl: React.FC = () => {
             {(users || []).map((user) => {
               const userEmail = (user?.email || '').trim();
               const isSpudPrimary = userEmail.toLowerCase() === 'piperspud@gmail.com';
+              const isCurrentUser = Boolean(firebaseUser?.email && userEmail && (firebaseUser.email.toLowerCase().trim() === userEmail.toLowerCase()));
               const isEditing = editingUserId === user.id;
               const displayName = user?.name || user?.displayName || (userEmail ? userEmail.split('@')[0] : 'Admin User');
               const initialLetter = (user?.name || userEmail || 'A')[0].toUpperCase();
@@ -363,13 +390,21 @@ export const AdminSecurityControl: React.FC = () => {
               return (
                 <div 
                   key={user.id || userEmail || Math.random().toString()}
-                  className="bg-tartan-navy/60 border border-tartan-border rounded-2xl p-4 space-y-3 hover:border-tartan-accent/40 transition-colors"
+                  className={`border rounded-2xl p-4 space-y-3 transition-colors ${
+                    isCurrentUser 
+                      ? 'bg-tartan-navy/90 border-tartan-accent/70 shadow-lg ring-1 ring-tartan-accent/30' 
+                      : 'bg-tartan-navy/60 border-tartan-border hover:border-tartan-accent/40'
+                  }`}
                 >
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div className="relative">
-                        <div className="w-11 h-11 rounded-xl bg-tartan-accent/20 border border-tartan-accent/40 text-tartan-gold flex items-center justify-center font-bold text-base shrink-0">
-                          {initialLetter}
+                        <div className="w-11 h-11 rounded-xl bg-tartan-accent/20 border border-tartan-accent/40 text-tartan-gold flex items-center justify-center font-bold text-base shrink-0 overflow-hidden">
+                          {user.avatarUrl ? (
+                            <img src={user.avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+                          ) : (
+                            initialLetter
+                          )}
                         </div>
                         <span 
                           className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-tartan-navy shadow ${
@@ -382,6 +417,11 @@ export const AdminSecurityControl: React.FC = () => {
                           <p className="text-sm font-bold text-white">
                             {displayName}
                           </p>
+                          {isCurrentUser && (
+                            <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/40">
+                              🟢 You (Current Session)
+                            </span>
+                          )}
                           {user.role === 'owner' ? (
                             <span className="bg-amber-500/20 text-yellow-300 border border-amber-500/40 text-[10px] font-bold px-2 py-0.5 rounded-full">
                               Owner
@@ -401,10 +441,16 @@ export const AdminSecurityControl: React.FC = () => {
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-gray-300 flex items-center gap-1.5 mt-0.5">
-                          <Mail className="w-3 h-3 text-gray-500" />
-                          <span>{userEmail || 'No email attached'}</span>
-                        </p>
+                        <div className="flex items-center gap-3 text-[11px] text-gray-400 mt-1 flex-wrap">
+                          <p className="flex items-center gap-1.5 text-gray-300">
+                            <Mail className="w-3 h-3 text-gray-500" />
+                            <span>{userEmail || 'No email attached'}</span>
+                          </p>
+                          <span>•</span>
+                          <p>
+                            Last active: <span className="text-gray-300 font-medium">{user.lastActive ? new Date(user.lastActive).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Active now'}</span>
+                          </p>
+                        </div>
                       </div>
                     </div>
 

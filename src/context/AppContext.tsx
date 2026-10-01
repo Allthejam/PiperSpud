@@ -312,15 +312,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       try {
         if (user && user.email) {
-          const email = user.email.toLowerCase();
+          const cleanEmail = user.email.toLowerCase().trim();
           const currentUsers = usersRef.current || [];
           const isAllowed = 
-            email === 'piperspud@gmail.com' || 
-            currentUsers.some(u => u && u.email && u.email.trim().toLowerCase() === email);
+            cleanEmail === 'piperspud@gmail.com' || 
+            currentUsers.some(u => u && u.email && u.email.trim().toLowerCase() === cleanEmail);
 
           if (isAllowed) {
             setFirebaseUser(user);
             setIsLegacyAdminLoggedIn(true);
+
+            // Upsert Real User Profile & Live Online Presence to Firestore 'users' collection
+            if (db) {
+              const existingUser = currentUsers.find(u => u && u.email && u.email.toLowerCase() === cleanEmail);
+              const userDocId = existingUser?.id || `user_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+              const userRecord: UserRecord = {
+                id: userDocId,
+                uid: user.uid,
+                email: cleanEmail,
+                name: user.displayName || existingUser?.name || cleanEmail.split('@')[0],
+                displayName: user.displayName || existingUser?.displayName || cleanEmail.split('@')[0],
+                avatarUrl: user.photoURL || existingUser?.avatarUrl || undefined,
+                role: (cleanEmail === 'piperspud@gmail.com' || existingUser?.role === 'owner') ? 'owner' : (existingUser?.role || 'admin'),
+                isOnline: true,
+                status: 'online',
+                lastActive: new Date().toISOString(),
+                lastLogin: new Date().toISOString(),
+                addedAt: existingUser?.addedAt || new Date().toISOString(),
+                permissions: existingUser?.permissions || (cleanEmail === 'piperspud@gmail.com' ? defaultPermissions.owner : defaultPermissions.admin)
+              };
+
+              try {
+                await setDoc(doc(db, 'users', userDocId), JSON.parse(JSON.stringify(userRecord)), { merge: true });
+                if (cleanEmail === 'piperspud@gmail.com' || userRecord.role === 'owner') {
+                  setIsSpudOnlineState(true);
+                  await setDoc(doc(db, 'settings', 'chat_status'), { isSpudOnline: true, updatedAt: new Date().toISOString() }, { merge: true });
+                }
+              } catch (e) {
+                console.warn('Could not sync user profile to Firestore:', e);
+              }
+            }
           } else {
             // If unauthorized Google/Email user tried to session persist
             try {
@@ -760,26 +791,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const remoteUsers: UserRecord[] = [];
           snapshot.forEach((d) => {
             const data = d.data() as UserRecord;
-            if (data) remoteUsers.push({ ...data, id: data.id || d.id });
+            // Only accept valid accounts with an email address (ignoring corrupt/empty mockups)
+            if (data && data.email && data.email.includes('@')) {
+              remoteUsers.push({ ...data, id: data.id || d.id });
+            }
           });
+
           if (remoteUsers.length > 0) {
-            setUsers(prev => {
-              const merged = [...(prev || [])];
-              remoteUsers.forEach(r => {
-                if (!r) return;
-                const rEmail = (r.email || '').toLowerCase();
-                const idx = merged.findIndex(u => u && (u.id === r.id || (rEmail && u.email && u.email.toLowerCase() === rEmail)));
-                if (idx >= 0) merged[idx] = { ...merged[idx], ...r };
-                else merged.push(r);
-              });
-              if (typeof window !== 'undefined') {
-                try {
-                  localStorage.setItem(`${LOCAL_STORAGE_PREFIX}users`, JSON.stringify(merged));
-                  localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`, JSON.stringify(merged));
-                } catch (e) {}
-              }
-              return merged;
-            });
+            setUsers(remoteUsers);
+            if (typeof window !== 'undefined') {
+              try {
+                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}users`, JSON.stringify(remoteUsers));
+                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`, JSON.stringify(remoteUsers));
+              } catch (e) {}
+            }
 
             // Check if primary owner or spud has isOnline set in users collection
             const spudRemote = remoteUsers.find(u => u && (((u.email || '').toLowerCase() === 'piperspud@gmail.com') || u.role === 'owner'));
@@ -1631,6 +1656,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logoutAdmin = async () => {
+    if (firebaseUser?.email && db) {
+      const cleanEmail = firebaseUser.email.toLowerCase().trim();
+      const existingUser = (users || []).find(u => u && u.email && u.email.toLowerCase() === cleanEmail);
+      const targetId = existingUser?.id || `user_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      try {
+        await setDoc(doc(db, 'users', targetId), {
+          isOnline: false,
+          status: 'offline',
+          lastActive: new Date().toISOString()
+        }, { merge: true });
+
+        if (cleanEmail === 'piperspud@gmail.com') {
+          setIsSpudOnlineState(false);
+          await setDoc(doc(db, 'settings', 'chat_status'), { isSpudOnline: false, updatedAt: new Date().toISOString() }, { merge: true });
+        }
+      } catch (e) {
+        console.warn('Could not set user offline in Firestore on logout:', e);
+      }
+    }
+
     if (auth && firebaseUser) {
       try {
         await signOut(auth);
