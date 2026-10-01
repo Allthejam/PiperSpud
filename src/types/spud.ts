@@ -49,7 +49,24 @@ export interface BookingEvent {
   createdAt: string;
   approvedAt?: string;
   depositPaidAt?: string;
+  depositAmountPaid?: number;
+  depositPaymentMethod?: string;
   paypalOrderId?: string;
+  depositPayerEmail?: string;
+  remainingBalance?: number;
+  remainingBalancePaid?: boolean;
+  remainingBalancePaidAt?: string;
+  remainingBalancePaymentMethod?: string;
+  remainingBalanceTransactionId?: string;
+  balanceDueDate?: string;
+  sevenDayReminderSent?: boolean;
+  sevenDayReminderSentAt?: string;
+  oneDayReminderSent?: boolean;
+  oneDayReminderSentAt?: string;
+  spudSevenDayAlertSent?: boolean;
+  spudSevenDayAlertSentAt?: string;
+  spudOneDayAlertSent?: boolean;
+  spudOneDayAlertSentAt?: string;
   brevoEmailSent: boolean;
   brevoEmailHistory?: {
     type: string;

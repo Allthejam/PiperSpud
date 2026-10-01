@@ -125,7 +125,10 @@ interface AppContextType {
   sendBookingMessage: (id: string, msg: { body: string; subject?: string; channel?: 'email' | 'chat'; senderName?: string }) => Promise<{ success: boolean; error?: string }>;
   approveBooking: (id: string, customOptions?: { note?: string }) => void;
   rejectBooking: (id: string, reason?: string, sendEmail?: boolean) => void;
-  markDepositPaid: (id: string, paypalOrderId?: string) => void;
+  markDepositPaid: (id: string, paypalOrderId?: string) => Promise<void>;
+  markRemainingBalancePaid: (id: string, options?: { transactionId?: string; method?: string; notes?: string }) => Promise<void>;
+  sendSevenDayReminder: (id: string) => Promise<{ success: boolean; error?: string }>;
+  sendOneDayReminder: (id: string) => Promise<{ success: boolean; error?: string }>;
   deleteBooking: (id: string) => void;
 
   // Travel Radius & Expenses Configuration
@@ -2172,12 +2175,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const markDepositPaid = async (id: string, paypalOrderId: string = `PP-TX-${Date.now().toString().slice(-6)}`) => {
     const existingBk = bookings.find(b => b.id === id);
+    const nowIso = new Date().toISOString();
+    const depositAmt = existingBk?.depositAmount || 100;
+    const totalEst = existingBk?.estimatedPrice || depositAmt;
+    const remainingBal = Math.max(0, totalEst - depositAmt);
+    
+    // Compute day before event as balance due date
+    let balanceDueDate = '';
+    if (existingBk?.date) {
+      try {
+        const d = new Date(existingBk.date);
+        d.setDate(d.getDate() - 1);
+        balanceDueDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      } catch (e) {}
+    }
+
+    const paidDateFormatted = new Date(nowIso).toLocaleString('en-GB', { 
+      day: 'numeric', 
+      month: 'short', 
+      year: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+
     const auditEntry: BookingAuditEntry = {
       id: `audit-${Date.now()}`,
-      timestamp: new Date().toISOString(),
+      timestamp: nowIso,
       action: 'PayPal Deposit Confirmed & Locked',
       actor: 'PayPal Gateway / Admin Confirmation',
-      details: `Deposit payment of £${existingBk?.depositAmount || 100}.00 verified. Transaction ID: #${paypalOrderId}. Event date officially LOCKED in diary.`,
+      details: `Deposit of £${depositAmt}.00 paid via PayPal on ${paidDateFormatted}. Transaction ID: #${paypalOrderId}. Remaining Balance: £${remainingBal}.00 (Due 1 day prior to event: ${balanceDueDate || 'Day before'}). Event date officially LOCKED in diary.`,
       type: 'status_change'
     };
 
@@ -2190,14 +2216,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           updatedBooking = {
             ...b,
             status: 'deposit_paid' as BookingStatus,
-            depositPaidAt: new Date().toISOString(),
+            depositPaidAt: nowIso,
+            depositAmountPaid: depositAmt,
+            depositPaymentMethod: 'PayPal',
             paypalOrderId,
+            remainingBalance: remainingBal,
+            remainingBalancePaid: remainingBal === 0,
+            balanceDueDate,
             auditTrail: [auditEntry, ...currentAudit],
             brevoEmailHistory: [
               ...history,
               {
                 type: 'Deposit Confirmed & Official Receipt (via Brevo)',
-                sentAt: new Date().toISOString(),
+                sentAt: nowIso,
                 status: 'delivered'
               }
             ]
@@ -2212,7 +2243,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (updatedBooking) {
       await syncToFirestore('bookings', id, updatedBooking);
 
-      // Dispatch live deposit receipt email via Brevo
+      // Dispatch live deposit confirmation email to client via Brevo with payment link for remainder
       try {
         if (typeof window !== 'undefined') {
           fetch('/api/brevo/send', {
@@ -2233,13 +2264,302 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (bk) {
       addNotification({
         type: 'deposit_paid',
-        title: `PayPal Deposit Paid: £${bk.depositAmount}.00`,
-        message: `${bk.clientName} paid £${bk.depositAmount} deposit via PayPal for event on ${bk.date}. Booking is now CONFIRMED!`,
+        title: `PayPal Deposit Paid: £${depositAmt}.00`,
+        message: `${bk.clientName} paid £${depositAmt} deposit via PayPal on ${paidDateFormatted}. Remaining balance: £${remainingBal}.00. Booking is CONFIRMED!`,
         actionUrl: '/admin/bookings',
         relatedId: id
       });
     }
   };
+
+  const markRemainingBalancePaid = async (
+    id: string, 
+    options?: { transactionId?: string; method?: string; notes?: string }
+  ) => {
+    const existingBk = bookings.find(b => b.id === id);
+    if (!existingBk) return;
+
+    const nowIso = new Date().toISOString();
+    const remainingAmt = existingBk.remainingBalance !== undefined 
+      ? existingBk.remainingBalance 
+      : Math.max(0, existingBk.estimatedPrice - existingBk.depositAmount);
+    const txId = options?.transactionId || `BAL-TX-${Date.now().toString().slice(-6)}`;
+    const method = options?.method || 'PayPal';
+
+    const auditEntry: BookingAuditEntry = {
+      id: `audit-${Date.now()}`,
+      timestamp: nowIso,
+      action: 'Remaining Balance Paid in Full',
+      actor: 'Spud The Piper (Admin)',
+      details: `Remaining balance of £${remainingAmt}.00 marked as PAID via ${method}. Transaction Ref: #${txId}.${options?.notes ? ` Notes: "${options.notes}"` : ''} Booking is 100% fully settled.`,
+      type: 'status_change'
+    };
+
+    let updatedBooking: BookingEvent | null = null;
+    setBookings(prev => {
+      return prev.map(b => {
+        if (b.id === id) {
+          const currentAudit = b.auditTrail || [];
+          const history = b.brevoEmailHistory || [];
+          updatedBooking = {
+            ...b,
+            remainingBalance: 0,
+            remainingBalancePaid: true,
+            remainingBalancePaidAt: nowIso,
+            remainingBalancePaymentMethod: method,
+            remainingBalanceTransactionId: txId,
+            auditTrail: [auditEntry, ...currentAudit],
+            brevoEmailHistory: [
+              ...history,
+              {
+                type: 'Full Balance Settlement Receipt (via Brevo)',
+                sentAt: nowIso,
+                status: 'delivered'
+              }
+            ]
+          };
+          return updatedBooking;
+        }
+        return b;
+      });
+    });
+
+    if (updatedBooking) {
+      await syncToFirestore('bookings', id, updatedBooking);
+
+      // Dispatch full settlement receipt email to client via Brevo
+      try {
+        if (typeof window !== 'undefined') {
+          fetch('/api/brevo/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'balance_paid_receipt',
+              booking: updatedBooking
+            })
+          }).catch(err => console.warn('Brevo balance receipt dispatch error:', err));
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+
+    addNotification({
+      type: 'system',
+      title: 'Remaining Balance Settled',
+      message: `${existingBk.clientName} balance of £${remainingAmt}.00 settled in full for event on ${existingBk.date}.`,
+      actionUrl: '/admin/bookings',
+      relatedId: id
+    });
+  };
+
+  const sendSevenDayReminder = async (id: string): Promise<{ success: boolean; error?: string }> => {
+    const existingBk = bookings.find(b => b.id === id);
+    if (!existingBk) return { success: false, error: 'Booking not found' };
+
+    const nowIso = new Date().toISOString();
+    const remainingAmt = existingBk.remainingBalance !== undefined 
+      ? existingBk.remainingBalance 
+      : Math.max(0, existingBk.estimatedPrice - existingBk.depositAmount);
+
+    const auditEntry: BookingAuditEntry = {
+      id: `audit-${Date.now()}`,
+      timestamp: nowIso,
+      action: '7-Day Event & Balance Reminder Dispatched',
+      actor: 'System Reminder Engine / Spud The Piper',
+      details: `7-Day reminder dispatched to client (${existingBk.clientEmail}) with PayPal balance link (£${remainingAmt}.00) & gig notification email sent to Spud.`,
+      type: 'message_sent'
+    };
+
+    let updatedBooking: BookingEvent | null = null;
+    setBookings(prev => {
+      return prev.map(b => {
+        if (b.id === id) {
+          const currentAudit = b.auditTrail || [];
+          const history = b.brevoEmailHistory || [];
+          updatedBooking = {
+            ...b,
+            sevenDayReminderSent: true,
+            sevenDayReminderSentAt: nowIso,
+            spudSevenDayAlertSent: true,
+            spudSevenDayAlertSentAt: nowIso,
+            auditTrail: [auditEntry, ...currentAudit],
+            brevoEmailHistory: [
+              ...history,
+              {
+                type: '7-Day Client Balance Reminder (via Brevo)',
+                sentAt: nowIso,
+                status: 'delivered'
+              }
+            ]
+          };
+          return updatedBooking;
+        }
+        return b;
+      });
+    });
+
+    if (updatedBooking) {
+      await syncToFirestore('bookings', id, updatedBooking);
+
+      // Dispatch Brevo email to client if balance is unpaid
+      if (!existingBk.remainingBalancePaid && remainingAmt > 0) {
+        try {
+          if (typeof window !== 'undefined') {
+            fetch('/api/brevo/send', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'client_balance_reminder_7day',
+                booking: updatedBooking
+              })
+            }).catch(err => console.warn('Brevo 7-day client reminder error:', err));
+          }
+        } catch (e) {}
+      }
+
+      // Dispatch 7-day alert to Spud
+      try {
+        if (typeof window !== 'undefined') {
+          fetch('/api/brevo/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'admin_event_reminder_7day',
+              booking: updatedBooking
+            })
+          }).catch(err => console.warn('Brevo 7-day spud alert error:', err));
+        }
+      } catch (e) {}
+    }
+
+    addNotification({
+      type: 'gig_reminder',
+      title: `⏰ 7-Day Event Alert: ${existingBk.clientName}`,
+      message: `Event on ${existingBk.date} at ${existingBk.venueName} is in 7 days! Balance status: ${existingBk.remainingBalancePaid ? 'Paid' : `£${remainingAmt} Outstanding`}.`,
+      actionUrl: '/admin/diary',
+      relatedId: id
+    });
+
+    return { success: true };
+  };
+
+  const sendOneDayReminder = async (id: string): Promise<{ success: boolean; error?: string }> => {
+    const existingBk = bookings.find(b => b.id === id);
+    if (!existingBk) return { success: false, error: 'Booking not found' };
+
+    const nowIso = new Date().toISOString();
+    const remainingAmt = existingBk.remainingBalance !== undefined 
+      ? existingBk.remainingBalance 
+      : Math.max(0, existingBk.estimatedPrice - existingBk.depositAmount);
+
+    const auditEntry: BookingAuditEntry = {
+      id: `audit-${Date.now()}`,
+      timestamp: nowIso,
+      action: '1-Day Final Gig Alert & Briefing Dispatched',
+      actor: 'System Reminder Engine / Spud The Piper',
+      details: `Urgent day-before briefing email sent to Spud for tomorrow's performance at ${existingBk.venueName}.${!existingBk.remainingBalancePaid ? ` Final balance notice sent to client (£${remainingAmt}.00).` : ''}`,
+      type: 'message_sent'
+    };
+
+    let updatedBooking: BookingEvent | null = null;
+    setBookings(prev => {
+      return prev.map(b => {
+        if (b.id === id) {
+          const currentAudit = b.auditTrail || [];
+          const history = b.brevoEmailHistory || [];
+          updatedBooking = {
+            ...b,
+            oneDayReminderSent: true,
+            oneDayReminderSentAt: nowIso,
+            spudOneDayAlertSent: true,
+            spudOneDayAlertSentAt: nowIso,
+            auditTrail: [auditEntry, ...currentAudit],
+            brevoEmailHistory: [
+              ...history,
+              {
+                type: '1-Day Gig Briefing & Reminder (via Brevo)',
+                sentAt: nowIso,
+                status: 'delivered'
+              }
+            ]
+          };
+          return updatedBooking;
+        }
+        return b;
+      });
+    });
+
+    if (updatedBooking) {
+      await syncToFirestore('bookings', id, updatedBooking);
+
+      // Dispatch urgent 1-day alert to Spud
+      try {
+        if (typeof window !== 'undefined') {
+          fetch('/api/brevo/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'admin_event_reminder_1day',
+              booking: updatedBooking
+            })
+          }).catch(err => console.warn('Brevo 1-day spud alert error:', err));
+        }
+      } catch (e) {}
+
+      // Dispatch final balance notice to client if unpaid
+      if (!existingBk.remainingBalancePaid && remainingAmt > 0) {
+        try {
+          if (typeof window !== 'undefined') {
+            fetch('/api/brevo/send', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'client_balance_reminder_1day',
+                booking: updatedBooking
+              })
+            }).catch(err => console.warn('Brevo 1-day client reminder error:', err));
+          }
+        } catch (e) {}
+      }
+    }
+
+    addNotification({
+      type: 'gig_reminder',
+      title: `🚨 GIG TOMORROW: ${existingBk.clientName}`,
+      message: `Performance tomorrow at ${existingBk.venueName} (${existingBk.timeSlot}) in ${existingBk.tartanChoice}.`,
+      actionUrl: '/admin/diary',
+      relatedId: id
+    });
+
+    return { success: true };
+  };
+
+  // Automated Watchdog Effect for 7-Day & 1-Day Reminders
+  useEffect(() => {
+    if (!bookings || bookings.length === 0) return;
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    bookings.forEach(bk => {
+      if (bk.status !== 'deposit_paid' || !bk.date) return;
+
+      const eventDate = new Date(bk.date);
+      const todayDate = new Date(todayStr);
+      const diffTime = eventDate.getTime() - todayDate.getTime();
+      const daysUntil = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      // 7-day reminder check (for events between 2 and 7 days away)
+      if (daysUntil <= 7 && daysUntil >= 2 && !bk.sevenDayReminderSent && !bk.remainingBalancePaid) {
+        sendSevenDayReminder(bk.id).catch(err => console.warn('Auto 7-day reminder error:', err));
+      }
+
+      // 1-day (tomorrow/day before) reminder check (for events 1 day away or today)
+      if (daysUntil <= 1 && daysUntil >= 0 && !bk.oneDayReminderSent) {
+        sendOneDayReminder(bk.id).catch(err => console.warn('Auto 1-day reminder error:', err));
+      }
+    });
+  }, [bookings.length]);
 
   const deleteBooking = async (id: string) => {
     setBookings(prev => prev.filter(b => b.id !== id));
@@ -3806,6 +4126,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       approveBooking,
       rejectBooking,
       markDepositPaid,
+      markRemainingBalancePaid,
+      sendSevenDayReminder,
+      sendOneDayReminder,
       deleteBooking,
       travelConfig,
       updateTravelConfig,

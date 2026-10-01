@@ -21,9 +21,10 @@ import {
   Layers,
   Music,
   Search,
-  MessageSquare,
   BookOpen,
-  Eye
+  Eye,
+  BellRing,
+  Send
 } from 'lucide-react';
 import { BookingEvent } from '@/types/spud';
 
@@ -34,6 +35,9 @@ export const AdminDashboard: React.FC<{ onNavigateTab: (tab: string) => void }> 
     notifications, 
     openBrevoPreview, 
     approveBooking,
+    sendSevenDayReminder,
+    sendOneDayReminder,
+    markRemainingBalancePaid,
     seoPages,
     tunesList,
     cmsBlocks,
@@ -53,6 +57,19 @@ export const AdminDashboard: React.FC<{ onNavigateTab: (tab: string) => void }> 
   const pendingBookings = safeBookings.filter(b => b && b.status === 'pending');
   const confirmedBookings = safeBookings.filter(b => b && b.status === 'deposit_paid');
   const pendingReviews = safeReviews.filter(r => r && r.status === 'pending');
+
+  // Upcoming Gigs Watchdog (Next 7 Days & Tomorrow)
+  const now = new Date();
+  const todayFormatted = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  
+  const upcomingGigsNext7Days = safeBookings.filter(b => {
+    if (!b || b.status !== 'deposit_paid' || !b.date) return false;
+    const eventDate = new Date(b.date);
+    const todayDate = new Date(todayFormatted);
+    const diff = eventDate.getTime() - todayDate.getTime();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    return days >= 0 && days <= 7;
+  }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   return (
     <div className="space-y-8">
@@ -96,6 +113,100 @@ export const AdminDashboard: React.FC<{ onNavigateTab: (tab: string) => void }> 
           </button>
         </div>
       </div>
+
+      {/* Upcoming Gigs & Balance Alert Watchdog (Next 7 Days & Tomorrow) */}
+      {upcomingGigsNext7Days.length > 0 && (
+        <div className="bg-gradient-to-r from-amber-950/80 via-tartan-navy to-tartan-card rounded-3xl p-6 border-2 border-tartan-gold shadow-2xl space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-tartan-border/80 pb-3">
+            <div className="flex items-center gap-2.5">
+              <span className="p-2 rounded-xl bg-amber-500/20 text-tartan-gold border border-tartan-gold/50">
+                <BellRing className="w-5 h-5 animate-bounce" />
+              </span>
+              <div>
+                <h3 className="text-lg font-bold text-white font-serif">
+                  Upcoming Gig Alerts & Balance Watchdog ({upcomingGigsNext7Days.length} in next 7 days)
+                </h3>
+                <p className="text-xs text-amber-200">
+                  Automated reminders check for upcoming events to ensure Spud never misses a gig and balances are collected on time.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => onNavigateTab('diary')}
+              className="px-4 py-1.5 rounded-xl bg-tartan-dark hover:bg-slate-700 text-tartan-gold text-xs font-bold border border-tartan-border transition self-start sm:self-center"
+            >
+              View Full Diary Schedule →
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {upcomingGigsNext7Days.map((bk) => {
+              const eventDate = new Date(bk.date);
+              const todayDate = new Date(todayFormatted);
+              const diff = eventDate.getTime() - todayDate.getTime();
+              const daysUntil = Math.ceil(diff / (1000 * 60 * 60 * 24));
+              const isTomorrow = daysUntil === 1;
+              const isToday = daysUntil === 0;
+
+              const remainingBal = bk.remainingBalance !== undefined
+                ? bk.remainingBalance
+                : Math.max(0, bk.estimatedPrice - bk.depositAmount);
+
+              return (
+                <div
+                  key={bk.id}
+                  className={`p-4 rounded-2xl border space-y-2 text-xs shadow ${
+                    isToday || isTomorrow
+                      ? 'bg-rose-950/60 border-rose-500'
+                      : 'bg-tartan-dark/90 border-tartan-border'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                      isToday
+                        ? 'bg-red-600 text-white'
+                        : isTomorrow
+                        ? 'bg-rose-600 text-white'
+                        : 'bg-amber-900 text-amber-200 border border-amber-600'
+                    }`}>
+                      {isToday ? '🚨 GIG TODAY' : isTomorrow ? '⚠️ GIG TOMORROW' : `⏰ In ${daysUntil} Days`}
+                    </span>
+                    <span className="text-gray-400 font-mono text-[10px]">{bk.date}</span>
+                  </div>
+
+                  <div>
+                    <h4 className="font-bold text-white text-sm">{bk.clientName}</h4>
+                    <p className="text-tartan-gold text-xs">{bk.eventType}</p>
+                    <p className="text-gray-300 text-xs mt-0.5">📍 {bk.venueName} ({bk.timeSlot})</p>
+                  </div>
+
+                  <div className="pt-2 border-t border-tartan-border/60 flex items-center justify-between text-[11px]">
+                    <span className="text-gray-400">Balance Status:</span>
+                    <strong className={bk.remainingBalancePaid ? 'text-emerald-400' : 'text-amber-400 font-bold'}>
+                      {bk.remainingBalancePaid ? '✓ Paid in Full' : `£${remainingBal}.00 Due`}
+                    </strong>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <button
+                      onClick={() => sendSevenDayReminder(bk.id)}
+                      className="flex-1 py-1 px-2 rounded-lg bg-amber-950/80 hover:bg-amber-900 text-yellow-300 text-[10px] font-semibold border border-amber-700"
+                    >
+                      {bk.sevenDayReminderSent ? '7d Alert Sent' : 'Send 7d Alert'}
+                    </button>
+                    <button
+                      onClick={() => sendOneDayReminder(bk.id)}
+                      className="flex-1 py-1 px-2 rounded-lg bg-rose-950/80 hover:bg-rose-900 text-rose-300 text-[10px] font-semibold border border-rose-700"
+                    >
+                      {bk.oneDayReminderSent ? '1d Alert Sent' : 'Send 1d Alert'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Cloud Firestore Database Sync Banner */}
       <div className="bg-gradient-to-r from-emerald-950/60 via-tartan-navy to-tartan-card rounded-3xl p-6 border border-emerald-500/40 shadow-xl flex flex-col lg:flex-row lg:items-center justify-between gap-6">

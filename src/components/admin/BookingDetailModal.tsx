@@ -37,7 +37,9 @@ import {
   Sparkles,
   BedDouble,
   Ship,
-  Globe
+  Globe,
+  BellRing,
+  PoundSterling
 } from 'lucide-react';
 import { BookingEvent, BookingAuditEntry, BookingMessage, HighlandDressOption } from '@/types/spud';
 
@@ -59,6 +61,9 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
     approveBooking, 
     rejectBooking, 
     markDepositPaid, 
+    markRemainingBalancePaid,
+    sendSevenDayReminder,
+    sendOneDayReminder,
     deleteBooking,
     openBrevoPreview, 
     openPayPalModal,
@@ -80,6 +85,8 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
   const [adminNotesInput, setAdminNotesInput] = useState<string>('');
   const [isSavingPricing, setIsSavingPricing] = useState(false);
   const [pricingSuccessMsg, setPricingSuccessMsg] = useState('');
+  const [balanceActionMsg, setBalanceActionMsg] = useState('');
+  const [copiedBalanceLink, setCopiedBalanceLink] = useState(false);
 
   // Message state
   const [messageSubject, setMessageSubject] = useState('');
@@ -114,14 +121,48 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
       setMessageBody('');
       setPricingSuccessMsg('');
       setMessageStatusMsg('');
+      setBalanceActionMsg('');
+      setCopiedBalanceLink(false);
     }
   }, [booking]);
 
   if (!isOpen || !booking) return null;
 
-  // Real-time recalculated total
+  // Real-time recalculated total & remaining balance
   const calculatedTravel = travelWaived ? 0 : (booking.travelExpense || 0);
   const calculatedTotal = Math.max(0, basePriceInput + calculatedTravel + (Number(customSurcharge) || 0) - (Number(discountAmount) || 0));
+  const remainingBalance = booking.remainingBalance !== undefined
+    ? booking.remainingBalance
+    : Math.max(0, booking.estimatedPrice - (booking.depositAmount || 0));
+  const balancePaymentUrl = `https://paypal.me/spudthepiper/${remainingBalance}`;
+
+  const handleMarkBalancePaidModal = async () => {
+    if (confirm(`Confirm receipt of remaining balance £${remainingBalance}.00 for ${booking.clientName}? This will issue an official full settlement receipt via Brevo.`)) {
+      await markRemainingBalancePaid(booking.id);
+      setBalanceActionMsg(`Remaining balance of £${remainingBalance}.00 recorded as settled!`);
+      setTimeout(() => setBalanceActionMsg(''), 4000);
+    }
+  };
+
+  const handleTrigger7DayReminder = async () => {
+    await sendSevenDayReminder(booking.id);
+    setBalanceActionMsg(`7-Day Event & Balance reminder dispatched to ${booking.clientName} and Spud's alert email!`);
+    setTimeout(() => setBalanceActionMsg(''), 4000);
+  };
+
+  const handleTrigger1DayReminder = async () => {
+    await sendOneDayReminder(booking.id);
+    setBalanceActionMsg(`1-Day Final Gig Briefing dispatched to Spud and client!`);
+    setTimeout(() => setBalanceActionMsg(''), 4000);
+  };
+
+  const handleCopyBalanceLink = () => {
+    if (typeof navigator !== 'undefined') {
+      navigator.clipboard.writeText(balancePaymentUrl);
+      setCopiedBalanceLink(true);
+      setTimeout(() => setCopiedBalanceLink(false), 3000);
+    }
+  };
 
   const handleSavePricingAndNotes = async () => {
     setIsSavingPricing(true);
@@ -331,6 +372,161 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
           {activeTab === 'overview' && (
             <div className="space-y-6">
               
+              {/* Financial Status, PayPal Logs & Balance Settlement Card */}
+              <div className="bg-gradient-to-r from-tartan-dark via-tartan-navy to-tartan-dark rounded-3xl p-5 sm:p-6 border border-tartan-gold/60 shadow-xl space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-tartan-border/70 pb-3">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-tartan-gold" />
+                    <h3 className="text-sm sm:text-base font-bold text-white font-serif tracking-tight">
+                      Financial Overview, PayPal Deposit Log & Balance
+                    </h3>
+                  </div>
+                  <span className="text-xs font-mono text-gray-300">
+                    Booking ID: <strong className="text-tartan-gold">#{booking.id}</strong>
+                  </span>
+                </div>
+
+                {balanceActionMsg && (
+                  <div className="p-3 bg-emerald-950/90 border border-emerald-500 text-emerald-300 text-xs rounded-xl flex items-center gap-2 shadow animate-in fade-in">
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span className="font-semibold">{balanceActionMsg}</span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                  
+                  {/* Total Performance Fee */}
+                  <div className="bg-tartan-dark/90 p-4 rounded-2xl border border-tartan-border/80 space-y-1">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                      Total Performance Fee:
+                    </span>
+                    <p className="text-xl font-extrabold text-white">
+                      £{booking.estimatedPrice}.00
+                    </p>
+                    <p className="text-[11px] text-gray-400">
+                      Base: £{booking.basePackagePrice ?? (booking.estimatedPrice - (booking.travelExpense || 0))} • Travel: £{booking.travelWaived ? '0.00 (Waived)' : `${booking.travelExpense || 0}.00`}
+                    </p>
+                  </div>
+
+                  {/* Deposit Payment Log */}
+                  <div className={`p-4 rounded-2xl border space-y-1 ${
+                    booking.status === 'deposit_paid'
+                      ? 'bg-emerald-950/40 border-emerald-700/80 text-emerald-200'
+                      : 'bg-blue-950/40 border-blue-700/80 text-blue-200'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider">
+                        Deposit Status:
+                      </span>
+                      {booking.status === 'deposit_paid' ? (
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-900/80 text-emerald-300 border border-emerald-600 text-[10px] font-bold">
+                          PAID & LOCKED
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full bg-amber-900/80 text-yellow-300 border border-yellow-600 text-[10px] font-bold">
+                          AWAITING PAYMENT
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xl font-extrabold text-white">
+                      £{booking.depositAmountPaid || booking.depositAmount}.00 <span className="text-xs font-normal text-tartan-gold">via {booking.depositPaymentMethod || 'PayPal'}</span>
+                    </p>
+                    <p className="text-[11px] text-gray-300">
+                      {booking.depositPaidAt 
+                        ? `Paid: ${new Date(booking.depositPaidAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                        : 'Deposit invoice sent to client'}
+                    </p>
+                    {booking.paypalOrderId && (
+                      <p className="text-[10px] text-gray-400 font-mono">
+                        Tx Ref: #{booking.paypalOrderId}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Remaining Balance & Settlement */}
+                  <div className={`p-4 rounded-2xl border space-y-1 ${
+                    booking.remainingBalancePaid
+                      ? 'bg-emerald-950/40 border-emerald-700/80 text-emerald-200'
+                      : 'bg-amber-950/40 border-amber-700/80 text-amber-200'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider">
+                        Remaining Balance:
+                      </span>
+                      {booking.remainingBalancePaid ? (
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-900/80 text-emerald-300 border border-emerald-600 text-[10px] font-bold">
+                          SETTLED
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full bg-amber-900/80 text-amber-300 border border-amber-600 text-[10px] font-bold">
+                          DUE BEFORE GIG
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xl font-extrabold text-white">
+                      {booking.remainingBalancePaid ? '£0.00' : `£${remainingBalance}.00`}
+                    </p>
+                    <p className="text-[11px] text-gray-300">
+                      {booking.remainingBalancePaid 
+                        ? `Settled: ${booking.remainingBalancePaidAt ? new Date(booking.remainingBalancePaidAt).toLocaleDateString('en-GB') : 'Full'}`
+                        : `Due: ${booking.balanceDueDate ? new Date(booking.balanceDueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Day prior to event'}`}
+                    </p>
+                  </div>
+
+                </div>
+
+                {/* Balance Payment PayPal Link & Quick Trigger Toolbar */}
+                {booking.status === 'deposit_paid' && (
+                  <div className="bg-tartan-dark/90 p-4 rounded-2xl border border-tartan-border flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="text-gray-400 font-semibold shrink-0">Client Balance PayPal Link:</span>
+                      <code className="bg-black/50 px-2.5 py-1 rounded text-tartan-gold text-[11px] font-mono truncate border border-slate-800">
+                        {balancePaymentUrl}
+                      </code>
+                      <button
+                        type="button"
+                        onClick={handleCopyBalanceLink}
+                        className="px-2.5 py-1 rounded-lg bg-tartan-navy hover:bg-slate-700 text-gray-300 border border-tartan-border text-xs flex items-center gap-1 transition shrink-0"
+                      >
+                        <Copy className="w-3.5 h-3.5 text-tartan-gold" />
+                        <span>{copiedBalanceLink ? 'Copied!' : 'Copy'}</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {!booking.remainingBalancePaid && remainingBalance > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleMarkBalancePaidModal}
+                          className="px-3 py-1.5 rounded-xl bg-emerald-950 hover:bg-emerald-900 text-emerald-300 font-bold border border-emerald-700 flex items-center gap-1.5 transition text-xs shadow"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Mark Remainder Paid (£{remainingBalance})</span>
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={handleTrigger7DayReminder}
+                        className="px-3 py-1.5 rounded-xl bg-amber-950/80 hover:bg-amber-900 text-yellow-300 font-semibold border border-amber-700 flex items-center gap-1.5 transition text-xs"
+                      >
+                        <BellRing className="w-3.5 h-3.5 text-tartan-gold" />
+                        <span>{booking.sevenDayReminderSent ? 'Resend 7d Alert' : 'Trigger 7d Alert'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleTrigger1DayReminder}
+                        className="px-3 py-1.5 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-300 font-semibold border border-rose-700 flex items-center gap-1.5 transition text-xs"
+                      >
+                        <Clock className="w-3.5 h-3.5 text-rose-400" />
+                        <span>{booking.oneDayReminderSent ? 'Resend 1d Briefing' : 'Trigger 1d Briefing'}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Key Event Specifications */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 

@@ -24,7 +24,10 @@ import {
   Shield,
   Tag,
   Compass,
-  AlertCircle
+  AlertCircle,
+  BellRing,
+  PoundSterling,
+  Send
 } from 'lucide-react';
 import { BookingEvent, BookingStatus } from '@/types/spud';
 import { BookingDetailModal } from '@/components/admin/BookingDetailModal';
@@ -35,6 +38,9 @@ export const AdminBookings: React.FC = () => {
     approveBooking, 
     rejectBooking, 
     deleteBooking, 
+    markRemainingBalancePaid,
+    sendSevenDayReminder,
+    sendOneDayReminder,
     openBrevoPreview, 
     openPayPalModal 
   } = useApp();
@@ -43,11 +49,18 @@ export const AdminBookings: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBookingForModal, setSelectedBookingForModal] = useState<BookingEvent | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [actionFeedback, setActionFeedback] = useState<string>('');
 
   const safeBookings = bookings || [];
   const filteredBookings = safeBookings.filter(b => {
     if (!b) return false;
-    const matchesStatus = filterStatus === 'all' || b.status === filterStatus;
+    let matchesStatus = true;
+    if (filterStatus === 'balance_due') {
+      matchesStatus = b.status === 'deposit_paid' && !b.remainingBalancePaid;
+    } else if (filterStatus !== 'all') {
+      matchesStatus = b.status === filterStatus;
+    }
+
     const q = (searchTerm || '').toLowerCase();
     const matchesSearch = 
       (b.clientName || '').toLowerCase().includes(q) ||
@@ -64,6 +77,33 @@ export const AdminBookings: React.FC = () => {
     setIsDetailModalOpen(true);
   };
 
+  const handleMarkBalancePaid = async (e: React.MouseEvent, bk: BookingEvent) => {
+    e.stopPropagation();
+    const remainingAmt = bk.remainingBalance !== undefined 
+      ? bk.remainingBalance 
+      : Math.max(0, bk.estimatedPrice - bk.depositAmount);
+    
+    if (confirm(`Confirm receipt of remaining balance £${remainingAmt}.00 for ${bk.clientName}? This will issue an official full settlement receipt via Brevo.`)) {
+      await markRemainingBalancePaid(bk.id);
+      setActionFeedback(`Full balance for ${bk.clientName} confirmed as paid!`);
+      setTimeout(() => setActionFeedback(''), 4000);
+    }
+  };
+
+  const handleSendSevenDayReminder = async (e: React.MouseEvent, bk: BookingEvent) => {
+    e.stopPropagation();
+    await sendSevenDayReminder(bk.id);
+    setActionFeedback(`7-Day Event & Balance reminder dispatched to ${bk.clientName} and Spud's alert email!`);
+    setTimeout(() => setActionFeedback(''), 4000);
+  };
+
+  const handleSendOneDayReminder = async (e: React.MouseEvent, bk: BookingEvent) => {
+    e.stopPropagation();
+    await sendOneDayReminder(bk.id);
+    setActionFeedback(`1-Day Final Gig Briefing dispatched to Spud and client!`);
+    setTimeout(() => setActionFeedback(''), 4000);
+  };
+
   // Re-synchronize selected modal booking when bookings state changes
   const currentModalBooking = selectedBookingForModal 
     ? safeBookings.find(b => b.id === selectedBookingForModal.id) || selectedBookingForModal
@@ -75,8 +115,8 @@ export const AdminBookings: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white font-serif">Booking Approvals & Deposit Pipeline</h2>
-          <p className="text-xs text-gray-400">Review event details, adjust surcharges, message clients, and dispatch Brevo invoices</p>
+          <h2 className="text-2xl font-bold text-white font-serif">Booking Approvals, Deposits & Payment Logs</h2>
+          <p className="text-xs text-gray-400">Review requests, track PayPal deposit logs, manage remaining balance settlements, and trigger event reminders</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -89,6 +129,13 @@ export const AdminBookings: React.FC = () => {
           </span>
         </div>
       </div>
+
+      {actionFeedback && (
+        <div className="p-3 bg-emerald-950/90 border border-emerald-500 text-emerald-300 text-xs rounded-2xl flex items-center gap-2 shadow-lg animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span className="font-semibold">{actionFeedback}</span>
+        </div>
+      )}
 
       {/* Filter & Search Bar */}
       <div className="bg-tartan-card rounded-2xl p-4 border border-tartan-border flex flex-col md:flex-row items-center justify-between gap-4">
@@ -104,17 +151,24 @@ export const AdminBookings: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
-          {['all', 'pending', 'approved', 'deposit_paid', 'cancelled'].map((status) => (
+          {[
+            { id: 'all', label: 'All' },
+            { id: 'pending', label: 'Pending' },
+            { id: 'approved', label: 'Approved' },
+            { id: 'deposit_paid', label: 'Deposit Paid (Locked)' },
+            { id: 'balance_due', label: 'Balance Outstanding' },
+            { id: 'cancelled', label: 'Declined' }
+          ].map((tab) => (
             <button
-              key={status}
-              onClick={() => setFilterStatus(status)}
+              key={tab.id}
+              onClick={() => setFilterStatus(tab.id)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${
-                filterStatus === status
+                filterStatus === tab.id
                   ? 'bg-gold-gradient text-tartan-dark shadow'
                   : 'bg-tartan-navy text-gray-300 hover:bg-slate-700 border border-tartan-border'
               }`}
             >
-              {status.replace('_', ' ')}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -140,6 +194,10 @@ export const AdminBookings: React.FC = () => {
             const isApproved = bk.status === 'approved';
             const isPaid = bk.status === 'deposit_paid';
             const isCancelled = bk.status === 'cancelled';
+
+            const remainingBalance = bk.remainingBalance !== undefined
+              ? bk.remainingBalance
+              : Math.max(0, bk.estimatedPrice - bk.depositAmount);
 
             let statusBadge = (
               <span className="bg-amber-950/80 text-yellow-300 border border-yellow-800 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
@@ -181,6 +239,12 @@ export const AdminBookings: React.FC = () => {
                     <div className="flex items-center gap-2.5 flex-wrap">
                       <h3 className="text-lg font-bold text-white font-serif">{bk.clientName}</h3>
                       {statusBadge}
+                      {bk.remainingBalancePaid && (
+                        <span className="bg-emerald-950 text-emerald-300 border border-emerald-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Balance Fully Settled</span>
+                        </span>
+                      )}
                       {bk.travelWaived && (
                         <span className="bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
                           Travel Fee Waived
@@ -205,8 +269,90 @@ export const AdminBookings: React.FC = () => {
                       <span className="text-xs text-gray-400">Deposit:</span>
                       <p className="text-base font-bold text-tartan-gold">£{bk.depositAmount}.00</p>
                     </div>
+                    {isPaid && (
+                      <div className="text-left lg:text-right">
+                        <span className="text-xs text-gray-400">Remaining Balance:</span>
+                        <p className={`text-base font-bold ${bk.remainingBalancePaid ? 'text-emerald-400' : 'text-amber-400'}`}>
+                          £{remainingBalance}.00
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                {/* PROMINENT PAYMENT LOGS & REMAINING BALANCE OVERVIEW (When Deposit is Paid) */}
+                {isPaid && (
+                  <div className="bg-gradient-to-r from-tartan-dark via-tartan-navy to-tartan-dark p-4 rounded-2xl border border-tartan-gold/50 shadow-md space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-tartan-border/60 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-tartan-gold" />
+                        <span className="text-xs font-bold text-white uppercase tracking-wider">
+                          Live Payment Status & Transaction Logs
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-gray-400 font-mono">
+                        Ref: #{bk.paypalOrderId || 'PP-TX-CONFIRMED'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+                      
+                      {/* Deposit Paid Details */}
+                      <div className="bg-emerald-950/40 p-3 rounded-xl border border-emerald-800/60 space-y-1">
+                        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Deposit Received</span>
+                        </span>
+                        <p className="text-sm font-extrabold text-white">
+                          £{bk.depositAmountPaid || bk.depositAmount}.00 <span className="text-xs font-normal text-emerald-300">via {bk.depositPaymentMethod || 'PayPal'}</span>
+                        </p>
+                        <p className="text-[11px] text-gray-300">
+                          Paid on: {bk.depositPaidAt ? new Date(bk.depositPaidAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Confirmed'}
+                        </p>
+                      </div>
+
+                      {/* Remaining Balance & Due Date */}
+                      <div className={`p-3 rounded-xl border space-y-1 ${
+                        bk.remainingBalancePaid 
+                          ? 'bg-emerald-950/40 border-emerald-800/60 text-emerald-300' 
+                          : 'bg-amber-950/40 border-amber-700/60 text-amber-200'
+                      }`}>
+                        <span className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 text-tartan-gold">
+                          <PoundSterling className="w-3 h-3" />
+                          <span>Remaining Balance</span>
+                        </span>
+                        <p className="text-sm font-extrabold text-white">
+                          {bk.remainingBalancePaid ? '£0.00' : `£${remainingBalance}.00`}
+                          <span className={`text-xs font-semibold ml-1.5 ${bk.remainingBalancePaid ? 'text-emerald-400' : 'text-amber-400'}`}>
+                            {bk.remainingBalancePaid ? '(Fully Settled)' : '(Due 1 Day Before Event)'}
+                          </span>
+                        </p>
+                        <p className="text-[11px] text-gray-300">
+                          {bk.remainingBalancePaid 
+                            ? `Settled on ${bk.remainingBalancePaidAt ? new Date(bk.remainingBalancePaidAt).toLocaleDateString('en-GB') : 'Event'}`
+                            : `Due by: ${bk.balanceDueDate ? new Date(bk.balanceDueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Day prior to event'}`}
+                        </p>
+                      </div>
+
+                      {/* Automated Reminder Dispatches */}
+                      <div className="bg-tartan-navy/70 p-3 rounded-xl border border-tartan-border space-y-1.5">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                          <BellRing className="w-3 h-3 text-tartan-gold" />
+                          <span>Reminder Alerts</span>
+                        </span>
+                        <div className="flex flex-col gap-1 text-[11px]">
+                          <span className={bk.sevenDayReminderSent ? 'text-emerald-400 font-semibold' : 'text-gray-400'}>
+                            {bk.sevenDayReminderSent ? '✓ 7-Day Reminder Dispatched' : '○ 7-Day Reminder (Auto: 7d before)'}
+                          </span>
+                          <span className={bk.oneDayReminderSent ? 'text-emerald-400 font-semibold' : 'text-gray-400'}>
+                            {bk.oneDayReminderSent ? '✓ 1-Day Final Briefing Sent' : '○ 1-Day Gig Briefing (Auto: 1d before)'}
+                          </span>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                )}
 
                 {/* Details Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs text-gray-300 bg-tartan-dark/70 p-4 rounded-2xl border border-tartan-border/50">
@@ -368,13 +514,44 @@ export const AdminBookings: React.FC = () => {
                     )}
 
                     {isPaid && (
-                      <button
-                        onClick={() => openBrevoPreview(bk)}
-                        className="px-3 py-2 rounded-xl bg-green-950 hover:bg-green-900 text-green-300 text-xs font-semibold border border-green-800 flex items-center gap-1"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>View Receipt</span>
-                      </button>
+                      <>
+                        {!bk.remainingBalancePaid && remainingBalance > 0 && (
+                          <button
+                            onClick={(e) => handleMarkBalancePaid(e, bk)}
+                            className="px-3 py-2 rounded-xl bg-emerald-950 hover:bg-emerald-900 text-emerald-300 text-xs font-bold border border-emerald-700 flex items-center gap-1 transition"
+                            title="Mark remaining balance as settled"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Mark Remainder Paid (£{remainingBalance})</span>
+                          </button>
+                        )}
+
+                        <button
+                          onClick={(e) => handleSendSevenDayReminder(e, bk)}
+                          className="px-3 py-2 rounded-xl bg-amber-950/80 hover:bg-amber-900 text-yellow-300 text-xs font-semibold border border-amber-700 flex items-center gap-1 transition"
+                          title="Dispatch 7-day balance & gig reminder to client and Spud"
+                        >
+                          <BellRing className="w-3.5 h-3.5 text-tartan-gold" />
+                          <span>Send 7d Reminder</span>
+                        </button>
+
+                        <button
+                          onClick={(e) => handleSendOneDayReminder(e, bk)}
+                          className="px-3 py-2 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-300 text-xs font-semibold border border-rose-700 flex items-center gap-1 transition"
+                          title="Dispatch 1-day (tomorrow's gig) alert to Spud and client"
+                        >
+                          <Clock className="w-3.5 h-3.5 text-rose-400" />
+                          <span>Send 1d Gig Alert</span>
+                        </button>
+
+                        <button
+                          onClick={() => openBrevoPreview(bk)}
+                          className="px-3 py-2 rounded-xl bg-green-950 hover:bg-green-900 text-green-300 text-xs font-semibold border border-green-800 flex items-center gap-1"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>View Receipt</span>
+                        </button>
+                      </>
                     )}
 
                     <button
