@@ -176,37 +176,50 @@ export const SocialHub: React.FC = () => {
     return socialPosts.find(p => p.id === activeThreadId) || null;
   }, [socialPosts, activeThreadId]);
 
+  // Feed & Forum Sorting (Recent vs Most Popular/Liked)
+  const [feedSort, setFeedSort] = useState<'recent' | 'popular'>('recent');
+
   // Feed Posts (Real-time Timeline Stream)
   const feedPosts = useMemo(() => {
-    return socialPosts
+    const list = socialPosts
       .filter(p => p.postType === 'feed' || (!p.postType && !p.forumTopic && !p.id.startsWith('forum-')))
       .filter(post => {
         if (!searchQuery.trim()) return true;
         const q = searchQuery.toLowerCase();
         return (
-          post.content.toLowerCase().includes(q) ||
+          (post.content || '').toLowerCase().includes(q) ||
           (post.eventLocation && post.eventLocation.toLowerCase().includes(q)) ||
           (post.tunePlayed && post.tunePlayed.toLowerCase().includes(q)) ||
-          post.authorName.toLowerCase().includes(q) ||
+          (post.authorName || '').toLowerCase().includes(q) ||
           (post.tags && post.tags.some(t => t.toLowerCase().includes(q)))
         );
       });
-  }, [socialPosts, searchQuery]);
+
+    if (feedSort === 'popular') {
+      return [...list].sort((a, b) => (b.likes || 0) - (a.likes || 0));
+    }
+    return list;
+  }, [socialPosts, searchQuery, feedSort]);
 
   // Forum Posts (Highland Discussions & Q&A)
   const forumPosts = useMemo(() => {
-    return socialPosts
+    const list = socialPosts
       .filter(p => p.postType === 'forum' || Boolean(p.forumTopic) || p.id.startsWith('forum-'))
       .filter(post => {
         const matchesTopic = selectedForumTopic === 'All' || post.forumTopic === selectedForumTopic;
         const matchesQuery = !searchQuery.trim() ||
           (post.title && post.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          post.authorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (post.content && post.content.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (post.authorName && post.authorName.toLowerCase().includes(searchQuery.toLowerCase())) ||
           (post.eventLocation && post.eventLocation.toLowerCase().includes(searchQuery.toLowerCase()));
         return matchesTopic && matchesQuery;
       });
-  }, [socialPosts, selectedForumTopic, searchQuery]);
+
+    if (feedSort === 'popular') {
+      return [...list].sort((a, b) => (b.likes || 0) - (a.likes || 0));
+    }
+    return list;
+  }, [socialPosts, selectedForumTopic, searchQuery, feedSort]);
 
   // Handle Image File Selection with Firebase Storage & base64 fallback
   const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -424,9 +437,9 @@ export const SocialHub: React.FC = () => {
             </button>
           </div>
 
-          {/* Quick Search & Fast Actions */}
-          <div className="flex items-center gap-3 w-full lg:w-auto">
-            <div className="relative flex-1 lg:w-96">
+          {/* Quick Search, Sort & Fast Actions */}
+          <div className="flex items-center gap-3 w-full lg:w-auto flex-wrap sm:flex-nowrap">
+            <div className="relative flex-1 lg:w-80">
               <input
                 type="text"
                 value={searchQuery}
@@ -444,6 +457,17 @@ export const SocialHub: React.FC = () => {
                 </button>
               )}
             </div>
+
+            {/* Sort Dropdown */}
+            <select
+              value={feedSort}
+              onChange={(e) => setFeedSort(e.target.value as any)}
+              className="bg-tartan-navy border border-tartan-border rounded-2xl px-3.5 py-2.5 text-xs font-bold text-tartan-gold focus:outline-none focus:border-tartan-accent cursor-pointer shrink-0"
+              title="Sort Posts"
+            >
+              <option value="recent">🕒 Most Recent</option>
+              <option value="popular">🔥 Most Popular (Most Liked)</option>
+            </select>
 
             {activeTab === 'forum' && isAdminLoggedIn && (
               <button

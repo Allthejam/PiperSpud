@@ -53,7 +53,7 @@ import {
 } from '@/lib/initialData';
 import { bagpipeSynth } from '@/lib/bagpipeSynth';
 import { db, auth } from '@/lib/firebase';
-import { collection, doc, onSnapshot, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, onSnapshot, setDoc, deleteDoc, updateDoc, increment } from 'firebase/firestore';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -838,12 +838,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       unsubSocial = onSnapshot(collection(db, 'social_posts'), (snapshot) => {
         if (!snapshot.empty) {
+          let likedSet = new Set<string>();
+          if (typeof window !== 'undefined') {
+            try {
+              const stored = localStorage.getItem('spud_liked_social_posts');
+              if (stored) likedSet = new Set(JSON.parse(stored));
+            } catch (e) {}
+          }
+
           const remotePosts: SocialPost[] = [];
           const demoIds = new Set(['feed-exp-1', 'feed-1', 'feed-2', 'feed-3', 'feed-4', 'feed-5', 'feed-6', 'forum-1', 'forum-2', 'forum-3', 'forum-4', 'post-1', 'post-2', 'post-3', 'post-4', 'post-5', 'post-6', 'post-7', 'post-8']);
           snapshot.forEach((d) => {
             const data = d.data() as SocialPost;
             if (data && !demoIds.has(data.id)) {
-              remotePosts.push(data);
+              remotePosts.push({
+                ...data,
+                likes: typeof data.likes === 'number' ? Math.max(0, data.likes) : 0,
+                likedByMe: likedSet.has(data.id)
+              });
             }
           });
           setSocialPosts(remotePosts);
@@ -2138,22 +2150,67 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const likeSocialPost = async (id: string) => {
+  const likeSocialPost = async (id: string, customDelta?: number) => {
+    let likedSet = new Set<string>();
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('spud_liked_social_posts');
+        if (stored) likedSet = new Set(JSON.parse(stored));
+      } catch (e) {}
+    }
+
+    const currentlyLiked = likedSet.has(id);
+    const delta = customDelta !== undefined ? customDelta : (currentlyLiked ? -1 : 1);
+    const nextLiked = customDelta !== undefined ? customDelta > 0 : !currentlyLiked;
+
+    if (nextLiked) {
+      likedSet.add(id);
+    } else {
+      likedSet.delete(id);
+    }
+
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('spud_liked_social_posts', JSON.stringify(Array.from(likedSet)));
+      } catch (e) {}
+    }
+
     let updatedPost: SocialPost | null = null;
-    setSocialPosts(prev => prev.map(post => {
-      if (post.id === id) {
-        const isLiked = post.likedByMe;
-        updatedPost = {
-          ...post,
-          likes: isLiked ? post.likes - 1 : post.likes + 1,
-          likedByMe: !isLiked
-        };
-        return updatedPost;
+    setSocialPosts(prev => {
+      const updated = (prev || []).map(post => {
+        if (post.id === id) {
+          const currentLikes = typeof post.likes === 'number' ? post.likes : 0;
+          const nextLikes = Math.max(0, currentLikes + delta);
+          updatedPost = {
+            ...post,
+            likes: nextLikes,
+            likedByMe: nextLiked
+          };
+          return updatedPost;
+        }
+        return post;
+      });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}social`, JSON.stringify(updated));
       }
-      return post;
-    }));
-    if (updatedPost) {
-      await syncToFirestore('social_posts', id, updatedPost);
+      return updated;
+    });
+
+    // Sync to Cloud Firestore database in real-time
+    if (db) {
+      try {
+        const postRef = doc(db, 'social_posts', id);
+        await updateDoc(postRef, {
+          likes: increment(delta)
+        });
+        console.log(`[Firestore SUCCESS] Incremented likes on social_posts/${id} by ${delta}`);
+      } catch (err: any) {
+        console.warn(`[Firestore Info] updateDoc fallback to setDoc merge for social_posts/${id}:`, err?.message);
+        if (updatedPost) {
+          const { likedByMe, ...postData } = updatedPost as any;
+          await syncToFirestore('social_posts', id, postData);
+        }
+      }
     }
   };
 

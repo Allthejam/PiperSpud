@@ -338,6 +338,10 @@ export const AdminForumControl: React.FC = () => {
                         <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-tartan-navy text-tartan-gold border border-tartan-border">
                           {post.forumTopic || 'General'}
                         </span>
+                        <span className="text-[10px] bg-amber-500/10 text-amber-300 font-bold px-2.5 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1">
+                          <span>🥃</span>
+                          <span>{post.likes || 0} Likes in Database</span>
+                        </span>
                         {hasSpudAnswer && (
                           <span className="text-[10px] bg-amber-500/20 text-amber-300 font-extrabold px-2 py-0.5 rounded-full border border-amber-500/40 inline-flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" />
