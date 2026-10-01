@@ -679,22 +679,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (savedGallery) {
         try {
           const parsedGallery: GalleryItem[] = JSON.parse(savedGallery);
-          if (Array.isArray(parsedGallery) && parsedGallery.length > 0) {
-            const initialIds = new Set(initialGallery.map(g => g.id));
-            const userAdded = parsedGallery.filter(g => !initialIds.has(g.id));
-            const merged = initialGallery.map(initG => {
-              const u = parsedGallery.find(p => p.id === initG.id);
-              return u ? { ...initG, ...u } : initG;
-            });
-            setGalleryItems([...merged, ...userAdded]);
-          } else {
-            setGalleryItems(initialGallery);
+          if (Array.isArray(parsedGallery)) {
+            setGalleryItems(parsedGallery);
           }
         } catch (e) {
-          setGalleryItems(initialGallery);
+          setGalleryItems([]);
         }
-      } else {
-        setGalleryItems(initialGallery);
       }
 
       const savedStream = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}show_livestream`);
@@ -1038,25 +1028,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Real-time Firestore listener for gallery
       unsubGallery = onSnapshot(collection(db, 'gallery'), (snapshot) => {
-        if (!snapshot.empty) {
-          const remoteGallery: GalleryItem[] = [];
-          snapshot.forEach((d) => remoteGallery.push({ ...(d.data() as GalleryItem), id: d.id }));
-          if (remoteGallery.length > 0) {
-            const initialMap = new Map(initialGallery.map(g => [g.id, g]));
-            const merged = remoteGallery.map(r => {
-              const init = initialMap.get(r.id);
-              return init ? { ...init, ...r } : r;
-            });
-            const existingIds = new Set(merged.map(g => g.id));
-            const missing = initialGallery.filter(g => !existingIds.has(g.id));
-            const allItems = [...merged, ...missing];
-            setGalleryItems(allItems);
-            if (typeof window !== 'undefined') {
-              try {
-                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}gallery`, JSON.stringify(allItems));
-              } catch (e) {}
-            }
+        const remoteGallery: GalleryItem[] = [];
+        snapshot.forEach((d) => {
+          const data = d.data() as GalleryItem;
+          if (data && (data.id || d.id)) {
+            remoteGallery.push({ ...data, id: data.id || d.id });
           }
+        });
+        remoteGallery.sort((a, b) => new Date(b.date || b.createdAt || 0).getTime() - new Date(a.date || a.createdAt || 0).getTime());
+        setGalleryItems(remoteGallery);
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(`${LOCAL_STORAGE_PREFIX}gallery`, JSON.stringify(remoteGallery));
+          } catch (e) {}
         }
       }, (err) => console.log('Firestore gallery listener:', err.message));
 

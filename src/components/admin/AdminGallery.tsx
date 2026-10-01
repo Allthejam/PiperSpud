@@ -191,6 +191,17 @@ export const AdminGallery: React.FC = () => {
     await updateGalleryItem(item.id, { isFeatured: !item.isFeatured });
   };
 
+  const mockItemIds = ['gal-1', 'gal-2', 'gal-3', 'gal-4', 'gal-5', 'gal-6', 'gal-7', 'gal-8'];
+  const hasDemoMockups = galleryItems.some(g => mockItemIds.includes(g.id));
+
+  const handlePurgeAllDemoMockups = async () => {
+    if (confirm("Delete all 8 initial placeholder demo mockups from the database? Spud's custom uploaded photos will stay untouched.")) {
+      for (const id of mockItemIds) {
+        await deleteGalleryItem(id);
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       
@@ -209,7 +220,18 @@ export const AdminGallery: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {hasDemoMockups && (
+              <button
+                onClick={handlePurgeAllDemoMockups}
+                className="px-3.5 py-2 rounded-xl bg-rose-950/70 border border-rose-600/40 text-rose-300 hover:text-white hover:bg-rose-900 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                title="Remove all initial demo placeholder photos"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                <span>Purge Demo Mockups</span>
+              </button>
+            )}
+
             <a
               href="/gallery"
               target="_blank"
