@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { EventType, HighlandDressOption } from '@/types/spud';
 import { calculateTravelCosts } from '@/lib/travelCalculator';
+import { initialTravelConfig } from '@/lib/initialData';
 
 export const BookingCalendar: React.FC = () => {
   const { createBooking, tunesList, travelConfig, services, pricingConfig } = useApp();
@@ -107,21 +108,7 @@ export const BookingCalendar: React.FC = () => {
     venuePostcode, 
     venueName, 
     venueAddress, 
-    travelConfig || {
-      baseLocationName: "Spud's Home Base (Edinburgh / Lothians)",
-      basePostcode: 'EH1 1AA',
-      baseLatitude: 55.9533,
-      baseLongitude: -3.1883,
-      freeRadiusMiles: 50,
-      costPerMileAboveFree: 0.65,
-      chargeType: 'return',
-      overnightThresholdMiles: 120,
-      overnightFee: 120,
-      enableOvernightStay: true,
-      maxBookingRadiusMiles: 250,
-      islandFerrySurcharge: 85,
-      overseasEnquiryOnly: true
-    }
+    travelConfig || initialTravelConfig
   );
 
   const travelExpense = travelResult.isOverseasOrMaxDistance ? 0 : travelResult.totalTravelExpense;
