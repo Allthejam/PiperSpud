@@ -25,7 +25,11 @@ import {
   ChevronRight,
   ExternalLink,
   Info,
-  DollarSign
+  DollarSign,
+  Share2,
+  Bell,
+  AlertTriangle,
+  Receipt
 } from 'lucide-react';
 
 interface AdminGuideProps {
@@ -58,8 +62,8 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
   const guideSections: GuideSection[] = [
     {
       id: 'bookings',
-      title: '📅 1. Booking Inquiries, Diary & PayPal Deposits',
-      shortDesc: 'How clients reserve dates, how you review them, and how PayPal deposits work automatically.',
+      title: '📅 1. Booking Inquiries, Approvals & Bespoke Surcharges',
+      shortDesc: 'Reviewing date requests, checking music choices & dress, waiving/applying surcharges, and messaging clients with full audit logs.',
       icon: Calendar,
       badge: 'Core Routine',
       badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
@@ -67,43 +71,115 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
       steps: [
         {
           title: 'Step 1: Client Reserves a Date on the Website',
-          description: 'A couple or corporate client visits your website, picks an open date on the calendar, enters their venue location, chooses their dress tartan, and submits their inquiry. No payment is taken from them yet.',
-          tip: 'Dates marked with a gold dot or green tick are available. Once you confirm a booking, the date automatically locks so no one else can double-book you.'
+          description: 'A couple or corporate client visits your website, picks an open date on the calendar, enters their venue location, chooses their dress tartan, preferred time slot, and favorite tunes, then submits their inquiry. Clients can only pick valid future dates (past dates and same-day dates are locked to prevent mistakes). No upfront charge is taken yet.',
+          tip: 'The public website keeps your diary private so competitors or public viewers cannot see your personal schedule.'
         },
         {
-          title: 'Step 2: You Receive an Instant Notification',
-          description: 'You will see a notification alert in your Back Office and an email with the client\'s name, date, time, venue, and distance.',
-          tip: 'Click on "Booking Approvals & Deposits" in the sidebar anytime to see all pending requests.'
+          title: 'Step 2: Review Full Details in the Booking Approval Modal',
+          description: 'Click on "Booking Approvals & Deposits" in the left menu. Click "Open Request & Details" on any card to view the full dossier: Client Contact & Email, Preferred Time Slot (e.g. 13:30 - 16:30), Venue & Distance from Aviemore, Highland Dress Attire, and Requested Bagpipe Tunes (e.g. Highland Cathedral, Scotland the Brave).',
+          tip: 'The distance calculator automatically works out road mileage from your Aviemore base (PH22 1UJ).'
         },
         {
-          title: 'Step 3: Review Details & Set Bespoke Quote',
-          description: 'Look at the venue distance and requirements. If everything looks good, click "Approve & Send Brevo Invoice". The system automatically generates a professional confirmation email containing your bespoke quote and a secure PayPal deposit link.',
-          tip: 'The client pays the deposit directly into your PayPal account. Once paid, the booking turns green ("Deposit Paid") and locks into your diary.'
+          title: 'Step 3: Apply or Waive Travel Surcharges with 1 Click',
+          description: 'Inside the approval window, you will see the calculated travel expenses. You can click "Waive Surcharge" to give free travel to friends or local clients, or "Apply Surcharge" to include it in their quote. The total fee updates automatically in real-time.',
+        },
+        {
+          title: 'Step 4: Message the Client or Send Brevo Approval',
+          description: 'You can type a personalized reply right inside the "Message Client Directly" box and hit "Send Brevo Message" — the client receives a professional branded email and every message is permanently recorded in the Audit Trail. When ready, click "Approve Booking & Send Invoice" to deliver their deposit payment link.',
         }
       ],
       faq: [
         {
-          q: 'What if I am unavailable on that date?',
-          a: 'Click "Decline" on the booking card. The client is notified politely and the slot remains open for other inquiries.'
+          q: 'What happens if I click "Decline Booking"?',
+          a: 'The inquiry is marked declined, the client is politely notified by email, and the slot is kept free for other inquiries.'
         },
         {
-          q: 'Can I add a manual booking that came over the phone or WhatsApp?',
-          a: 'Yes! Go to the "Interactive Diary" tab and click "+ Add Manual Booking". Fill in the client\'s name and date, and it will lock into your calendar.'
+          q: 'Where do I see what music the client requested?',
+          a: 'Open any booking by clicking "Open Request & Details" — the full list of requested tunes, dress tartan, and preferred time slots are displayed clearly in the dossier.'
+        }
+      ]
+    },
+    {
+      id: 'payments',
+      title: '💳 2. PayPal Deposit Logs, Remaining Balance & 7-Day Watchdog',
+      shortDesc: 'Live PayPal deposit tracking, remaining balance calculation, automated 7-day payment reminders, and day-before event alerts.',
+      icon: CreditCard,
+      badge: 'Automations & Cashflow',
+      badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+      targetTab: 'bookings',
+      steps: [
+        {
+          title: 'Step 1: Live PayPal Deposit Logging & Instant Receipt',
+          description: 'When a client pays their deposit via PayPal, the system automatically logs the transaction: "Deposit Paid via PayPal on [Date & Time]", locks the booking as Confirmed (green badge), and immediately sends the client a branded Brevo Thank You email containing their booking confirmation and PayPal link to pay the remaining balance.',
+          tip: 'Both the main Bookings overview and the detailed modal show the exact deposit paid, transaction timestamp, and remaining balance due.'
+        },
+        {
+          title: 'Step 2: Remaining Balance Due Date (1 Day Before Event)',
+          description: 'The remaining balance (e.g. Total £480 - £150 deposit = £330 remaining) is scheduled to be paid by the day before the event. The client can click their unique balance link anytime to settle up securely via PayPal.',
+        },
+        {
+          title: 'Step 3: Automated 7-Day Payment Reminder Watchdog',
+          description: 'If the remaining balance has not been paid 7 days before the event, the automated diary watchdog automatically sends a polite payment reminder email to the client, while sending Spud an alert notification so you are always in the loop.',
+          tip: 'Spud also receives an automated 1-Day Urgent Briefing email 24 hours before the gig with venue address, client phone number, and timing breakdown so you never miss an event.'
+        },
+        {
+          title: 'Step 4: Mark Remainder Paid for Cash or BACS Transfers',
+          description: 'If a client pays the remaining balance in cash on the day or sends a direct bank transfer, click "Mark Remaining Balance Paid" in the booking details. This updates the status to "Fully Paid & Settled" and clears the balance to £0.00.',
+        }
+      ],
+      faq: [
+        {
+          q: 'Can I manually trigger the 7-day or 1-day reminder emails?',
+          a: 'Yes! Inside any confirmed booking modal, you will find buttons for "Send 7-Day Balance Reminder" and "Send 1-Day Event Briefing" to dispatch them with 1 click anytime.'
+        },
+        {
+          q: 'What if a client pays the full amount upfront?',
+          a: 'If the full amount is settled, the remaining balance immediately shows £0.00 with a green "Fully Settled" badge, and no payment reminders will be sent.'
+        }
+      ]
+    },
+    {
+      id: 'diary',
+      title: '🗓️ 3. Private Interactive Diary & Performance Breakdown',
+      shortDesc: 'Keeping your schedule private from the public while managing confirmed vs pending gigs in the Back Office.',
+      icon: Calendar,
+      badge: 'Schedule Control',
+      badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40',
+      targetTab: 'diary',
+      steps: [
+        {
+          title: 'Step 1: Private Back Office Diary',
+          description: 'The public website no longer displays your private gig schedule to visitors. All gig dates, venues, and notes are securely managed inside your Back Office "Interactive Diary".',
+        },
+        {
+          title: 'Step 2: Clear Monthly Summary (Confirmed vs Pending)',
+          description: 'At the top of the diary, you will see a clear monthly counter: e.g. "2 Event(s) this month — 1 Confirmed, 1 Pending". You can toggle between Month View, List View, or filter by Confirmed vs Pending bookings.',
+          tip: 'Confirmed events are highlighted in rich Scottish emerald green, while pending inquiries are shown in amber.'
+        },
+        {
+          title: 'Step 3: Adding Manual Bookings (Phone / WhatsApp / In Person)',
+          description: 'When you take a booking over the phone, click the golden "+ Add Manual Booking" button at the top of the diary. Enter the client\'s name, date, venue, package, and agreed price to block out the date immediately.',
+        }
+      ],
+      faq: [
+        {
+          q: 'Can customers still pick dates on the booking form?',
+          a: 'Yes! The booking form lets customers select their desired event date starting from tomorrow onwards. If a date is already booked, the system alerts them.'
         }
       ]
     },
     {
       id: 'pricing',
-      title: '💰 2. Public Pricing & "Price on Application" (POA)',
+      title: '💰 4. Services, Pricing & "Price on Application" (POA) Studio',
       shortDesc: 'How to switch between showing fixed prices or keeping prices hidden with bespoke quotes on inquiry.',
       icon: DollarSign,
-      badge: 'New Feature',
+      badge: 'Pricing Controls',
       badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
       targetTab: 'services',
       steps: [
         {
-          title: 'Step 1: Open Services & Packages Studio',
-          description: 'Click on "Services & Packages Studio" in the left sidebar menu. At the top of the page, you will see the "💰 Public Pricing & Price on Application (POA) Controls" box.',
+          title: 'Step 1: Open Services, Pricing & POA Studio',
+          description: 'Click on "Services, Pricing & POA Studio" in the left sidebar menu. At the top of the page, you will see the "💰 Public Pricing & Price on Application (POA) Controls" box.',
         },
         {
           title: 'Step 2: Choose Your Display Mode',
@@ -124,7 +200,7 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
     },
     {
       id: 'travel',
-      title: '🚗 3. Travel Radius, Mileage & Surcharges',
+      title: '🚗 5. Travel Radius, Aviemore Highland Base & Surcharges',
       shortDesc: 'How the 50-mile Aviemore free travel radius, mileage calculator, and overnight stays work.',
       icon: Compass,
       badge: 'Automated Logistics',
@@ -133,12 +209,12 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
       steps: [
         {
           title: 'Step 1: Your Home Base is Set in Aviemore',
-          description: 'Your base is configured at Aviemore, Cairngorms (PH22 1UJ). A 50-mile radial zone is completely FREE for travel (covering Inverness, Speyside, Loch Ness, Cairngorms National Park, Pitlochry, etc.).',
+          description: 'Your base is configured at Aviemore, Cairngorms (PH22 1UJ). A 50-mile radial zone is completely FREE for travel (covering Inverness, Speyside, Loch Ness, Cairngorms National Park, Pitlochry, Grantown-on-Spey, etc.).',
         },
         {
-          title: 'Step 2: Automatic Distance Calculation',
-          description: 'When a client types their venue postcode (e.g. EH1 2NG for Edinburgh Castle or G1 2DH for Glasgow), the system calculates the exact road distance from Aviemore.',
-          tip: 'Travel above the 50-mile free threshold is automatically calculated with a fair return mileage rate (65p/mile).'
+          title: 'Step 2: Accurate Distance Calculation',
+          description: 'When a client types their venue postcode (e.g. Grantown-on-Spey PH26 3EX is 14 miles from Aviemore, so it falls inside the 50-mile free zone and costs £0.00 travel surcharge). If a venue is in Edinburgh or Glasgow, return mileage above 50 miles is automatically calculated at 65p/mile.',
+          tip: 'You can easily waive or override any travel fee directly in the Booking Approval modal.'
         },
         {
           title: 'Step 3: Overnight Stay & Island Ferry Surcharges',
@@ -153,8 +229,38 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
       ]
     },
     {
+      id: 'pinterest',
+      title: '📌 6. Pinterest RSS Auto-Publishing Feed',
+      shortDesc: 'Connecting your website RSS feed to Pinterest so new photos, gigs, and articles auto-pin automatically.',
+      icon: Share2,
+      badge: 'Social Marketing',
+      badgeColor: 'bg-red-500/20 text-red-300 border-red-500/40',
+      targetTab: 'social-links',
+      steps: [
+        {
+          title: 'Step 1: Your Live Website RSS Feed URL',
+          description: 'Your website features an auto-updating RSS 2.0 XML feed generated live at:\nhttps://www.spudthepiper.com/feed.xml\nThis feed includes your latest gallery photos, piper stories, and wedding performance highlights with full Scottish tartan imagery and metadata.',
+        },
+        {
+          title: 'Step 2: Connect Feed to Pinterest Business',
+          description: '1. Log into your Pinterest Business account.\n2. Go to Settings -> "Auto-publish" (or "Claimed accounts" -> "Auto-publish Pins").\n3. In the "RSS feed URL" box, paste: https://www.spudthepiper.com/feed.xml\n4. Choose which Pinterest board to publish to (e.g. "Scottish Weddings" or "Spud the Piper Highlights") and click Save.',
+          tip: 'Pinterest will automatically pull your latest content and publish beautiful pins with links back to your website.'
+        },
+        {
+          title: 'Step 3: Pushing Existing Website Content to Pinterest',
+          description: 'The RSS feed automatically includes all current published gallery images and wedding packages. Once linked, Pinterest scans the feed and creates pins for all listed items within 24 hours. For immediate pins, you can also use the Pinterest "Save" button or Chrome extension on your gallery page.',
+        }
+      ],
+      faq: [
+        {
+          q: 'Do I need to update the RSS feed manually?',
+          a: 'No! Whenever you add a photo to your gallery or update your services in the Back Office, the RSS feed updates automatically.'
+        }
+      ]
+    },
+    {
       id: 'visual-pencil',
-      title: '✏️ 4. In-Page Visual Pencil Editing (Change Text & Photos)',
+      title: '✏️ 7. In-Page Visual Pencil Editing (Live Text & Photos)',
       shortDesc: 'How to click on any wording or picture directly on the live website to update it without writing code.',
       icon: Edit3,
       badge: 'Visual CMS',
@@ -186,37 +292,8 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
       ]
     },
     {
-      id: 'tunes',
-      title: '🎵 5. Bagpipe Tunes Player & Music Sampler',
-      shortDesc: 'How the audio sampler works, filtering by wedding moments, and uploading your authentic recordings.',
-      icon: Music,
-      badge: 'Music Studio',
-      badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
-      steps: [
-        {
-          title: 'Step 1: The Tunes Page on the Website',
-          description: 'Visitors can visit the "/tunes" page to hear audio samples of Highland Cathedral, Scotland the Brave, Flower of Scotland, and more.',
-        },
-        {
-          title: 'Step 2: Wedding Moments Filters',
-          description: 'Clients can filter tunes by their wedding moment: "Arrival of Guests", "Bride\'s Processional Entrance", "Signing the Register", or "Ceilidh Festivities".',
-          tip: 'During booking, clients can check the boxes for the specific tunes they want you to play at their celebration.'
-        },
-        {
-          title: 'Step 3: Under-Construction Notice',
-          description: 'We have placed a clear notice on the tunes page stating that audio samples are for demonstration purposes while Spud uploads his personal performance recordings.',
-        }
-      ],
-      faq: [
-        {
-          q: 'How do I upload my own music MP3 files?',
-          a: 'You can send your MP3 tracks or recordings, and we link them directly so visitors hear your exact pipes playing on the website.'
-        }
-      ]
-    },
-    {
       id: 'chat-crm',
-      title: '💬 6. Live Chat Widget, WhatsApp & Client CRM',
+      title: '💬 8. Live Chat Widget, WhatsApp & Client CRM',
       shortDesc: 'How to chat with couples on the website, use quick answers, and track client records.',
       icon: MessageSquare,
       badge: 'Communication',
@@ -246,7 +323,7 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
     },
     {
       id: 'mobile-app',
-      title: '📱 7. Using the Back Office on Your Mobile Phone (PWA)',
+      title: '📱 9. Using the Back Office on Your Mobile Phone (PWA)',
       shortDesc: 'How to install the Spud the Piper App on your iPhone or Android phone for 1-tap diary access on the road.',
       icon: Smartphone,
       badge: 'Mobile First',
@@ -275,8 +352,8 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
     },
     {
       id: 'security-faq',
-      title: '🔒 8. Signing In, Security & Admin Team',
-      shortDesc: 'How to sign in securely, add authorized helpers, and manage your account.',
+      title: '🔒 10. Signing In, Security & Cloud Database',
+      shortDesc: 'How to sign in securely, add authorized helpers, and keep your diary safely backed up.',
       icon: ShieldCheck,
       badge: 'Security',
       badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40',
@@ -287,7 +364,7 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
           description: 'Whenever you open `/admin`, click "Sign in with Google" (using your piperspud@gmail.com account) or enter your email & password.',
         },
         {
-          title: 'Step 2: Authorized Admin Team',
+          title: 'Step 2: Authorized Admin Team & Cloud Sync',
           description: 'You (Spud) are the Owner with full permissions. In the "Admin Team & Security" tab, you can view authorized administrators.',
           tip: 'Your database is backed by Google Firebase with real-time cloud backup, ensuring your diary and client records are safe.'
         }
@@ -338,7 +415,7 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
           </div>
 
           <p className="text-sm text-gray-300 leading-relaxed">
-            Welcome, Spud! This simple guide is written in plain English to show you step-by-step how everything works. Whether you are reviewing a wedding booking, hiding prices, checking your diary on your phone, or editing text with the visual pencil, you will find simple 1-2-3 instructions below.
+            Welcome, Spud! This simple guide is written in plain English to show you step-by-step how everything works. Whether you are reviewing a wedding booking, waiving a travel surcharge, tracking PayPal deposit logs, sending Brevo reminders, or setting up Pinterest auto-publishing, you will find simple 1-2-3 instructions below.
           </p>
 
           {/* Quick Search Bar */}
@@ -347,7 +424,7 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search guide (e.g. 'paypal', 'booking', 'prices', 'travel', 'phone app')..."
+              placeholder="Search guide (e.g. 'paypal', 'deposit', 'reminders', 'travel', 'pinterest', 'phone app')..."
               className="w-full bg-tartan-dark/95 border border-tartan-accent/50 rounded-2xl pl-11 pr-4 py-3 text-xs sm:text-sm text-white placeholder-gray-400 focus:outline-none focus:border-tartan-gold shadow-inner"
             />
             <Search className="w-4 h-4 text-tartan-gold absolute left-4 top-1/2 -translate-y-1/2" />
@@ -372,7 +449,7 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
             </div>
             <h4 className="text-sm font-bold text-white">Check Booking Requests</h4>
             <p className="text-xs text-gray-300 leading-relaxed">
-              Open the <strong>Bookings</strong> tab. Look at the client&apos;s venue location and date.
+              Open <strong>Booking Approvals &amp; Deposits</strong>. Click &quot;Open Request &amp; Details&quot; to inspect music, dress, time slot, and venue distance.
             </p>
           </div>
 
@@ -380,9 +457,9 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
             <div className="w-8 h-8 rounded-full bg-gold-gradient text-tartan-dark font-extrabold text-sm flex items-center justify-center shadow">
               2
             </div>
-            <h4 className="text-sm font-bold text-white">Click &quot;Approve &amp; Send&quot;</h4>
+            <h4 className="text-sm font-bold text-white">Approve &amp; Send Brevo Invoice</h4>
             <p className="text-xs text-gray-300 leading-relaxed">
-              Click the golden Approve button. The system sends the client their confirmation email with your PayPal deposit link.
+              Click the golden Approve button. The client receives their confirmation email with the secure PayPal deposit link.
             </p>
           </div>
 
@@ -392,7 +469,7 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
             </div>
             <h4 className="text-sm font-bold text-white">Play the Pipes &amp; Celebrate! 🏴󠁧󠁢󠁳󠁣󠁴󠁿</h4>
             <p className="text-xs text-gray-300 leading-relaxed">
-              When they pay the deposit, the date locks in green in your diary and receipts are delivered automatically.
+              When the deposit is received, PayPal logs the payment, receipts dispatch automatically, and the 7-day/1-day reminder watchdog takes care of the rest!
             </p>
           </div>
         </div>

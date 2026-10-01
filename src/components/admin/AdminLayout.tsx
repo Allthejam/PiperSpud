@@ -48,22 +48,24 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
     activeBrevoEmail,
     closeBrevoPreview,
     activePayPalModal,
-    closePayPalModal
+    closePayPalModal,
+    bookings
   } = useApp();
 
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
+  const pendingBookingsCount = (bookings || []).filter(b => b && b.status === 'pending').length;
+
   const navItems = [
     { id: 'dashboard', label: 'Executive Dashboard', icon: LayoutDashboard },
-    { id: 'guide', label: "Spud's User Manual & Guide", icon: BookOpen, badge: 'New' },
-    { id: 'gallery', label: 'Photo Gallery Manager', icon: Camera },
-    { id: 'services', label: 'Services, Pricing & POA Studio', icon: Sparkles },
-    { id: 'travel-expenses', label: 'Travel & Additional Expenses', icon: Compass },
+    { id: 'bookings', label: 'Booking Approvals & Deposits', icon: BookOpenCheck, badgeCount: pendingBookingsCount, isProminent: true },
     { id: 'diary', label: 'Interactive Diary', icon: Calendar },
-    { id: 'bookings', label: 'Booking Approvals & Deposits', icon: BookOpenCheck, badgeCount: 0 },
+    { id: 'services', label: 'Services, Pricing & POA Studio', icon: Sparkles },
+    { id: 'messages', label: 'Message Center', icon: MessageSquare, badgeCount: unreadChatCount },
+    { id: 'gallery', label: 'Photo Gallery Manager', icon: Camera },
+    { id: 'travel-expenses', label: 'Travel & Additional Expenses', icon: Compass },
     { id: 'crm', label: 'Client CRM', icon: Users },
     { id: 'mailing-list', label: 'Mailing List & Newsletters', icon: Mail },
-    { id: 'messages', label: 'Message Center', icon: MessageSquare, badgeCount: unreadChatCount },
     { id: 'faqs', label: 'FAQ Knowledgebase', icon: HelpCircle },
     { id: 'forum', label: 'Forum & Category Control', icon: MessageSquare },
     { id: 'social-links', label: 'Social Media Links', icon: Share2 },
@@ -71,6 +73,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
     { id: 'seo', label: 'SEO & Meta Studio', icon: Search },
     { id: 'security', label: 'Admin Team & Security', icon: ShieldCheck },
     { id: 'notifications', label: 'Notification Center', icon: Bell, badgeCount: unreadNotifCount },
+    { id: 'guide', label: "Spud's User Manual & Guide", icon: BookOpen, badge: 'Guide' }
   ];
 
   return (
@@ -184,6 +187,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
+              const isProminent = (item as any).isProminent;
 
               return (
                 <button
@@ -192,19 +196,21 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
                     setActiveTab(item.id);
                     setIsMobileNavOpen(false);
                   }}
-                  className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all ${
+                  className={`w-full px-3.5 py-2.5 rounded-xl text-left text-xs flex items-center justify-between transition-all ${
                     isActive
                       ? 'bg-gold-gradient text-tartan-dark shadow-md font-bold'
-                      : 'text-gray-300 hover:bg-tartan-navy hover:text-white'
+                      : isProminent
+                      ? 'text-tartan-gold font-bold bg-tartan-navy/70 hover:bg-tartan-navy hover:text-white border border-tartan-accent/40 shadow-sm'
+                      : 'text-gray-300 font-medium hover:bg-tartan-navy hover:text-white'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <Icon className={`w-4 h-4 ${isActive ? 'text-tartan-dark' : 'text-tartan-gold'}`} />
-                    <span>{item.label}</span>
+                  <div className="flex items-center gap-2.5 text-left">
+                    <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-tartan-dark' : isProminent ? 'text-tartan-gold font-bold' : 'text-tartan-gold'}`} />
+                    <span className={isProminent && !isActive ? 'font-extrabold tracking-wide text-white' : ''}>{item.label}</span>
                   </div>
                   {item.badgeCount && item.badgeCount > 0 ? (
-                    <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
-                      isActive ? 'bg-tartan-dark text-tartan-gold' : 'bg-red-600 text-white'
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                      isActive ? 'bg-tartan-dark text-tartan-gold' : 'bg-red-600 text-white animate-pulse'
                     }`}>
                       {item.badgeCount}
                     </span>
