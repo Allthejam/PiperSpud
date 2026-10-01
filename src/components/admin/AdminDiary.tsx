@@ -23,8 +23,9 @@ import { BookingDetailModal } from '@/components/admin/BookingDetailModal';
 export const AdminDiary: React.FC = () => {
   const { bookings, openBrevoPreview, openPayPalModal, createBooking } = useApp();
 
-  const [currentYear, setCurrentYear] = useState(2026);
-  const [currentMonth, setCurrentMonth] = useState(8); // 8 is September
+  const today = new Date();
+  const [currentYear, setCurrentYear] = useState(today.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [selectedEvent, setSelectedEvent] = useState<BookingEvent | null>(null);
   const [isAddEventModalOpen, setIsAddEventModalOpen] = useState(false);
 
@@ -32,7 +33,7 @@ export const AdminDiary: React.FC = () => {
   const [manualClient, setManualClient] = useState('');
   const [manualEmail, setManualEmail] = useState('');
   const [manualPhone, setManualPhone] = useState('');
-  const [manualDate, setManualDate] = useState('2026-10-31');
+  const [manualDate, setManualDate] = useState(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`);
   const [manualTime, setManualTime] = useState('14:00 - 17:00');
   const [manualVenue, setManualVenue] = useState('');
   const [manualPrice, setManualPrice] = useState(480);
@@ -45,6 +46,13 @@ export const AdminDiary: React.FC = () => {
 
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
+
+  // Calculate confirmed vs pending breakdown for the displayed month
+  const currentMonthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+  const monthEvents = (bookings || []).filter(b => b && b.date && b.date.startsWith(currentMonthPrefix));
+  const confirmedCount = monthEvents.filter(b => b.status === 'deposit_paid').length;
+  const pendingCount = monthEvents.filter(b => b.status === 'pending' || b.status === 'approved').length;
+  const totalMonthEvents = monthEvents.length;
 
   const handlePrev = () => {
     if (currentMonth === 0) {
@@ -96,7 +104,7 @@ export const AdminDiary: React.FC = () => {
       {/* Diary Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white font-serif">Spud\'s Interactive Diary</h2>
+          <h2 className="text-2xl font-bold text-white font-serif">Spud&apos;s Interactive Diary</h2>
           <p className="text-xs text-gray-400">View and manage gigs, locked dates, and provisional holds</p>
         </div>
 
@@ -114,18 +122,32 @@ export const AdminDiary: React.FC = () => {
       {/* Main Calendar Grid Card */}
       <div className="bg-tartan-card rounded-3xl p-6 sm:p-8 border border-tartan-border shadow-2xl space-y-6">
         
-        {/* Month Navigation */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        {/* Month Navigation & Confirmed / Pending Breakdown */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 flex-wrap">
             <h3 className="text-xl font-bold text-white font-serif">
               {monthNames[currentMonth]} {currentYear}
             </h3>
-            <span className="text-xs font-bold text-tartan-gold bg-tartan-navy px-3 py-1 rounded-full border border-tartan-accent/30">
-              {bookings.filter(b => b.date.startsWith(`${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`)).length} Gigs this month
-            </span>
+            
+            {/* Clear Status Breakdown Pills */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold text-tartan-gold bg-tartan-navy px-3 py-1 rounded-full border border-tartan-accent/30">
+                {totalMonthEvents} {totalMonthEvents === 1 ? 'Event' : 'Events'} this month
+              </span>
+              <span className="text-xs font-bold text-emerald-300 bg-emerald-950/80 px-2.5 py-1 rounded-full border border-emerald-800 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>{confirmedCount} Confirmed</span>
+              </span>
+              {pendingCount > 0 && (
+                <span className="text-xs font-bold text-yellow-300 bg-amber-950/80 px-2.5 py-1 rounded-full border border-yellow-800 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-yellow-400" />
+                  <span>{pendingCount} Pending</span>
+                </span>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-end md:self-auto">
             <button
               onClick={handlePrev}
               className="p-2 rounded-xl bg-tartan-navy hover:bg-slate-700 text-white border border-tartan-border"
@@ -182,18 +204,26 @@ export const AdminDiary: React.FC = () => {
                     const isPending = evt.status === 'pending';
 
                     let badgeColor = 'bg-blue-950 text-blue-200 border-blue-800';
-                    if (isPaid) badgeColor = 'bg-green-950 text-green-300 border-green-800';
-                    if (isApproved) badgeColor = 'bg-indigo-950 text-indigo-300 border-indigo-800';
-                    if (isPending) badgeColor = 'bg-amber-950 text-yellow-300 border-yellow-800';
+                    let statusLabel = 'Hold';
+                    if (isPaid) {
+                      badgeColor = 'bg-emerald-950 text-emerald-300 border-emerald-700 shadow-sm';
+                      statusLabel = '🔒 Confirmed';
+                    } else if (isApproved) {
+                      badgeColor = 'bg-blue-950 text-blue-300 border-blue-700';
+                      statusLabel = '✉️ Deposit Due';
+                    } else if (isPending) {
+                      badgeColor = 'bg-amber-950 text-yellow-300 border-yellow-700';
+                      statusLabel = '⏳ Pending';
+                    }
 
                     return (
                       <button
                         key={evt.id}
                         onClick={() => setSelectedEvent(evt)}
-                        className={`w-full text-left p-1 rounded-lg text-[10px] font-bold border truncate block ${badgeColor} hover:brightness-125`}
-                        title={`${evt.clientName} - ${evt.venueName}`}
+                        className={`w-full text-left p-1 rounded-lg text-[10px] font-bold border truncate block ${badgeColor} hover:brightness-125 transition`}
+                        title={`${evt.clientName} (${evt.status.replace('_', ' ')}) - ${evt.venueName}`}
                       >
-                        {evt.clientName.split(' ')[0]} ({evt.venueName.slice(0, 10)}...)
+                        {statusLabel}: {evt.clientName.split(' ')[0]}
                       </button>
                     );
                   })}
