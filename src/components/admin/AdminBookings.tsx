@@ -33,13 +33,16 @@ export const AdminBookings: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredBookings = bookings.filter(b => {
+  const safeBookings = bookings || [];
+  const filteredBookings = safeBookings.filter(b => {
+    if (!b) return false;
     const matchesStatus = filterStatus === 'all' || b.status === filterStatus;
+    const q = (searchTerm || '').toLowerCase();
     const matchesSearch = 
-      b.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.venueName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.eventType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.clientEmail.toLowerCase().includes(searchTerm.toLowerCase());
+      (b.clientName || '').toLowerCase().includes(q) ||
+      (b.venueName || '').toLowerCase().includes(q) ||
+      (b.eventType || '').toLowerCase().includes(q) ||
+      (b.clientEmail || '').toLowerCase().includes(q);
     return matchesStatus && matchesSearch;
   });
 

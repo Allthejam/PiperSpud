@@ -19,23 +19,28 @@ import { BookingEvent } from '@/types/spud';
 
 export const AdminCRM: React.FC = () => {
   const { bookings, openBrevoPreview } = useApp();
+  const safeBookings = bookings || [];
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedClient, setSelectedClient] = useState<BookingEvent | null>(bookings[0] || null);
+  const [selectedClient, setSelectedClient] = useState<BookingEvent | null>(safeBookings[0] || null);
 
   React.useEffect(() => {
-    if (!selectedClient && bookings.length > 0) {
-      setSelectedClient(bookings[0]);
-    } else if (selectedClient && !bookings.some(b => b.id === selectedClient.id)) {
-      setSelectedClient(bookings[0] || null);
+    if (!selectedClient && safeBookings.length > 0) {
+      setSelectedClient(safeBookings[0]);
+    } else if (selectedClient && !safeBookings.some(b => b && b.id === selectedClient.id)) {
+      setSelectedClient(safeBookings[0] || null);
     }
-  }, [bookings, selectedClient]);
+  }, [safeBookings, selectedClient]);
 
-  const filteredClients = bookings.filter(b =>
-    b.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    b.clientEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    b.venueName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    b.clientPhone.includes(searchTerm)
-  );
+  const filteredClients = safeBookings.filter(b => {
+    if (!b) return false;
+    const q = (searchTerm || '').toLowerCase();
+    return (
+      (b.clientName || '').toLowerCase().includes(q) ||
+      (b.clientEmail || '').toLowerCase().includes(q) ||
+      (b.venueName || '').toLowerCase().includes(q) ||
+      (b.clientPhone && b.clientPhone.includes(searchTerm))
+    );
+  });
 
   return (
     <div className="space-y-6">
@@ -53,7 +58,7 @@ export const AdminCRM: React.FC = () => {
             Firestore Live Sync
           </span>
           <span className="text-xs text-tartan-gold bg-tartan-card px-3.5 py-1.5 rounded-xl border border-tartan-border font-bold">
-            {bookings.length} Total Client Accounts
+            {safeBookings.length} Total Client Accounts
           </span>
         </div>
       </div>

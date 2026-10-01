@@ -44,12 +44,14 @@ export const AdminDashboard: React.FC<{ onNavigateTab: (tab: string) => void }> 
     isSyncingFirestore 
   } = useApp();
 
-  // Metrics
-  const totalRevenue = bookings.reduce((sum, b) => b.status === 'deposit_paid' ? sum + b.estimatedPrice : sum, 0);
-  const totalDeposits = bookings.reduce((sum, b) => b.status === 'deposit_paid' ? sum + b.depositAmount : sum, 0);
-  const pendingBookings = bookings.filter(b => b.status === 'pending');
-  const confirmedBookings = bookings.filter(b => b.status === 'deposit_paid');
-  const pendingReviews = reviews.filter(r => r.status === 'pending');
+  // Metrics with safe fallbacks
+  const safeBookings = bookings || [];
+  const safeReviews = reviews || [];
+  const totalRevenue = safeBookings.reduce((sum, b) => b && b.status === 'deposit_paid' ? sum + (Number(b.estimatedPrice) || 0) : sum, 0);
+  const totalDeposits = safeBookings.reduce((sum, b) => b && b.status === 'deposit_paid' ? sum + (Number(b.depositAmount) || 0) : sum, 0);
+  const pendingBookings = safeBookings.filter(b => b && b.status === 'pending');
+  const confirmedBookings = safeBookings.filter(b => b && b.status === 'deposit_paid');
+  const pendingReviews = safeReviews.filter(r => r && r.status === 'pending');
 
   return (
     <div className="space-y-8">
@@ -108,23 +110,23 @@ export const AdminDashboard: React.FC<{ onNavigateTab: (tab: string) => void }> 
           <div className="flex items-center gap-3 flex-wrap text-xs text-gray-300 pt-1">
             <span className="px-2.5 py-1 rounded-lg bg-emerald-900/40 border border-emerald-700/50 flex items-center gap-1.5 text-emerald-200 font-mono">
               <Search className="w-3.5 h-3.5 text-emerald-400" />
-              seo_pages: <strong>{seoPages.length} pages</strong>
+              seo_pages: <strong>{(seoPages || []).length} pages</strong>
             </span>
             <span className="px-2.5 py-1 rounded-lg bg-emerald-900/40 border border-emerald-700/50 flex items-center gap-1.5 text-emerald-200 font-mono">
               <Music className="w-3.5 h-3.5 text-emerald-400" />
-              bagpipe_tunes: <strong>{tunesList.length} tracks</strong>
+              bagpipe_tunes: <strong>{(tunesList || []).length} tracks</strong>
             </span>
             <span className="px-2.5 py-1 rounded-lg bg-emerald-900/40 border border-emerald-700/50 flex items-center gap-1.5 text-emerald-200 font-mono">
               <Layers className="w-3.5 h-3.5 text-emerald-400" />
-              cms_blocks: <strong>{cmsBlocks.length} elements</strong>
+              cms_blocks: <strong>{(cmsBlocks || []).length} elements</strong>
             </span>
             <span className="px-2.5 py-1 rounded-lg bg-emerald-900/40 border border-emerald-700/50 flex items-center gap-1.5 text-emerald-200 font-mono">
               <Calendar className="w-3.5 h-3.5 text-emerald-400" />
-              bookings: <strong>{bookings.length}</strong>
+              bookings: <strong>{safeBookings.length}</strong>
             </span>
             <span className="px-2.5 py-1 rounded-lg bg-emerald-900/40 border border-emerald-700/50 flex items-center gap-1.5 text-emerald-200 font-mono">
               <Star className="w-3.5 h-3.5 text-emerald-400" />
-              reviews: <strong>{reviews.length}</strong>
+              reviews: <strong>{safeReviews.length}</strong>
             </span>
           </div>
         </div>

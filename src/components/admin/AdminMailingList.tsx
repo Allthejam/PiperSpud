@@ -51,8 +51,10 @@ export const AdminMailingList: React.FC = () => {
   const [newNotes, setNewNotes] = useState('');
 
   // Campaign Composer State
-  const [selectedCampaignId, setSelectedCampaignId] = useState<string>(emailCampaigns[0]?.id || 'camp-christmas-2026');
-  const [activeCampaign, setActiveCampaign] = useState<EmailCampaign>(emailCampaigns[0] || {
+  const safeCampaigns = emailCampaigns || [];
+  const safeContacts = mailingContacts || [];
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>(safeCampaigns[0]?.id || 'camp-christmas-2026');
+  const [activeCampaign, setActiveCampaign] = useState<EmailCampaign>(safeCampaigns[0] || {
     id: 'camp-custom',
     title: 'Custom Broadcast',
     subject: 'Greetings from Spud the Piper 🏴󠁧󠁢󠁳󠁣󠁴󠁿',
@@ -69,13 +71,15 @@ export const AdminMailingList: React.FC = () => {
   const [dispatchResult, setDispatchResult] = useState<{ success: boolean; count: number; message: string } | null>(null);
 
   // Filter contacts
-  const filteredContacts = mailingContacts.filter(contact => {
+  const filteredContacts = safeContacts.filter(contact => {
+    if (!contact) return false;
+    const q = (searchTerm || '').toLowerCase();
     const matchesSearch = 
-      contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (contact.name || '').toLowerCase().includes(q) ||
+      (contact.email || '').toLowerCase().includes(q) ||
       (contact.phone && contact.phone.includes(searchTerm)) ||
-      (contact.venueName && contact.venueName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (contact.tags && contact.tags.some(t => t.toLowerCase().includes(searchTerm.toLowerCase())));
+      (contact.venueName && contact.venueName.toLowerCase().includes(q)) ||
+      (contact.tags && contact.tags.some(t => t.toLowerCase().includes(q)));
 
     if (!matchesSearch) return false;
     if (filterTag === 'all') return true;
@@ -89,8 +93,8 @@ export const AdminMailingList: React.FC = () => {
 
   // Calculate target audience for current campaign segment
   const getTargetRecipients = (segment: EmailCampaign['segment']) => {
-    return mailingContacts.filter(c => {
-      if (c.status !== 'subscribed') return false;
+    return safeContacts.filter(c => {
+      if (!c || c.status !== 'subscribed') return false;
       if (segment === 'all') return true;
       if (segment === 'bookings_only') return c.source === 'booking';
       if (segment === 'enquiries_only') return c.source === 'enquiry';
