@@ -38,6 +38,7 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Spud the Piper" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="p:domain_verify" content="93359088c9fe7ab17a86170057d2eb7a" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

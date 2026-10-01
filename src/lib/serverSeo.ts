@@ -92,6 +92,9 @@ export async function generatePageMetadata(pageId: string = 'home'): Promise<Met
       title: seo.title,
       description: seo.metaDescription,
       images: [ogImg]
+    },
+    other: {
+      'p:domain_verify': '93359088c9fe7ab17a86170057d2eb7a'
     }
   };
 }

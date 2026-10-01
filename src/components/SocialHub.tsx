@@ -70,6 +70,12 @@ const XTwitterIcon = () => (
   </svg>
 );
 
+const PinterestIcon = () => (
+  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+    <path d="M12 0a12 12 0 0 0-4.37 23.18c-.07-.95-.13-2.4.03-3.44l1.04-4.41s-.27-.53-.27-1.32c0-1.24.72-2.16 1.61-2.16.76 0 1.13.57 1.13 1.25 0 .76-.49 1.9-0.74 2.96-.21.89.44 1.61 1.32 1.61 1.58 0 2.8-1.67 2.8-4.08 0-2.13-1.53-3.62-3.72-3.62-2.53 0-4.02 1.9-4.02 3.86 0 .77.29 1.59.66 2.04.07.09.08.17.06.26l-.25 1.01c-.04.16-.14.2-.32.12-1.19-.55-1.93-2.29-1.93-3.68 0-2.99 2.18-5.74 6.29-5.74 3.3 0 5.87 2.35 5.87 5.5 0 3.28-2.07 5.92-4.94 5.92-.96 0-1.87-.5-2.18-1.09l-.59 2.27c-.22.83-.8 1.88-1.2 2.51A12 12 0 1 0 12 0z"/>
+  </svg>
+);
+
 const getCategoryIcon = (iconName?: string) => {
   switch (iconName) {
     case 'Music': return Music;
@@ -427,6 +433,14 @@ export const SocialHub: React.FC = () => {
     const quote = `${post.authorName}: "${post.content.slice(0, 200)}${post.content.length > 200 ? '...' : ''}" ${post.eventLocation ? `(${post.eventLocation})` : ''}`;
     const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(quote)}`;
     window.open(fbUrl, '_blank', 'noopener,noreferrer,width=620,height=520');
+  };
+
+  const handlePinterestShare = (post: SocialPost) => {
+    const url = getPostShareUrl(post);
+    const desc = `${post.authorName}: "${post.content.slice(0, 200)}" ${post.eventLocation ? `(${post.eventLocation})` : ''} - Spud the Piper`;
+    const media = post.imageUrl || 'https://www.spudthepiper.com/og-image.jpg';
+    const pinUrl = `https://pinterest.com/pin/create/button/?url=${encodeURIComponent(url)}&media=${encodeURIComponent(media)}&description=${encodeURIComponent(desc)}`;
+    window.open(pinUrl, '_blank', 'noopener,noreferrer,width=750,height=600');
   };
 
   const handleTwitterShare = (post: SocialPost) => {
@@ -2091,6 +2105,15 @@ export const SocialHub: React.FC = () => {
                 >
                   <FacebookIcon />
                   <span>Share on Facebook</span>
+                </button>
+
+                {/* Pinterest Button */}
+                <button
+                  onClick={() => handlePinterestShare(sharingPost)}
+                  className="w-full py-3.5 px-4 bg-[#E60023] hover:bg-[#c9001f] text-white font-bold rounded-2xl flex items-center justify-center gap-3 shadow-lg hover:shadow-red-500/20 active:scale-[0.99] transition-all"
+                >
+                  <PinterestIcon />
+                  <span>Pin to Pinterest Board</span>
                 </button>
 
                 {/* Twitter / X */}
