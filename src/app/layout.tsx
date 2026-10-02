@@ -3,6 +3,7 @@ import './globals.css';
 import { AppProvider } from '@/context/AppContext';
 import { CookieConsentBanner } from '@/components/CookieConsentBanner';
 import { PwaInstallBanner } from '@/components/PwaInstallBanner';
+import { StructuredData } from '@/components/StructuredData';
 import { generatePageMetadata, getLivePageSeo } from '@/lib/serverSeo';
 
 export const viewport: Viewport = {
@@ -40,6 +41,7 @@ export default async function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="p:domain_verify" content="93359088c9fe7ab17a86170057d2eb7a" />
         <link rel="alternate" type="application/rss+xml" title="Spud the Piper RSS Feed" href="/feed.xml" />
+        <StructuredData />
         <script
           dangerouslySetInnerHTML={{
             __html: `

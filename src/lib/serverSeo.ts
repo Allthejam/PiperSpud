@@ -60,6 +60,20 @@ export async function generatePageMetadata(pageId: string = 'home'): Promise<Met
     keywords: seo.keywords,
     authors: [{ name: 'Spud the Piper' }],
     manifest: '/manifest.json',
+    alternates: {
+      canonical: seo.canonicalUrl || `https://www.spudthepiper.com${seo.path}`
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1
+      }
+    },
     appleWebApp: {
       capable: true,
       statusBarStyle: 'black-translucent',
@@ -140,6 +154,20 @@ export async function generateTuneMetadata(tuneQuery?: string): Promise<Metadata
     ],
     authors: [{ name: 'Spud the Piper' }],
     manifest: '/manifest.json',
+    alternates: {
+      canonical: canonicalUrl
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1
+      }
+    },
     appleWebApp: {
       capable: true,
       statusBarStyle: 'black-translucent',
