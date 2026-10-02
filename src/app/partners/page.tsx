@@ -142,36 +142,44 @@ export default function PartnersPage() {
 
         {/* ── FILTERING & SEARCH BAR ── */}
         <section className="sticky top-16 z-30 bg-tartan-dark/95 backdrop-blur-md border-b border-tartan-border py-4 px-4 sm:px-6 lg:px-8 shadow-xl">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             
-            {/* Category Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-none">
-              {CATEGORIES.map((cat) => {
-                const isSelected = selectedCategory === cat;
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                      isSelected
-                        ? 'bg-gold-gradient text-tartan-dark shadow-md'
-                        : 'bg-tartan-card hover:bg-tartan-navy text-gray-300 border border-tartan-border hover:text-white'
-                    }`}
-                  >
-                    <span>{cat}</span>
-                  </button>
-                );
-              })}
+            {/* Category Dropdown Selector */}
+            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+              <label htmlFor="partner-category-select" className="text-xs font-bold text-tartan-gold uppercase tracking-wider whitespace-nowrap flex items-center gap-1.5 shrink-0">
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>Filter By Category:</span>
+              </label>
+
+              <div className="relative w-full sm:w-72">
+                <select
+                  id="partner-category-select"
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full bg-tartan-card border border-tartan-gold/60 text-white font-bold text-xs rounded-xl px-4 py-2.5 pr-9 appearance-none focus:outline-none focus:ring-2 focus:ring-tartan-accent/50 shadow-md cursor-pointer hover:border-tartan-gold transition-colors"
+                >
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat} className="bg-tartan-dark text-gray-100 font-semibold py-1">
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-tartan-gold">
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                    <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                  </svg>
+                </div>
+              </div>
             </div>
 
             {/* Search Input */}
-            <div className="relative w-full md:w-72 shrink-0">
+            <div className="relative w-full sm:w-72 shrink-0">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search partners, apps, venues..."
-                className="w-full bg-tartan-card border border-tartan-border rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-gray-400 focus:outline-none focus:border-tartan-gold"
+                className="w-full bg-tartan-card border border-tartan-border rounded-xl pl-9 pr-8 py-2.5 text-xs text-white placeholder-gray-400 focus:outline-none focus:border-tartan-gold shadow-inner"
               />
               <Search className="w-3.5 h-3.5 text-tartan-gold absolute left-3 top-1/2 -translate-y-1/2" />
               {searchQuery && (
