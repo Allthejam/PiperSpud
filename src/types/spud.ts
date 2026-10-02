@@ -408,5 +408,22 @@ export interface GalleryItem {
   createdAt?: string;
 }
 
+export interface PartnerItem {
+  id: string;
+  name: string;
+  tagline: string;
+  category: 'Highland Attire & Kilts' | 'Scottish Community & Apps' | 'Estate & Geospatial Tech' | 'Castles & Historic Venues' | 'Wedding Suppliers & Film';
+  description: string;
+  websiteUrl: string;
+  logoUrl?: string;
+  heroImageUrl?: string;
+  location: string;
+  badge?: string;
+  specialPerk?: string;
+  isFeatured?: boolean;
+  reciprocalBacklink?: boolean;
+  tags: string[];
+}
+
 
 

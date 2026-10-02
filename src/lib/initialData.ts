@@ -20,7 +20,8 @@ import {
   UserPermissions,
   FaqItem,
   GalleryItem,
-  PricingConfig
+  PricingConfig,
+  PartnerItem
 } from '@/types/spud';
 
 export const defaultPermissions: Record<'owner' | 'admin' | 'editor', UserPermissions> = {
@@ -917,6 +918,18 @@ export const initialSeoPages: SeoPageConfig[] = [
     schemaType: 'Review, AggregateRating'
   },
   {
+    pageId: 'partners',
+    pageName: 'Our Partners & Apps',
+    path: '/partners',
+    title: 'Our Trusted Partners & Recommended Scottish Apps | Spud the Piper',
+    metaDescription: 'Discover Spud the Piper\'s verified network of Scottish partners, sister ventures (Kilt in a Box, Highland Kilt Hire, My Community Hub, GeoMapping), historic castle wedding venues, and award-winning suppliers.',
+    keywords: ['Scottish Wedding Partners', 'Kilt in a Box', 'My Community Hub', 'GeoMapping Scotland', 'Highland Kilt Hire', 'Scottish Castle Wedding Suppliers', 'Recommended Bagpiper Partners'],
+    canonicalUrl: 'https://www.spudthepiper.com/partners',
+    ogImage: 'https://www.spudthepiper.com/og-image.png',
+    h1: 'Our Trusted Partners & Recommended Scottish Apps',
+    schemaType: 'CollectionPage, ItemList'
+  },
+  {
     pageId: 'faq',
     pageName: 'FAQ & Pricing Guide',
     path: '/faq',
@@ -1529,6 +1542,122 @@ export const initialFaqs: FaqItem[] = [
 ];
 
 export const initialGallery: GalleryItem[] = [];
+
+export const initialPartners: PartnerItem[] = [
+  {
+    id: 'partner-kilt-box',
+    name: 'Kilt in a Box (KiltCraft)',
+    tagline: 'Traditional 8-Yard Kilt Making Kits & Interactive Masterclass',
+    category: 'Highland Attire & Kilts',
+    description: 'Your interactive, step-by-step masterclass and complete kits for making a professional 8-yard traditional Scottish kilt. Authentic heavy-weight Scottish wool tartan, bespoke tailoring tools, canvas, lining, and high-definition video lessons.',
+    websiteUrl: 'https://kiltinabox.com',
+    location: 'Scotland / Worldwide Delivery',
+    badge: 'Official Sister Venture',
+    specialPerk: 'Complete 8-yard bespoke kiltmaking kits & step-by-step masterclass',
+    isFeatured: true,
+    reciprocalBacklink: true,
+    tags: ['Kiltmaking', 'Scottish Tartan', 'DIY Kilt Kit', 'Highland Dress']
+  },
+  {
+    id: 'partner-community-hub',
+    name: 'My Community Hub',
+    tagline: 'Your Local Scottish Community & Business Network App',
+    category: 'Scottish Community & Apps',
+    description: 'The hyperlocal Scottish community platform connecting local residents, independent businesses, Highland event organizers, and civic groups in real-time. Discover local wedding vendors, services, and live community broadcasts.',
+    websiteUrl: 'https://my-community-hub.co.uk',
+    location: 'Highlands & Across Scotland',
+    badge: 'Verified App Partner',
+    specialPerk: 'Free local community listings and wedding supplier network access',
+    isFeatured: true,
+    reciprocalBacklink: true,
+    tags: ['Community App', 'Scottish Business', 'Local Events', 'Highland Hub']
+  },
+  {
+    id: 'partner-geomapping',
+    name: 'GeoMapping Systems',
+    tagline: 'Professional GPS Land Mapping & Scottish Estate Auditing',
+    category: 'Estate & Geospatial Tech',
+    description: 'Surveyor-grade GPS measurement and mapping for Scottish estates, historic castle grounds, farms, and rural properties. Precision boundary audit engine differentiating total perimeter ownership from productive land.',
+    websiteUrl: 'https://www.gps-mapping.allthejam.co.uk',
+    location: 'Highlands, Scotland',
+    badge: 'Geospatial Partner',
+    specialPerk: 'High-precision GPS land & estate boundary mapping',
+    isFeatured: true,
+    reciprocalBacklink: true,
+    tags: ['GPS Mapping', 'Estate Management', 'Land Surveying', 'Castle Grounds']
+  },
+  {
+    id: 'partner-kilt-hire',
+    name: 'Highland Kilt Hire Portal',
+    tagline: 'Automated QR-Code Inventory & Highland Formal Wear Rental',
+    category: 'Highland Attire & Kilts',
+    description: 'Complete formal Highland wear and traditional kilt rental platform for wedding parties, banquets, and Scottish gatherings. QR-code wardrobe tracking, express fitting schedules, and complete No. 1 / Prince Charlie jacket packages.',
+    websiteUrl: 'https://kilthire.allthejam.co.uk',
+    location: 'Aviemore, Inverness & Central Scotland',
+    badge: 'Wedding Kilt Hire',
+    specialPerk: 'Groom & bridal party group fitting coordination with express collection',
+    isFeatured: true,
+    reciprocalBacklink: true,
+    tags: ['Kilt Hire', 'Highland Formal Wear', 'Wedding Kilts', 'Prince Charlie']
+  },
+  {
+    id: 'partner-driveswift',
+    name: 'DriveSwift AI',
+    tagline: 'AI-Powered Platform for Driving Instructors & Pupils',
+    category: 'Scottish Community & Apps',
+    description: 'All-in-one platform for modern driving instructors and learner drivers across Scotland. Real-time pupil progress tracking, interactive lesson planning, automated payments, and smart scheduling.',
+    websiteUrl: 'https://driveswift.allthejam.co.uk',
+    location: 'Scotland & UK Nationwide',
+    badge: 'EdTech App',
+    specialPerk: 'Smart lesson tracking and digital pupil progress portal',
+    isFeatured: false,
+    reciprocalBacklink: true,
+    tags: ['Mobility App', 'Driving Instructor Tech', 'Progress Tracker']
+  },
+  {
+    id: 'partner-stirling-castle',
+    name: 'Historic Scottish Castle Venues',
+    tagline: 'Iconic Castle Wedding & Event Venues Across Scotland',
+    category: 'Castles & Historic Venues',
+    description: 'From the dramatic battlements of Stirling Castle and Edinburgh Castle to the romantic lochside ruins of Eilean Donan and Blair Castle in Highland Perthshire. Spud regularly performs across these historic strongholds.',
+    websiteUrl: 'https://www.historicenvironment.scot',
+    location: 'Highlands, Stirling, Edinburgh & Perthshire',
+    badge: 'Premier Venue Partner',
+    specialPerk: 'Acoustic pipe-in coordination across historic castle drawbridges & courtyards',
+    isFeatured: true,
+    reciprocalBacklink: true,
+    tags: ['Castle Weddings', 'Historic Venues', 'Stirling Castle', 'Eilean Donan']
+  },
+  {
+    id: 'partner-humanist-celebrants',
+    name: 'Humanist Society Scotland',
+    tagline: 'Legal Scottish Wedding Celebrants & Personalized Ceremonies',
+    category: 'Wedding Suppliers & Film',
+    description: 'Official humanist celebrants providing warm, deeply personal, and legally binding outdoor and castle wedding ceremonies, quaich toasts, and traditional Scottish handfasting rituals.',
+    websiteUrl: 'https://www.humanism.scot',
+    location: 'All Scottish Regions',
+    badge: 'Trusted Celebrants',
+    specialPerk: 'Seamless coordination for processional bagpipe entrance & handfasting tunes',
+    isFeatured: true,
+    reciprocalBacklink: true,
+    tags: ['Celebrants', 'Humanist Weddings', 'Handfasting', 'Quaich Toast']
+  },
+  {
+    id: 'partner-highland-photography',
+    name: 'Scottish Highland Wedding Photography & Cinema',
+    tagline: 'Dramatic Elopement & Castle Wedding Visual Storytelling',
+    category: 'Wedding Suppliers & Film',
+    description: 'Award-winning Scottish wedding photographers and cinematic filmmakers capturing the wild romance of Highland elopements, Isle of Skye mountain backdrops, and castle ballroom ceilidhs.',
+    websiteUrl: 'https://www.scottishweddingdirectory.co.uk',
+    location: 'Highlands, Skye, Glencoe & Edinburgh',
+    badge: 'Visual Arts Partner',
+    specialPerk: 'Coordinated photo stops with Spud in Full No. 1 Highland Dress',
+    isFeatured: true,
+    reciprocalBacklink: true,
+    tags: ['Wedding Photography', 'Elopement Film', 'Isle of Skye', 'Glencoe Photos']
+  }
+];
+
 
 
 

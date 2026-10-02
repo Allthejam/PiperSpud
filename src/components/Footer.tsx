@@ -259,6 +259,7 @@ export const Footer: React.FC = () => {
                 <li><Link href="/services" className="hover:text-tartan-gold transition-colors">Services & Packages</Link></li>
                 <li><Link href="/tunes" className="hover:text-tartan-gold transition-colors">Bagpipe Tune Jukebox</Link></li>
                 <li><Link href="/attire" className="hover:text-tartan-gold transition-colors">Tartan & Attire Studio</Link></li>
+                <li><Link href="/partners" className="text-tartan-gold font-bold hover:underline transition-colors flex items-center gap-1"><span>Our Partners &amp; Apps</span><Sparkles className="w-3 h-3 text-tartan-gold" /></Link></li>
                 <li><Link href="/booking" className="hover:text-tartan-gold transition-colors">Bookings & Date Request</Link></li>
                 <li><Link href="/social" className="hover:text-tartan-gold transition-colors">Social Wall & Stream</Link></li>
                 <li><Link href="/reviews" className="hover:text-tartan-gold transition-colors">Client Reviews</Link></li>
@@ -276,7 +277,7 @@ export const Footer: React.FC = () => {
                 <li><Link href="/services" className="hover:text-gray-200">Funerals & Memorial Laments</Link></li>
                 <li><Link href="/services" className="hover:text-gray-200">Burns Suppers & Hogmanay</Link></li>
                 <li><Link href="/services" className="hover:text-gray-200">Corporate & Castle Galas</Link></li>
-                <li><Link href="/services" className="hover:text-gray-200">Private 1-on-1 Bagpipe Lessons</Link></li>
+                <li><Link href="/partners" className="hover:text-tartan-gold transition-colors text-gray-300">Recommended Suppliers</Link></li>
               </ul>
             </div>
 
@@ -324,12 +325,16 @@ export const Footer: React.FC = () => {
             <p>© {new Date().getFullYear()} Spud the Piper. All Rights Reserved. Scotland.</p>
             
             <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+              <Link href="/partners" className="text-tartan-gold hover:underline font-bold">
+                Our Partners
+              </Link>
+              <span>•</span>
               <button
                 onClick={() => setIsPwaModalOpen(true)}
-                className="text-tartan-gold hover:underline font-bold flex items-center gap-1"
+                className="hover:underline flex items-center gap-1"
               >
                 <Smartphone className="w-3.5 h-3.5 text-tartan-gold" />
-                <span>How to Install</span>
+                <span>Install App</span>
               </button>
               <span>•</span>
               <Link href="/terms" className="hover:underline">Terms</Link>
