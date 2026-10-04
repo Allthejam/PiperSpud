@@ -570,6 +570,54 @@ export const initialNotifications: NotificationItem[] = [];
 
 export const initialCmsBlocks: EditableCmsBlock[] = [
   {
+    id: 'navbar-phone-label',
+    page: 'all',
+    section: 'navbar',
+    tag: 'span',
+    label: 'Top Bar Phone Label',
+    content: 'Call/WhatsApp: '
+  },
+  {
+    id: 'navbar-phone-number',
+    page: 'all',
+    section: 'navbar',
+    tag: 'span',
+    label: 'Top Bar Phone Number',
+    content: '07793 491367'
+  },
+  {
+    id: 'navbar-email-label',
+    page: 'all',
+    section: 'navbar',
+    tag: 'span',
+    label: 'Top Bar Email Label',
+    content: 'Email: '
+  },
+  {
+    id: 'navbar-email-address',
+    page: 'all',
+    section: 'navbar',
+    tag: 'span',
+    label: 'Top Bar Email Address',
+    content: 'spud@spudthepiper.co.uk'
+  },
+  {
+    id: 'navbar-top-tagline',
+    page: 'all',
+    section: 'navbar',
+    tag: 'span',
+    label: 'Top Bar Scottish Tagline',
+    content: "🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland's Premier Highland Bagpiper"
+  },
+  {
+    id: 'navbar-top-install-btn',
+    page: 'all',
+    section: 'navbar',
+    tag: 'span',
+    label: 'Top Bar Install Button',
+    content: 'Install App'
+  },
+  {
     id: 'hero-h1',
     page: 'home',
     section: 'hero',

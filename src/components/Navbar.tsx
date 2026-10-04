@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 
 import { SpudHeritageLogo } from '@/components/SpudHeritageLogo';
+import { EditableElement } from '@/components/EditableElement';
 
 interface NavItem {
   label: string;
@@ -48,7 +49,8 @@ export const Navbar: React.FC = () => {
     currentPlayingTune, 
     stopTune, 
     playTune,
-    playSampleTune 
+    playSampleTune,
+    cmsBlocks 
   } = useApp();
 
   const isRealAdmin = isMounted && isAdminLoggedIn;
@@ -59,6 +61,12 @@ export const Navbar: React.FC = () => {
     'Services': true,
     'Reviews': true
   });
+
+  const phoneBlock = Array.isArray(cmsBlocks) ? cmsBlocks.find(b => b && b.id === 'navbar-phone-number') : undefined;
+  const emailBlock = Array.isArray(cmsBlocks) ? cmsBlocks.find(b => b && b.id === 'navbar-email-address') : undefined;
+  const currentPhone = phoneBlock?.content || '07793 491367';
+  const cleanPhone = currentPhone.replace(/\s+/g, '');
+  const currentEmail = emailBlock?.content || 'spud@spudthepiper.co.uk';
 
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -122,41 +130,90 @@ export const Navbar: React.FC = () => {
   return (
     <>
       {/* 1. TOP UTILITY HEADER BAR */}
-      <div className={`bg-tartan-dark border-b border-tartan-border/60 py-1 px-3 sm:px-4 text-xs font-sans transition-all duration-300 ${isRealAdmin ? 'mt-0 md:mt-10' : ''}`}>
+      <div className={`bg-tartan-dark border-b border-tartan-border/60 py-1.5 px-3 sm:px-4 text-xs font-sans transition-all duration-300 ${isRealAdmin ? 'mt-0 md:mt-10' : ''}`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
           
           {/* Left Direct Contact Quick Links */}
           <div className="flex items-center space-x-3 sm:space-x-6 text-[11px] min-w-0">
             <a 
-              href="tel:07793491367" 
+              href={`tel:${cleanPhone}`} 
               className="flex items-center gap-1.5 text-gray-300 hover:text-tartan-gold transition-colors font-medium truncate"
               title="Call or WhatsApp Spud"
             >
               <Phone className="w-3 h-3 text-tartan-gold shrink-0" />
-              <span><span className="hidden xs:inline">Call/WhatsApp: </span><strong className="text-white font-bold">07793 491367</strong></span>
+              <span className="flex items-center gap-1">
+                <EditableElement
+                  id="navbar-phone-label"
+                  tag="span"
+                  defaultContent="Call/WhatsApp: "
+                  label="Top Bar Phone Label"
+                  section="navbar"
+                  className="hidden xs:inline text-gray-300"
+                />
+                <EditableElement
+                  id="navbar-phone-number"
+                  tag="span"
+                  defaultContent="07793 491367"
+                  label="Top Bar Phone Number"
+                  section="navbar"
+                  className="text-white font-bold"
+                />
+              </span>
             </a>
             
             <span className="hidden sm:inline text-slate-600 select-none">|</span>
 
             <a 
-              href="mailto:spud@spudthepiper.co.uk" 
+              href={`mailto:${currentEmail}`} 
               className="hidden sm:flex items-center gap-1.5 text-gray-300 hover:text-tartan-gold transition-colors truncate"
+              title="Email Spud directly"
             >
               <Mail className="w-3 h-3 text-tartan-gold shrink-0" />
-              <span>Email: <strong className="text-tartan-gold font-bold">spud@spudthepiper.co.uk</strong></span>
+              <span className="flex items-center gap-1">
+                <EditableElement
+                  id="navbar-email-label"
+                  tag="span"
+                  defaultContent="Email: "
+                  label="Top Bar Email Label"
+                  section="navbar"
+                  className="text-gray-300"
+                />
+                <EditableElement
+                  id="navbar-email-address"
+                  tag="span"
+                  defaultContent="spud@spudthepiper.co.uk"
+                  label="Top Bar Email Address"
+                  section="navbar"
+                  className="text-tartan-gold font-bold"
+                />
+              </span>
             </a>
           </div>
 
           {/* Right Tagline & PWA App Link */}
           <div className="flex items-center gap-2 sm:gap-3 text-[11px] text-tartan-goldLight tracking-wide shrink-0">
-            <span className="hidden lg:inline">🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland&apos;s Premier Highland Bagpiper</span>
+            <EditableElement
+              id="navbar-top-tagline"
+              tag="span"
+              defaultContent="🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland's Premier Highland Bagpiper"
+              label="Top Bar Scottish Tagline"
+              section="navbar"
+              className="hidden lg:inline text-tartan-goldLight font-medium"
+            />
             <span className="hidden lg:inline text-slate-600">•</span>
             <Link 
               href="/install"
               className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 rounded-full bg-tartan-accent/20 hover:bg-tartan-accent/30 text-tartan-gold font-bold border border-tartan-accent/40 transition-all hover:scale-105 text-[10px] sm:text-[11px]"
             >
               <Smartphone className="w-3 h-3 text-tartan-gold shrink-0" />
-              <span>Install App</span>
+              <EditableElement
+                id="navbar-top-install-btn"
+                tag="span"
+                defaultContent="Install App"
+                label="Top Bar App Button"
+                section="navbar"
+                className="text-tartan-gold font-bold"
+              />
             </Link>
           </div>
 
@@ -410,11 +467,11 @@ export const Navbar: React.FC = () => {
 
             <div className="pt-3 border-t border-tartan-border flex items-center justify-between gap-3">
               <a
-                href="tel:07793491367"
+                href={`tel:${cleanPhone}`}
                 className="flex-1 py-2.5 text-center bg-green-700 hover:bg-green-600 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow"
               >
                 <Phone className="w-4 h-4" />
-                <span>Call 07793 491367</span>
+                <span>Call {currentPhone}</span>
               </a>
               <Link
                 href="/booking"
