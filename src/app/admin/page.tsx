@@ -21,6 +21,7 @@ import { AdminSecurityControl } from '@/components/admin/AdminSecurityControl';
 import { AdminGuide } from '@/components/admin/AdminGuide';
 import { AdminGallery } from '@/components/admin/AdminGallery';
 import { AdminPartners } from '@/components/admin/AdminPartners';
+import { AdminEmailTemplates } from '@/components/admin/AdminEmailTemplates';
 import { AdminLoginModal } from '@/components/AdminLoginModal';
 import { ShieldAlert, ArrowLeft, RefreshCw, AlertTriangle, Loader2 } from 'lucide-react';
 
@@ -179,6 +180,7 @@ export default function AdminPage() {
         {activeTab === 'bookings' && <AdminBookings />}
         {activeTab === 'crm' && <AdminCRM />}
         {activeTab === 'mailing-list' && <AdminMailingList />}
+        {activeTab === 'email-templates' && <AdminEmailTemplates />}
         {activeTab === 'messages' && <AdminMessageCenter />}
         {activeTab === 'faqs' && <AdminFaqs />}
         {activeTab === 'forum' && <AdminForumControl />}
