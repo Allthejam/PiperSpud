@@ -294,7 +294,6 @@ export const Footer: React.FC = () => {
                 <li><Link href="/services" className="hover:text-gray-200">Funerals & Memorial Laments</Link></li>
                 <li><Link href="/services" className="hover:text-gray-200">Burns Suppers & Hogmanay</Link></li>
                 <li><Link href="/services" className="hover:text-gray-200">Corporate & Castle Galas</Link></li>
-                <li><Link href="/partners" className="hover:text-tartan-gold transition-colors text-gray-300">Recommended Suppliers</Link></li>
               </ul>
             </div>
 
