@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
     const senderEmail = process.env.BREVO_SENDER_EMAIL || 'info@spudthepiper.com';
     const senderName = process.env.BREVO_SENDER_NAME || 'Spud the Piper';
     const adminAlertEmail = process.env.BREVO_ADMIN_ALERT_EMAIL || 'Spud@spudthepiper.com';
+    const trustpilotInviteEmail = process.env.TRUSTPILOT_INVITE_EMAIL || 'spudthepiper.com+aebdc308b6@invite.trustpilot.com';
 
     let subject = '';
     let htmlContent = '';
@@ -732,6 +733,46 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No recipient email specified' }, { status: 400 });
     }
 
+    // Determine if this is a client-facing transactional email eligible for Trustpilot Review Invites
+    const bccList: { email: string; name: string }[] = [];
+    const isClientFacing = 
+      recipientEmail !== adminAlertEmail && 
+      (
+        type === 'deposit_received' ||
+        type === 'balance_paid_receipt' ||
+        type === 'booking_approved' ||
+        type === 'booking_created' ||
+        type === 'client_balance_reminder_7day' ||
+        type === 'client_balance_reminder_1day' ||
+        type === 'inquiry_reply'
+      );
+
+    if (isClientFacing && trustpilotInviteEmail) {
+      bccList.push({
+        email: trustpilotInviteEmail,
+        name: 'Trustpilot Automated Invites'
+      });
+    }
+
+    const emailPayload: Record<string, any> = {
+      sender: {
+        name: senderName,
+        email: senderEmail
+      },
+      to: [
+        {
+          email: recipientEmail,
+          name: recipientName
+        }
+      ],
+      subject: subject,
+      htmlContent: htmlContent
+    };
+
+    if (bccList.length > 0) {
+      emailPayload.bcc = bccList;
+    }
+
     const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
@@ -739,24 +780,11 @@ export async function POST(req: NextRequest) {
         'Content-Type': 'application/json',
         'accept': 'application/json'
       },
-      body: JSON.stringify({
-        sender: {
-          name: senderName,
-          email: senderEmail
-        },
-        to: [
-          {
-            email: recipientEmail,
-            name: recipientName
-          }
-        ],
-        subject: subject,
-        htmlContent: htmlContent
-      })
+      body: JSON.stringify(emailPayload)
     });
 
     const brevoData = await brevoRes.json();
-    return NextResponse.json({ success: true, brevoResponse: brevoData });
+    return NextResponse.json({ success: true, brevoResponse: brevoData, trustpilotBccActive: bccList.length > 0 });
   } catch (error: any) {
     console.error('Brevo Dispatch Error:', error);
     return NextResponse.json({ error: error.message || 'Internal error' }, { status: 500 });

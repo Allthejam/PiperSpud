@@ -450,15 +450,21 @@ export const AdminEmailTemplates: React.FC = () => {
       {/* Header Banner */}
       <div className="bg-tartan-card rounded-3xl p-6 sm:p-8 border border-tartan-border shadow-2xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-tartan-accent/15 text-tartan-gold text-xs font-bold border border-tartan-accent/30">
-            <Mail className="w-4 h-4 text-tartan-gold" />
-            <span>Brevo Transactional Email Engine • Live Studio</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-tartan-accent/15 text-tartan-gold text-xs font-bold border border-tartan-accent/30">
+              <Mail className="w-4 h-4 text-tartan-gold" />
+              <span>Brevo Transactional Email Engine</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/80 text-emerald-300 text-xs font-bold border border-emerald-500/40">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Trustpilot AFS Invites Connected</span>
+            </div>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white font-serif">
             Automated Email Templates &amp; Live Previewer
           </h1>
           <p className="text-xs sm:text-sm text-gray-400 max-w-2xl leading-relaxed">
-            Preview, customize, and test all automated emails sent to clients and Spud without placing test bookings. Everything from booking request acknowledgments and PayPal deposit invoices to 7-day diary alerts.
+            Preview, customize, and test all automated emails sent to clients and Spud without placing test bookings. All client confirmation receipts automatically BCC your Trustpilot review invite engine (<span className="text-tartan-gold font-mono text-[11px]">spudthepiper.com+aebdc308b6@invite.trustpilot.com</span>) to collect verified 5-star reviews automatically.
           </p>
         </div>
 
