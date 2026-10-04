@@ -24,8 +24,10 @@ import {
   Music
 } from 'lucide-react';
 
+import { initialServices } from '@/lib/initialData';
+
 export const Footer: React.FC = () => {
-  const { socialLinks, addMailingContact } = useApp();
+  const { socialLinks, addMailingContact, services } = useApp();
   const [isPwaModalOpen, setIsPwaModalOpen] = useState(false);
   const [subscriberEmail, setSubscriberEmail] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -285,15 +287,24 @@ export const Footer: React.FC = () => {
               </ul>
             </div>
 
-            {/* Col 3: Piping Services */}
+            {/* Col 3: Piping Services (Dynamic from Studio / Firebase) */}
             <div className="space-y-3">
-              <h4 className="text-sm font-bold text-white font-serif uppercase tracking-wider">Piping Services</h4>
+              <h4 className="text-sm font-bold text-white font-serif uppercase tracking-wider">
+                <Link href="/services" className="hover:text-tartan-gold transition-colors">
+                  Piping Services
+                </Link>
+              </h4>
               <ul className="space-y-2 text-xs">
-                <li><Link href="/services" className="hover:text-gray-200">Scottish Castle Weddings</Link></li>
-                <li><Link href="/services" className="hover:text-gray-200">Top Table Pipe-In & Ceilidh</Link></li>
-                <li><Link href="/services" className="hover:text-gray-200">Funerals & Memorial Laments</Link></li>
-                <li><Link href="/services" className="hover:text-gray-200">Burns Suppers & Hogmanay</Link></li>
-                <li><Link href="/services" className="hover:text-gray-200">Corporate & Castle Galas</Link></li>
+                {(services && services.length > 0 ? services : initialServices).map((service) => (
+                  <li key={service.id}>
+                    <Link 
+                      href={`/services/${service.slug || service.id}`} 
+                      className="hover:text-tartan-gold transition-colors block text-gray-300 hover:translate-x-0.5 transform duration-150"
+                    >
+                      {service.title}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
 
