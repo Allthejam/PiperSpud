@@ -43,6 +43,12 @@ export default async function RootLayout({
         <meta name="p:domain_verify" content="93359088c9fe7ab17a86170057d2eb7a" />
         <link rel="alternate" type="application/rss+xml" title="Spud the Piper RSS Feed" href="/feed.xml" />
         <StructuredData />
+        {/* Trustpilot TrustBox Script */}
+        <script
+          type="text/javascript"
+          src="//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js"
+          async
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `

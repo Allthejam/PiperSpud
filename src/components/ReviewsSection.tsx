@@ -23,6 +23,7 @@ import {
 import { Review } from '@/types/spud';
 import { EditableElement } from './EditableElement';
 import { uploadToStorage } from '@/lib/firebase';
+import { TrustBoxWidget } from './TrustBoxWidget';
 
 export const ReviewsSection: React.FC = () => {
   const { reviews, submitReview, socialLinks } = useApp();
@@ -216,9 +217,9 @@ export const ReviewsSection: React.FC = () => {
           </div>
         </div>
 
-        {/* Trustpilot Banner Bar */}
+        {/* Trustpilot Banner Bar & Review Collector */}
         {Boolean((socialLinks?.trustpilot ?? '').trim() && !socialLinks?.hiddenPlatforms?.trustpilot) && (
-          <div className="mb-10 p-4 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-tartan-card to-emerald-950/30 border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+          <div className="mb-10 p-5 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-tartan-card to-emerald-950/30 border border-emerald-500/30 flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-[#00b67a]/20 border border-[#00b67a]/40 text-[#00b67a] shrink-0">
                 <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
@@ -237,15 +238,9 @@ export const ReviewsSection: React.FC = () => {
               </div>
             </div>
 
-            <a
-              href={(socialLinks?.trustpilot ?? '').trim()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 rounded-lg bg-[#00b67a] hover:bg-emerald-500 text-tartan-dark font-extrabold text-xs tracking-wider transition-all flex items-center gap-1.5 shrink-0 shadow"
-            >
-              <span>See Verified Reviews</span>
-              <span>→</span>
-            </a>
+            <div className="w-full md:w-auto min-w-[220px] flex items-center justify-center md:justify-end">
+              <TrustBoxWidget />
+            </div>
           </div>
         )}
 

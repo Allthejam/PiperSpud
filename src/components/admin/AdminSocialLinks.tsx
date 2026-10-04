@@ -179,7 +179,7 @@ export const AdminSocialLinks: React.FC = () => {
       key: 'trustpilot' as const,
       name: 'Trustpilot',
       description: 'Official Trustpilot reviews page, customer ratings score & verified client feedback',
-      placeholder: 'https://www.trustpilot.com/review/spudthepiper.co.uk',
+      placeholder: 'https://www.trustpilot.com/review/spudthepiper.com',
       color: 'from-emerald-700 to-green-900',
       badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
       icon: (
