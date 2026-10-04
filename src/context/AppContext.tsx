@@ -26,7 +26,8 @@ import {
   UserPermissions,
   FaqItem,
   GalleryItem,
-  PricingConfig
+  PricingConfig,
+  PartnerItem
 } from '@/types/spud';
 import { 
   initialBookings, 
@@ -51,7 +52,8 @@ import {
   defaultPermissions,
   initialFaqs,
   initialGallery,
-  initialPricingConfig
+  initialPricingConfig,
+  initialPartners
 } from '@/lib/initialData';
 import { bagpipeSynth } from '@/lib/bagpipeSynth';
 import { db, auth } from '@/lib/firebase';
@@ -255,6 +257,13 @@ interface AppContextType {
   deleteGalleryItem: (id: string) => Promise<void>;
   likeGalleryItem: (id: string, delta?: number) => Promise<void>;
 
+  // Scottish Partners & Ecosystem
+  partners: PartnerItem[];
+  addPartner: (partner: Omit<PartnerItem, 'id'> | PartnerItem) => Promise<void>;
+  updatePartner: (id: string, updates: Partial<PartnerItem>) => Promise<void>;
+  deletePartner: (id: string) => Promise<void>;
+  reorderPartners: (newOrderedList: PartnerItem[]) => Promise<void>;
+
   // Cloud Database Sync
   isSyncingFirestore: boolean;
   syncAllToFirestore: () => Promise<{ success: boolean; count: number; error?: string }>;
@@ -404,6 +413,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [emailCampaigns, setEmailCampaigns] = useState<EmailCampaign[]>(initialCampaigns);
   const [faqs, setFaqs] = useState<FaqItem[]>(initialFaqs);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(initialGallery);
+  const [partners, setPartners] = useState<PartnerItem[]>(initialPartners);
   const [showLiveStream, setShowLiveStreamState] = useState<boolean>(true);
   const [isSyncingFirestore, setIsSyncingFirestore] = useState<boolean>(false);
 
@@ -726,6 +736,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
+      const savedPartners = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}partners`);
+      if (savedPartners) {
+        try {
+          const parsedPartners: PartnerItem[] = JSON.parse(savedPartners);
+          if (Array.isArray(parsedPartners) && parsedPartners.length > 0) {
+            setPartners(parsedPartners);
+          }
+        } catch (e) {}
+      }
+
       const savedStream = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}show_livestream`);
       if (savedStream !== null) {
         setShowLiveStreamState(savedStream === 'true');
@@ -791,6 +811,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubCampaigns = () => {};
     let unsubFaqs = () => {};
     let unsubGallery = () => {};
+    let unsubPartners = () => {};
 
     try {
       // Real-time Firestore listener for 'users' collection
@@ -1095,6 +1116,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }, (err) => console.log('Firestore gallery listener:', err.message));
 
+      // Real-time Firestore listener for partners
+      unsubPartners = onSnapshot(collection(db, 'partners'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remotePartners: PartnerItem[] = [];
+          snapshot.forEach((d) => {
+            const data = d.data() as PartnerItem;
+            if (data && (data.id || d.id)) {
+              remotePartners.push({ ...data, id: data.id || d.id });
+            }
+          });
+          if (remotePartners.length > 0) {
+            setPartners(remotePartners);
+            if (typeof window !== 'undefined') {
+              try {
+                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}partners`, JSON.stringify(remotePartners));
+              } catch (e) {}
+            }
+          }
+        }
+      }, (err) => console.log('Firestore partners listener:', err.message));
+
       // Real-time Firestore listener for chat_sessions
       unsubChatSessions = onSnapshot(collection(db, 'chat_sessions'), (snapshot) => {
         if (!snapshot.empty) {
@@ -1174,6 +1216,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubCampaigns();
       unsubFaqs();
       unsubGallery();
+      unsubPartners();
     };
   }, []);
 
@@ -3731,6 +3774,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
+      // 16. Sync Partners & Ecosystem
+      const partnersToSync = partners && partners.length > 0 ? partners : initialPartners;
+      for (const p of partnersToSync) {
+        if (p && p.id) {
+          await setDoc(doc(db, 'partners', p.id), JSON.parse(JSON.stringify(p)), { merge: true });
+          totalSynced++;
+        }
+      }
+
       console.log(`[Firestore SUCCESS] Full Cloud Sync Complete: ${totalSynced} documents verified in Firestore!`);
       addNotification({
         type: 'system',
@@ -4041,6 +4093,73 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // Partner Item Handlers (Firestore & LocalStorage synced)
+  const addPartner = async (partnerData: Omit<PartnerItem, 'id'> | PartnerItem) => {
+    const id = ('id' in partnerData && partnerData.id) ? partnerData.id : `partner-${Date.now()}`;
+    const newPartner: PartnerItem = {
+      ...partnerData,
+      id,
+      tags: partnerData.tags || []
+    };
+    setPartners(prev => {
+      const updated = [newPartner, ...(prev || [])];
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}partners`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+    await syncToFirestore('partners', id, newPartner);
+    addNotification({
+      type: 'system',
+      title: 'New Partner Card Added',
+      message: `Added: "${newPartner.name}" (${newPartner.category})`,
+      actionUrl: '/partners'
+    });
+  };
+
+  const updatePartner = async (id: string, updates: Partial<PartnerItem>) => {
+    let targetPartner: PartnerItem | null = null;
+    setPartners(prev => {
+      const updated = (prev || []).map(p => {
+        if (p.id === id) {
+          targetPartner = { ...p, ...updates };
+          return targetPartner;
+        }
+        return p;
+      });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}partners`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+    if (targetPartner) {
+      await syncToFirestore('partners', id, targetPartner);
+    }
+  };
+
+  const deletePartner = async (id: string) => {
+    setPartners(prev => {
+      const updated = (prev || []).filter(p => p.id !== id);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}partners`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+    await deleteFromFirestore('partners', id);
+  };
+
+  const reorderPartners = async (newOrderedList: PartnerItem[]) => {
+    setPartners(newOrderedList);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}partners`, JSON.stringify(newOrderedList));
+    }
+    if (db) {
+      for (const p of newOrderedList) {
+        await syncToFirestore('partners', p.id, p);
+      }
+    }
+  };
+
   // Modal handlers
   const openBrevoPreview = (booking: BookingEvent) => {
     const paypalLink = `https://www.paypal.com/checkout/spudthepiper/pay?id=${booking.id}`;
@@ -4218,6 +4337,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateGalleryItem,
       deleteGalleryItem,
       likeGalleryItem,
+      partners,
+      addPartner,
+      updatePartner,
+      deletePartner,
+      reorderPartners,
       isSyncingFirestore,
       syncAllToFirestore,
       activeBrevoEmail,

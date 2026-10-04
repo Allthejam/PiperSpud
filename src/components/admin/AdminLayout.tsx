@@ -25,7 +25,8 @@ import {
   ShieldCheck,
   HelpCircle,
   BookOpen,
-  Camera
+  Camera,
+  Building
 } from 'lucide-react';
 import { BrevoEmailModal } from './BrevoEmailModal';
 import { PayPalCheckoutModal } from './PayPalCheckoutModal';
@@ -68,6 +69,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
     { id: 'mailing-list', label: 'Mailing List & Newsletters', icon: Mail },
     { id: 'faqs', label: 'FAQ Knowledgebase', icon: HelpCircle },
     { id: 'forum', label: 'Forum & Category Control', icon: MessageSquare },
+    { id: 'partners', label: 'Partners & Ecosystem', icon: Building },
     { id: 'social-links', label: 'Social Media Links', icon: Share2 },
     { id: 'reviews', label: 'Review Moderation', icon: Star },
     { id: 'seo', label: 'SEO & Meta Studio', icon: Search },

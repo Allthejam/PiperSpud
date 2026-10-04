@@ -20,6 +20,7 @@ import { AdminNotifications } from '@/components/admin/AdminNotifications';
 import { AdminSecurityControl } from '@/components/admin/AdminSecurityControl';
 import { AdminGuide } from '@/components/admin/AdminGuide';
 import { AdminGallery } from '@/components/admin/AdminGallery';
+import { AdminPartners } from '@/components/admin/AdminPartners';
 import { AdminLoginModal } from '@/components/AdminLoginModal';
 import { ShieldAlert, ArrowLeft, RefreshCw, AlertTriangle, Loader2 } from 'lucide-react';
 
@@ -181,6 +182,7 @@ export default function AdminPage() {
         {activeTab === 'messages' && <AdminMessageCenter />}
         {activeTab === 'faqs' && <AdminFaqs />}
         {activeTab === 'forum' && <AdminForumControl />}
+        {activeTab === 'partners' && <AdminPartners />}
         {activeTab === 'social-links' && <AdminSocialLinks />}
         {activeTab === 'reviews' && <AdminReviews />}
         {activeTab === 'seo' && <AdminSeoStudio />}
