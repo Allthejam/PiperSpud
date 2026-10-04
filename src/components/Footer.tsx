@@ -349,32 +349,91 @@ export const Footer: React.FC = () => {
 
           {/* Bottom Bar */}
           <div className="mt-12 pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-gray-400">
-            <p>© {new Date().getFullYear()} Spud the Piper. All Rights Reserved. Scotland.</p>
+            <EditableElement
+              id="footer-copyright-notice"
+              label="Footer Copyright Text"
+              section="footer"
+              tag="p"
+              defaultContent={`© ${new Date().getFullYear()} Spud the Piper. All Rights Reserved. Scotland.`}
+              className="text-[11px] text-gray-400"
+            />
             
             <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-              <Link href="/partners" className="text-tartan-gold hover:underline font-bold">
-                Our Partners
-              </Link>
+              <EditableElement
+                id="footer-link-partners"
+                label="Footer 'Our Partners' Link"
+                section="footer"
+                tag="a"
+                defaultContent="Our Partners"
+                defaultLinkUrl="/partners"
+                className="text-tartan-gold hover:underline font-bold"
+              />
               <span>•</span>
               <button
                 onClick={() => setIsPwaModalOpen(true)}
                 className="hover:underline flex items-center gap-1"
               >
                 <Smartphone className="w-3.5 h-3.5 text-tartan-gold" />
-                <span>Install App</span>
+                <EditableElement
+                  id="footer-link-install-app"
+                  label="Footer 'Install App' Text"
+                  section="footer"
+                  tag="span"
+                  defaultContent="Install App"
+                  className="hover:underline"
+                />
               </button>
               <span>•</span>
-              <Link href="/terms" className="hover:underline">Terms</Link>
+              <EditableElement
+                id="footer-link-terms"
+                label="Footer 'Terms' Link"
+                section="footer"
+                tag="a"
+                defaultContent="Terms"
+                defaultLinkUrl="/terms"
+                className="hover:underline"
+              />
               <span>•</span>
-              <Link href="/privacy" className="hover:underline">Privacy</Link>
+              <EditableElement
+                id="footer-link-privacy"
+                label="Footer 'Privacy' Link"
+                section="footer"
+                tag="a"
+                defaultContent="Privacy"
+                defaultLinkUrl="/privacy"
+                className="hover:underline"
+              />
               <span>•</span>
-              <Link href="/cookies" className="hover:underline">Cookies</Link>
+              <EditableElement
+                id="footer-link-cookies"
+                label="Footer 'Cookies' Link"
+                section="footer"
+                tag="a"
+                defaultContent="Cookies"
+                defaultLinkUrl="/cookies"
+                className="hover:underline"
+              />
               <span>•</span>
-              <Link href="/booking-policy" className="hover:underline">Deposits</Link>
+              <EditableElement
+                id="footer-link-deposits"
+                label="Footer 'Deposits' Link"
+                section="footer"
+                tag="a"
+                defaultContent="Deposits"
+                defaultLinkUrl="/booking-policy"
+                className="hover:underline"
+              />
               <span>•</span>
               <Link href="/admin" className="text-tartan-gold hover:underline font-semibold flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Admin Back Office</span>
+                <EditableElement
+                  id="footer-link-admin-office"
+                  label="Footer 'Admin Back Office' Text"
+                  section="footer"
+                  tag="span"
+                  defaultContent="Admin Back Office"
+                  className="hover:underline"
+                />
               </Link>
             </div>
           </div>
