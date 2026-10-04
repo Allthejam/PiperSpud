@@ -3,6 +3,7 @@ import './globals.css';
 import { AppProvider } from '@/context/AppContext';
 import { CookieConsentBanner } from '@/components/CookieConsentBanner';
 import { PwaInstallBanner } from '@/components/PwaInstallBanner';
+import { ScrollToTop } from '@/components/ScrollToTop';
 import { StructuredData } from '@/components/StructuredData';
 import { generatePageMetadata, getLivePageSeo } from '@/lib/serverSeo';
 
@@ -61,6 +62,7 @@ export default async function RootLayout({
       <body className="antialiased selection:bg-tartan-gold selection:text-tartan-dark">
         <AppProvider>
           {children}
+          <ScrollToTop />
           <PwaInstallBanner />
           <CookieConsentBanner />
         </AppProvider>

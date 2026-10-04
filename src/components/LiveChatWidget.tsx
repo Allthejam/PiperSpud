@@ -120,7 +120,7 @@ export const LiveChatWidget: React.FC = () => {
     <>
       {/* ================= FLOATING TRIGGER BUTTON & STATUS BADGE ================= */}
       {!isOpen && (
-        <div className="fixed bottom-6 right-4 sm:right-6 z-40 flex flex-col items-end gap-2 group">
+        <div className="fixed bottom-6 right-18 sm:right-24 z-40 flex flex-col items-end gap-2 group">
           
           {/* Teaser pill / status chip - Visible on desktop, hidden on mobile */}
           <div 
