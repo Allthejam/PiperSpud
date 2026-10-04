@@ -24,14 +24,27 @@ import {
   Ship,
   Globe,
   Phone,
-  ShieldCheck
+  ShieldCheck,
+  Volume2,
+  VolumeX,
+  Play,
+  Square
 } from 'lucide-react';
 import { EventType, HighlandDressOption } from '@/types/spud';
 import { calculateTravelCosts } from '@/lib/travelCalculator';
 import { initialTravelConfig } from '@/lib/initialData';
 
 export const BookingCalendar: React.FC = () => {
-  const { createBooking, tunesList, travelConfig, services, pricingConfig } = useApp();
+  const { 
+    createBooking, 
+    tunesList, 
+    travelConfig, 
+    services, 
+    pricingConfig,
+    currentPlayingTune,
+    playTune,
+    stopTune
+  } = useApp();
 
   // Dynamic Real-time Date references
   const today = new Date();
@@ -59,7 +72,7 @@ export const BookingCalendar: React.FC = () => {
   const [venueAddress, setVenueAddress] = useState('');
   const [venuePostcode, setVenuePostcode] = useState('');
   const [tartanChoice, setTartanChoice] = useState<HighlandDressOption>('Full No. 1 Dress (Feather Bonnet & Plaid)');
-  const [selectedTunes, setSelectedTunes] = useState<string[]>(['Highland Cathedral', 'Scotland the Brave']);
+  const [selectedTunes, setSelectedTunes] = useState<string[]>([]);
   const [visibleTuneCount, setVisibleTuneCount] = useState<number>(6); // 2 rows of 3
   const [notes, setNotes] = useState('');
 
@@ -160,6 +173,15 @@ export const BookingCalendar: React.FC = () => {
       setSelectedTunes(selectedTunes.filter(t => t !== tuneTitle));
     } else {
       setSelectedTunes([...selectedTunes, tuneTitle]);
+    }
+  };
+
+  const handlePlayTunePreview = (e: React.MouseEvent, tuneTitle: string) => {
+    e.stopPropagation();
+    if (currentPlayingTune === tuneTitle) {
+      stopTune();
+    } else {
+      playTune(tuneTitle);
     }
   };
 
@@ -785,43 +807,123 @@ export const BookingCalendar: React.FC = () => {
                 </div>
 
                 {/* Form Row 5: Special Bagpipe Tunes Selection */}
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between flex-wrap gap-2">
-                    <label className="text-xs font-semibold text-tartan-gold flex items-center gap-1.5">
-                      <Music className="w-3.5 h-3.5" />
-                      <span>Requested Tunes ({selectedTunes.length} selected):</span>
-                    </label>
-                    <span className="text-[11px] text-gray-400 font-medium">
-                      Showing {Math.min(visibleTuneCount, sortedTunes.length)} of {sortedTunes.length} tunes
-                    </span>
+                    <div>
+                      <label className="text-xs font-semibold text-tartan-gold flex items-center gap-1.5">
+                        <Music className="w-3.5 h-3.5" />
+                        <span>Requested Bagpipe Tunes ({selectedTunes.length} selected):</span>
+                      </label>
+                      <p className="text-[11px] text-gray-400 mt-0.5">
+                        Click any card to select. Click the <strong className="text-tartan-gold">🔊 speaker icon</strong> on any card to preview the audio sample.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {selectedTunes.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedTunes([])}
+                          className="text-[11px] text-rose-400 hover:text-rose-300 underline font-medium"
+                        >
+                          Clear selections
+                        </button>
+                      )}
+                      <span className="text-[11px] text-gray-400 font-medium">
+                        Showing {Math.min(visibleTuneCount, sortedTunes.length)} of {sortedTunes.length}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {/* Active Now Playing Banner if audio is active */}
+                  {currentPlayingTune && (
+                    <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-950/80 via-tartan-card to-amber-950/80 border border-tartan-gold/60 text-xs flex items-center justify-between shadow-lg animate-in fade-in">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-tartan-gold text-tartan-dark flex items-center justify-center font-bold animate-pulse">
+                          <Volume2 className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold text-tartan-gold uppercase tracking-wider">Now Playing Sample</span>
+                            <span className="flex gap-0.5 items-end h-3">
+                              <span className="w-0.5 h-2 bg-amber-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                              <span className="w-0.5 h-3 bg-amber-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                              <span className="w-0.5 h-1.5 bg-amber-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                            </span>
+                          </div>
+                          <p className="text-white font-bold font-serif text-sm">{currentPlayingTune}</p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={stopTune}
+                        className="px-3 py-1.5 rounded-xl bg-tartan-dark hover:bg-rose-950 text-gray-300 hover:text-rose-300 border border-tartan-border text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                      >
+                        <VolumeX className="w-3.5 h-3.5 text-rose-400" />
+                        <span>Stop Audio</span>
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                     {displayedTunes.map((tune) => {
                       const isChecked = selectedTunes.includes(tune.title);
+                      const isPlaying = currentPlayingTune === tune.title || currentPlayingTune === tune.id;
+
                       return (
                         <div
                           key={tune.id}
                           onClick={() => handleTuneToggle(tune.title)}
-                          className={`p-2.5 rounded-xl cursor-pointer text-xs font-medium border flex items-center justify-between gap-2 transition-all ${
+                          className={`p-3 rounded-2xl cursor-pointer text-xs font-medium border flex items-center justify-between gap-2.5 transition-all group select-none ${
                             isChecked
-                              ? 'bg-tartan-navy text-tartan-gold border-tartan-gold shadow-md'
-                              : 'bg-tartan-dark/70 text-gray-300 border-tartan-border hover:bg-tartan-dark hover:border-gray-600'
-                          }`}
+                              ? 'bg-tartan-navy text-tartan-gold border-tartan-gold shadow-md ring-1 ring-tartan-gold/50'
+                              : 'bg-tartan-dark/80 text-gray-200 border-tartan-border hover:bg-tartan-card hover:border-gray-600'
+                          } ${isPlaying ? 'ring-2 ring-amber-400 bg-amber-950/40 border-amber-400' : ''}`}
                         >
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <div className={`w-4 h-4 rounded flex items-center justify-center shrink-0 border ${
-                              isChecked ? 'bg-tartan-gold text-tartan-dark border-yellow-300' : 'border-slate-600'
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <div className={`w-4 h-4 rounded flex items-center justify-center shrink-0 border transition-all ${
+                              isChecked ? 'bg-tartan-gold text-tartan-dark border-yellow-300' : 'border-slate-600 bg-black/30'
                             }`}>
-                              {isChecked && <CheckCircle2 className="w-3.5 h-3.5" />}
+                              {isChecked && <CheckCircle2 className="w-3.5 h-3.5 stroke-[3]" />}
                             </div>
-                            <span className="truncate">{tune.title}</span>
+                            <div className="min-w-0 flex-1">
+                              <span className="truncate block font-semibold text-white group-hover:text-tartan-gold transition-colors" title={tune.title}>
+                                {tune.title}
+                              </span>
+                              {tune.category && (
+                                <span className="text-[10px] text-gray-400 block truncate">
+                                  {tune.category} {tune.tempo ? `• ${tune.tempo}` : ''}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          {tune.showOnHomePage && (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-tartan-gold/15 text-tartan-gold font-bold shrink-0 border border-tartan-gold/30">
-                              Featured
-                            </span>
-                          )}
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {/* Speaker Audio Preview Button */}
+                            <button
+                              type="button"
+                              onClick={(e) => handlePlayTunePreview(e, tune.title)}
+                              className={`p-2 rounded-xl border transition-all flex items-center justify-center ${
+                                isPlaying
+                                  ? 'bg-gold-gradient text-tartan-dark border-amber-300 shadow-lg shadow-amber-500/20 scale-105 animate-pulse'
+                                  : 'bg-tartan-card hover:bg-gold-gradient hover:text-tartan-dark text-tartan-gold border-tartan-border hover:border-tartan-gold shadow-sm'
+                              }`}
+                              title={isPlaying ? `Stop listening to ${tune.title}` : `Listen to ${tune.title} bagpipe sample`}
+                            >
+                              {isPlaying ? (
+                                <VolumeX className="w-4 h-4" />
+                              ) : (
+                                <Volume2 className="w-4 h-4" />
+                              )}
+                            </button>
+
+                            {tune.showOnHomePage && !isPlaying && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-tartan-gold/15 text-tartan-gold font-bold shrink-0 border border-tartan-gold/30 hidden lg:inline-block">
+                                Top Pick
+                              </span>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
