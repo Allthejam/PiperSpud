@@ -202,6 +202,138 @@ export async function POST(req: NextRequest) {
         </div>
       `;
     }
+    // ================= 3.5 Booking Request Received (Client Confirmation & Admin Alert) =================
+    else if (type === 'booking_created' && booking) {
+      recipientEmail = booking.clientEmail;
+      recipientName = booking.clientName || 'Valued Client';
+      subject = `🏴󠁧󠁢󠁳󠁣󠁴󠁿 Booking Request Received: Spud the Piper (${booking.eventType} - ${formatEventDate(booking.date)})`;
+      htmlContent = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background-color: #0d1527; color: #f8fafc; padding: 32px 24px; border-radius: 16px; border: 1px solid #c5a059;">
+          <div style="text-align: center; border-bottom: 1px solid #1e293b; padding-bottom: 20px; margin-bottom: 24px;">
+            <h1 style="color: #c5a059; margin: 0; font-size: 26px; font-family: Georgia, serif; letter-spacing: 0.5px;">Spud The Piper</h1>
+            <p style="color: #94a3b8; margin: 6px 0 0 0; font-size: 13px; letter-spacing: 1px; text-transform: uppercase;">Booking Request Received • Under Review</p>
+          </div>
+
+          <div style="background-color: #131d33; padding: 22px; border-radius: 12px; border: 1px solid #1e293b; margin-bottom: 24px;">
+            <p style="font-size: 15px; line-height: 1.6; margin-top: 0;">
+              Dear <strong style="color: #c5a059;">${booking.clientName}</strong>,
+            </p>
+            <p style="font-size: 14px; line-height: 1.6; color: #e2e8f0;">
+              Thank you for choosing Spud the Piper! We have successfully received your provisional booking request for <strong style="color: #ffffff;">${booking.eventType}</strong> on <strong style="color: #facc15;">${formatEventDate(booking.date)}</strong>.
+            </p>
+
+            <!-- Event Summary Box -->
+            <div style="background-color: #0b1120; border-radius: 10px; padding: 16px; margin: 18px 0; border-left: 4px solid #c5a059;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <tr>
+                  <td style="padding: 6px 0; color: #94a3b8;">Event / Occasion:</td>
+                  <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #ffffff;">${booking.eventType}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #94a3b8;">Requested Date:</td>
+                  <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #ffffff;">${formatEventDate(booking.date)}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #94a3b8;">Preferred Time Slot:</td>
+                  <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #ffffff;">${booking.timeSlot}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #94a3b8;">Venue & Location:</td>
+                  <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #ffffff;">${booking.venueName} (${booking.venuePostcode})</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #94a3b8;">Highland Dress Style:</td>
+                  <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #ffffff;">${booking.tartanChoice}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #94a3b8;">Requested Bagpipe Tunes:</td>
+                  <td style="padding: 6px 0; text-align: right; color: #facc15; font-weight: bold;">${(booking.specialTunes || []).join(', ') || 'Traditional Scottish Repertoire'}</td>
+                </tr>
+                <tr style="border-top: 1px dashed #334155;">
+                  <td style="padding: 6px 0; color: #94a3b8;">Estimated Total Fee:</td>
+                  <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #ffffff;">£${booking.estimatedPrice}.00</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #c5a059; font-weight: bold;">Provisional Deposit (upon approval):</td>
+                  <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #c5a059;">£${booking.depositAmount}.00</td>
+                </tr>
+              </table>
+            </div>
+
+            <!-- What Happens Next Box -->
+            <div style="background-color: #1e293b; border-radius: 10px; padding: 16px; margin: 18px 0; border: 1px solid #334155;">
+              <h3 style="color: #facc15; margin: 0 0 8px 0; font-size: 14px;">📋 What Happens Next?</h3>
+              <ul style="font-size: 13px; color: #cbd5e1; line-height: 1.6; margin: 0; padding-left: 18px;">
+                <li>Callum (Spud) will personally check his private diary and travel logistics for your date.</li>
+                <li>Once verified, you will receive an <strong>Official Approval Confirmation Email</strong> containing your secure PayPal deposit link.</li>
+                <li>Completing your £${booking.depositAmount}.00 deposit officially locks your date in Spud's diary.</li>
+                <li><strong>No payment is required right now.</strong></li>
+              </ul>
+            </div>
+
+            ${booking.notes ? `
+            <div style="margin-top: 14px; padding: 12px; background-color: #0b1120; border-radius: 8px; border: 1px solid #1e293b; font-size: 12px;">
+              <strong style="color: #94a3b8; display: block; margin-bottom: 4px;">Your Notes / Instructions:</strong>
+              <span style="color: #e2e8f0; font-style: italic;">"${booking.notes}"</span>
+            </div>
+            ` : ''}
+
+            <div style="margin-top: 20px; font-size: 12px; color: #94a3b8; line-height: 1.5; border-top: 1px dashed #334155; padding-top: 12px;">
+              <p style="margin: 0 0 4px 0;">If you need to make any quick adjustments or have questions, feel free to reply directly to this email or call Spud on <a href="tel:07793491367" style="color: #c5a059; text-decoration: none; font-weight: bold;">07793 491367</a>.</p>
+            </div>
+          </div>
+
+          <div style="text-align: center; font-size: 11px; color: #64748b; line-height: 1.5;">
+            <p style="margin: 0 0 4px 0;">Spud The Piper • Aviemore, Highlands, Scotland • <a href="https://spudthepiper.com" style="color: #c5a059; text-decoration: none;">spudthepiper.com</a></p>
+            <p style="margin: 0;">Automated Booking Dispatch powered by Brevo Transactional Email</p>
+          </div>
+        </div>
+      `;
+
+      // Also trigger a background copy / alert to Spud so he is instantly alerted
+      if (adminAlertEmail && apiKey) {
+        try {
+          fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: {
+              'api-key': apiKey,
+              'Content-Type': 'application/json',
+              'accept': 'application/json'
+            },
+            body: JSON.stringify({
+              sender: { name: senderName, email: senderEmail },
+              to: [{ email: adminAlertEmail, name: 'Spud Fraser' }],
+              subject: `🔔 New Booking Request: ${booking.clientName} (${booking.eventType} - ${booking.date})`,
+              htmlContent: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0d1527; color: #ffffff; padding: 24px; border-radius: 12px; border: 1px solid #c5a059;">
+                  <h2 style="color: #c5a059; margin-top: 0;">New Booking Request Received</h2>
+                  <p style="font-size: 14px; color: #e2e8f0;">A new provisional booking request was just submitted on your website:</p>
+                  <ul style="font-size: 13px; color: #cbd5e1; line-height: 1.8;">
+                    <li><strong>Client:</strong> ${booking.clientName} (<a href="tel:${booking.clientPhone}" style="color: #22c55e;">${booking.clientPhone}</a> • ${booking.clientEmail})</li>
+                    <li><strong>Preferred Contact:</strong> ${booking.preferredContactMethod === 'telephone' ? '📞 Telephone' : '✉️ Email'}</li>
+                    <li><strong>Event:</strong> ${booking.eventType}</li>
+                    <li><strong>Date & Slot:</strong> ${booking.date} (${booking.timeSlot})</li>
+                    <li><strong>Venue:</strong> ${booking.venueName} (${booking.venuePostcode})</li>
+                    <li><strong>Attire:</strong> ${booking.tartanChoice}</li>
+                    <li><strong>Requested Tunes:</strong> ${(booking.specialTunes || []).join(', ') || 'Standard Selection'}</li>
+                    <li><strong>Travel Logistics:</strong> ${booking.travelBreakdownText || 'Standard'}</li>
+                    <li><strong>Total Estimated Fee:</strong> £${booking.estimatedPrice}.00 (Deposit: £${booking.depositAmount}.00)</li>
+                    ${booking.notes ? `<li><strong>Client Notes:</strong> "${booking.notes}"</li>` : ''}
+                  </ul>
+                  <div style="text-align: center; margin: 20px 0 10px 0;">
+                    <a href="https://spudthepiper.com/admin/bookings" target="_blank" style="background: linear-gradient(135deg, #c5a059 0%, #dfb76c 100%); color: #0b1120; font-weight: bold; font-size: 13px; text-decoration: none; padding: 12px 24px; border-radius: 8px; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px;">
+                      Review & Approve in Back Office
+                    </a>
+                  </div>
+                </div>
+              `
+            })
+          }).catch(e => console.warn('Admin alert email background trigger error:', e));
+        } catch (e) {
+          console.warn('Admin alert send warning:', e);
+        }
+      }
+    }
     // ================= 4. Booking Approved by Spud (Deposit Invoice) =================
     else if (type === 'booking_approved' && booking) {
       const formattedDepositLink = paypalLink || (booking.depositAmount ? `https://paypal.me/spudthepiper/${booking.depositAmount}` : 'https://paypal.me/spudthepiper/50');
