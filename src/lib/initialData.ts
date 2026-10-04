@@ -1120,7 +1120,8 @@ export const initialSocialLinks: SocialMediaLinks = {
   instagram: 'https://www.instagram.com/spudthepiper/',
   linkedin: 'https://www.linkedin.com/in/spudthepiper/',
   tiktok: 'https://www.tiktok.com/@spudthepiper',
-  trustpilot: 'https://www.trustpilot.com/review/spudthepiper.co.uk'
+  trustpilot: 'https://www.trustpilot.com/review/spudthepiper.co.uk',
+  hiddenPlatforms: {}
 };
 
 export const initialServices: ServicePackage[] = [

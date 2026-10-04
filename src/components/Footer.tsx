@@ -49,8 +49,9 @@ export const Footer: React.FC = () => {
 
   const socialChannels = [
     {
+      key: 'facebook' as const,
       name: 'Facebook',
-      url: socialLinks?.facebook || 'https://www.facebook.com/spudthepiper/',
+      url: (socialLinks?.facebook ?? '').trim(),
       hoverColor: 'hover:bg-blue-600 hover:text-white',
       icon: (
         <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -59,8 +60,9 @@ export const Footer: React.FC = () => {
       )
     },
     {
+      key: 'twitter' as const,
       name: 'X (Twitter)',
-      url: socialLinks?.twitter || 'https://twitter.com/spudthepiper',
+      url: (socialLinks?.twitter ?? '').trim(),
       hoverColor: 'hover:bg-slate-700 hover:text-white',
       icon: (
         <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -69,8 +71,9 @@ export const Footer: React.FC = () => {
       )
     },
     {
+      key: 'pinterest' as const,
       name: 'Pinterest',
-      url: socialLinks?.pinterest || 'https://www.pinterest.com/spudthepiper/',
+      url: (socialLinks?.pinterest ?? '').trim(),
       hoverColor: 'hover:bg-red-600 hover:text-white',
       icon: (
         <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -79,8 +82,9 @@ export const Footer: React.FC = () => {
       )
     },
     {
+      key: 'instagram' as const,
       name: 'Instagram',
-      url: socialLinks?.instagram || 'https://www.instagram.com/spudthepiper/',
+      url: (socialLinks?.instagram ?? '').trim(),
       hoverColor: 'hover:bg-gradient-to-tr hover:from-amber-600 hover:via-pink-600 hover:to-purple-600 hover:text-white',
       icon: (
         <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -89,8 +93,9 @@ export const Footer: React.FC = () => {
       )
     },
     {
+      key: 'linkedin' as const,
       name: 'LinkedIn',
-      url: socialLinks?.linkedin || 'https://www.linkedin.com/in/spudthepiper/',
+      url: (socialLinks?.linkedin ?? '').trim(),
       hoverColor: 'hover:bg-cyan-700 hover:text-white',
       icon: (
         <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -99,8 +104,9 @@ export const Footer: React.FC = () => {
       )
     },
     {
+      key: 'tiktok' as const,
       name: 'TikTok',
-      url: socialLinks?.tiktok || 'https://www.tiktok.com/@spudthepiper',
+      url: (socialLinks?.tiktok ?? '').trim(),
       hoverColor: 'hover:bg-pink-600 hover:text-white',
       icon: (
         <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -109,8 +115,9 @@ export const Footer: React.FC = () => {
       )
     },
     {
+      key: 'trustpilot' as const,
       name: 'Trustpilot',
-      url: socialLinks?.trustpilot || 'https://www.trustpilot.com/review/spudthepiper.co.uk',
+      url: (socialLinks?.trustpilot ?? '').trim(),
       hoverColor: 'hover:bg-[#00b67a] hover:text-white',
       icon: (
         <svg className="w-4 h-4 fill-[#00b67a] group-hover:fill-white" viewBox="0 0 24 24">
@@ -118,7 +125,15 @@ export const Footer: React.FC = () => {
         </svg>
       )
     }
-  ];
+  ].filter(item => {
+    if (!item.url) return false;
+    if (socialLinks?.hiddenPlatforms?.[item.key]) return false;
+    return true;
+  });
+
+  const isTrustpilotVisible = Boolean(
+    (socialLinks?.trustpilot ?? '').trim() && !socialLinks?.hiddenPlatforms?.trustpilot
+  );
 
   return (
     <>
@@ -225,28 +240,30 @@ export const Footer: React.FC = () => {
                   </a>
                 </div>
 
-                {/* Trustpilot Review Badge in Footer */}
-                <div className="pt-2">
-                  <a
-                    href={socialLinks?.trustpilot || 'https://www.trustpilot.com/review/spudthepiper.co.uk'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 hover:border-emerald-500 text-xs transition-all text-white group shadow hover:bg-emerald-950/70"
-                  >
-                    <div className="flex items-center gap-1.5 font-bold text-white text-xs">
-                      <svg className="w-4 h-4 fill-[#00b67a]" viewBox="0 0 24 24">
-                        <path d="M12 0l3.708 7.514 8.292 1.206-6 5.849 1.416 8.257L12 18.927l-7.416 3.9 1.416-8.257-6-5.849 8.292-1.206z"/>
-                      </svg>
-                      <span>Trustpilot</span>
-                    </div>
-                    <span className="text-gray-400 text-[10px]">|</span>
-                    <div className="flex items-center text-[#00b67a] text-xs">
-                      ★★★★★
-                    </div>
-                    <span className="text-[11px] text-emerald-400 font-bold">5.0 / 5.0</span>
-                    <span className="text-[10px] text-gray-400 group-hover:text-emerald-300 transition-colors">Verified Reviews →</span>
-                  </a>
-                </div>
+                {/* Trustpilot Review Badge in Footer (Auto-hidden if blank or hidden) */}
+                {isTrustpilotVisible && (
+                  <div className="pt-2">
+                    <a
+                      href={(socialLinks?.trustpilot ?? '').trim()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 hover:border-emerald-500 text-xs transition-all text-white group shadow hover:bg-emerald-950/70"
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-white text-xs">
+                        <svg className="w-4 h-4 fill-[#00b67a]" viewBox="0 0 24 24">
+                          <path d="M12 0l3.708 7.514 8.292 1.206-6 5.849 1.416 8.257L12 18.927l-7.416 3.9 1.416-8.257-6-5.849 8.292-1.206z"/>
+                        </svg>
+                        <span>Trustpilot</span>
+                      </div>
+                      <span className="text-gray-400 text-[10px]">|</span>
+                      <div className="flex items-center text-[#00b67a] text-xs">
+                        ★★★★★
+                      </div>
+                      <span className="text-[11px] text-emerald-400 font-bold">5.0 / 5.0</span>
+                      <span className="text-[10px] text-gray-400 group-hover:text-emerald-300 transition-colors">Verified Reviews →</span>
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -192,17 +192,19 @@ export const ReviewsSection: React.FC = () => {
               </button>
             </div>
 
-            <a
-              href={socialLinks?.trustpilot || 'https://www.trustpilot.com/review/spudthepiper.co.uk'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-3 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/40 hover:border-emerald-400 text-white font-bold text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all shrink-0 hover:scale-105 group"
-            >
-              <svg className="w-4 h-4 fill-[#00b67a]" viewBox="0 0 24 24">
-                <path d="M12 0l3.708 7.514 8.292 1.206-6 5.849 1.416 8.257L12 18.927l-7.416 3.9 1.416-8.257-6-5.849 8.292-1.206z"/>
-              </svg>
-              <span>Trustpilot (5.0 ★)</span>
-            </a>
+            {Boolean((socialLinks?.trustpilot ?? '').trim() && !socialLinks?.hiddenPlatforms?.trustpilot) && (
+              <a
+                href={(socialLinks?.trustpilot ?? '').trim()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-3 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/40 hover:border-emerald-400 text-white font-bold text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all shrink-0 hover:scale-105 group"
+              >
+                <svg className="w-4 h-4 fill-[#00b67a]" viewBox="0 0 24 24">
+                  <path d="M12 0l3.708 7.514 8.292 1.206-6 5.849 1.416 8.257L12 18.927l-7.416 3.9 1.416-8.257-6-5.849 8.292-1.206z"/>
+                </svg>
+                <span>Trustpilot (5.0 ★)</span>
+              </a>
+            )}
 
             <button
               onClick={() => setIsModalOpen(true)}
@@ -215,35 +217,37 @@ export const ReviewsSection: React.FC = () => {
         </div>
 
         {/* Trustpilot Banner Bar */}
-        <div className="mb-10 p-4 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-tartan-card to-emerald-950/30 border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-[#00b67a]/20 border border-[#00b67a]/40 text-[#00b67a] shrink-0">
-              <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
-                <path d="M12 0l3.708 7.514 8.292 1.206-6 5.849 1.416 8.257L12 18.927l-7.416 3.9 1.416-8.257-6-5.849 8.292-1.206z"/>
-              </svg>
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-white text-sm">Trustpilot & Google Trust Engine:</span>
-                <span className="text-emerald-400 font-extrabold text-sm">5.0 / 5.0 (Excellent)</span>
-                <div className="flex text-[#00b67a] text-xs">★★★★★</div>
+        {Boolean((socialLinks?.trustpilot ?? '').trim() && !socialLinks?.hiddenPlatforms?.trustpilot) && (
+          <div className="mb-10 p-4 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-tartan-card to-emerald-950/30 border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-[#00b67a]/20 border border-[#00b67a]/40 text-[#00b67a] shrink-0">
+                <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                  <path d="M12 0l3.708 7.514 8.292 1.206-6 5.849 1.416 8.257L12 18.927l-7.416 3.9 1.416-8.257-6-5.849 8.292-1.206z"/>
+                </svg>
               </div>
-              <p className="text-[11px] text-gray-400">
-                100% verified customer ratings, real wedding photographs, and independent client feedback.
-              </p>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-white text-sm">Trustpilot & Google Trust Engine:</span>
+                  <span className="text-emerald-400 font-extrabold text-sm">5.0 / 5.0 (Excellent)</span>
+                  <div className="flex text-[#00b67a] text-xs">★★★★★</div>
+                </div>
+                <p className="text-[11px] text-gray-400">
+                  100% verified customer ratings, real wedding photographs, and independent client feedback.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <a
-            href={socialLinks?.trustpilot || 'https://www.trustpilot.com/review/spudthepiper.co.uk'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-4 py-2 rounded-lg bg-[#00b67a] hover:bg-emerald-500 text-tartan-dark font-extrabold text-xs tracking-wider transition-all flex items-center gap-1.5 shrink-0 shadow"
-          >
-            <span>See Verified Reviews</span>
-            <span>→</span>
-          </a>
-        </div>
+            <a
+              href={(socialLinks?.trustpilot ?? '').trim()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 rounded-lg bg-[#00b67a] hover:bg-emerald-500 text-tartan-dark font-extrabold text-xs tracking-wider transition-all flex items-center gap-1.5 shrink-0 shadow"
+            >
+              <span>See Verified Reviews</span>
+              <span>→</span>
+            </a>
+          </div>
+        )}
 
         {/* ================= CAROUSEL VIEW (Right-to-Left with Center Enlarged) ================= */}
         {viewMode === 'carousel' && approvedReviews.length > 0 && (

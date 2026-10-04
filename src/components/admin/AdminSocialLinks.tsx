@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { 
   Share2, 
@@ -11,7 +11,11 @@ import {
   ShieldCheck, 
   Globe, 
   Sparkles,
-  Link2
+  Link2,
+  Eye,
+  EyeOff,
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { SocialMediaLinks } from '@/types/spud';
 import { initialSocialLinks } from '@/lib/initialData';
@@ -20,19 +24,59 @@ export const AdminSocialLinks: React.FC = () => {
   const { socialLinks, updateSocialLinks } = useApp();
 
   const [formData, setFormData] = useState<SocialMediaLinks>({
-    facebook: socialLinks.facebook || '',
-    twitter: socialLinks.twitter || '',
-    pinterest: socialLinks.pinterest || '',
-    instagram: socialLinks.instagram || '',
-    linkedin: socialLinks.linkedin || '',
-    tiktok: socialLinks.tiktok || '',
-    trustpilot: socialLinks.trustpilot || ''
+    facebook: socialLinks?.facebook || '',
+    twitter: socialLinks?.twitter || '',
+    pinterest: socialLinks?.pinterest || '',
+    instagram: socialLinks?.instagram || '',
+    linkedin: socialLinks?.linkedin || '',
+    tiktok: socialLinks?.tiktok || '',
+    trustpilot: socialLinks?.trustpilot || '',
+    hiddenPlatforms: socialLinks?.hiddenPlatforms || {}
   });
 
   const [isSaved, setIsSaved] = useState(false);
 
-  const handleChange = (platform: keyof SocialMediaLinks, val: string) => {
+  // Sync state when socialLinks updates from Firebase/LocalStorage
+  useEffect(() => {
+    if (socialLinks) {
+      setFormData({
+        facebook: socialLinks.facebook || '',
+        twitter: socialLinks.twitter || '',
+        pinterest: socialLinks.pinterest || '',
+        instagram: socialLinks.instagram || '',
+        linkedin: socialLinks.linkedin || '',
+        tiktok: socialLinks.tiktok || '',
+        trustpilot: socialLinks.trustpilot || '',
+        hiddenPlatforms: socialLinks.hiddenPlatforms || {}
+      });
+    }
+  }, [socialLinks]);
+
+  const handleChange = (platform: keyof Omit<SocialMediaLinks, 'hiddenPlatforms'>, val: string) => {
     setFormData(prev => ({ ...prev, [platform]: val }));
+    setIsSaved(false);
+  };
+
+  const handleToggleHide = (platform: string) => {
+    setFormData(prev => {
+      const hidden = { ...(prev.hiddenPlatforms || {}) };
+      const currentHidden = Boolean(hidden[platform as keyof typeof hidden]);
+      return {
+        ...prev,
+        hiddenPlatforms: {
+          ...hidden,
+          [platform]: !currentHidden
+        }
+      };
+    });
+    setIsSaved(false);
+  };
+
+  const handleClearUrl = (platform: keyof Omit<SocialMediaLinks, 'hiddenPlatforms'>) => {
+    setFormData(prev => ({
+      ...prev,
+      [platform]: ''
+    }));
     setIsSaved(false);
   };
 
@@ -40,7 +84,7 @@ export const AdminSocialLinks: React.FC = () => {
     e.preventDefault();
     updateSocialLinks(formData);
     setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+    setTimeout(() => setIsSaved(false), 3500);
   };
 
   const handleResetDefaults = () => {
@@ -48,13 +92,13 @@ export const AdminSocialLinks: React.FC = () => {
       setFormData(initialSocialLinks);
       updateSocialLinks(initialSocialLinks);
       setIsSaved(true);
-      setTimeout(() => setIsSaved(false), 3000);
+      setTimeout(() => setIsSaved(false), 3500);
     }
   };
 
   const socialPlatforms = [
     {
-      key: 'facebook' as keyof SocialMediaLinks,
+      key: 'facebook' as const,
       name: 'Facebook',
       description: 'Official Spud the Piper Facebook page & wedding community group',
       placeholder: 'https://www.facebook.com/spudthepiper/',
@@ -67,7 +111,7 @@ export const AdminSocialLinks: React.FC = () => {
       )
     },
     {
-      key: 'twitter' as keyof SocialMediaLinks,
+      key: 'twitter' as const,
       name: 'X (Twitter)',
       description: 'Official X / Twitter profile for piping announcements, tour dates & live galas',
       placeholder: 'https://twitter.com/spudthepiper',
@@ -80,7 +124,7 @@ export const AdminSocialLinks: React.FC = () => {
       )
     },
     {
-      key: 'pinterest' as keyof SocialMediaLinks,
+      key: 'pinterest' as const,
       name: 'Pinterest',
       description: 'Scottish wedding attire inspiration, Highland castle photography & tartan mood boards',
       placeholder: 'https://www.pinterest.com/spudthepiper/',
@@ -93,7 +137,7 @@ export const AdminSocialLinks: React.FC = () => {
       )
     },
     {
-      key: 'instagram' as keyof SocialMediaLinks,
+      key: 'instagram' as const,
       name: 'Instagram',
       description: 'Behind the scenes bagpipe clips, castle reels, wedding entrance videos & stories',
       placeholder: 'https://www.instagram.com/spudthepiper/',
@@ -106,7 +150,7 @@ export const AdminSocialLinks: React.FC = () => {
       )
     },
     {
-      key: 'linkedin' as keyof SocialMediaLinks,
+      key: 'linkedin' as const,
       name: 'LinkedIn',
       description: 'Corporate entertainment bookings, brand partnerships, Burns Night galas & event networking',
       placeholder: 'https://www.linkedin.com/in/spudthepiper/',
@@ -119,7 +163,7 @@ export const AdminSocialLinks: React.FC = () => {
       )
     },
     {
-      key: 'tiktok' as keyof SocialMediaLinks,
+      key: 'tiktok' as const,
       name: 'TikTok',
       description: 'Viral Scottish piping tunes, sound testing in castle halls & NYC Tartan Day highlights',
       placeholder: 'https://www.tiktok.com/@spudthepiper',
@@ -132,7 +176,7 @@ export const AdminSocialLinks: React.FC = () => {
       )
     },
     {
-      key: 'trustpilot' as keyof SocialMediaLinks,
+      key: 'trustpilot' as const,
       name: 'Trustpilot',
       description: 'Official Trustpilot reviews page, customer ratings score & verified client feedback',
       placeholder: 'https://www.trustpilot.com/review/spudthepiper.co.uk',
@@ -160,7 +204,8 @@ export const AdminSocialLinks: React.FC = () => {
             Social Media Links & Channels
           </h1>
           <p className="text-xs sm:text-sm text-gray-400 max-w-2xl leading-relaxed">
-            Configure your official social media URLs for Facebook, X (Twitter), Pinterest, Instagram, LinkedIn, and TikTok. These links instantly sync to the website footer and social integrations.
+            Configure your official social media URLs for Facebook, X (Twitter), Pinterest, Instagram, LinkedIn, TikTok, and Trustpilot. 
+            <strong className="text-gray-200"> Any platform with a blank URL or toggled to "Hide" will not appear on the website footer.</strong>
           </p>
         </div>
 
@@ -181,7 +226,7 @@ export const AdminSocialLinks: React.FC = () => {
         <div className="p-4 rounded-2xl bg-green-950/60 border border-green-500/50 flex items-center justify-between text-green-300 text-xs sm:text-sm font-semibold shadow-lg animate-in fade-in">
           <div className="flex items-center gap-2.5">
             <Check className="w-5 h-5 text-green-400" />
-            <span>Social media links successfully updated and synced with the footer!</span>
+            <span>Social media links &amp; visibility settings successfully updated and synced with the footer!</span>
           </div>
           <a
             href="/#social"
@@ -198,39 +243,87 @@ export const AdminSocialLinks: React.FC = () => {
       <form onSubmit={handleSave} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {socialPlatforms.map((platform) => {
-            const currentVal = formData[platform.key] || '';
+            const currentVal = (formData[platform.key] as string) || '';
+            const isManuallyHidden = Boolean(formData.hiddenPlatforms?.[platform.key]);
+            const isBlank = !currentVal.trim();
+            const isCurrentlyVisible = !isBlank && !isManuallyHidden;
 
             return (
               <div
                 key={platform.key}
-                className="bg-tartan-card rounded-3xl p-6 border border-tartan-border shadow-xl hover:border-tartan-accent/40 transition-all flex flex-col justify-between space-y-4"
+                className={`bg-tartan-card rounded-3xl p-6 border transition-all flex flex-col justify-between space-y-4 shadow-xl ${
+                  isCurrentlyVisible 
+                    ? 'border-tartan-border hover:border-tartan-accent/40' 
+                    : 'border-slate-800/80 bg-tartan-card/60 opacity-90'
+                }`}
               >
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${platform.color} flex items-center justify-center text-white shadow`}>
+                      <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${platform.color} flex items-center justify-center text-white shadow shrink-0`}>
                         {platform.icon}
                       </div>
                       <div>
                         <h3 className="text-base font-bold text-white font-serif">{platform.name}</h3>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${platform.badgeBg}`}>
-                          Official Channel
-                        </span>
+                        
+                        {/* Live Visibility Status Pill */}
+                        <div className="mt-1 flex items-center gap-2">
+                          {isCurrentlyVisible ? (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/70 text-emerald-300 border border-emerald-500/40 inline-flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                              <span>Visible on Footer</span>
+                            </span>
+                          ) : isBlank ? (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-gray-400 border border-slate-700 inline-flex items-center gap-1">
+                              <span>Hidden (Blank URL)</span>
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-950/60 text-amber-300 border border-amber-500/40 inline-flex items-center gap-1">
+                              <EyeOff className="w-3 h-3" />
+                              <span>Hidden from Footer</span>
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    {currentVal && (
-                      <a
-                        href={currentVal}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 rounded-xl bg-tartan-navy hover:bg-slate-700 text-tartan-gold text-xs font-bold border border-tartan-border flex items-center gap-1.5 transition-all shadow"
-                        title={`Test ${platform.name} URL`}
+                    {/* Top Action Controls: Hide/Show Toggle + Test Link */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleHide(platform.key)}
+                        className={`p-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 shadow ${
+                          isManuallyHidden
+                            ? 'bg-amber-950/40 text-amber-300 border-amber-500/40 hover:bg-amber-900/60'
+                            : 'bg-tartan-navy text-gray-300 border-tartan-border hover:bg-slate-700 hover:text-white'
+                        }`}
+                        title={isManuallyHidden ? `Show ${platform.name} on Footer` : `Hide ${platform.name} from Footer`}
                       >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Test Link</span>
-                      </a>
-                    )}
+                        {isManuallyHidden ? (
+                          <>
+                            <Eye className="w-3.5 h-3.5 text-amber-400" />
+                            <span className="text-[11px] hidden sm:inline">Show Link</span>
+                          </>
+                        ) : (
+                          <>
+                            <EyeOff className="w-3.5 h-3.5 text-gray-400" />
+                            <span className="text-[11px] hidden sm:inline">Hide Link</span>
+                          </>
+                        )}
+                      </button>
+
+                      {currentVal && (
+                        <a
+                          href={currentVal}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 rounded-xl bg-tartan-navy hover:bg-slate-700 text-tartan-gold text-xs font-bold border border-tartan-border flex items-center gap-1 transition-all shadow"
+                          title={`Test ${platform.name} URL`}
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </div>
                   </div>
 
                   <p className="text-xs text-gray-400 leading-relaxed">
@@ -239,9 +332,21 @@ export const AdminSocialLinks: React.FC = () => {
                 </div>
 
                 <div className="space-y-1.5 pt-2 border-t border-tartan-border/50">
-                  <label className="block text-xs font-semibold text-tartan-gold">
-                    {platform.name} URL Profile Link
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-semibold text-tartan-gold">
+                      {platform.name} URL Profile Link
+                    </label>
+                    {currentVal && (
+                      <button
+                        type="button"
+                        onClick={() => handleClearUrl(platform.key)}
+                        className="text-[11px] text-gray-400 hover:text-red-400 transition-colors flex items-center gap-1"
+                      >
+                        <X className="w-3 h-3" />
+                        <span>Clear</span>
+                      </button>
+                    )}
+                  </div>
                   <div className="relative">
                     <Link2 className="w-4 h-4 text-gray-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
@@ -252,6 +357,9 @@ export const AdminSocialLinks: React.FC = () => {
                       className="w-full bg-tartan-dark border border-tartan-border rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent transition-colors"
                     />
                   </div>
+                  <p className="text-[10px] text-gray-500">
+                    Leave blank or click <strong className="text-gray-400">"Hide Link"</strong> above to remove from the footer.
+                  </p>
                 </div>
               </div>
             );
@@ -270,7 +378,7 @@ export const AdminSocialLinks: React.FC = () => {
             className="w-full sm:w-auto px-8 py-3.5 bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-xl hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2"
           >
             <Save className="w-4 h-4" />
-            <span>Save All Social Links</span>
+            <span>Save All Social Links &amp; Visibility</span>
           </button>
         </div>
       </form>

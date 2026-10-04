@@ -284,6 +284,15 @@ export interface SocialMediaLinks {
   linkedin: string;
   tiktok: string;
   trustpilot: string;
+  hiddenPlatforms?: {
+    facebook?: boolean;
+    twitter?: boolean;
+    pinterest?: boolean;
+    instagram?: boolean;
+    linkedin?: boolean;
+    tiktok?: boolean;
+    trustpilot?: boolean;
+  };
 }
 
 export interface PricingConfig {
