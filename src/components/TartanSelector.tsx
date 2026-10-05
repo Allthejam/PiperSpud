@@ -137,17 +137,23 @@ export const TartanSelector: React.FC = () => {
     }
   };
 
-  // Add / remove swatch color
+  // Add, edit, remove, or clear swatch colors
   const handleAddColor = (hex: string) => {
-    if (!formColors.includes(hex) && formColors.length < 6) {
+    if (formColors.length < 8 && !formColors.includes(hex)) {
       setFormColors([...formColors, hex]);
     }
   };
 
+  const handleUpdateColor = (indexToUpdate: number, newHex: string) => {
+    setFormColors(prev => prev.map((c, i) => i === indexToUpdate ? newHex : c));
+  };
+
   const handleRemoveColor = (indexToRemove: number) => {
-    if (formColors.length > 1) {
-      setFormColors(formColors.filter((_, idx) => idx !== indexToRemove));
-    }
+    setFormColors(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleClearAllColors = () => {
+    setFormColors([]);
   };
 
   // Submit Add or Edit Form
@@ -324,16 +330,18 @@ export const TartanSelector: React.FC = () => {
                 >
                   <div className="space-y-1 min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      {/* Swatch chips */}
-                      <div className="flex -space-x-1 shrink-0">
-                        {(tartan.colorScheme || ['#991B1B', '#1E3A8A']).map((color, idx) => (
-                          <span
-                            key={idx}
-                            className="w-3.5 h-3.5 rounded-full border border-black/40 shadow-sm shrink-0"
-                            style={{ backgroundColor: color }}
-                          />
-                        ))}
-                      </div>
+                      {/* Swatch chips (only if colors exist) */}
+                      {tartan.colorScheme && tartan.colorScheme.length > 0 && (
+                        <div className="flex -space-x-1 shrink-0" title={`Color scheme: ${tartan.colorScheme.join(', ')}`}>
+                          {tartan.colorScheme.map((color, idx) => (
+                            <span
+                              key={idx}
+                              className="w-3.5 h-3.5 rounded-full border border-black/40 shadow-sm shrink-0"
+                              style={{ backgroundColor: color }}
+                            />
+                          ))}
+                        </div>
+                      )}
                       <EditableElement
                         id={`tartan-${tartan.id}-list-title`}
                         tag="span"
@@ -450,7 +458,7 @@ export const TartanSelector: React.FC = () => {
 
                 {/* Right Side: Details & Copy */}
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <div className="inline-block px-2.5 py-1 rounded-md bg-tartan-navy text-tartan-gold text-xs font-semibold border border-tartan-accent/30">
                       <EditableElement
                         id={`tartan-${selectedTartan.id}-tag-label`}
@@ -460,17 +468,30 @@ export const TartanSelector: React.FC = () => {
                         section="attire"
                       />
                     </div>
-                    {/* Swatches in preview */}
-                    <div className="flex -space-x-1">
-                      {(selectedTartan.colorScheme || []).map((color, idx) => (
-                        <span
-                          key={idx}
-                          className="w-4 h-4 rounded-full border border-black/50 shadow-sm"
-                          style={{ backgroundColor: color }}
-                          title={`Color swatch: ${color}`}
-                        />
-                      ))}
-                    </div>
+                    {/* Swatches in preview (only if colors exist) */}
+                    {selectedTartan.colorScheme && selectedTartan.colorScheme.length > 0 && (
+                      <div className="flex -space-x-1 items-center" title={`Color scheme: ${selectedTartan.colorScheme.join(', ')}`}>
+                        {selectedTartan.colorScheme.map((color, idx) => (
+                          <span
+                            key={idx}
+                            className="w-4 h-4 rounded-full border border-black/50 shadow-sm"
+                            style={{ backgroundColor: color }}
+                            title={`Color swatch: ${color}`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {canManage && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditModal(selectedTartan)}
+                        className="text-[11px] text-gray-400 hover:text-tartan-gold flex items-center gap-1 transition underline decoration-dotted ml-1"
+                        title="Edit or remove color schemes for this attire"
+                      >
+                        <Palette className="w-3 h-3 text-tartan-gold" />
+                        <span>{selectedTartan.colorScheme && selectedTartan.colorScheme.length > 0 ? 'Edit/Remove Colors' : '+ Add Color Scheme'}</span>
+                      </button>
+                    )}
                   </div>
                   
                   <EditableElement
@@ -648,29 +669,76 @@ export const TartanSelector: React.FC = () => {
 
                   {/* Tartan Color Swatches */}
                   <div className="bg-tartan-dark/70 p-4 rounded-2xl border border-tartan-border space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-semibold text-tartan-gold flex items-center gap-1.5">
-                        <Palette className="w-3.5 h-3.5" />
-                        <span>Tartan Swatch Colors ({formColors.length}/6)</span>
-                      </label>
-                      <span className="text-[10px] text-gray-400">Click swatch to remove</span>
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <label className="text-xs font-semibold text-tartan-gold flex items-center gap-1.5">
+                          <Palette className="w-3.5 h-3.5" />
+                          <span>Tartan Swatch Colors ({formColors.length}/8)</span>
+                        </label>
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                          Click color circle to edit, type a hex code, click &times; to delete, or remove all.
+                        </p>
+                      </div>
+
+                      {formColors.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={handleClearAllColors}
+                          className="px-2.5 py-1 text-[11px] font-bold text-rose-300 hover:text-white bg-rose-950/60 hover:bg-rose-900 border border-rose-800/80 rounded-lg flex items-center gap-1 transition shadow-sm"
+                          title="Remove all colors so no color swatches are displayed"
+                        >
+                          <Trash2 className="w-3 h-3 text-rose-400" />
+                          <span>Remove All Colors</span>
+                        </button>
+                      ) : (
+                        <span className="text-[11px] text-gray-400 italic">No color scheme (swatches hidden)</span>
+                      )}
                     </div>
 
-                    {/* Active Colors */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {formColors.map((hex, idx) => (
-                        <div
-                          key={idx}
-                          onClick={() => handleRemoveColor(idx)}
-                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-tartan-navy border border-tartan-border cursor-pointer hover:border-rose-500 text-xs group"
-                          title="Click to remove color"
-                        >
-                          <span className="w-3.5 h-3.5 rounded-full border border-black/40" style={{ backgroundColor: hex }} />
-                          <span className="font-mono text-[11px] text-gray-300 group-hover:text-rose-300">{hex}</span>
-                          <X className="w-3 h-3 text-gray-500 group-hover:text-rose-400" />
-                        </div>
-                      ))}
-                    </div>
+                    {/* Active Colors with inline picker and direct editing */}
+                    {formColors.length > 0 ? (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {formColors.map((hex, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-tartan-navy border border-tartan-border hover:border-tartan-gold transition shadow-sm"
+                          >
+                            <input
+                              type="color"
+                              value={hex}
+                              onChange={(e) => handleUpdateColor(idx, e.target.value)}
+                              className="w-5 h-5 rounded-full border border-black/40 cursor-pointer bg-transparent p-0"
+                              title="Click to edit this color"
+                            />
+                            <input
+                              type="text"
+                              value={hex}
+                              onChange={(e) => handleUpdateColor(idx, e.target.value)}
+                              className="w-16 bg-transparent font-mono text-[11px] text-white focus:outline-none"
+                              placeholder="#000000"
+                              title="Type hex color code"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveColor(idx)}
+                              className="p-0.5 text-gray-400 hover:text-rose-400 rounded transition ml-1"
+                              title="Remove this color"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-3.5 rounded-xl bg-tartan-navy/50 border border-dashed border-tartan-border text-center">
+                        <p className="text-xs text-gray-300 font-medium">
+                          No colors assigned. This attire will be displayed cleanly without color chips.
+                        </p>
+                        <p className="text-[11px] text-tartan-gold mt-1">
+                          Click any preset below or use the color picker if you wish to add colors.
+                        </p>
+                      </div>
+                    )}
 
                     {/* Add Custom / Preset Colors */}
                     <div className="pt-2 border-t border-tartan-border/60 flex items-center justify-between flex-wrap gap-2">

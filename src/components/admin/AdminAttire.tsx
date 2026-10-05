@@ -125,15 +125,21 @@ export const AdminAttire: React.FC = () => {
   };
 
   const handleAddColor = (hex: string) => {
-    if (!formColors.includes(hex) && formColors.length < 6) {
+    if (formColors.length < 8 && !formColors.includes(hex)) {
       setFormColors([...formColors, hex]);
     }
   };
 
+  const handleUpdateColor = (indexToUpdate: number, newHex: string) => {
+    setFormColors(prev => prev.map((c, i) => i === indexToUpdate ? newHex : c));
+  };
+
   const handleRemoveColor = (indexToRemove: number) => {
-    if (formColors.length > 1) {
-      setFormColors(formColors.filter((_, idx) => idx !== indexToRemove));
-    }
+    setFormColors(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleClearAllColors = () => {
+    setFormColors([]);
   };
 
   const handleSubmitForm = async (e: React.FormEvent) => {
@@ -295,15 +301,17 @@ export const AdminAttire: React.FC = () => {
 
                   <div className="min-w-0 space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <div className="flex -space-x-1 shrink-0">
-                        {(item.colorScheme || []).map((c, i) => (
-                          <span
-                            key={i}
-                            className="w-3 h-3 rounded-full border border-black/40"
-                            style={{ backgroundColor: c }}
-                          />
-                        ))}
-                      </div>
+                      {item.colorScheme && item.colorScheme.length > 0 && (
+                        <div className="flex -space-x-1 shrink-0" title={`Colors: ${item.colorScheme.join(', ')}`}>
+                          {item.colorScheme.map((c, i) => (
+                            <span
+                              key={i}
+                              className="w-3 h-3 rounded-full border border-black/40"
+                              style={{ backgroundColor: c }}
+                            />
+                          ))}
+                        </div>
+                      )}
                       <h4 className="text-sm font-bold text-white font-serif truncate">
                         {item.title}
                       </h4>
@@ -396,19 +404,32 @@ export const AdminAttire: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[11px] font-bold text-tartan-gold bg-tartan-navy px-2 py-0.5 rounded border border-tartan-accent/40">
                     Ideal Matching
                   </span>
-                  <div className="flex -space-x-1">
-                    {(previewAttire.colorScheme || []).map((c, i) => (
-                      <span
-                        key={i}
-                        className="w-3.5 h-3.5 rounded-full border border-black/40"
-                        style={{ backgroundColor: c }}
-                      />
-                    ))}
-                  </div>
+                  {previewAttire.colorScheme && previewAttire.colorScheme.length > 0 ? (
+                    <div className="flex -space-x-1 items-center" title={`Colors: ${previewAttire.colorScheme.join(', ')}`}>
+                      {previewAttire.colorScheme.map((c, i) => (
+                        <span
+                          key={i}
+                          className="w-3.5 h-3.5 rounded-full border border-black/40"
+                          style={{ backgroundColor: c }}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-[11px] text-gray-500 italic">No color scheme</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEditModal(previewAttire)}
+                    className="text-[11px] text-gray-400 hover:text-tartan-gold flex items-center gap-1 transition underline decoration-dotted ml-1"
+                    title="Edit or remove colors for this attire"
+                  >
+                    <Palette className="w-3 h-3 text-tartan-gold" />
+                    <span>{previewAttire.colorScheme && previewAttire.colorScheme.length > 0 ? 'Edit/Remove Colors' : '+ Add Color Scheme'}</span>
+                  </button>
                 </div>
 
                 <h3 className="text-xl font-bold text-white font-serif">
@@ -562,28 +583,78 @@ export const AdminAttire: React.FC = () => {
 
                   {/* Swatch Colors */}
                   <div className="bg-tartan-dark/70 p-4 rounded-2xl border border-tartan-border space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-semibold text-tartan-gold flex items-center gap-1.5">
-                        <Palette className="w-3.5 h-3.5" />
-                        <span>Tartan Swatch Colors ({formColors.length}/6)</span>
-                      </label>
-                      <span className="text-[10px] text-gray-400">Click swatch chip to remove</span>
-                    </div>
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <label className="text-xs font-semibold text-tartan-gold flex items-center gap-1.5">
+                          <Palette className="w-3.5 h-3.5" />
+                          <span>Tartan Swatch Colors ({formColors.length}/8)</span>
+                        </label>
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                          Click color circle to edit, type a hex code, click &times; to delete, or remove all.
+                        </p>
+                      </div>
 
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {formColors.map((hex, idx) => (
-                        <div
-                          key={idx}
-                          onClick={() => handleRemoveColor(idx)}
-                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-tartan-navy border border-tartan-border cursor-pointer hover:border-rose-500 text-xs group"
+                      {formColors.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={handleClearAllColors}
+                          className="px-2.5 py-1 text-[11px] font-bold text-rose-300 hover:text-white bg-rose-950/60 hover:bg-rose-900 border border-rose-800/80 rounded-lg flex items-center gap-1 transition shadow-sm"
+                          title="Remove all colors so no color swatches are displayed"
                         >
-                          <span className="w-3.5 h-3.5 rounded-full border border-black/40" style={{ backgroundColor: hex }} />
-                          <span className="font-mono text-[11px] text-gray-300 group-hover:text-rose-300">{hex}</span>
-                          <X className="w-3 h-3 text-gray-500 group-hover:text-rose-400" />
-                        </div>
-                      ))}
+                          <Trash2 className="w-3 h-3 text-rose-400" />
+                          <span>Remove All Colors</span>
+                        </button>
+                      ) : (
+                        <span className="text-[11px] text-gray-400 italic">No color scheme (swatches hidden)</span>
+                      )}
                     </div>
 
+                    {/* Active Colors with inline picker and direct editing */}
+                    {formColors.length > 0 ? (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {formColors.map((hex, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-tartan-navy border border-tartan-border hover:border-tartan-gold transition shadow-sm"
+                          >
+                            <input
+                              type="color"
+                              value={hex}
+                              onChange={(e) => handleUpdateColor(idx, e.target.value)}
+                              className="w-5 h-5 rounded-full border border-black/40 cursor-pointer bg-transparent p-0"
+                              title="Click to edit this color"
+                            />
+                            <input
+                              type="text"
+                              value={hex}
+                              onChange={(e) => handleUpdateColor(idx, e.target.value)}
+                              className="w-16 bg-transparent font-mono text-[11px] text-white focus:outline-none"
+                              placeholder="#000000"
+                              title="Type hex color code"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveColor(idx)}
+                              className="p-0.5 text-gray-400 hover:text-rose-400 rounded transition ml-1"
+                              title="Remove this color"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-3.5 rounded-xl bg-tartan-navy/50 border border-dashed border-tartan-border text-center">
+                        <p className="text-xs text-gray-300 font-medium">
+                          No colors assigned. This attire will be displayed cleanly without color chips.
+                        </p>
+                        <p className="text-[11px] text-tartan-gold mt-1">
+                          Click any preset below or use the color picker if you wish to add colors.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Add Custom / Preset Colors */}
                     <div className="pt-2 border-t border-tartan-border/60 flex items-center justify-between flex-wrap gap-2">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-[11px] text-gray-400">Presets:</span>

@@ -4210,7 +4210,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newAttire: AttireItem = {
       ...attireData,
       id,
-      colorScheme: attireData.colorScheme && attireData.colorScheme.length > 0 ? attireData.colorScheme : ['#991B1B', '#1E3A8A', '#D4AF37'],
+      colorScheme: Array.isArray(attireData.colorScheme) ? attireData.colorScheme : ['#991B1B', '#1E3A8A', '#D4AF37'],
       imageUrl: attireData.imageUrl || '/og-image.png',
       order: attireData.order ?? (attires.length + 1)
     };
@@ -4236,7 +4236,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAttires(prev => {
       const updated = (prev || []).map(a => {
         if (a.id === id) {
-          targetAttire = { ...a, ...updates };
+          targetAttire = { 
+            ...a, 
+            ...updates,
+            colorScheme: updates.colorScheme !== undefined ? updates.colorScheme : a.colorScheme
+          };
           return targetAttire;
         }
         return a;
