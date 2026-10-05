@@ -1,26 +1,30 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { AttireItem } from '@/types/spud';
 import { initialAttires } from '@/lib/initialData';
 import { uploadToStorage } from '@/lib/firebase';
 import { 
-  Sparkles, 
-  Check, 
   Shirt, 
   Plus, 
   Edit3, 
   Trash2, 
+  ChevronUp, 
+  ChevronDown, 
+  Check, 
   X, 
   Upload, 
   Palette, 
   CheckCircle2, 
   AlertTriangle,
   Loader2,
-  Calendar
+  Calendar,
+  Sparkles,
+  Eye,
+  ExternalLink
 } from 'lucide-react';
-import { EditableElement } from './EditableElement';
+import Link from 'next/link';
 
 const PRESET_TARTAN_COLORS = [
   '#991B1B', // Deep Crimson
@@ -37,33 +41,18 @@ const PRESET_TARTAN_COLORS = [
   '#000000'  // Formal Black
 ];
 
-export const TartanSelector: React.FC = () => {
+export const AdminAttire: React.FC = () => {
   const { 
     attires, 
     addAttire, 
     updateAttire, 
     deleteAttire, 
-    isAdminLoggedIn, 
-    isVisualEditMode 
+    reorderAttires 
   } = useApp();
 
   const currentAttiresList = (attires && attires.length > 0) ? attires : initialAttires;
 
-  const [selectedId, setSelectedId] = useState<string>(currentAttiresList[0]?.id || 'no1');
-
-  // Keep selectedId valid
-  useEffect(() => {
-    if (currentAttiresList.length > 0) {
-      const exists = currentAttiresList.some(a => a.id === selectedId);
-      if (!exists) {
-        setSelectedId(currentAttiresList[0].id);
-      }
-    }
-  }, [currentAttiresList, selectedId]);
-
-  const selectedTartan = currentAttiresList.find(a => a.id === selectedId) || currentAttiresList[0];
-
-  // Modal State for Add / Edit
+  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAttireId, setEditingAttireId] = useState<string | null>(null);
   const [formName, setFormName] = useState('');
@@ -78,29 +67,28 @@ export const TartanSelector: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Delete Confirmation State
+  // Delete State
   const [attireToDelete, setAttireToDelete] = useState<AttireItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const canManage = Boolean(isAdminLoggedIn || isVisualEditMode);
+  // Preview selection
+  const [previewId, setPreviewId] = useState<string>(currentAttiresList[0]?.id || 'no1');
+  const previewAttire = currentAttiresList.find(a => a.id === previewId) || currentAttiresList[0];
 
-  // Open modal for Adding New
   const handleOpenAddModal = () => {
     setEditingAttireId(null);
     setFormName('');
     setFormTitle('');
     setFormTagline('');
     setFormDescription('');
-    setFormBestFor('Scottish Castle Weddings, Celebrations & VIP Galas');
+    setFormBestFor('Scottish Castle Weddings, Ceremonies & VIP State Galas');
     setFormImageUrl('/og-image.png');
     setFormColors(['#991B1B', '#1E3A8A', '#D4AF37']);
     setSuccessMessage(null);
     setIsModalOpen(true);
   };
 
-  // Open modal for Editing Existing
-  const handleOpenEditModal = (item: AttireItem, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
+  const handleOpenEditModal = (item: AttireItem) => {
     setEditingAttireId(item.id);
     setFormName(item.name);
     setFormTitle(item.title);
@@ -113,7 +101,6 @@ export const TartanSelector: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  // Photo upload handler
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -137,7 +124,6 @@ export const TartanSelector: React.FC = () => {
     }
   };
 
-  // Add / remove swatch color
   const handleAddColor = (hex: string) => {
     if (!formColors.includes(hex) && formColors.length < 6) {
       setFormColors([...formColors, hex]);
@@ -150,7 +136,6 @@ export const TartanSelector: React.FC = () => {
     }
   };
 
-  // Submit Add or Edit Form
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formTitle.trim() || !formName.trim() || isSaving) return;
@@ -158,7 +143,6 @@ export const TartanSelector: React.FC = () => {
     setIsSaving(true);
     try {
       if (editingAttireId) {
-        // Update
         await updateAttire(editingAttireId, {
           name: formName.trim(),
           title: formTitle.trim(),
@@ -168,9 +152,8 @@ export const TartanSelector: React.FC = () => {
           imageUrl: formImageUrl.trim() || '/og-image.png',
           colorScheme: formColors
         });
-        setSuccessMessage('Attire updated and synced with booking forms!');
+        setSuccessMessage('Attire updated successfully!');
       } else {
-        // Create new
         const newId = await addAttire({
           name: formName.trim(),
           title: formTitle.trim(),
@@ -180,8 +163,8 @@ export const TartanSelector: React.FC = () => {
           imageUrl: formImageUrl.trim() || '/og-image.png',
           colorScheme: formColors
         });
-        setSelectedId(newId);
-        setSuccessMessage('New Highland Attire style added and synced with booking forms!');
+        setPreviewId(newId);
+        setSuccessMessage('New Highland Attire style created!');
       }
 
       setTimeout(() => {
@@ -195,7 +178,24 @@ export const TartanSelector: React.FC = () => {
     }
   };
 
-  // Delete Attire
+  const handleMoveUp = async (index: number) => {
+    if (index <= 0) return;
+    const reordered = [...currentAttiresList];
+    const temp = reordered[index - 1];
+    reordered[index - 1] = reordered[index];
+    reordered[index] = temp;
+    await reorderAttires(reordered);
+  };
+
+  const handleMoveDown = async (index: number) => {
+    if (index >= currentAttiresList.length - 1) return;
+    const reordered = [...currentAttiresList];
+    const temp = reordered[index + 1];
+    reordered[index + 1] = reordered[index];
+    reordered[index] = temp;
+    await reorderAttires(reordered);
+  };
+
   const handleConfirmDelete = async () => {
     if (!attireToDelete || isDeleting) return;
     if (currentAttiresList.length <= 1) {
@@ -207,10 +207,10 @@ export const TartanSelector: React.FC = () => {
     setIsDeleting(true);
     try {
       await deleteAttire(attireToDelete.id);
-      if (selectedId === attireToDelete.id) {
+      if (previewId === attireToDelete.id) {
         const remaining = currentAttiresList.filter(a => a.id !== attireToDelete.id);
         if (remaining.length > 0) {
-          setSelectedId(remaining[0].id);
+          setPreviewId(remaining[0].id);
         }
       }
       setAttireToDelete(null);
@@ -222,328 +222,244 @@ export const TartanSelector: React.FC = () => {
   };
 
   return (
-    <section id="attire" className="py-20 bg-tartan-navy relative border-y border-tartan-border">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Header */}
-        <div className="text-center max-w-3xl mx-auto space-y-4 mb-8">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-tartan-accent/15 border border-tartan-accent/40 text-tartan-gold text-xs font-semibold">
-            <Shirt className="w-4 h-4 shrink-0" />
-            <EditableElement
-              id="tartan-header-badge"
-              tag="span"
-              defaultContent="Highland Dress & Tartan Studio"
-              label="Tartan Header Badge"
-              section="attire"
-            />
+    <div className="space-y-8 animate-in fade-in duration-300">
+      
+      {/* Top Banner */}
+      <div className="bg-tartan-card border border-tartan-border rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl">
+        <div className="space-y-2 max-w-2xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-tartan-gold/10 border border-tartan-gold/30 text-tartan-gold text-xs font-semibold">
+            <Shirt className="w-4 h-4" />
+            <span>Tartan & Highland Regalia Management</span>
           </div>
-          <EditableElement
-            id="tartan-header-title"
-            tag="h2"
-            defaultContent="Customize Spud's Attire for Your Occasion"
-            className="text-3xl sm:text-5xl font-extrabold text-white font-serif tracking-tight"
-            label="Tartan Header Title"
-            section="attire"
-          />
-          <EditableElement
-            id="tartan-header-desc"
-            tag="p"
-            defaultContent="Every event is unique. Select your preferred Highland dress to perfectly complement your wedding colors, bridal theme, or ceremony atmosphere."
-            className="text-base text-gray-300"
-            label="Tartan Header Description"
-            section="attire"
-          />
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-white font-serif">
+            Tartan & Attire Studio
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-300">
+            Add, edit, reorder, and remove Highland dress options. All changes update the public Tartan Studio, Home Page showcase, and client booking dropdown in real-time.
+          </p>
         </div>
 
-        {/* Admin Quick Action Banner when logged in or in visual edit mode */}
-        {canManage && (
-          <div className="mb-8 p-4 rounded-2xl bg-gradient-to-r from-amber-950/40 via-tartan-card to-amber-950/30 border border-tartan-gold/40 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-tartan-gold/20 border border-tartan-gold/40 text-tartan-gold shrink-0">
-                <Shirt className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-white text-sm">Tartan & Attire Studio Controls</span>
-                  <span className="bg-tartan-gold/20 text-tartan-gold text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-tartan-gold/40">
-                    Live Sync Active
-                  </span>
-                </div>
-                <p className="text-xs text-gray-300">
-                  {currentAttiresList.length} Highland Dress styles active. All additions and removals automatically sync with the home page and booking forms.
-                </p>
-              </div>
-            </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <Link
+            href="/attire"
+            target="_blank"
+            className="px-4 py-2.5 bg-tartan-navy hover:bg-slate-700 text-gray-200 text-xs font-bold rounded-xl border border-tartan-border flex items-center gap-1.5 transition"
+          >
+            <Eye className="w-4 h-4 text-tartan-gold" />
+            <span>View Public Page</span>
+            <ExternalLink className="w-3 h-3 text-gray-400" />
+          </Link>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button
-                type="button"
-                onClick={handleOpenAddModal}
-                className="w-full sm:w-auto px-4 py-2.5 bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:brightness-110 flex items-center justify-center gap-2 transition-all active:scale-95"
-              >
-                <Plus className="w-4 h-4 text-tartan-dark" />
-                <span>Add New Attire Style</span>
-              </button>
-            </div>
+          <button
+            onClick={handleOpenAddModal}
+            className="px-5 py-2.5 bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:brightness-110 flex items-center gap-2 transition active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add New Attire</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Grid: List + Live Preview */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        {/* Attire List & Sorting */}
+        <div className="lg:col-span-7 space-y-3">
+          <div className="flex items-center justify-between px-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
+            <span>Highland Dress Styles ({currentAttiresList.length})</span>
+            <span>Ordering & Actions</span>
           </div>
-        )}
 
-        {/* Interactive Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          {/* Tartan Selection List */}
-          <div className="lg:col-span-5 space-y-3">
-            <div className="flex items-center justify-between px-1 mb-1">
-              <span className="text-xs font-bold text-tartan-gold uppercase tracking-wider">
-                Select Attire Style ({currentAttiresList.length})
-              </span>
-              {canManage && (
-                <button
-                  type="button"
-                  onClick={handleOpenAddModal}
-                  className="text-xs text-tartan-gold hover:text-white flex items-center gap-1 font-semibold transition"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Option</span>
-                </button>
-              )}
-            </div>
+          {currentAttiresList.map((item, idx) => {
+            const isSelected = previewId === item.id;
 
-            {currentAttiresList.map((tartan) => {
-              const isSelected = selectedTartan?.id === tartan.id;
+            return (
+              <div
+                key={item.id}
+                onClick={() => setPreviewId(item.id)}
+                className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-4 cursor-pointer ${
+                  isSelected
+                    ? 'bg-tartan-navy/90 border-tartan-gold ring-1 ring-tartan-gold/50 shadow-lg'
+                    : 'bg-tartan-card border-tartan-border hover:border-slate-600'
+                }`}
+              >
+                {/* Thumb + Details */}
+                <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                  <div className="w-14 h-14 rounded-xl overflow-hidden border border-tartan-border shrink-0 bg-black/40">
+                    <img 
+                      src={item.imageUrl || '/og-image.png'} 
+                      alt={item.title} 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
 
-              return (
-                <div
-                  key={tartan.id}
-                  onClick={() => setSelectedId(tartan.id)}
-                  className={`p-4 rounded-2xl cursor-pointer transition-all border flex items-center justify-between gap-3 group relative ${
-                    isSelected
-                      ? 'bg-tartan-card border-tartan-gold ring-2 ring-tartan-gold/40 shadow-xl'
-                      : 'bg-tartan-dark/70 border-tartan-border/70 hover:bg-tartan-card/80'
-                  }`}
-                >
-                  <div className="space-y-1 min-w-0 flex-1">
+                  <div className="min-w-0 space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      {/* Swatch chips */}
                       <div className="flex -space-x-1 shrink-0">
-                        {(tartan.colorScheme || ['#991B1B', '#1E3A8A']).map((color, idx) => (
+                        {(item.colorScheme || []).map((c, i) => (
                           <span
-                            key={idx}
-                            className="w-3.5 h-3.5 rounded-full border border-black/40 shadow-sm shrink-0"
-                            style={{ backgroundColor: color }}
+                            key={i}
+                            className="w-3 h-3 rounded-full border border-black/40"
+                            style={{ backgroundColor: c }}
                           />
                         ))}
                       </div>
-                      <EditableElement
-                        id={`tartan-${tartan.id}-list-title`}
-                        tag="span"
-                        defaultContent={tartan.title}
-                        className={`text-sm font-bold font-serif truncate ${isSelected ? 'text-tartan-gold' : 'text-white'}`}
-                        label={`${tartan.title} List Title`}
-                        section="attire"
-                      />
+                      <h4 className="text-sm font-bold text-white font-serif truncate">
+                        {item.title}
+                      </h4>
                     </div>
-                    <EditableElement
-                      id={`tartan-${tartan.id}-list-tagline`}
-                      tag="p"
-                      defaultContent={tartan.tagline}
-                      className="text-xs text-gray-400 line-clamp-1"
-                      label={`${tartan.title} List Tagline`}
-                      section="attire"
-                    />
-                  </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {/* Admin Edit & Delete buttons */}
-                    {canManage && (
-                      <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition">
-                        <button
-                          type="button"
-                          onClick={(e) => handleOpenEditModal(tartan, e)}
-                          className="p-1.5 rounded-lg bg-tartan-navy hover:bg-tartan-accent/40 text-gray-300 hover:text-white border border-tartan-border transition shadow-sm"
-                          title="Edit Attire Style"
-                        >
-                          <Edit3 className="w-3.5 h-3.5 text-tartan-gold" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setAttireToDelete(tartan);
-                          }}
-                          className="p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 hover:text-white border border-rose-800/60 transition shadow-sm"
-                          title="Remove Attire Option"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    )}
+                    <p className="text-xs text-tartan-gold truncate font-medium">
+                      Booking Label: &ldquo;{item.name}&rdquo;
+                    </p>
 
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border transition ${
-                      isSelected ? 'bg-tartan-gold text-tartan-dark border-yellow-300 font-bold' : 'border-slate-600 text-transparent'
-                    }`}>
-                      <Check className="w-3.5 h-3.5" />
-                    </div>
+                    <p className="text-[11px] text-gray-400 truncate">
+                      {item.tagline || item.description}
+                    </p>
                   </div>
                 </div>
-              );
-            })}
+
+                {/* Actions & Reorder Buttons */}
+                <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                  {/* Reorder Up/Down */}
+                  <div className="flex flex-col gap-0.5">
+                    <button
+                      type="button"
+                      disabled={idx === 0}
+                      onClick={() => handleMoveUp(idx)}
+                      className="p-1 rounded bg-tartan-dark hover:bg-tartan-navy text-gray-400 hover:text-white disabled:opacity-20 transition"
+                      title="Move up"
+                    >
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={idx === currentAttiresList.length - 1}
+                      onClick={() => handleMoveDown(idx)}
+                      className="p-1 rounded bg-tartan-dark hover:bg-tartan-navy text-gray-400 hover:text-white disabled:opacity-20 transition"
+                      title="Move down"
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Edit */}
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEditModal(item)}
+                    className="p-2 rounded-xl bg-tartan-navy hover:bg-tartan-accent/40 text-tartan-gold border border-tartan-border hover:border-tartan-gold transition shadow-sm"
+                    title="Edit Attire Details"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+
+                  {/* Delete */}
+                  <button
+                    type="button"
+                    onClick={() => setAttireToDelete(item)}
+                    className="p-2 rounded-xl bg-rose-950/60 hover:bg-rose-900 text-rose-300 hover:text-white border border-rose-800/60 transition shadow-sm"
+                    title="Remove Attire"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Live Client Preview Showcase */}
+        <div className="lg:col-span-5 bg-tartan-card rounded-3xl p-6 border border-tartan-accent/40 shadow-2xl space-y-4 sticky top-20">
+          <div className="flex items-center justify-between pb-3 border-b border-tartan-border">
+            <span className="text-xs font-bold text-tartan-gold uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4" />
+              <span>Live Website Preview</span>
+            </span>
+            <span className="text-[11px] text-gray-400 font-mono">
+              ID: {previewAttire?.id}
+            </span>
           </div>
 
-          {/* Large Preview Showcase Card */}
-          {selectedTartan && (
-            <div className="lg:col-span-7 bg-tartan-card rounded-3xl p-6 sm:p-8 border border-tartan-accent/40 shadow-2xl relative overflow-hidden">
-              
-              {/* Header inside preview if admin */}
-              {canManage && (
-                <div className="flex items-center justify-between pb-4 mb-4 border-b border-tartan-border/60">
-                  <span className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-tartan-gold" />
-                    <span>Selected: {selectedTartan.title}</span>
+          {previewAttire && (
+            <div className="space-y-4">
+              <div className="relative rounded-2xl overflow-hidden border border-tartan-border h-64 bg-black/40">
+                <img 
+                  src={previewAttire.imageUrl || '/og-image.png'} 
+                  alt={previewAttire.title} 
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute bottom-2 left-2 z-10">
+                  <span className="text-xs font-bold text-white bg-tartan-red/90 px-3 py-1 rounded-full border border-red-400 shadow-md">
+                    {previewAttire.name}
                   </span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditModal(selectedTartan)}
-                      className="px-2.5 py-1 text-xs font-bold text-tartan-gold bg-tartan-navy hover:bg-tartan-dark rounded-lg border border-tartan-gold/40 flex items-center gap-1 transition"
-                    >
-                      <Edit3 className="w-3 h-3" />
-                      <span>Edit Attire</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAttireToDelete(selectedTartan)}
-                      className="px-2.5 py-1 text-xs font-bold text-rose-300 bg-rose-950/60 hover:bg-rose-900 rounded-lg border border-rose-800/60 flex items-center gap-1 transition"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      <span>Remove</span>
-                    </button>
-                  </div>
                 </div>
-              )}
+              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
-                
-                {/* Left Side: Uploadable & Editable Photo */}
-                <div className="relative rounded-2xl overflow-hidden border border-tartan-border shadow-inner group">
-                  <EditableElement
-                    id={`tartan-${selectedTartan.id}-photo`}
-                    isImage={true}
-                    defaultImageUrl={selectedTartan.imageUrl || '/og-image.png'}
-                    defaultAlt={`Spud the Piper in ${selectedTartan.title}`}
-                    className="w-full h-72 sm:h-80 object-cover group-hover:scale-105 transition-transform duration-500"
-                    label={`${selectedTartan.title} Photo`}
-                    section="attire"
-                  />
-                  <div className="absolute bottom-2 left-2 z-20 pointer-events-none">
-                    <span className="text-xs font-bold text-white bg-tartan-red/90 px-3 py-1 rounded-full border border-red-400 shadow-md">
-                      <EditableElement
-                        id={`tartan-${selectedTartan.id}-badge`}
-                        tag="span"
-                        defaultContent={selectedTartan.name}
-                        label={`${selectedTartan.title} Badge`}
-                        section="attire"
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-tartan-gold bg-tartan-navy px-2 py-0.5 rounded border border-tartan-accent/40">
+                    Ideal Matching
+                  </span>
+                  <div className="flex -space-x-1">
+                    {(previewAttire.colorScheme || []).map((c, i) => (
+                      <span
+                        key={i}
+                        className="w-3.5 h-3.5 rounded-full border border-black/40"
+                        style={{ backgroundColor: c }}
                       />
-                    </span>
+                    ))}
                   </div>
                 </div>
 
-                {/* Right Side: Details & Copy */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <div className="inline-block px-2.5 py-1 rounded-md bg-tartan-navy text-tartan-gold text-xs font-semibold border border-tartan-accent/30">
-                      <EditableElement
-                        id={`tartan-${selectedTartan.id}-tag-label`}
-                        tag="span"
-                        defaultContent="Ideal Matching"
-                        label={`${selectedTartan.title} Tag Label`}
-                        section="attire"
-                      />
-                    </div>
-                    {/* Swatches in preview */}
-                    <div className="flex -space-x-1">
-                      {(selectedTartan.colorScheme || []).map((color, idx) => (
-                        <span
-                          key={idx}
-                          className="w-4 h-4 rounded-full border border-black/50 shadow-sm"
-                          style={{ backgroundColor: color }}
-                          title={`Color swatch: ${color}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <EditableElement
-                    id={`tartan-${selectedTartan.id}-title`}
-                    tag="h3"
-                    defaultContent={selectedTartan.title}
-                    className="text-2xl font-bold text-white font-serif"
-                    label={`${selectedTartan.title} Heading`}
-                    section="attire"
-                  />
+                <h3 className="text-xl font-bold text-white font-serif">
+                  {previewAttire.title}
+                </h3>
 
-                  <EditableElement
-                    id={`tartan-${selectedTartan.id}-desc`}
-                    tag="p"
-                    defaultContent={selectedTartan.description}
-                    className="text-xs text-gray-300 leading-relaxed"
-                    label={`${selectedTartan.title} Description`}
-                    section="attire"
-                  />
+                <p className="text-xs text-gray-300 leading-relaxed">
+                  {previewAttire.description}
+                </p>
 
-                  <div className="pt-2">
-                    <EditableElement
-                      id={`tartan-${selectedTartan.id}-rec-header`}
-                      tag="p"
-                      defaultContent="Recommended For:"
-                      className="text-xs text-tartan-gold font-bold uppercase tracking-wider mb-1"
-                      label={`${selectedTartan.title} Recommended Header`}
-                      section="attire"
-                    />
-                    <EditableElement
-                      id={`tartan-${selectedTartan.id}-bestfor`}
-                      tag="p"
-                      defaultContent={selectedTartan.bestFor}
-                      className="text-xs text-white font-medium bg-tartan-dark/80 p-2.5 rounded-lg border border-tartan-border/60"
-                      label={`${selectedTartan.title} Recommended For`}
-                      section="attire"
-                    />
-                  </div>
-
-                  <div className="pt-2">
-                    <a
-                      href="#booking"
-                      className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs tracking-wider uppercase shadow-md hover:brightness-110 transition-all text-center"
-                    >
-                      <Calendar className="w-4 h-4" />
-                      <span>Select this Attire in Booking Form</span>
-                    </a>
-                  </div>
+                <div className="pt-1">
+                  <span className="text-[10px] text-tartan-gold font-bold uppercase tracking-wider">
+                    Recommended For:
+                  </span>
+                  <p className="text-xs text-white bg-tartan-dark/80 p-2 rounded-lg border border-tartan-border mt-1">
+                    {previewAttire.bestFor}
+                  </p>
                 </div>
+              </div>
 
+              {/* Booking form simulator */}
+              <div className="pt-3 border-t border-tartan-border space-y-2">
+                <span className="text-[11px] text-gray-400 font-semibold flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-tartan-gold" />
+                  <span>How it appears in the Booking Calendar:</span>
+                </span>
+                <div className="p-3 bg-tartan-dark rounded-xl border border-tartan-border text-xs text-white font-medium flex items-center justify-between">
+                  <span>{previewAttire.name} ({previewAttire.title})</span>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                </div>
               </div>
             </div>
           )}
-
         </div>
 
       </div>
 
-      {/* ================= MODAL: ADD / EDIT ATTIRE STYLE ================= */}
+      {/* ================= MODAL: ADD / EDIT ATTIRE ================= */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-tartan-card border border-tartan-gold/50 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 max-h-[92vh] flex flex-col">
             
-            {/* Modal Header */}
             <div className="bg-tartan-navy px-6 py-4 border-b border-tartan-border flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5 text-tartan-gold">
                 <Shirt className="w-5 h-5 text-tartan-gold" />
                 <div>
                   <h3 className="text-base font-bold text-white font-serif">
-                    {editingAttireId ? 'Edit Highland Attire Style' : 'Add New Highland Attire & Tartan Style'}
+                    {editingAttireId ? 'Edit Highland Attire Style' : 'Add New Highland Attire Style'}
                   </h3>
                   <p className="text-[11px] text-gray-400">
-                    Automatically updates the live Studio and booking form dropdowns
+                    Syncs with Tartan Studio, Home Page, and Booking Form
                   </p>
                 </div>
               </div>
@@ -555,9 +471,7 @@ export const TartanSelector: React.FC = () => {
               </button>
             </div>
 
-            {/* Modal Form Content */}
             <form onSubmit={handleSubmitForm} className="p-6 space-y-4 overflow-y-auto">
-              
               {successMessage ? (
                 <div className="p-8 text-center space-y-4 animate-in fade-in">
                   <div className="w-16 h-16 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-500 mx-auto flex items-center justify-center shadow-lg">
@@ -565,7 +479,7 @@ export const TartanSelector: React.FC = () => {
                   </div>
                   <h4 className="text-xl font-bold text-white font-serif">{successMessage}</h4>
                   <p className="text-xs text-gray-300">
-                    Your changes have been saved to the database and synchronized across the website.
+                    Your updates have been committed to the database and synced across the site.
                   </p>
                 </div>
               ) : (
@@ -584,7 +498,7 @@ export const TartanSelector: React.FC = () => {
                         className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-tartan-accent font-medium"
                       />
                       <p className="text-[10px] text-gray-400 mt-1">
-                        This is the option clients select on the booking calendar.
+                        Exact label shown in the booking date form.
                       </p>
                     </div>
 
@@ -601,7 +515,7 @@ export const TartanSelector: React.FC = () => {
                         className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-tartan-accent font-medium"
                       />
                       <p className="text-[10px] text-gray-400 mt-1">
-                        The large header shown in the Tartan Studio showcase.
+                        Main title shown in the Tartan Studio showcase.
                       </p>
                     </div>
                   </div>
@@ -628,7 +542,7 @@ export const TartanSelector: React.FC = () => {
                       required
                       value={formDescription}
                       onChange={(e) => setFormDescription(e.target.value)}
-                      placeholder="Describe the jacket (Prince Charlie, Argyle, Tweed), sporran, feather bonnet, spats, shoulder plaid, dirk, etc."
+                      placeholder="Details of the kilt tartan, jacket type, sporran, feather bonnet, spats, shoulder plaid, etc."
                       className="w-full bg-tartan-dark border border-tartan-border rounded-xl p-3 text-white placeholder-gray-500 text-xs focus:outline-none focus:border-tartan-accent"
                     />
                   </div>
@@ -641,29 +555,27 @@ export const TartanSelector: React.FC = () => {
                       type="text"
                       value={formBestFor}
                       onChange={(e) => setFormBestFor(e.target.value)}
-                      placeholder="e.g. Traditional Castle Weddings, Burns Suppers & State Galas"
+                      placeholder="e.g. Traditional Castle Weddings, Burns Suppers & Hogmanay"
                       className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-tartan-accent"
                     />
                   </div>
 
-                  {/* Tartan Color Swatches */}
+                  {/* Swatch Colors */}
                   <div className="bg-tartan-dark/70 p-4 rounded-2xl border border-tartan-border space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-semibold text-tartan-gold flex items-center gap-1.5">
                         <Palette className="w-3.5 h-3.5" />
                         <span>Tartan Swatch Colors ({formColors.length}/6)</span>
                       </label>
-                      <span className="text-[10px] text-gray-400">Click swatch to remove</span>
+                      <span className="text-[10px] text-gray-400">Click swatch chip to remove</span>
                     </div>
 
-                    {/* Active Colors */}
                     <div className="flex items-center gap-2 flex-wrap">
                       {formColors.map((hex, idx) => (
                         <div
                           key={idx}
                           onClick={() => handleRemoveColor(idx)}
                           className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-tartan-navy border border-tartan-border cursor-pointer hover:border-rose-500 text-xs group"
-                          title="Click to remove color"
                         >
                           <span className="w-3.5 h-3.5 rounded-full border border-black/40" style={{ backgroundColor: hex }} />
                           <span className="font-mono text-[11px] text-gray-300 group-hover:text-rose-300">{hex}</span>
@@ -672,7 +584,6 @@ export const TartanSelector: React.FC = () => {
                       ))}
                     </div>
 
-                    {/* Add Custom / Preset Colors */}
                     <div className="pt-2 border-t border-tartan-border/60 flex items-center justify-between flex-wrap gap-2">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-[11px] text-gray-400">Presets:</span>
@@ -706,7 +617,7 @@ export const TartanSelector: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Photo Upload & Image URL */}
+                  {/* Photo Upload */}
                   <div className="space-y-2">
                     <label className="block text-xs font-semibold text-tartan-gold">
                       Attire Showcase Photograph
@@ -752,7 +663,6 @@ export const TartanSelector: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Form Actions */}
                   <div className="pt-4 border-t border-tartan-border flex items-center justify-end gap-3">
                     <button
                       type="button"
@@ -781,7 +691,6 @@ export const TartanSelector: React.FC = () => {
                   </div>
                 </>
               )}
-
             </form>
           </div>
         </div>
@@ -832,6 +741,6 @@ export const TartanSelector: React.FC = () => {
         </div>
       )}
 
-    </section>
+    </div>
   );
 };

@@ -7,7 +7,8 @@ export type HighlandDressOption =
   | 'Royal Stewart Tartan (Traditional Red)'
   | 'Black Watch Tartan (Military Green/Blue)'
   | 'Modern Day Highland Tweed Jacket'
-  | 'Isle of Skye Tartan (Purple/Heather/Green)';
+  | 'Isle of Skye Tartan (Purple/Heather/Green)'
+  | (string & {});
 
 export interface BookingAuditEntry {
   id: string;
@@ -432,6 +433,18 @@ export interface PartnerItem {
   isFeatured?: boolean;
   reciprocalBacklink?: boolean;
   tags: string[];
+}
+
+export interface AttireItem {
+  id: string;
+  name: string; // Selection name / badge e.g. "Full No. 1 Dress (Feather Bonnet & Plaid)"
+  title: string; // Full display title e.g. "Full Ceremonial Number 1 Military Dress"
+  tagline: string; // Tagline e.g. "The ultimate royal and castle spectacle"
+  description: string; // Description of items, sporran, jacket, etc.
+  colorScheme: string[]; // Swatch colors e.g. ['#991B1B', '#1E3A8A', '#D4AF37', '#000000']
+  bestFor: string; // Recommendation e.g. "Castle Weddings, Cathedral Ceremonies & VIP State Galas"
+  imageUrl: string; // Image preview URL
+  order?: number;
 }
 
 

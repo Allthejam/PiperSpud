@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import { EventType, HighlandDressOption } from '@/types/spud';
 import { calculateTravelCosts } from '@/lib/travelCalculator';
-import { initialTravelConfig } from '@/lib/initialData';
+import { initialTravelConfig, initialAttires } from '@/lib/initialData';
 
 export const BookingCalendar: React.FC = () => {
   const { 
@@ -43,7 +43,8 @@ export const BookingCalendar: React.FC = () => {
     pricingConfig,
     currentPlayingTune,
     playTune,
-    stopTune
+    stopTune,
+    attires
   } = useApp();
 
   // Dynamic Real-time Date references
@@ -71,7 +72,19 @@ export const BookingCalendar: React.FC = () => {
   const [venueName, setVenueName] = useState('');
   const [venueAddress, setVenueAddress] = useState('');
   const [venuePostcode, setVenuePostcode] = useState('');
-  const [tartanChoice, setTartanChoice] = useState<HighlandDressOption>('Full No. 1 Dress (Feather Bonnet & Plaid)');
+  const currentAttiresList = (attires && attires.length > 0) ? attires : initialAttires;
+  const [tartanChoice, setTartanChoice] = useState<string>(currentAttiresList[0]?.name || 'Full No. 1 Dress (Feather Bonnet & Plaid)');
+
+  // Keep tartanChoice valid if active attire options are added or removed
+  useEffect(() => {
+    if (currentAttiresList.length > 0) {
+      const exists = currentAttiresList.some(a => (a.name || a.title) === tartanChoice);
+      if (!exists) {
+        setTartanChoice(currentAttiresList[0].name || currentAttiresList[0].title);
+      }
+    }
+  }, [currentAttiresList, tartanChoice]);
+
   const [selectedTunes, setSelectedTunes] = useState<string[]>([]);
   const [visibleTuneCount, setVisibleTuneCount] = useState<number>(6); // 2 rows of 3
   const [notes, setNotes] = useState('');
@@ -789,20 +802,28 @@ export const BookingCalendar: React.FC = () => {
 
                 {/* Form Row 4: Tartan Attire Preference */}
                 <div>
-                  <label className="block text-xs font-semibold text-tartan-gold mb-1.5 flex items-center gap-1">
-                    <Shirt className="w-3.5 h-3.5" />
-                    <span>Preferred Highland Dress Style</span>
+                  <label className="block text-xs font-semibold text-tartan-gold mb-1.5 flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <Shirt className="w-3.5 h-3.5" />
+                      <span>Preferred Highland Dress Style</span>
+                    </span>
+                    <span className="text-[11px] text-gray-400 font-normal">
+                      {currentAttiresList.length} options available
+                    </span>
                   </label>
                   <select
                     value={tartanChoice}
-                    onChange={(e) => setTartanChoice(e.target.value as HighlandDressOption)}
-                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-3 text-white text-sm focus:outline-none focus:border-tartan-accent"
+                    onChange={(e) => setTartanChoice(e.target.value)}
+                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-3 text-white text-sm focus:outline-none focus:border-tartan-accent font-medium"
                   >
-                    <option value="Full No. 1 Dress (Feather Bonnet & Plaid)">Full No. 1 Dress (Feather Bonnet & Plaid)</option>
-                    <option value="Royal Stewart Tartan (Traditional Red)">Royal Stewart Tartan (Traditional Red)</option>
-                    <option value="Black Watch Tartan (Military Green/Blue)">Black Watch Tartan (Military Green/Blue)</option>
-                    <option value="Modern Day Highland Tweed Jacket">Modern Day Highland Tweed Jacket</option>
-                    <option value="Isle of Skye Tartan (Purple/Heather/Green)">Isle of Skye Tartan (Purple/Heather/Green)</option>
+                    {currentAttiresList.map((attire) => {
+                      const optVal = attire.name || attire.title;
+                      return (
+                        <option key={attire.id} value={optVal} className="bg-tartan-navy text-white">
+                          {optVal} {attire.title && attire.title !== attire.name ? `(${attire.title})` : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 

@@ -21,7 +21,8 @@ import {
   FaqItem,
   GalleryItem,
   PricingConfig,
-  PartnerItem
+  PartnerItem,
+  AttireItem
 } from '@/types/spud';
 
 export const defaultPermissions: Record<'owner' | 'admin' | 'editor', UserPermissions> = {
@@ -1706,6 +1707,65 @@ export const initialPartners: PartnerItem[] = [
     tags: ['Wedding Photography', 'Elopement Film', 'Isle of Skye', 'Glencoe Photos']
   }
 ];
+
+export const initialAttires: AttireItem[] = [
+  {
+    id: 'no1',
+    name: 'Full No. 1 Dress (Feather Bonnet & Plaid)',
+    title: 'Full Ceremonial Number 1 Military Dress',
+    tagline: 'The ultimate royal and castle spectacle',
+    description: 'Feather bonnet, cross-belt with silver crest, full shoulder plaid, horsehair sporran, doublet tunic, spats, and dirk. Maximum visual majesty.',
+    colorScheme: ['#991B1B', '#1E3A8A', '#D4AF37', '#000000'],
+    bestFor: 'Castle Weddings, Cathedral Ceremonies & VIP State Galas',
+    imageUrl: '/og-image.png',
+    order: 1
+  },
+  {
+    id: 'royal-stewart',
+    name: 'Royal Stewart Tartan (Traditional Red)',
+    title: 'Royal Stewart Highland Dress',
+    tagline: 'The iconic traditional Scottish monarch tartan',
+    description: 'Bright, bold crimson red tartan paired with Prince Charlie black formal jacket, silver thistle buttons, and dress sporran.',
+    colorScheme: ['#DC2626', '#1D4ED8', '#F59E0B', '#15803D'],
+    bestFor: 'Traditional Weddings, Burns Suppers & Hogmanay',
+    imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&q=80',
+    order: 2
+  },
+  {
+    id: 'black-watch',
+    name: 'Black Watch Tartan (Military Green/Blue)',
+    title: 'Black Watch Government Tartan',
+    tagline: 'Subtle, distinguished military elegance',
+    description: 'Deep navy, forest green and black woven tartan. Understated and distinguished with formal Prince Charlie or Argyle jacket.',
+    colorScheme: ['#064E3B', '#1E3A8A', '#0F172A'],
+    bestFor: 'Formal Evening Dinners, Memorials & Autumn/Winter Weddings',
+    imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&q=80',
+    order: 3
+  },
+  {
+    id: 'modern-tweed',
+    name: 'Modern Day Highland Tweed Jacket',
+    title: 'Contemporary Highland Day Tweed',
+    tagline: 'Modern Scottish chic for rustic and outdoor weddings',
+    description: 'Tailored Scottish wool tweed jacket and waistcoat with antler or horn buttons. Relaxed yet deeply stylish Scottish heritage aesthetic.',
+    colorScheme: ['#78716C', '#334155', '#D97706'],
+    bestFor: 'Barn & Woodland Weddings, Daytime Receptions & Outdoor Venues',
+    imageUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&q=80',
+    order: 4
+  },
+  {
+    id: 'isle-of-skye',
+    name: 'Isle of Skye Tartan (Purple/Heather/Green)',
+    title: 'Isle of Skye Misty Tartan',
+    tagline: 'Inspired by the purple heather & sea mists',
+    description: 'Muted purple, heather, sage green and slate blue tones reminiscent of the Cuillin mountains and Western Isles.',
+    colorScheme: ['#6B21A8', '#047857', '#64748B'],
+    bestFor: 'Romantic Highland Weddings, Destination Elopements & Celtic Themes',
+    imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80',
+    order: 5
+  }
+];
+
 
 
 

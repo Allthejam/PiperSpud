@@ -27,7 +27,8 @@ import {
   BookOpen,
   Camera,
   Building,
-  FileText
+  FileText,
+  Shirt
 } from 'lucide-react';
 import { BrevoEmailModal } from './BrevoEmailModal';
 import { PayPalCheckoutModal } from './PayPalCheckoutModal';
@@ -63,6 +64,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
     { id: 'bookings', label: 'Booking Approvals & Deposits', icon: BookOpenCheck, badgeCount: pendingBookingsCount, isProminent: true },
     { id: 'diary', label: 'Interactive Diary', icon: Calendar },
     { id: 'services', label: 'Services, Pricing & POA Studio', icon: Sparkles },
+    { id: 'attire', label: 'Tartan & Attire Studio', icon: Shirt },
     { id: 'messages', label: 'Message Center', icon: MessageSquare, badgeCount: unreadChatCount },
     { id: 'gallery', label: 'Photo Gallery Manager', icon: Camera },
     { id: 'travel-expenses', label: 'Travel & Additional Expenses', icon: Compass },

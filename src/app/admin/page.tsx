@@ -22,6 +22,7 @@ import { AdminGuide } from '@/components/admin/AdminGuide';
 import { AdminGallery } from '@/components/admin/AdminGallery';
 import { AdminPartners } from '@/components/admin/AdminPartners';
 import { AdminEmailTemplates } from '@/components/admin/AdminEmailTemplates';
+import { AdminAttire } from '@/components/admin/AdminAttire';
 import { AdminLoginModal } from '@/components/AdminLoginModal';
 import { ShieldAlert, ArrowLeft, RefreshCw, AlertTriangle, Loader2 } from 'lucide-react';
 
@@ -175,6 +176,7 @@ export default function AdminPage() {
         {activeTab === 'guide' && <AdminGuide onNavigateTab={setActiveTab} />}
         {activeTab === 'gallery' && <AdminGallery />}
         {activeTab === 'services' && <AdminServices />}
+        {activeTab === 'attire' && <AdminAttire />}
         {activeTab === 'travel-expenses' && <AdminTravelExpenses />}
         {activeTab === 'diary' && <AdminDiary />}
         {activeTab === 'bookings' && <AdminBookings />}

@@ -27,7 +27,8 @@ import {
   FaqItem,
   GalleryItem,
   PricingConfig,
-  PartnerItem
+  PartnerItem,
+  AttireItem
 } from '@/types/spud';
 import { 
   initialBookings, 
@@ -53,7 +54,8 @@ import {
   initialFaqs,
   initialGallery,
   initialPricingConfig,
-  initialPartners
+  initialPartners,
+  initialAttires
 } from '@/lib/initialData';
 import { bagpipeSynth } from '@/lib/bagpipeSynth';
 import { db, auth } from '@/lib/firebase';
@@ -264,6 +266,13 @@ interface AppContextType {
   deletePartner: (id: string) => Promise<void>;
   reorderPartners: (newOrderedList: PartnerItem[]) => Promise<void>;
 
+  // Highland Attire & Tartan Studio
+  attires: AttireItem[];
+  addAttire: (attire: Omit<AttireItem, 'id'> | AttireItem) => Promise<string>;
+  updateAttire: (id: string, updates: Partial<AttireItem>) => Promise<boolean>;
+  deleteAttire: (id: string) => Promise<boolean>;
+  reorderAttires: (newOrderedList: AttireItem[]) => Promise<void>;
+
   // Cloud Database Sync
   isSyncingFirestore: boolean;
   syncAllToFirestore: () => Promise<{ success: boolean; count: number; error?: string }>;
@@ -414,6 +423,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [faqs, setFaqs] = useState<FaqItem[]>(initialFaqs);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(initialGallery);
   const [partners, setPartners] = useState<PartnerItem[]>(initialPartners);
+  const [attires, setAttires] = useState<AttireItem[]>(initialAttires);
   const [showLiveStream, setShowLiveStreamState] = useState<boolean>(true);
   const [isSyncingFirestore, setIsSyncingFirestore] = useState<boolean>(false);
 
@@ -746,6 +756,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } catch (e) {}
       }
 
+      const savedAttires = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}attires`);
+      if (savedAttires) {
+        try {
+          const parsedAttires: AttireItem[] = JSON.parse(savedAttires);
+          if (Array.isArray(parsedAttires) && parsedAttires.length > 0) {
+            setAttires(parsedAttires);
+          }
+        } catch (e) {}
+      }
+
       const savedStream = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}show_livestream`);
       if (savedStream !== null) {
         setShowLiveStreamState(savedStream === 'true');
@@ -812,6 +832,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubFaqs = () => {};
     let unsubGallery = () => {};
     let unsubPartners = () => {};
+    let unsubAttires = () => {};
 
     try {
       // Real-time Firestore listener for 'users' collection
@@ -1137,6 +1158,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }, (err) => console.log('Firestore partners listener:', err.message));
 
+      // Real-time Firestore listener for attires (Tartan & Highland Attire Studio)
+      unsubAttires = onSnapshot(collection(db, 'attires'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteAttires: AttireItem[] = [];
+          snapshot.forEach((d) => {
+            const data = d.data() as AttireItem;
+            if (data && (data.id || d.id)) {
+              remoteAttires.push({ ...data, id: data.id || d.id });
+            }
+          });
+          if (remoteAttires.length > 0) {
+            remoteAttires.sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+            setAttires(remoteAttires);
+            if (typeof window !== 'undefined') {
+              try {
+                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}attires`, JSON.stringify(remoteAttires));
+              } catch (e) {}
+            }
+          }
+        }
+      }, (err) => console.log('Firestore attires listener:', err.message));
+
       // Real-time Firestore listener for chat_sessions
       unsubChatSessions = onSnapshot(collection(db, 'chat_sessions'), (snapshot) => {
         if (!snapshot.empty) {
@@ -1217,6 +1260,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubFaqs();
       unsubGallery();
       unsubPartners();
+      unsubAttires();
     };
   }, []);
 
@@ -4160,6 +4204,86 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // Highland Attire & Tartan Studio Handlers (Firestore & LocalStorage synced)
+  const addAttire = async (attireData: Omit<AttireItem, 'id'> | AttireItem): Promise<string> => {
+    const id = ('id' in attireData && attireData.id) ? attireData.id : `attire-${Date.now()}`;
+    const newAttire: AttireItem = {
+      ...attireData,
+      id,
+      colorScheme: attireData.colorScheme && attireData.colorScheme.length > 0 ? attireData.colorScheme : ['#991B1B', '#1E3A8A', '#D4AF37'],
+      imageUrl: attireData.imageUrl || '/og-image.png',
+      order: attireData.order ?? (attires.length + 1)
+    };
+    setAttires(prev => {
+      const updated = [...(prev || []), newAttire];
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}attires`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+    await syncToFirestore('attires', id, newAttire);
+    addNotification({
+      type: 'system',
+      title: 'New Highland Attire Added',
+      message: `Added: "${newAttire.title}" (${newAttire.name})`,
+      actionUrl: '/attire'
+    });
+    return id;
+  };
+
+  const updateAttire = async (id: string, updates: Partial<AttireItem>): Promise<boolean> => {
+    let targetAttire: AttireItem | null = null;
+    setAttires(prev => {
+      const updated = (prev || []).map(a => {
+        if (a.id === id) {
+          targetAttire = { ...a, ...updates };
+          return targetAttire;
+        }
+        return a;
+      });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}attires`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+    if (targetAttire) {
+      await syncToFirestore('attires', id, targetAttire);
+      return true;
+    }
+    return false;
+  };
+
+  const deleteAttire = async (id: string): Promise<boolean> => {
+    setAttires(prev => {
+      const updated = (prev || []).filter(a => a.id !== id);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}attires`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+    await deleteFromFirestore('attires', id);
+    addNotification({
+      type: 'system',
+      title: 'Highland Attire Option Removed',
+      message: `Removed attire style from Tartan Studio and booking forms.`,
+      actionUrl: '/attire'
+    });
+    return true;
+  };
+
+  const reorderAttires = async (newOrderedList: AttireItem[]): Promise<void> => {
+    setAttires(newOrderedList);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}attires`, JSON.stringify(newOrderedList));
+    }
+    if (db) {
+      for (let i = 0; i < newOrderedList.length; i++) {
+        const item = { ...newOrderedList[i], order: i + 1 };
+        await syncToFirestore('attires', item.id, item);
+      }
+    }
+  };
+
   // Modal handlers
   const openBrevoPreview = (booking: BookingEvent) => {
     const paypalLink = `https://www.paypal.com/checkout/spudthepiper/pay?id=${booking.id}`;
@@ -4342,6 +4466,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatePartner,
       deletePartner,
       reorderPartners,
+      attires,
+      addAttire,
+      updateAttire,
+      deleteAttire,
+      reorderAttires,
       isSyncingFirestore,
       syncAllToFirestore,
       activeBrevoEmail,
