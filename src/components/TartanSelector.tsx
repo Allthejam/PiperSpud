@@ -343,28 +343,12 @@ export const TartanSelector: React.FC = () => {
                         </div>
                       )}
                       <span className={`text-sm font-bold font-serif truncate ${isSelected ? 'text-tartan-gold' : 'text-white'}`}>
-                        <EditableElement
-                          id={`tartan-${tartan.id}-list-title`}
-                          tag="span"
-                          defaultContent={tartan.title}
-                          label={`${tartan.title} List Title`}
-                          section="attire"
-                        >
-                          {tartan.title}
-                        </EditableElement>
+                        {tartan.title}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-400 line-clamp-1">
-                      <EditableElement
-                        id={`tartan-${tartan.id}-list-tagline`}
-                        tag="span"
-                        defaultContent={tartan.tagline}
-                        label={`${tartan.title} List Tagline`}
-                        section="attire"
-                      >
-                        {tartan.tagline}
-                      </EditableElement>
-                    </p>
+                    <span className="text-xs text-gray-400 line-clamp-1 block">
+                      {tartan.tagline}
+                    </span>
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -451,13 +435,7 @@ export const TartanSelector: React.FC = () => {
                   />
                   <div className="absolute bottom-2 left-2 z-20 pointer-events-none">
                     <span className="text-xs font-bold text-white bg-tartan-red/90 px-3 py-1 rounded-full border border-red-400 shadow-md">
-                      <EditableElement
-                        id={`tartan-${selectedTartan.id}-badge`}
-                        tag="span"
-                        defaultContent={selectedTartan.name}
-                        label={`${selectedTartan.title} Badge`}
-                        section="attire"
-                      />
+                      {selectedTartan.name}
                     </span>
                   </div>
                 </div>
