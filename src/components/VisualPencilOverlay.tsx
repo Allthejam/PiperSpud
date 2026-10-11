@@ -964,6 +964,22 @@ export const VisualPencilOverlay: React.FC = () => {
                     />
                     <p className="text-[11px] text-gray-400 mt-1">Include keywords like Scottish Bagpiper, wedding venue, or event type for Google indexing.</p>
                   </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-tartan-gold mb-1.5">
+                      Image Label / Attire Dress Description
+                    </label>
+                    <input
+                      type="text"
+                      value={textContent}
+                      onChange={(e) => setTextContent(e.target.value)}
+                      placeholder="e.g. Full No. 1 Dress (Feather Bonnet & Plaid)"
+                      className="w-full bg-tartan-dark border border-tartan-border rounded-lg px-3.5 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent text-xs"
+                    />
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      Edit the description or attire name badge shown on this stored image.
+                    </p>
+                  </div>
                 </>
               ) : (
                 <>

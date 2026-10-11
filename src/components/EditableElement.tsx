@@ -107,6 +107,8 @@ export const EditableElement: React.FC<EditableElementProps> = ({
   const colorClass = buttonColor ? buttonColor : '';
   const finalClassName = `${className} ${colorClass}`.trim();
 
+  const finalContent = (block && block.content !== undefined) ? block.content : (children || content);
+
   return (
     <span className={`relative group ${isInline ? 'inline-block' : 'block w-full'} ${canEdit ? 'ring-2 ring-tartan-gold/70 ring-dashed rounded-lg p-1 my-0.5 bg-tartan-navy/20' : ''}`}>
       {canEdit && (
@@ -128,11 +130,11 @@ export const EditableElement: React.FC<EditableElementProps> = ({
           const target = document.getElementById(linkUrl.replace('#', ''));
           if (target) target.scrollIntoView({ behavior: 'smooth' });
         } : undefined}>
-          {children || content}
+          {finalContent}
         </a>
       ) : (
         <Tag className={finalClassName}>
-          {children || content}
+          {finalContent}
         </Tag>
       )}
     </span>

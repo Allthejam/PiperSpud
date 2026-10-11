@@ -44,7 +44,9 @@ export const TartanSelector: React.FC = () => {
     updateAttire, 
     deleteAttire, 
     isAdminLoggedIn, 
-    isVisualEditMode 
+    isVisualEditMode,
+    cmsBlocks,
+    updateCmsBlock
   } = useApp();
 
   const currentAttiresList = (attires && attires.length > 0) ? attires : initialAttires;
@@ -62,6 +64,9 @@ export const TartanSelector: React.FC = () => {
   }, [currentAttiresList, selectedId]);
 
   const selectedTartan = currentAttiresList.find(a => a.id === selectedId) || currentAttiresList[0];
+  const selectedPhotoBlock = cmsBlocks?.find(b => b.id === `tartan-${selectedTartan?.id}-photo`);
+  const selectedNameBlock = cmsBlocks?.find(b => b.id === `tartan-${selectedTartan?.id}-dress-name`);
+  const effectiveDressName = selectedNameBlock?.content || selectedPhotoBlock?.content || selectedTartan?.name || '';
 
   // Modal State for Add / Edit
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -101,12 +106,18 @@ export const TartanSelector: React.FC = () => {
   // Open modal for Editing Existing
   const handleOpenEditModal = (item: AttireItem, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    const nameBlock = cmsBlocks?.find(b => b.id === `tartan-${item.id}-dress-name`);
+    const photoBlock = cmsBlocks?.find(b => b.id === `tartan-${item.id}-photo`);
+    const titleBlock = cmsBlocks?.find(b => b.id === `tartan-${item.id}-title`);
+    const descBlock = cmsBlocks?.find(b => b.id === `tartan-${item.id}-desc`);
+    const bestForBlock = cmsBlocks?.find(b => b.id === `tartan-${item.id}-bestfor`);
+
     setEditingAttireId(item.id);
-    setFormName(item.name);
-    setFormTitle(item.title);
+    setFormName(nameBlock?.content || photoBlock?.content || item.name);
+    setFormTitle(titleBlock?.content || item.title);
     setFormTagline(item.tagline);
-    setFormDescription(item.description);
-    setFormBestFor(item.bestFor);
+    setFormDescription(descBlock?.content || item.description);
+    setFormBestFor(bestForBlock?.content || item.bestFor);
     setFormImageUrl(item.imageUrl || '/og-image.png');
     setFormColors(item.colorScheme && item.colorScheme.length > 0 ? [...item.colorScheme] : ['#991B1B', '#1E3A8A']);
     setSuccessMessage(null);
@@ -174,6 +185,11 @@ export const TartanSelector: React.FC = () => {
           imageUrl: formImageUrl.trim() || '/og-image.png',
           colorScheme: formColors
         });
+        updateCmsBlock(`tartan-${editingAttireId}-dress-name`, formName.trim());
+        updateCmsBlock(`tartan-${editingAttireId}-photo`, formName.trim(), undefined, formImageUrl.trim() || '/og-image.png');
+        updateCmsBlock(`tartan-${editingAttireId}-title`, formTitle.trim());
+        updateCmsBlock(`tartan-${editingAttireId}-desc`, formDescription.trim());
+        updateCmsBlock(`tartan-${editingAttireId}-bestfor`, formBestFor.trim());
         setSuccessMessage('Attire updated and synced with booking forms!');
       } else {
         // Create new
@@ -317,6 +333,11 @@ export const TartanSelector: React.FC = () => {
 
             {currentAttiresList.map((tartan) => {
               const isSelected = selectedTartan?.id === tartan.id;
+              const tartanTitleBlock = cmsBlocks?.find(b => b.id === `tartan-${tartan.id}-title`);
+              const tartanNameBlock = cmsBlocks?.find(b => b.id === `tartan-${tartan.id}-dress-name`);
+              const tartanPhotoBlock = cmsBlocks?.find(b => b.id === `tartan-${tartan.id}-photo`);
+              const displayTitle = tartanTitleBlock?.content || tartan.title;
+              const displaySubtitle = tartanNameBlock?.content || tartanPhotoBlock?.content || tartan.tagline;
 
               return (
                 <div
@@ -343,11 +364,11 @@ export const TartanSelector: React.FC = () => {
                         </div>
                       )}
                       <span className={`text-sm font-bold font-serif truncate ${isSelected ? 'text-tartan-gold' : 'text-white'}`}>
-                        {tartan.title}
+                        {displayTitle}
                       </span>
                     </div>
                     <span className="text-xs text-gray-400 line-clamp-1 block">
-                      {tartan.tagline}
+                      {displaySubtitle}
                     </span>
                   </div>
 
@@ -433,19 +454,29 @@ export const TartanSelector: React.FC = () => {
                     label={`${selectedTartan.title} Photo`}
                     section="attire"
                   />
-                  <div className="absolute bottom-2 left-2 z-20 flex items-center gap-1.5">
-                    <span 
-                      onClick={canManage ? (e) => handleOpenEditModal(selectedTartan, e) : undefined}
-                      className={`text-xs font-bold text-white bg-tartan-red/90 px-3 py-1 rounded-full border border-red-400 shadow-md flex items-center gap-1.5 ${
-                        canManage ? 'cursor-pointer hover:bg-red-700 transition' : ''
-                      }`}
-                      title={canManage ? "Click to edit attire name and details" : undefined}
-                    >
-                      <span>{selectedTartan.name}</span>
-                      {canManage && (
-                        <Edit3 className="w-3 h-3 text-tartan-gold shrink-0 opacity-80 hover:opacity-100" />
-                      )}
-                    </span>
+                  <div className="absolute bottom-2 left-2 z-20 flex items-center gap-2 max-w-[95%] flex-wrap">
+                    <EditableElement
+                      id={`tartan-${selectedTartan.id}-dress-name`}
+                      tag="span"
+                      defaultContent={effectiveDressName}
+                      className="text-xs font-bold text-white bg-tartan-red/95 px-3 py-1.5 rounded-full border border-red-400 shadow-lg inline-flex items-center gap-1.5 cursor-pointer hover:bg-red-700 transition"
+                      label={`${selectedTartan.title} Dress Name Badge`}
+                      section="attire"
+                    />
+                    {canManage && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEditModal(selectedTartan, e);
+                        }}
+                        className="px-2.5 py-1 rounded-full bg-tartan-navy/95 hover:bg-slate-800 text-tartan-gold border border-tartan-gold/60 shadow-lg flex items-center gap-1 text-[11px] font-bold transition hover:scale-105 active:scale-95 shrink-0"
+                        title="Open Full Attire Edit Modal"
+                      >
+                        <Edit3 className="w-3 h-3 text-tartan-gold" />
+                        <span>Edit Style</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -494,9 +525,7 @@ export const TartanSelector: React.FC = () => {
                     className="text-2xl font-bold text-white font-serif"
                     label={`${selectedTartan.title} Heading`}
                     section="attire"
-                  >
-                    {selectedTartan.title}
-                  </EditableElement>
+                  />
 
                   <EditableElement
                     id={`tartan-${selectedTartan.id}-desc`}
@@ -505,9 +534,7 @@ export const TartanSelector: React.FC = () => {
                     className="text-xs text-gray-300 leading-relaxed"
                     label={`${selectedTartan.title} Description`}
                     section="attire"
-                  >
-                    {selectedTartan.description}
-                  </EditableElement>
+                  />
 
                   <div className="pt-2">
                     <EditableElement
@@ -517,9 +544,7 @@ export const TartanSelector: React.FC = () => {
                       className="text-xs text-tartan-gold font-bold uppercase tracking-wider mb-1"
                       label={`${selectedTartan.title} Recommended Header`}
                       section="attire"
-                    >
-                      Recommended For:
-                    </EditableElement>
+                    />
                     <EditableElement
                       id={`tartan-${selectedTartan.id}-bestfor`}
                       tag="p"
@@ -527,9 +552,7 @@ export const TartanSelector: React.FC = () => {
                       className="text-xs text-white font-medium bg-tartan-dark/80 p-2.5 rounded-lg border border-tartan-border/60"
                       label={`${selectedTartan.title} Recommended For`}
                       section="attire"
-                    >
-                      {selectedTartan.bestFor}
-                    </EditableElement>
+                    />
                   </div>
 
                   <div className="pt-2">
