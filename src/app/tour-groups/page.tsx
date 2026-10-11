@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { LiveChatWidget } from '@/components/LiveChatWidget';
@@ -8,6 +8,8 @@ import { VisualPencilOverlay } from '@/components/VisualPencilOverlay';
 import { EditableElement } from '@/components/EditableElement';
 import { SpudHeritageLogo } from '@/components/SpudHeritageLogo';
 import { useApp } from '@/context/AppContext';
+import { uploadToStorage, db } from '@/lib/firebase';
+import { doc, setDoc, deleteDoc, onSnapshot, collection } from 'firebase/firestore';
 import Link from 'next/link';
 import { 
   Compass, 
@@ -31,7 +33,12 @@ import {
   ShieldCheck,
   ChevronLeft,
   ChevronRight,
-  Quote
+  Plus,
+  Edit3,
+  Trash2,
+  X,
+  Upload,
+  Loader2
 } from 'lucide-react';
 
 interface PastTourEvent {
@@ -43,9 +50,10 @@ interface PastTourEvent {
   imageUrl: string;
   description: string;
   highlight: string;
+  order?: number;
 }
 
-const PAST_TOUR_EVENTS: PastTourEvent[] = [
+const initialTourEvents: PastTourEvent[] = [
   {
     id: 'event-1',
     title: 'North American Coach Holiday Grand Arrival',
@@ -54,7 +62,8 @@ const PAST_TOUR_EVENTS: PastTourEvent[] = [
     origin: 'USA & Canada',
     imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1000&q=80',
     description: 'Surprise bagpipe welcoming ceremony as the luxury coach pulled up to the hotel. Spud greeted guests in full No. 1 Dress with "Scotland the Brave", followed by a spirited photo session with the passengers against the mountain backdrop.',
-    highlight: 'Full No. 1 Regalia & Personal Photos for Every Guest'
+    highlight: 'Full No. 1 Regalia & Personal Photos for Every Guest',
+    order: 1
   },
   {
     id: 'event-2',
@@ -64,7 +73,8 @@ const PAST_TOUR_EVENTS: PastTourEvent[] = [
     origin: 'Australia & New Zealand',
     imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1000&q=80',
     description: 'A breathtaking outdoor piping stop overlooking the dramatic waters of Loch Ness. Spud performed "Highland Cathedral" and "Skye Boat Song", then hosted a 20-minute Q&A showing how the bagpipes are tuned and answering Scottish clan questions.',
-    highlight: 'Outdoor Acoustic Piping with Dramatic Loch Views'
+    highlight: 'Outdoor Acoustic Piping with Dramatic Loch Views',
+    order: 2
   },
   {
     id: 'event-3',
@@ -74,7 +84,8 @@ const PAST_TOUR_EVENTS: PastTourEvent[] = [
     origin: 'Germany, Switzerland & Austria',
     imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1000&q=80',
     description: 'Spud piped international guests from their coach through the distillery copper stills to the private tasting warehouse. Delivered a stirring toast in traditional Gaelic before leading a celebratory march into their private banquet.',
-    highlight: 'Whisky Toast, Gaelic Salutation & Processional'
+    highlight: 'Whisky Toast, Gaelic Salutation & Processional',
+    order: 3
   },
   {
     id: 'event-4',
@@ -84,22 +95,260 @@ const PAST_TOUR_EVENTS: PastTourEvent[] = [
     origin: 'International Travel Club',
     imageUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1000&q=80',
     description: 'Piped the arrival of the tour coach at the castle portcullis, followed by ceremonial piping of the Haggis into the grand banquet hall with Robert Burns recitation and unforgettable Scottish banter.',
-    highlight: 'Traditional Haggis Procession & Banquet Fanfare'
+    highlight: 'Traditional Haggis Procession & Banquet Fanfare',
+    order: 4
   }
 ];
 
-export default function TourGroupsPage() {
-  const { addNotification, travelConfig } = useApp();
+const LOCAL_STORAGE_TOUR_EVENTS_KEY = 'spud_tour_events';
 
-  // Carousel State
+export default function TourGroupsPage() {
+  const { addNotification, isAdminLoggedIn, isVisualEditMode } = useApp();
+  const canManage = Boolean(isAdminLoggedIn || isVisualEditMode);
+
+  // Tour events state with local & Firestore synchronization
+  const [tourEvents, setTourEvents] = useState<PastTourEvent[]>(initialTourEvents);
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  // Modal State for adding / editing carousel items
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [formTitle, setFormTitle] = useState('');
+  const [formLocation, setFormLocation] = useState('');
+  const [formGroupType, setFormGroupType] = useState('');
+  const [formOrigin, setFormOrigin] = useState('');
+  const [formImageUrl, setFormImageUrl] = useState('');
+  const [formDescription, setFormDescription] = useState('');
+  const [formHighlight, setFormHighlight] = useState('');
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Delete modal state
+  const [eventToDelete, setEventToDelete] = useState<PastTourEvent | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Load persisted tour events on mount & set up Firestore real-time listener
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(LOCAL_STORAGE_TOUR_EVENTS_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setTourEvents(parsed);
+          }
+        }
+      } catch (e) {
+        console.warn('Error reading local tour events:', e);
+      }
+    }
+
+    if (!db) return;
+    try {
+      const unsub = onSnapshot(collection(db, 'tour_events'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteEvents: PastTourEvent[] = [];
+          snapshot.forEach((d) => {
+            const data = d.data() as PastTourEvent;
+            if (data && (data.id || d.id)) {
+              remoteEvents.push({ ...data, id: data.id || d.id });
+            }
+          });
+          if (remoteEvents.length > 0) {
+            setTourEvents(prev => {
+              const currentList = prev && prev.length > 0 ? prev : initialTourEvents;
+              const merged = [...currentList];
+              remoteEvents.forEach(r => {
+                const idx = merged.findIndex(e => e.id === r.id);
+                if (idx >= 0) {
+                  merged[idx] = { ...merged[idx], ...r };
+                } else {
+                  merged.push(r);
+                }
+              });
+              merged.sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+              if (typeof window !== 'undefined') {
+                try {
+                  localStorage.setItem(LOCAL_STORAGE_TOUR_EVENTS_KEY, JSON.stringify(merged));
+                } catch (err) {}
+              }
+              return merged;
+            });
+          }
+        }
+      }, (err) => console.log('Firestore tour_events listener:', err.message));
+
+      return () => unsub();
+    } catch (e) {
+      console.warn('Firebase Firestore tour_events init:', e);
+    }
+  }, []);
+
+  // Safe slide index clamping
+  useEffect(() => {
+    if (currentSlide >= tourEvents.length) {
+      setCurrentSlide(Math.max(0, tourEvents.length - 1));
+    }
+  }, [tourEvents.length, currentSlide]);
+
   const handlePrevSlide = () => {
-    setCurrentSlide(prev => (prev === 0 ? PAST_TOUR_EVENTS.length - 1 : prev - 1));
+    setCurrentSlide(prev => (prev === 0 ? tourEvents.length - 1 : prev - 1));
   };
 
   const handleNextSlide = () => {
-    setCurrentSlide(prev => (prev === PAST_TOUR_EVENTS.length - 1 ? 0 : prev + 1));
+    setCurrentSlide(prev => (prev === tourEvents.length - 1 ? 0 : prev + 1));
+  };
+
+  // Open modal to add a new event/story
+  const handleOpenAddModal = () => {
+    setEditingEventId(null);
+    setFormTitle('');
+    setFormLocation('Scottish Highlands');
+    setFormGroupType('International Tour Group');
+    setFormOrigin('USA, Canada & Europe');
+    setFormImageUrl('https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1000&q=80');
+    setFormDescription('');
+    setFormHighlight('Authentic Scottish Bagpipe Welcome & Photo Moment');
+    setSuccessMessage(null);
+    setIsModalOpen(true);
+  };
+
+  // Open modal to edit existing event
+  const handleOpenEditModal = (item: PastTourEvent) => {
+    setEditingEventId(item.id);
+    setFormTitle(item.title);
+    setFormLocation(item.location);
+    setFormGroupType(item.groupType);
+    setFormOrigin(item.origin);
+    setFormImageUrl(item.imageUrl);
+    setFormDescription(item.description);
+    setFormHighlight(item.highlight);
+    setSuccessMessage(null);
+    setIsModalOpen(true);
+  };
+
+  // Upload photo handler
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 25 * 1024 * 1024) {
+      alert('Photo is too large. Please select an image under 25MB.');
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+    try {
+      const downloadUrl = await uploadToStorage(file, 'tour_events');
+      if (downloadUrl) {
+        setFormImageUrl(downloadUrl);
+      }
+    } catch (err: any) {
+      console.error('Error uploading tour event image:', err);
+      alert(`Photo upload failed: ${err?.message || err}`);
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  // Save tour event
+  const handleSubmitEventForm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formTitle.trim() || isSaving) return;
+
+    setIsSaving(true);
+    try {
+      if (editingEventId) {
+        const updatedItem: PastTourEvent = {
+          id: editingEventId,
+          title: formTitle.trim(),
+          location: formLocation.trim() || 'Scottish Highlands',
+          groupType: formGroupType.trim() || 'Tour Group',
+          origin: formOrigin.trim() || 'International',
+          imageUrl: formImageUrl.trim() || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1000&q=80',
+          description: formDescription.trim(),
+          highlight: formHighlight.trim() || 'Highland Welcome'
+        };
+
+        const updatedList = tourEvents.map(item => item.id === editingEventId ? { ...item, ...updatedItem } : item);
+        setTourEvents(updatedList);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(LOCAL_STORAGE_TOUR_EVENTS_KEY, JSON.stringify(updatedList));
+        }
+        if (db) {
+          await setDoc(doc(db, 'tour_events', editingEventId), updatedItem, { merge: true });
+        }
+        setSuccessMessage('Tour event updated successfully!');
+      } else {
+        const newId = `tour-ev-${Date.now()}`;
+        const newEvent: PastTourEvent = {
+          id: newId,
+          title: formTitle.trim(),
+          location: formLocation.trim() || 'Scottish Highlands',
+          groupType: formGroupType.trim() || 'Tour Group',
+          origin: formOrigin.trim() || 'International',
+          imageUrl: formImageUrl.trim() || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1000&q=80',
+          description: formDescription.trim(),
+          highlight: formHighlight.trim() || 'Highland Welcome',
+          order: tourEvents.length + 1
+        };
+
+        const updatedList = [...tourEvents, newEvent];
+        setTourEvents(updatedList);
+        setCurrentSlide(updatedList.length - 1);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(LOCAL_STORAGE_TOUR_EVENTS_KEY, JSON.stringify(updatedList));
+        }
+        if (db) {
+          // Also seed baseline initial events if new
+          for (const init of initialTourEvents) {
+            await setDoc(doc(db, 'tour_events', init.id), init, { merge: true });
+          }
+          await setDoc(doc(db, 'tour_events', newId), newEvent);
+        }
+        setSuccessMessage('New tour moment added to the carousel!');
+      }
+
+      setTimeout(() => {
+        setIsModalOpen(false);
+        setSuccessMessage(null);
+      }, 1100);
+    } catch (err: any) {
+      alert(`Error saving event: ${err?.message || err}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Delete event
+  const handleConfirmDelete = async () => {
+    if (!eventToDelete || isDeleting) return;
+    if (tourEvents.length <= 1) {
+      alert('You must have at least one tour event story in the carousel.');
+      setEventToDelete(null);
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const remaining = tourEvents.filter(e => e.id !== eventToDelete.id);
+      setTourEvents(remaining);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(LOCAL_STORAGE_TOUR_EVENTS_KEY, JSON.stringify(remaining));
+      }
+      if (db) {
+        await deleteDoc(doc(db, 'tour_events', eventToDelete.id));
+      }
+      if (currentSlide >= remaining.length) {
+        setCurrentSlide(Math.max(0, remaining.length - 1));
+      }
+      setEventToDelete(null);
+    } catch (err: any) {
+      alert(`Error deleting event: ${err?.message || err}`);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // Inquiry Form State
@@ -121,7 +370,6 @@ export default function TourGroupsPage() {
     if (!contactName || !email || !tourDate) return;
 
     setIsSubmitting(true);
-    // Simulate booking / lead notification
     setTimeout(() => {
       addNotification({
         type: 'booking_request',
@@ -133,6 +381,8 @@ export default function TourGroupsPage() {
       setIsSubmitted(true);
     }, 800);
   };
+
+  const activeSlide = tourEvents[currentSlide] || tourEvents[0];
 
   return (
     <div className="min-h-screen bg-tartan-dark flex flex-col relative">
@@ -150,7 +400,13 @@ export default function TourGroupsPage() {
 
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-tartan-accent/20 border border-tartan-accent/40 text-tartan-gold text-xs font-semibold shadow-lg">
             <Globe className="w-4 h-4" />
-            <span>International Coach Holidays & Tour Group Experiences</span>
+            <EditableElement
+              id="tour-page-badge"
+              tag="span"
+              defaultContent="International Coach Holidays & Tour Group Experiences"
+              label="Tour Page Badge"
+              section="tour-groups"
+            />
           </div>
 
           <EditableElement
@@ -172,13 +428,15 @@ export default function TourGroupsPage() {
           />
 
           <div className="pt-4 flex items-center justify-center gap-4 flex-wrap">
-            <a
-              href="#tour-inquiry"
+            <EditableElement
+              id="tour-hero-btn-enquire"
+              tag="a"
+              defaultContent="Enquire for Tour Dates"
+              defaultLinkUrl="#tour-inquiry"
               className="px-6 py-3.5 bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-xl hover:brightness-110 flex items-center gap-2 transition"
-            >
-              <Calendar className="w-4 h-4" />
-              <span>Enquire for Tour Dates</span>
-            </a>
+              label="Tour Hero Enquire Button"
+              section="tour-groups"
+            />
             <a
               href="tel:07793491367"
               className="px-6 py-3.5 bg-tartan-card hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl border border-tartan-border flex items-center gap-2 transition"
@@ -195,15 +453,30 @@ export default function TourGroupsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           
           <div className="text-center max-w-3xl mx-auto space-y-3">
-            <span className="text-xs font-bold text-tartan-gold uppercase tracking-wider">
-              Iconic Scottish Hospitality
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-extrabold text-white font-serif">
-              What International Guests Experience
-            </h2>
-            <p className="text-sm text-gray-300">
-              For visitors travelling from North America, Europe, Australia, and Asia, hearing an authentic bagpiper in full ceremonial dress in the Highlands is the bucket-list moment of their journey.
-            </p>
+            <EditableElement
+              id="tour-exp-badge"
+              tag="span"
+              defaultContent="Iconic Scottish Hospitality"
+              className="text-xs font-bold text-tartan-gold uppercase tracking-wider"
+              label="Tour Experience Badge"
+              section="tour-groups"
+            />
+            <EditableElement
+              id="tour-exp-title"
+              tag="h2"
+              defaultContent="What International Guests Experience"
+              className="text-3xl sm:text-5xl font-extrabold text-white font-serif"
+              label="Tour Experience Title"
+              section="tour-groups"
+            />
+            <EditableElement
+              id="tour-exp-subtitle"
+              tag="p"
+              defaultContent="For visitors travelling from North America, Europe, Australia, and Asia, hearing an authentic bagpiper in full ceremonial dress in the Highlands is the bucket-list moment of their journey."
+              className="text-sm text-gray-300"
+              label="Tour Experience Subtitle"
+              section="tour-groups"
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -214,15 +487,31 @@ export default function TourGroupsPage() {
                 <div className="w-12 h-12 rounded-xl bg-tartan-accent/20 border border-tartan-accent/40 text-tartan-gold flex items-center justify-center">
                   <Compass className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-bold text-white font-serif">
-                  Coach Arrival & Welcome
-                </h3>
-                <p className="text-xs text-gray-300 leading-relaxed">
-                  As your coach pulls up to your hotel, castle, or visitor centre, the stirring sound of the pipes greets your guests, providing an immediate goosebumps moment and the warmest Scottish welcome.
-                </p>
+                <EditableElement
+                  id="tour-feat1-title"
+                  tag="h3"
+                  defaultContent="Coach Arrival & Welcome"
+                  className="text-lg font-bold text-white font-serif"
+                  label="Feature 1 Title"
+                  section="tour-groups"
+                />
+                <EditableElement
+                  id="tour-feat1-desc"
+                  tag="p"
+                  defaultContent="As your coach pulls up to your hotel, castle, or visitor centre, the stirring sound of the pipes greets your guests, providing an immediate goosebumps moment and the warmest Scottish welcome."
+                  className="text-xs text-gray-300 leading-relaxed"
+                  label="Feature 1 Description"
+                  section="tour-groups"
+                />
               </div>
               <div className="text-[11px] text-tartan-gold font-bold pt-2 border-t border-tartan-border/60">
-                15 - 30 Minute Flexible Stops
+                <EditableElement
+                  id="tour-feat1-timing"
+                  tag="span"
+                  defaultContent="15 - 30 Minute Flexible Stops"
+                  label="Feature 1 Timing"
+                  section="tour-groups"
+                />
               </div>
             </div>
 
@@ -232,15 +521,31 @@ export default function TourGroupsPage() {
                 <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center justify-center">
                   <Camera className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-bold text-white font-serif">
-                  Guest Photo Opportunities
-                </h3>
-                <p className="text-xs text-gray-300 leading-relaxed">
-                  Spud stands in immaculate No. 1 Ceremonial Dress with Feather Bonnet, cross-belt, plaid, and horsehair sporran. Every passenger gets the chance for individual and group photographs with a genuine Highland Piper.
-                </p>
+                <EditableElement
+                  id="tour-feat2-title"
+                  tag="h3"
+                  defaultContent="Guest Photo Opportunities"
+                  className="text-lg font-bold text-white font-serif"
+                  label="Feature 2 Title"
+                  section="tour-groups"
+                />
+                <EditableElement
+                  id="tour-feat2-desc"
+                  tag="p"
+                  defaultContent="Spud stands in immaculate No. 1 Ceremonial Dress with Feather Bonnet, cross-belt, plaid, and horsehair sporran. Every passenger gets the chance for individual and group photographs with a genuine Highland Piper."
+                  className="text-xs text-gray-300 leading-relaxed"
+                  label="Feature 2 Description"
+                  section="tour-groups"
+                />
               </div>
               <div className="text-[11px] text-tartan-gold font-bold pt-2 border-t border-tartan-border/60">
-                Memorable Holiday Keepsakes
+                <EditableElement
+                  id="tour-feat2-timing"
+                  tag="span"
+                  defaultContent="Memorable Holiday Keepsakes"
+                  label="Feature 2 Timing"
+                  section="tour-groups"
+                />
               </div>
             </div>
 
@@ -250,15 +555,31 @@ export default function TourGroupsPage() {
                 <div className="w-12 h-12 rounded-xl bg-tartan-accent/20 border border-tartan-accent/40 text-tartan-gold flex items-center justify-center">
                   <Users className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-bold text-white font-serif">
-                  Interactive Story & Q&A
-                </h3>
-                <p className="text-xs text-gray-300 leading-relaxed">
-                  Spud explains how the Great Highland Bagpipe works, reveals the meaning behind tartans, clan crests, and dirks, and shares entertaining Scottish banter tailored to international holidaymakers.
-                </p>
+                <EditableElement
+                  id="tour-feat3-title"
+                  tag="h3"
+                  defaultContent="Interactive Story & Q&A"
+                  className="text-lg font-bold text-white font-serif"
+                  label="Feature 3 Title"
+                  section="tour-groups"
+                />
+                <EditableElement
+                  id="tour-feat3-desc"
+                  tag="p"
+                  defaultContent="Spud explains how the Great Highland Bagpipe works, reveals the meaning behind tartans, clan crests, and dirks, and shares entertaining Scottish banter tailored to international holidaymakers."
+                  className="text-xs text-gray-300 leading-relaxed"
+                  label="Feature 3 Description"
+                  section="tour-groups"
+                />
               </div>
               <div className="text-[11px] text-tartan-gold font-bold pt-2 border-t border-tartan-border/60">
-                Scottish Heritage & Humour
+                <EditableElement
+                  id="tour-feat3-timing"
+                  tag="span"
+                  defaultContent="Scottish Heritage & Humour"
+                  label="Feature 3 Timing"
+                  section="tour-groups"
+                />
               </div>
             </div>
 
@@ -268,15 +589,31 @@ export default function TourGroupsPage() {
                 <div className="w-12 h-12 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-300 flex items-center justify-center">
                   <Wine className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-bold text-white font-serif">
-                  Whisky Toasts & Banquets
-                </h3>
-                <p className="text-xs text-gray-300 leading-relaxed">
-                  Piping tour parties into gala Scottish banquets, performing the official &quot;Address to a Haggis&quot;, or playing outside during sunset drinks at historic castles and distillery tours.
-                </p>
+                <EditableElement
+                  id="tour-feat4-title"
+                  tag="h3"
+                  defaultContent="Whisky Toasts & Banquets"
+                  className="text-lg font-bold text-white font-serif"
+                  label="Feature 4 Title"
+                  section="tour-groups"
+                />
+                <EditableElement
+                  id="tour-feat4-desc"
+                  tag="p"
+                  defaultContent="Piping tour parties into gala Scottish banquets, performing the official &quot;Address to a Haggis&quot;, or playing outside during sunset drinks at historic castles and distillery tours."
+                  className="text-xs text-gray-300 leading-relaxed"
+                  label="Feature 4 Description"
+                  section="tour-groups"
+                />
               </div>
               <div className="text-[11px] text-tartan-gold font-bold pt-2 border-t border-tartan-border/60">
-                Evening Gala Dinners
+                <EditableElement
+                  id="tour-feat4-timing"
+                  tag="span"
+                  defaultContent="Evening Gala Dinners"
+                  label="Feature 4 Timing"
+                  section="tour-groups"
+                />
               </div>
             </div>
 
@@ -293,14 +630,30 @@ export default function TourGroupsPage() {
             <div className="lg:col-span-7 space-y-4">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-tartan-gold/10 border border-tartan-gold/30 text-tartan-gold text-xs font-semibold">
                 <MapPin className="w-4 h-4" />
-                <span>Prime Scottish Tour Corridors</span>
+                <EditableElement
+                  id="tour-coverage-badge"
+                  tag="span"
+                  defaultContent="Prime Scottish Tour Corridors"
+                  label="Tour Coverage Badge"
+                  section="tour-groups"
+                />
               </div>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-white font-serif">
-                Covering the Highlands, Loch Ness, Aviemore & Central Scotland
-              </h2>
-              <p className="text-sm text-gray-300 leading-relaxed">
-                Spud is centrally positioned in the Scottish Highlands (based Aviemore / Inverness-shire) with rapid access to the most popular tour routes: A9 Highland spine, Loch Ness & Urquhart Castle, Inverness, Speyside Distilleries, Cairngorms National Park, Stirling Castle, Fort William, and Edinburgh.
-              </p>
+              <EditableElement
+                id="tour-coverage-title"
+                tag="h2"
+                defaultContent="Covering the Highlands, Loch Ness, Aviemore & Central Scotland"
+                className="text-3xl sm:text-4xl font-extrabold text-white font-serif"
+                label="Tour Coverage Title"
+                section="tour-groups"
+              />
+              <EditableElement
+                id="tour-coverage-desc"
+                tag="p"
+                defaultContent="Spud is centrally positioned in the Scottish Highlands (based Aviemore / Inverness-shire) with rapid access to the most popular tour routes: A9 Highland spine, Loch Ness & Urquhart Castle, Inverness, Speyside Distilleries, Cairngorms National Park, Stirling Castle, Fort William, and Edinburgh."
+                className="text-sm text-gray-300 leading-relaxed"
+                label="Tour Coverage Description"
+                section="tour-groups"
+              />
               
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2 text-xs text-gray-200">
                 <div className="bg-tartan-card p-3 rounded-xl border border-tartan-border flex items-center gap-2">
@@ -333,7 +686,13 @@ export default function TourGroupsPage() {
             <div className="lg:col-span-5 bg-tartan-card rounded-3xl p-6 sm:p-8 border border-tartan-border shadow-2xl space-y-4">
               <h3 className="text-lg font-bold text-white font-serif flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-tartan-gold" />
-                <span>Tour Operator Peace of Mind</span>
+                <EditableElement
+                  id="tour-peace-title"
+                  tag="span"
+                  defaultContent="Tour Operator Peace of Mind"
+                  label="Tour Peace Title"
+                  section="tour-groups"
+                />
               </h3>
               <ul className="space-y-3 text-xs text-gray-300">
                 <li className="flex items-start gap-2">
@@ -377,50 +736,104 @@ export default function TourGroupsPage() {
             <div className="space-y-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-tartan-gold/10 border border-tartan-gold/30 text-tartan-gold text-xs font-semibold">
                 <Camera className="w-4 h-4" />
-                <span>Memorable Highland Moments</span>
+                <EditableElement
+                  id="tour-moments-badge"
+                  tag="span"
+                  defaultContent="Memorable Highland Moments"
+                  label="Tour Moments Badge"
+                  section="tour-groups"
+                />
               </div>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-white font-serif">
-                Examples of Past Tour Group Events
-              </h2>
-              <p className="text-xs sm:text-sm text-gray-300 max-w-2xl">
-                Browse real moments from coach tours, castle hotel arrivals, and Loch Ness excursions where Spud created unforgettable memories for international visitors.
-              </p>
+              <EditableElement
+                id="tour-carousel-title"
+                tag="h2"
+                defaultContent="Examples of Past Tour Group Events"
+                className="text-3xl sm:text-4xl font-extrabold text-white font-serif"
+                label="Tour Carousel Title"
+                section="tour-groups"
+              />
+              <EditableElement
+                id="tour-carousel-subtitle"
+                tag="p"
+                defaultContent="Browse real moments from coach tours, castle hotel arrivals, and Loch Ness excursions where Spud created unforgettable memories for international visitors."
+                className="text-xs sm:text-sm text-gray-300 max-w-2xl"
+                label="Tour Carousel Subtitle"
+                section="tour-groups"
+              />
             </div>
 
-            {/* Carousel Navigation Buttons */}
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={handlePrevSlide}
-                className="p-3 rounded-2xl bg-tartan-navy hover:bg-tartan-dark text-gray-200 hover:text-tartan-gold border border-tartan-border transition shadow-md active:scale-95"
-                title="Previous Event"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <div className="px-3 text-xs font-bold font-mono text-tartan-gold">
-                {currentSlide + 1} / {PAST_TOUR_EVENTS.length}
+            {/* Admin Add Story Button & Carousel Navigation Controls */}
+            <div className="flex items-center gap-3 shrink-0 flex-wrap">
+              {canManage && (
+                <button
+                  type="button"
+                  onClick={handleOpenAddModal}
+                  className="px-3.5 py-2 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md hover:brightness-110 transition active:scale-95"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Add Story / Image</span>
+                </button>
+              )}
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handlePrevSlide}
+                  className="p-3 rounded-2xl bg-tartan-navy hover:bg-tartan-dark text-gray-200 hover:text-tartan-gold border border-tartan-border transition shadow-md active:scale-95"
+                  title="Previous Event"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <div className="px-3 text-xs font-bold font-mono text-tartan-gold">
+                  {currentSlide + 1} / {tourEvents.length}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleNextSlide}
+                  className="p-3 rounded-2xl bg-tartan-navy hover:bg-tartan-dark text-gray-200 hover:text-tartan-gold border border-tartan-border transition shadow-md active:scale-95"
+                  title="Next Event"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleNextSlide}
-                className="p-3 rounded-2xl bg-tartan-navy hover:bg-tartan-dark text-gray-200 hover:text-tartan-gold border border-tartan-border transition shadow-md active:scale-95"
-                title="Next Event"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
             </div>
           </div>
 
           {/* Featured Carousel Slide */}
-          {PAST_TOUR_EVENTS[currentSlide] && (
-            <div className="bg-tartan-dark/80 rounded-3xl overflow-hidden border border-tartan-gold/50 shadow-2xl transition-all duration-500">
+          {activeSlide && (
+            <div className="bg-tartan-dark/80 rounded-3xl overflow-hidden border border-tartan-gold/50 shadow-2xl transition-all duration-500 relative">
+              
+              {/* Admin Floating Controls for Current Slide */}
+              {canManage && (
+                <div className="absolute top-4 right-4 z-30 flex items-center gap-2 bg-slate-950/80 backdrop-blur-md p-1.5 rounded-xl border border-tartan-border shadow-xl">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEditModal(activeSlide)}
+                    className="px-2.5 py-1 text-xs font-bold text-tartan-gold bg-tartan-navy hover:bg-slate-700 rounded-lg border border-tartan-border flex items-center gap-1 transition"
+                    title="Edit Title, Story, Location, and Image for this Slide"
+                  >
+                    <Edit3 className="w-3 h-3 text-tartan-gold" />
+                    <span>Edit Slide</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEventToDelete(activeSlide)}
+                    className="px-2.5 py-1 text-xs font-bold text-rose-300 bg-rose-950/60 hover:bg-rose-900 rounded-lg border border-rose-800/60 flex items-center gap-1 transition"
+                    title="Remove Slide from Carousel"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>Delete</span>
+                  </button>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
                 
                 {/* Photo Side */}
                 <div className="lg:col-span-7 relative min-h-[300px] sm:min-h-[420px] bg-black overflow-hidden group">
                   <img
-                    src={PAST_TOUR_EVENTS[currentSlide].imageUrl}
-                    alt={PAST_TOUR_EVENTS[currentSlide].title}
+                    src={activeSlide.imageUrl}
+                    alt={activeSlide.title}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
@@ -429,7 +842,7 @@ export default function TourGroupsPage() {
                   <div className="absolute top-4 left-4 z-10">
                     <span className="px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-tartan-navy/90 text-tartan-gold border border-tartan-gold/50 shadow-lg flex items-center gap-1.5 backdrop-blur-md">
                       <Globe className="w-3.5 h-3.5 text-tartan-gold" />
-                      <span>Origin: {PAST_TOUR_EVENTS[currentSlide].origin}</span>
+                      <span>Origin: {activeSlide.origin}</span>
                     </span>
                   </div>
 
@@ -438,7 +851,7 @@ export default function TourGroupsPage() {
                     <div className="bg-slate-950/90 backdrop-blur-md p-3 rounded-xl border border-tartan-border/80 flex items-center gap-2 text-xs text-white">
                       <Sparkles className="w-4 h-4 text-tartan-gold shrink-0" />
                       <span className="font-semibold text-tartan-gold">Highlight:</span>
-                      <span className="truncate">{PAST_TOUR_EVENTS[currentSlide].highlight}</span>
+                      <span className="truncate">{activeSlide.highlight}</span>
                     </div>
                   </div>
                 </div>
@@ -448,25 +861,25 @@ export default function TourGroupsPage() {
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-xs text-tartan-gold font-bold uppercase tracking-wider">
                       <MapPin className="w-4 h-4 shrink-0" />
-                      <span>{PAST_TOUR_EVENTS[currentSlide].location}</span>
+                      <span>{activeSlide.location}</span>
                     </div>
 
                     <h3 className="text-2xl sm:text-3xl font-extrabold text-white font-serif leading-tight">
-                      {PAST_TOUR_EVENTS[currentSlide].title}
+                      {activeSlide.title}
                     </h3>
 
                     <div className="inline-block px-3 py-1 rounded-lg bg-tartan-navy text-xs font-semibold text-gray-300 border border-tartan-border">
-                      {PAST_TOUR_EVENTS[currentSlide].groupType}
+                      {activeSlide.groupType}
                     </div>
 
                     <p className="text-sm text-gray-300 leading-relaxed pt-2">
-                      {PAST_TOUR_EVENTS[currentSlide].description}
+                      {activeSlide.description}
                     </p>
                   </div>
 
                   <div className="pt-4 border-t border-tartan-border/60 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
-                      {PAST_TOUR_EVENTS.map((_, idx) => (
+                      {tourEvents.map((_, idx) => (
                         <button
                           key={idx}
                           onClick={() => setCurrentSlide(idx)}
@@ -496,6 +909,230 @@ export default function TourGroupsPage() {
         </div>
       </section>
 
+      {/* Add / Edit Carousel Slide Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-tartan-card border border-tartan-gold rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] my-auto animate-in zoom-in-95 duration-200">
+            
+            {/* Modal Header */}
+            <div className="bg-tartan-navy px-6 py-4 border-b border-tartan-border flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2 text-tartan-gold">
+                <Camera className="w-5 h-5 text-tartan-gold" />
+                <div>
+                  <h3 className="text-base font-bold text-white font-serif">
+                    {editingEventId ? 'Edit Tour Event Slide' : 'Add New Tour Event Moment & Photo'}
+                  </h3>
+                  <p className="text-[11px] text-gray-400">
+                    Instantly syncs with the live carousel and cloud database
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsModalOpen(false)} 
+                className="text-gray-400 hover:text-white p-1 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleSubmitEventForm} className="p-6 space-y-4 overflow-y-auto">
+              {successMessage ? (
+                <div className="p-8 text-center space-y-4 animate-in fade-in">
+                  <div className="w-16 h-16 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-500 mx-auto flex items-center justify-center shadow-lg">
+                    <CheckCircle2 className="w-8 h-8" />
+                  </div>
+                  <h4 className="text-xl font-bold text-white font-serif">{successMessage}</h4>
+                  <p className="text-xs text-gray-300">
+                    Your carousel slide changes are live and saved.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-tartan-gold mb-1">
+                        Event Title / Headline *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formTitle}
+                        onChange={(e) => setFormTitle(e.target.value)}
+                        placeholder="e.g. North American Coach Holiday Grand Arrival"
+                        className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-tartan-accent font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-tartan-gold mb-1">
+                        Location / Landmark *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formLocation}
+                        onChange={(e) => setFormLocation(e.target.value)}
+                        placeholder="e.g. Cairngorms & Aviemore Highland Hotel"
+                        className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-tartan-accent font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-tartan-gold mb-1">
+                        Tour Group Type / Size
+                      </label>
+                      <input
+                        type="text"
+                        value={formGroupType}
+                        onChange={(e) => setFormGroupType(e.target.value)}
+                        placeholder="e.g. Coach Holiday Tour (48 Passengers)"
+                        className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-tartan-accent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-tartan-gold mb-1">
+                        Country / Origin of Guests
+                      </label>
+                      <input
+                        type="text"
+                        value={formOrigin}
+                        onChange={(e) => setOriginCountry(e.target.value)}
+                        placeholder="e.g. USA & Canada / Australia"
+                        className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-tartan-accent"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-tartan-gold mb-1">
+                      Event Photo / Image URL *
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        required
+                        value={formImageUrl}
+                        onChange={(e) => setFormImageUrl(e.target.value)}
+                        placeholder="https://images.unsplash.com/... or uploaded photo"
+                        className="flex-1 bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-tartan-accent font-mono"
+                      />
+                      <label className="cursor-pointer bg-tartan-navy hover:bg-slate-700 text-tartan-gold border border-tartan-border px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shrink-0">
+                        {isUploadingPhoto ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Upload className="w-4 h-4" />
+                        )}
+                        <span>{isUploadingPhoto ? 'Uploading...' : 'Upload Image'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handlePhotoUpload}
+                          disabled={isUploadingPhoto}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    {formImageUrl && (
+                      <div className="mt-2 w-32 h-20 rounded-xl overflow-hidden border border-tartan-border bg-black">
+                        <img src={formImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-tartan-gold mb-1">
+                      Experience Highlight
+                    </label>
+                    <input
+                      type="text"
+                      value={formHighlight}
+                      onChange={(e) => setFormHighlight(e.target.value)}
+                      placeholder="e.g. Full No. 1 Regalia & Personal Photos for Every Guest"
+                      className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-tartan-accent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-tartan-gold mb-1">
+                      Event Story / Description *
+                    </label>
+                    <textarea
+                      rows={4}
+                      required
+                      value={formDescription}
+                      onChange={(e) => setFormDescription(e.target.value)}
+                      placeholder="Describe the moment: how the guests reacted, tunes played, photo sessions, or castle welcome..."
+                      className="w-full bg-tartan-dark border border-tartan-border rounded-xl p-3 text-white text-xs focus:outline-none focus:border-tartan-accent leading-relaxed"
+                    />
+                  </div>
+
+                  <div className="pt-3 border-t border-tartan-border flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsModalOpen(false)}
+                      className="px-4 py-2.5 rounded-xl border border-tartan-border text-xs text-gray-300 hover:text-white transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSaving || isUploadingPhoto}
+                      className="px-6 py-2.5 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider hover:brightness-110 shadow-lg flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                      <span>{isSaving ? 'Saving...' : (editingEventId ? 'Update Slide' : 'Add to Carousel')}</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {eventToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-tartan-card border border-rose-500/50 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-rose-400">
+              <div className="w-10 h-10 rounded-full bg-rose-950/80 flex items-center justify-center border border-rose-800">
+                <Trash2 className="w-5 h-5 text-rose-400" />
+              </div>
+              <h4 className="text-base font-bold text-white font-serif">Remove Carousel Event?</h4>
+            </div>
+
+            <p className="text-xs text-gray-300 leading-relaxed">
+              Are you sure you want to delete <strong>&quot;{eventToDelete.title}&quot;</strong> from the carousel? This action will remove it from the website.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setEventToDelete(null)}
+                className="px-4 py-2 text-xs text-gray-300 hover:text-white transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-lg flex items-center gap-1.5 transition"
+              >
+                {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>{isDeleting ? 'Deleting...' : 'Delete Event'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tour Inquiry Form Section */}
       <section id="tour-inquiry" className="py-20 bg-tartan-dark">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -503,15 +1140,30 @@ export default function TourGroupsPage() {
           <div className="bg-tartan-card rounded-3xl p-6 sm:p-10 border border-tartan-gold/60 shadow-2xl space-y-6">
             
             <div className="text-center space-y-2 border-b border-tartan-border pb-6">
-              <span className="text-xs font-bold text-tartan-gold uppercase tracking-wider">
-                Direct Booking Diary
-              </span>
-              <h2 className="text-3xl font-extrabold text-white font-serif">
-                Tour Group Booking & Availability Inquiry
-              </h2>
-              <p className="text-xs sm:text-sm text-gray-300 max-w-xl mx-auto">
-                Fill out your coach itinerary details below for a fast confirmation and competitive group rate quotation.
-              </p>
+              <EditableElement
+                id="tour-form-badge"
+                tag="span"
+                defaultContent="Direct Booking Diary"
+                className="text-xs font-bold text-tartan-gold uppercase tracking-wider"
+                label="Tour Form Badge"
+                section="tour-groups"
+              />
+              <EditableElement
+                id="tour-form-title"
+                tag="h2"
+                defaultContent="Tour Group Booking & Availability Inquiry"
+                className="text-3xl font-extrabold text-white font-serif"
+                label="Tour Form Title"
+                section="tour-groups"
+              />
+              <EditableElement
+                id="tour-form-subtitle"
+                tag="p"
+                defaultContent="Fill out your coach itinerary details below for a fast confirmation and competitive group rate quotation."
+                className="text-xs sm:text-sm text-gray-300 max-w-xl mx-auto"
+                label="Tour Form Subtitle"
+                section="tour-groups"
+              />
             </div>
 
             {isSubmitted ? (
@@ -715,3 +1367,4 @@ export default function TourGroupsPage() {
     </div>
   );
 }
+
