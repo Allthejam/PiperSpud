@@ -342,23 +342,29 @@ export const TartanSelector: React.FC = () => {
                           ))}
                         </div>
                       )}
-                      <EditableElement
-                        id={`tartan-${tartan.id}-list-title`}
-                        tag="span"
-                        defaultContent={tartan.title}
-                        className={`text-sm font-bold font-serif truncate ${isSelected ? 'text-tartan-gold' : 'text-white'}`}
-                        label={`${tartan.title} List Title`}
-                        section="attire"
-                      />
+                      <span className={`text-sm font-bold font-serif truncate ${isSelected ? 'text-tartan-gold' : 'text-white'}`}>
+                        <EditableElement
+                          id={`tartan-${tartan.id}-list-title`}
+                          tag="span"
+                          defaultContent={tartan.title}
+                          label={`${tartan.title} List Title`}
+                          section="attire"
+                        >
+                          {tartan.title}
+                        </EditableElement>
+                      </span>
                     </div>
-                    <EditableElement
-                      id={`tartan-${tartan.id}-list-tagline`}
-                      tag="p"
-                      defaultContent={tartan.tagline}
-                      className="text-xs text-gray-400 line-clamp-1"
-                      label={`${tartan.title} List Tagline`}
-                      section="attire"
-                    />
+                    <p className="text-xs text-gray-400 line-clamp-1">
+                      <EditableElement
+                        id={`tartan-${tartan.id}-list-tagline`}
+                        tag="span"
+                        defaultContent={tartan.tagline}
+                        label={`${tartan.title} List Tagline`}
+                        section="attire"
+                      >
+                        {tartan.tagline}
+                      </EditableElement>
+                    </p>
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -501,7 +507,9 @@ export const TartanSelector: React.FC = () => {
                     className="text-2xl font-bold text-white font-serif"
                     label={`${selectedTartan.title} Heading`}
                     section="attire"
-                  />
+                  >
+                    {selectedTartan.title}
+                  </EditableElement>
 
                   <EditableElement
                     id={`tartan-${selectedTartan.id}-desc`}
@@ -510,7 +518,9 @@ export const TartanSelector: React.FC = () => {
                     className="text-xs text-gray-300 leading-relaxed"
                     label={`${selectedTartan.title} Description`}
                     section="attire"
-                  />
+                  >
+                    {selectedTartan.description}
+                  </EditableElement>
 
                   <div className="pt-2">
                     <EditableElement
@@ -520,7 +530,9 @@ export const TartanSelector: React.FC = () => {
                       className="text-xs text-tartan-gold font-bold uppercase tracking-wider mb-1"
                       label={`${selectedTartan.title} Recommended Header`}
                       section="attire"
-                    />
+                    >
+                      Recommended For:
+                    </EditableElement>
                     <EditableElement
                       id={`tartan-${selectedTartan.id}-bestfor`}
                       tag="p"
@@ -528,7 +540,9 @@ export const TartanSelector: React.FC = () => {
                       className="text-xs text-white font-medium bg-tartan-dark/80 p-2.5 rounded-lg border border-tartan-border/60"
                       label={`${selectedTartan.title} Recommended For`}
                       section="attire"
-                    />
+                    >
+                      {selectedTartan.bestFor}
+                    </EditableElement>
                   </div>
 
                   <div className="pt-2">
