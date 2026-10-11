@@ -10,6 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@paypal/react-paypal-js": "^10.6.0",
     "clsx": "^2.1.1",
     "firebase": "^10.13.1",
     "leaflet": "^1.9.4",
