@@ -967,7 +967,7 @@ export const VisualPencilOverlay: React.FC = () => {
 
                   <div>
                     <label className="block text-xs font-semibold text-tartan-gold mb-1.5">
-                      Image Label / Attire Dress Description
+                      Attire Showcase Photograph Description (Photo Badge Caption)
                     </label>
                     <input
                       type="text"

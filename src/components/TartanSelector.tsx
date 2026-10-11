@@ -450,6 +450,7 @@ export const TartanSelector: React.FC = () => {
                     isImage={true}
                     defaultImageUrl={selectedTartan.imageUrl || '/og-image.png'}
                     defaultAlt={`Spud the Piper in ${selectedTartan.title}`}
+                    defaultContent={effectiveDressName}
                     className="w-full h-72 sm:h-80 object-cover group-hover:scale-105 transition-transform duration-500"
                     label={`${selectedTartan.title} Photo`}
                     section="attire"
@@ -460,7 +461,7 @@ export const TartanSelector: React.FC = () => {
                       tag="span"
                       defaultContent={effectiveDressName}
                       className="text-xs font-bold text-white bg-tartan-red/95 px-3 py-1.5 rounded-full border border-red-400 shadow-lg inline-flex items-center gap-1.5 cursor-pointer hover:bg-red-700 transition"
-                      label={`${selectedTartan.title} Dress Name Badge`}
+                      label="Attire Showcase Photograph Description"
                       section="attire"
                     />
                     {canManage && (
@@ -618,18 +619,18 @@ export const TartanSelector: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-tartan-gold mb-1">
-                        Attire Name / Booking Label *
+                        Attire Name / Photograph Description *
                       </label>
                       <input
                         type="text"
                         required
                         value={formName}
                         onChange={(e) => setFormName(e.target.value)}
-                        placeholder="e.g. Royal Stewart Tartan (Traditional Red)"
+                        placeholder="e.g. Full No. 1 Dress (Feather Bonnet & Plaid)"
                         className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-tartan-accent font-medium"
                       />
                       <p className="text-[10px] text-gray-400 mt-1">
-                        This is the option clients select on the booking calendar.
+                        This description is displayed on the photograph badge in the Attire Showcase (e.g. Full No. 1 Dress (Feather Bonnet &amp; Plaid)) and on client booking selections.
                       </p>
                     </div>
 
@@ -798,27 +799,44 @@ export const TartanSelector: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Photo Upload & Image URL */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-semibold text-tartan-gold">
-                      Attire Showcase Photograph
-                    </label>
-
-                    <div className="flex flex-col sm:flex-row gap-3 items-center">
-                      {formImageUrl && (
-                        <div className="w-20 h-20 rounded-xl overflow-hidden border border-tartan-gold/50 shrink-0 bg-black/40">
-                          <img src={formImageUrl} alt="Preview" className="w-full h-full object-cover" />
-                        </div>
-                      )}
-
-                      <div className="flex-1 w-full space-y-2">
+                    {/* Photo Upload & Image URL */}
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-tartan-gold mb-1">
+                          Attire Showcase Photograph Description *
+                        </label>
                         <input
                           type="text"
-                          value={formImageUrl}
-                          onChange={(e) => setFormImageUrl(e.target.value)}
-                          placeholder="Image URL or upload a photo below"
-                          className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2 text-white text-xs focus:outline-none focus:border-tartan-accent"
+                          required
+                          value={formName}
+                          onChange={(e) => setFormName(e.target.value)}
+                          placeholder="e.g. Full No. 1 Dress (Feather Bonnet & Plaid)"
+                          className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-tartan-accent font-medium"
                         />
+                        <p className="text-[10px] text-gray-400 mt-1">
+                          Displayed on the photograph frame in the Attire Showcase and in client booking choices.
+                        </p>
+                      </div>
+
+                      <label className="block text-xs font-semibold text-tartan-gold">
+                        Attire Showcase Photograph
+                      </label>
+
+                      <div className="flex flex-col sm:flex-row gap-3 items-center">
+                        {formImageUrl && (
+                          <div className="w-20 h-20 rounded-xl overflow-hidden border border-tartan-gold/50 shrink-0 bg-black/40">
+                            <img src={formImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+
+                        <div className="flex-1 w-full space-y-2">
+                          <input
+                            type="text"
+                            value={formImageUrl}
+                            onChange={(e) => setFormImageUrl(e.target.value)}
+                            placeholder="Image URL or upload a photo below"
+                            className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2 text-white text-xs focus:outline-none focus:border-tartan-accent"
+                          />
 
                         <label className="inline-flex items-center gap-2 px-3.5 py-2 bg-tartan-navy hover:bg-tartan-accent/30 text-tartan-gold text-xs font-bold rounded-xl border border-tartan-border cursor-pointer transition shadow-sm">
                           {isUploadingPhoto ? (

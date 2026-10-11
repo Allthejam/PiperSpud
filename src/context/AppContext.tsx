@@ -2045,6 +2045,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (updatedBlock) {
       syncToFirestore('cms_blocks', id, updatedBlock);
+
+      // Automatically sync attire record if attire photo or dress-name was edited via CMS
+      if (id.startsWith('tartan-') && (id.endsWith('-dress-name') || id.endsWith('-photo')) && content) {
+        const attireId = id.replace('tartan-', '').replace('-dress-name', '').replace('-photo', '');
+        if (attireId) {
+          updateAttire(attireId, { name: content.trim() });
+        }
+      }
     }
   };
 

@@ -689,7 +689,24 @@ export const AdminAttire: React.FC = () => {
                   </div>
 
                   {/* Photo Upload */}
-                  <div className="space-y-2">
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-tartan-gold mb-1">
+                        Attire Showcase Photograph Description *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formName}
+                        onChange={(e) => setFormName(e.target.value)}
+                        placeholder="e.g. Full No. 1 Dress (Feather Bonnet & Plaid)"
+                        className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-tartan-accent font-medium"
+                      />
+                      <p className="text-[10px] text-gray-400 mt-1">
+                        Displayed on the photograph frame in the Attire Showcase and in client booking choices.
+                      </p>
+                    </div>
+
                     <label className="block text-xs font-semibold text-tartan-gold">
                       Attire Showcase Photograph
                     </label>
