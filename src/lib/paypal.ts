@@ -38,3 +38,49 @@ export async function getPayPalAccessToken(): Promise<string> {
 export function getPayPalBaseUrl(): string {
   return PAYPAL_BASE_URL;
 }
+
+/**
+ * Validates a PayPal webhook signature with PayPal's verification API.
+ */
+export async function verifyPayPalWebhookSignature(params: {
+  transmissionId: string;
+  transmissionTime: string;
+  certUrl: string;
+  authAlgo: string;
+  transmissionSig: string;
+  webhookId: string;
+  webhookEvent: any;
+}): Promise<boolean> {
+  try {
+    const accessToken = await getPayPalAccessToken();
+    const verificationPayload = {
+      transmission_id: params.transmissionId,
+      transmission_time: params.transmissionTime,
+      cert_url: params.certUrl,
+      auth_algo: params.authAlgo,
+      transmission_sig: params.transmissionSig,
+      webhook_id: params.webhookId,
+      webhook_event: params.webhookEvent
+    };
+
+    const res = await fetch(`${PAYPAL_BASE_URL}/v1/notifications/verify-webhook-signature`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(verificationPayload)
+    });
+
+    if (!res.ok) {
+      console.warn('[PayPal Webhook] Verification endpoint responded with status:', res.status);
+      return false;
+    }
+
+    const result = await res.json();
+    return result.verification_status === 'SUCCESS';
+  } catch (err) {
+    console.error('[PayPal Webhook] Error during signature verification:', err);
+    return false;
+  }
+}

@@ -2239,7 +2239,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const approveBooking = async (id: string, customOptions?: { note?: string }) => {
-    const paypalLink = `https://www.paypal.com/checkout/spudthepiper/pay?id=${id}`;
+    const paypalLink = `https://spudthepiper.com/pay?id=${id}`;
     const existingBk = (bookings || []).find(b => b.id === id);
     if (!existingBk) return;
 
@@ -2326,7 +2326,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       minute: '2-digit'
     });
 
-    const paypalLink = `https://www.paypal.com/checkout/spudthepiper/pay?id=${existingBk.id}`;
+    const paypalLink = `https://spudthepiper.com/pay?id=${existingBk.id}`;
     const previousHistory = existingBk.brevoEmailHistory || [];
     
     // Calculate send count: initial approval is #1, each subsequent resend is #2, #3, etc.

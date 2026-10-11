@@ -337,7 +337,7 @@ export async function POST(req: NextRequest) {
     }
     // ================= 4. Booking Approved by Spud (Deposit Invoice) =================
     else if (type === 'booking_approved' && booking) {
-      const formattedDepositLink = paypalLink || (booking.depositAmount ? `https://paypal.me/spudthepiper/${booking.depositAmount}` : 'https://paypal.me/spudthepiper/50');
+      const formattedDepositLink = paypalLink || `https://spudthepiper.com/pay?id=${booking.id}`;
       subject = `🏴󠁧󠁢󠁳󠁣󠁴󠁿 Booking Approved: Spud the Piper for ${booking.eventType} on ${booking.date}`;
       htmlContent = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background-color: #0d1527; color: #f8fafc; padding: 32px 24px; border-radius: 16px; border: 1px solid #c5a059;">
