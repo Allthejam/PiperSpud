@@ -99,17 +99,6 @@ const initialTourEvents: PastTourEvent[] = [
     description: 'Piped the arrival of the tour coach at the castle portcullis, followed by ceremonial piping of the Haggis into the grand banquet hall with Robert Burns recitation and unforgettable Scottish banter.',
     highlight: 'Traditional Haggis Procession & Banquet Fanfare',
     order: 4
-  },
-  {
-    id: 'event-5',
-    title: 'Live Highland Dancers & Bagpipes Castle Showcase',
-    location: 'Highland Castle Courtyard, Aviemore & Cairngorms',
-    groupType: 'North American Cultural Coach Holiday (54 Guests)',
-    origin: 'USA, Canada & Australia',
-    imageUrl: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1000&q=80',
-    description: 'Spud piped stirring traditional Scottish reels while local champion Highland dancers performed the thrilling Sword Dance (Ghillie Callum) and Highland Fling on the castle terrace. Guests were then invited to join in for an unforgettable group reel and photo session.',
-    highlight: 'Authentic Sword Dance, Highland Fling & Guest Ceilidh Reel',
-    order: 5
   }
 ];
 
@@ -451,13 +440,18 @@ export default function TourGroupsPage() {
               label="Tour Hero Enquire Button"
               section="tour-groups"
             />
-            <a
-              href="tel:07793491367"
-              className="px-6 py-3.5 bg-tartan-card hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl border border-tartan-border flex items-center gap-2 transition"
-            >
-              <Phone className="w-4 h-4 text-tartan-gold" />
-              <span>Direct Tour Dispatch: 07793 491367</span>
-            </a>
+            <div className="px-6 py-3.5 bg-tartan-card hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl border border-tartan-border flex items-center gap-2 transition shadow-lg">
+              <Phone className="w-4 h-4 text-tartan-gold shrink-0" />
+              <EditableElement
+                id="tour-hero-dispatch-phone"
+                tag="a"
+                defaultContent="Direct Tour Dispatch: 07793 491367"
+                defaultLinkUrl="tel:07793491367"
+                className="hover:text-tartan-gold transition"
+                label="Direct Tour Dispatch Phone"
+                section="tour-groups"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -672,6 +666,98 @@ export default function TourGroupsPage() {
               label="Highland Dancers Section Subtitle"
               section="tour-groups"
             />
+          </div>
+
+          {/* Dedicated Dancers Visual Showcase Banner */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-tartan-dark/90 rounded-3xl p-6 sm:p-8 lg:p-10 border border-tartan-gold/40 shadow-2xl">
+            <div className="lg:col-span-5 space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-tartan-gold/10 border border-tartan-gold/30 text-tartan-gold text-xs font-semibold">
+                <Sparkles className="w-4 h-4 text-tartan-gold" />
+                <EditableElement
+                  id="tour-dancers-feat-badge"
+                  tag="span"
+                  defaultContent="Live Duo or Troupe Performance"
+                  label="Dancers Feature Badge"
+                  section="tour-groups"
+                />
+              </div>
+
+              <EditableElement
+                id="tour-dancers-banner-title"
+                tag="h3"
+                defaultContent="Authentic Sword Dance & High-Energy Scottish Reels"
+                className="text-2xl sm:text-3xl font-extrabold text-white font-serif leading-tight"
+                label="Dancers Banner Title"
+                section="tour-groups"
+              />
+
+              <EditableElement
+                id="tour-dancers-banner-desc"
+                tag="p"
+                defaultContent="While Spud plays stirring bagpipe marches and lively jigs, national champion dancers in traditional tartan kilt outfits perform high-energy leaps, precision footwork over crossed swords, and engaging ceilidh demonstrations. Dancers also pose with passengers for keepsake photos with the swords and pipes."
+                className="text-xs sm:text-sm text-gray-300 leading-relaxed"
+                label="Dancers Banner Description"
+                section="tour-groups"
+              />
+
+              <div className="pt-2 flex flex-wrap gap-2 text-[11px] font-bold text-gray-300">
+                <span className="px-3 py-1.5 rounded-lg bg-tartan-navy border border-tartan-border text-tartan-gold flex items-center gap-1.5">
+                  <Swords className="w-3.5 h-3.5" /> Ghillie Callum Sword Dance
+                </span>
+                <span className="px-3 py-1.5 rounded-lg bg-tartan-navy border border-tartan-border text-tartan-gold flex items-center gap-1.5">
+                  <Music className="w-3.5 h-3.5" /> Highland Fling
+                </span>
+                <span className="px-3 py-1.5 rounded-lg bg-tartan-navy border border-tartan-border text-tartan-gold flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5" /> Guest Interaction & Photos
+                </span>
+              </div>
+            </div>
+
+            <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="relative h-64 sm:h-72 rounded-2xl overflow-hidden border border-tartan-border group shadow-xl">
+                <EditableElement
+                  id="tour-dancers-img-1"
+                  isImage={true}
+                  defaultImageUrl="https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&q=80"
+                  defaultAlt="Highland Dancers performing live with Spud the Piper"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  label="Highland Dancer Performance Image"
+                  section="tour-groups"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+                <div className="absolute bottom-3 left-3 right-3 text-xs font-semibold text-white bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10">
+                  <EditableElement
+                    id="tour-dancers-caption-1"
+                    tag="span"
+                    defaultContent="Live Scottish Performance & Crossed Swords"
+                    label="Dancers Caption 1"
+                    section="tour-groups"
+                  />
+                </div>
+              </div>
+
+              <div className="relative h-64 sm:h-72 rounded-2xl overflow-hidden border border-tartan-border group shadow-xl">
+                <EditableElement
+                  id="tour-dancers-img-2"
+                  isImage={true}
+                  defaultImageUrl="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80"
+                  defaultAlt="Traditional Scottish music and festival gathering"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  label="Highland Gathering Image"
+                  section="tour-groups"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+                <div className="absolute bottom-3 left-3 right-3 text-xs font-semibold text-white bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10">
+                  <EditableElement
+                    id="tour-dancers-caption-2"
+                    tag="span"
+                    defaultContent="Highland Games Atmosphere at Your Tour Stop"
+                    label="Dancers Caption 2"
+                    section="tour-groups"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* 4 Feature Cards for the Dancing Showcase */}
@@ -900,34 +986,70 @@ export default function TourGroupsPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2 text-xs text-gray-200">
                 <div className="bg-tartan-card p-3 rounded-xl border border-tartan-border flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-tartan-gold shrink-0" />
-                  <span>Aviemore & Cairngorms</span>
+                  <EditableElement
+                    id="tour-region-1"
+                    tag="span"
+                    defaultContent="Aviemore & Cairngorms"
+                    label="Tour Region 1"
+                    section="tour-groups"
+                  />
                 </div>
                 <div className="bg-tartan-card p-3 rounded-xl border border-tartan-border flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-tartan-gold shrink-0" />
-                  <span>Inverness & Loch Ness</span>
+                  <EditableElement
+                    id="tour-region-2"
+                    tag="span"
+                    defaultContent="Inverness & Loch Ness"
+                    label="Tour Region 2"
+                    section="tour-groups"
+                  />
                 </div>
                 <div className="bg-tartan-card p-3 rounded-xl border border-tartan-border flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-tartan-gold shrink-0" />
-                  <span>Speyside Whisky Trail</span>
+                  <EditableElement
+                    id="tour-region-3"
+                    tag="span"
+                    defaultContent="Speyside Whisky Trail"
+                    label="Tour Region 3"
+                    section="tour-groups"
+                  />
                 </div>
                 <div className="bg-tartan-card p-3 rounded-xl border border-tartan-border flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-tartan-gold shrink-0" />
-                  <span>Stirling & Trossachs</span>
+                  <EditableElement
+                    id="tour-region-4"
+                    tag="span"
+                    defaultContent="Stirling & Trossachs"
+                    label="Tour Region 4"
+                    section="tour-groups"
+                  />
                 </div>
                 <div className="bg-tartan-card p-3 rounded-xl border border-tartan-border flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-tartan-gold shrink-0" />
-                  <span>Highland Castle Hotels</span>
+                  <EditableElement
+                    id="tour-region-5"
+                    tag="span"
+                    defaultContent="Highland Castle Hotels"
+                    label="Tour Region 5"
+                    section="tour-groups"
+                  />
                 </div>
                 <div className="bg-tartan-card p-3 rounded-xl border border-tartan-border flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-tartan-gold shrink-0" />
-                  <span>Cruise Shore Excursions</span>
+                  <EditableElement
+                    id="tour-region-6"
+                    tag="span"
+                    defaultContent="Cruise Shore Excursions"
+                    label="Tour Region 6"
+                    section="tour-groups"
+                  />
                 </div>
               </div>
             </div>
 
             <div className="lg:col-span-5 bg-tartan-card rounded-3xl p-6 sm:p-8 border border-tartan-border shadow-2xl space-y-4">
               <h3 className="text-lg font-bold text-white font-serif flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-tartan-gold" />
+                <ShieldCheck className="w-5 h-5 text-tartan-gold shrink-0" />
                 <EditableElement
                   id="tour-peace-title"
                   tag="span"
@@ -939,19 +1061,43 @@ export default function TourGroupsPage() {
               <ul className="space-y-3 text-xs text-gray-300">
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-tartan-gold mt-1.5 shrink-0" />
-                  <span><strong>100% Punctuality Guarantee</strong>: Synchronized with coach manifests and traffic delays.</span>
+                  <EditableElement
+                    id="tour-peace-item-1"
+                    tag="span"
+                    defaultContent="100% Punctuality Guarantee: Synchronized with coach manifests and traffic delays."
+                    label="Peace of Mind 1"
+                    section="tour-groups"
+                  />
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-tartan-gold mt-1.5 shrink-0" />
-                  <span><strong>Weather Resilient</strong>: Accustomed to all Scottish elements (rain, mist, snow, or shine).</span>
+                  <EditableElement
+                    id="tour-peace-item-2"
+                    tag="span"
+                    defaultContent="Weather Resilient: Accustomed to all Scottish elements (rain, mist, snow, or shine)."
+                    label="Peace of Mind 2"
+                    section="tour-groups"
+                  />
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-tartan-gold mt-1.5 shrink-0" />
-                  <span><strong>Full Public Liability Insurance</strong>: Accepted at all historic castles and state sites.</span>
+                  <EditableElement
+                    id="tour-peace-item-3"
+                    tag="span"
+                    defaultContent="Full Public Liability Insurance: Accepted at all historic castles and state sites."
+                    label="Peace of Mind 3"
+                    section="tour-groups"
+                  />
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-tartan-gold mt-1.5 shrink-0" />
-                  <span><strong>Flexible Invoicing & Deposit Portal</strong>: Online credit card, PayPal, or BACS invoicing.</span>
+                  <EditableElement
+                    id="tour-peace-item-4"
+                    tag="span"
+                    defaultContent="Flexible Invoicing & Deposit Portal: Online credit card, PayPal, or BACS invoicing."
+                    label="Peace of Mind 4"
+                    section="tour-groups"
+                  />
                 </li>
               </ul>
 
@@ -1069,16 +1215,16 @@ export default function TourGroupsPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:h-[480px]">
                 
-                {/* Photo Side */}
-                <div className="lg:col-span-7 relative min-h-[300px] sm:min-h-[420px] bg-black overflow-hidden group">
+                {/* Photo Side - Constant Height & Object-Cover */}
+                <div className="lg:col-span-7 relative h-72 sm:h-96 lg:h-full bg-black overflow-hidden group">
                   <img
                     src={activeSlide.imageUrl}
                     alt={activeSlide.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
                   
                   {/* Origin Badge */}
                   <div className="absolute top-4 left-4 z-10">
@@ -1098,8 +1244,8 @@ export default function TourGroupsPage() {
                   </div>
                 </div>
 
-                {/* Details Side */}
-                <div className="lg:col-span-5 p-6 sm:p-10 flex flex-col justify-between space-y-6">
+                {/* Details Side - Consistent Flex Container with scroll if needed */}
+                <div className="lg:col-span-5 p-6 sm:p-8 lg:p-9 flex flex-col justify-between space-y-4 lg:h-full overflow-y-auto">
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-xs text-tartan-gold font-bold uppercase tracking-wider">
                       <MapPin className="w-4 h-4 shrink-0" />
