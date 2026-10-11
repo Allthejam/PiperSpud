@@ -1236,13 +1236,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
           });
           if (remoteAttires.length > 0) {
-            remoteAttires.sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
-            setAttires(remoteAttires);
-            if (typeof window !== 'undefined') {
-              try {
-                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}attires`, JSON.stringify(remoteAttires));
-              } catch (e) {}
-            }
+            setAttires(prev => {
+              const currentList = prev && prev.length > 0 ? prev : initialAttires;
+              const merged = [...currentList];
+              remoteAttires.forEach(r => {
+                const idx = merged.findIndex(a => a.id === r.id);
+                if (idx >= 0) {
+                  merged[idx] = { ...merged[idx], ...r };
+                } else {
+                  merged.push(r);
+                }
+              });
+              merged.sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+              if (typeof window !== 'undefined') {
+                try {
+                  localStorage.setItem(`${LOCAL_STORAGE_PREFIX}attires`, JSON.stringify(merged));
+                } catch (e) {}
+              }
+              return merged;
+            });
           }
         }
       }, (err) => console.log('Firestore attires listener:', err.message));
@@ -3982,6 +3994,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
+      // 17. Sync Highland Attires & Tartan Studio
+      const attiresToSync = attires && attires.length > 0 ? attires : initialAttires;
+      for (const a of attiresToSync) {
+        if (a && a.id) {
+          await setDoc(doc(db, 'attires', a.id), JSON.parse(JSON.stringify(a)), { merge: true });
+          totalSynced++;
+        }
+      }
+
       console.log(`[Firestore SUCCESS] Full Cloud Sync Complete: ${totalSynced} documents verified in Firestore!`);
       addNotification({
         type: 'system',
@@ -4362,20 +4383,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Highland Attire & Tartan Studio Handlers (Firestore & LocalStorage synced)
   const addAttire = async (attireData: Omit<AttireItem, 'id'> | AttireItem): Promise<string> => {
     const id = ('id' in attireData && attireData.id) ? attireData.id : `attire-${Date.now()}`;
+    const baseList = (attires && attires.length > 0) ? attires : initialAttires;
     const newAttire: AttireItem = {
       ...attireData,
       id,
       colorScheme: Array.isArray(attireData.colorScheme) ? attireData.colorScheme : ['#991B1B', '#1E3A8A', '#D4AF37'],
       imageUrl: attireData.imageUrl || '/og-image.png',
-      order: attireData.order ?? (attires.length + 1)
+      order: attireData.order ?? (baseList.length + 1)
     };
+
+    // If base initialAttires were never persisted to Firestore yet, seed them first so they aren't lost
+    if (db) {
+      for (const initItem of initialAttires) {
+        if (!baseList.some(b => b.id === initItem.id)) {
+          await syncToFirestore('attires', initItem.id, initItem);
+        }
+      }
+    }
+
     setAttires(prev => {
-      const updated = [...(prev || []), newAttire];
+      const current = (prev && prev.length > 0) ? prev : initialAttires;
+      // If the item already exists by ID, replace it; otherwise append it
+      const exists = current.some(a => a.id === id);
+      const updated = exists ? current.map(a => a.id === id ? newAttire : a) : [...current, newAttire];
       if (typeof window !== 'undefined') {
         localStorage.setItem(`${LOCAL_STORAGE_PREFIX}attires`, JSON.stringify(updated));
       }
       return updated;
     });
+
     await syncToFirestore('attires', id, newAttire);
     addNotification({
       type: 'system',
@@ -4389,7 +4425,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateAttire = async (id: string, updates: Partial<AttireItem>): Promise<boolean> => {
     let targetAttire: AttireItem | null = null;
     setAttires(prev => {
-      const updated = (prev || []).map(a => {
+      const current = (prev && prev.length > 0) ? prev : initialAttires;
+      const updated = current.map(a => {
         if (a.id === id) {
           targetAttire = { 
             ...a, 
@@ -4414,7 +4451,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteAttire = async (id: string): Promise<boolean> => {
     setAttires(prev => {
-      const updated = (prev || []).filter(a => a.id !== id);
+      const current = (prev && prev.length > 0) ? prev : initialAttires;
+      const updated = current.filter(a => a.id !== id);
       if (typeof window !== 'undefined') {
         localStorage.setItem(`${LOCAL_STORAGE_PREFIX}attires`, JSON.stringify(updated));
       }
