@@ -295,7 +295,7 @@ export const AdminMessageCenter: React.FC = () => {
         </div>
 
         {/* Spud Online / Offline Control Bar */}
-        <div className="flex items-center gap-3 bg-tartan-dark/90 p-2 rounded-2xl border border-tartan-border">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-tartan-dark/90 p-2 sm:p-2.5 rounded-2xl border border-tartan-border shadow-md">
           <div className="flex items-center gap-2 pl-3 pr-2">
             <span className={`w-3.5 h-3.5 rounded-full ${isSpudOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
             <div className="text-left">
@@ -306,17 +306,22 @@ export const AdminMessageCenter: React.FC = () => {
             </div>
           </div>
 
-          <button
-            onClick={toggleSpudOnline}
-            className={`px-4 py-2 rounded-xl text-xs font-extrabold transition shadow flex items-center gap-1.5 ${
-              isSpudOnline 
-                ? 'bg-amber-600/30 text-amber-300 hover:bg-amber-600/50 border border-amber-500/40' 
-                : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-900/50'
-            }`}
-          >
-            <Radio className="w-3.5 h-3.5" />
-            <span>{isSpudOnline ? 'Set Offline' : 'Go Online'}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleSpudOnline}
+              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition shadow flex items-center gap-1.5 ${
+                isSpudOnline 
+                  ? 'bg-amber-600/30 text-amber-300 hover:bg-amber-600/50 border border-amber-500/40' 
+                  : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-900/50'
+              }`}
+            >
+              <Radio className="w-3.5 h-3.5" />
+              <span>{isSpudOnline ? 'Set Offline' : 'Go Online'}</span>
+            </button>
+            <span className="text-[10px] text-gray-400/90 bg-tartan-navy/80 px-2.5 py-1.5 rounded-xl border border-tartan-border/60 hidden sm:inline-block">
+              Auto-switches to offline when everyone logs out
+            </span>
+          </div>
         </div>
       </div>
 

@@ -754,6 +754,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    if (isClientFacing && adminAlertEmail && recipientEmail.toLowerCase().trim() !== adminAlertEmail.toLowerCase().trim()) {
+      bccList.push({
+        email: adminAlertEmail,
+        name: 'Spud Admin Alert'
+      });
+    }
+
     const emailPayload: Record<string, any> = {
       sender: {
         name: senderName,

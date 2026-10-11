@@ -128,6 +128,7 @@ interface AppContextType {
   addBookingAudit: (id: string, action: string, actor?: string, details?: string, type?: BookingAuditEntry['type']) => Promise<void>;
   sendBookingMessage: (id: string, msg: { body: string; subject?: string; channel?: 'email' | 'chat'; senderName?: string }) => Promise<{ success: boolean; error?: string }>;
   approveBooking: (id: string, customOptions?: { note?: string }) => void;
+  resendApprovalEmail: (idOrBooking: string | BookingEvent) => Promise<{ success: boolean; error?: string; sendCount?: number }>;
   rejectBooking: (id: string, reason?: string, sendEmail?: boolean) => void;
   markDepositPaid: (id: string, paypalOrderId?: string) => Promise<void>;
   markRemainingBalancePaid: (id: string, options?: { transactionId?: string; method?: string; notes?: string }) => Promise<void>;
@@ -396,6 +397,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     return () => unsubscribe();
   }, []);
+
+  // Presence heartbeat & auto-offline on window/tab close for logged-in admin
+  useEffect(() => {
+    const firestore = db;
+    if (!isAdminLoggedIn || !firebaseUser?.email || !firestore) return;
+
+    const userEmail = firebaseUser.email.toLowerCase().trim();
+    const existing = (usersRef.current || []).find(u => u && u.email && u.email.toLowerCase() === userEmail);
+    const userDocId = existing?.id || `user_${userEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+    // Periodic heartbeat every 2 minutes to keep lastActive fresh
+    const heartbeatInterval = setInterval(() => {
+      try {
+        setDoc(doc(firestore, 'users', userDocId), {
+          lastActive: new Date().toISOString(),
+          isOnline: true
+        }, { merge: true }).catch(() => {});
+      } catch (e) {}
+    }, 2 * 60 * 1000);
+
+    const handleBeforeUnload = () => {
+      try {
+        const others = (usersRef.current || []).filter(u => u && u.isOnline && u.id !== userDocId);
+        if (others.length === 0 || userEmail === 'piperspud@gmail.com') {
+          setDoc(doc(firestore, 'settings', 'chat_status'), {
+            isSpudOnline: false,
+            updatedAt: new Date().toISOString(),
+            offlineReason: 'Admin closed browser tab'
+          }, { merge: true }).catch(() => {});
+        }
+        setDoc(doc(firestore, 'users', userDocId), {
+          isOnline: false,
+          status: 'offline',
+          lastActive: new Date().toISOString()
+        }, { merge: true }).catch(() => {});
+      } catch (e) {}
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      clearInterval(heartbeatInterval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isAdminLoggedIn, firebaseUser]);
 
   // Core entities
   const [services, setServices] = useState<ServicePackage[]>(initialServices);
@@ -856,10 +902,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               } catch (e) {}
             }
 
-            // Check if primary owner or spud has isOnline set in users collection
-            const spudRemote = remoteUsers.find(u => u && (((u.email || '').toLowerCase() === 'piperspud@gmail.com') || u.role === 'owner'));
-            if (spudRemote && typeof spudRemote.isOnline === 'boolean') {
-              setIsSpudOnlineState(spudRemote.isOnline);
+            // Check if any admin or owner is currently online
+            const onlineAdmins = remoteUsers.filter(u => {
+              if (!u || !u.isOnline) return false;
+              // If lastActive timestamp exists, filter out stale sessions older than 60 minutes
+              if (u.lastActive) {
+                const diffMin = (Date.now() - new Date(u.lastActive).getTime()) / (1000 * 60);
+                if (diffMin > 60) return false;
+              }
+              return true;
+            });
+
+            if (onlineAdmins.length === 0) {
+              // Automatically switch chat to offline when everyone is logged out / offline
+              setIsSpudOnlineState(false);
+              if (typeof window !== 'undefined') {
+                try {
+                  localStorage.setItem(`${LOCAL_STORAGE_PREFIX}spud_online`, 'false');
+                } catch (e) {}
+              }
+            } else {
+              // Check if primary owner or spud has isOnline set in users collection
+              const spudRemote = remoteUsers.find(u => u && (((u.email || '').toLowerCase() === 'piperspud@gmail.com') || u.role === 'owner'));
+              if (spudRemote && typeof spudRemote.isOnline === 'boolean') {
+                setIsSpudOnlineState(spudRemote.isOnline);
+              }
             }
           }
         }
@@ -1545,10 +1612,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         await setDoc(doc(db, 'users', id), targetUser, { merge: true });
         await setDoc(doc(db, 'settings', 'admin_whitelist'), { admins: updated }, { merge: true });
         
-        // If updating online status for primary owner or spud, also keep settings/chat_status synchronized
-        if (updates.isOnline !== undefined && ((targetUser as UserRecord).role === 'owner' || ((targetUser as UserRecord).email && (targetUser as UserRecord).email.toLowerCase() === 'piperspud@gmail.com'))) {
-          setIsSpudOnlineState(updates.isOnline);
-          await setDoc(doc(db, 'settings', 'chat_status'), { isSpudOnline: updates.isOnline, updatedAt: new Date().toISOString() }, { merge: true });
+        // If updating online status, check whether any admin remains online
+        if (updates.isOnline !== undefined) {
+          const anyOnlineRemaining = updated.some(u => u && u.isOnline);
+          if (!anyOnlineRemaining) {
+            setIsSpudOnlineState(false);
+            if (typeof window !== 'undefined') {
+              try {
+                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}spud_online`, 'false');
+              } catch (e) {}
+            }
+            await setDoc(doc(db, 'settings', 'chat_status'), { isSpudOnline: false, updatedAt: new Date().toISOString() }, { merge: true });
+          } else {
+            const isOwnerOrSpud = (targetUser as UserRecord).role === 'owner' || (targetUser as UserRecord).email?.toLowerCase() === 'piperspud@gmail.com';
+            if (isOwnerOrSpud) {
+              setIsSpudOnlineState(updates.isOnline);
+              if (typeof window !== 'undefined') {
+                try {
+                  localStorage.setItem(`${LOCAL_STORAGE_PREFIX}spud_online`, updates.isOnline ? 'true' : 'false');
+                } catch (e) {}
+              }
+              await setDoc(doc(db, 'settings', 'chat_status'), { isSpudOnline: updates.isOnline, updatedAt: new Date().toISOString() }, { merge: true });
+            }
+          }
         }
       } catch (e) {
         console.warn('Firestore updateUser warning:', e);
@@ -1751,38 +1837,70 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logoutAdmin = async () => {
-    if (firebaseUser?.email && db) {
-      const cleanEmail = firebaseUser.email.toLowerCase().trim();
+    try {
+      const cleanEmail = firebaseUser?.email ? firebaseUser.email.toLowerCase().trim() : '';
       const existingUser = (users || []).find(u => u && u.email && u.email.toLowerCase() === cleanEmail);
-      const targetId = existingUser?.id || `user_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
-      try {
-        await setDoc(doc(db, 'users', targetId), {
-          isOnline: false,
-          status: 'offline',
-          lastActive: new Date().toISOString()
-        }, { merge: true });
+      const targetId = existingUser?.id || (cleanEmail ? `user_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}` : '');
 
-        if (cleanEmail === 'piperspud@gmail.com') {
-          setIsSpudOnlineState(false);
-          await setDoc(doc(db, 'settings', 'chat_status'), { isSpudOnline: false, updatedAt: new Date().toISOString() }, { merge: true });
+      if (targetId && db) {
+        try {
+          await setDoc(doc(db, 'users', targetId), {
+            isOnline: false,
+            status: 'offline',
+            lastActive: new Date().toISOString()
+          }, { merge: true });
+        } catch (e) {
+          console.warn('Could not set user offline in Firestore on logout:', e);
         }
-      } catch (e) {
-        console.warn('Could not set user offline in Firestore on logout:', e);
       }
-    }
 
-    if (auth && firebaseUser) {
-      try {
-        await signOut(auth);
-      } catch (e) {
-        console.warn('Sign out warning:', e);
+      // Check whether any other admin or owner is currently online
+      const otherOnlineUsers = (users || []).filter(u => {
+        if (!u || !u.isOnline) return false;
+        if (targetId && u.id === targetId) return false;
+        if (cleanEmail && u.email && u.email.toLowerCase().trim() === cleanEmail) return false;
+        return true;
+      });
+
+      // If nobody else is logged in/online, or if primary owner/spud logs out, switch chat status to offline
+      if (otherOnlineUsers.length === 0 || cleanEmail === 'piperspud@gmail.com') {
+        setIsSpudOnlineState(false);
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(`${LOCAL_STORAGE_PREFIX}spud_online`, 'false');
+          } catch (e) {}
+        }
+        if (db) {
+          try {
+            await setDoc(doc(db, 'settings', 'chat_status'), { 
+              isSpudOnline: false, 
+              updatedAt: new Date().toISOString(),
+              offlineReason: 'All admins logged out'
+            }, { merge: true });
+          } catch (e) {
+            console.warn('Could not set chat_status offline in Firestore on logout:', e);
+          }
+        }
+      }
+
+      if (auth && firebaseUser) {
+        try {
+          await signOut(auth);
+        } catch (e) {
+          console.warn('Sign out warning:', e);
+        }
+      }
+    } finally {
+      setFirebaseUser(null);
+      setIsLegacyAdminLoggedIn(false);
+      setIsVisualEditMode(false);
+      setActiveSeoDrawerPageId(null);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.removeItem(`${LOCAL_STORAGE_PREFIX}admin`);
+        } catch (e) {}
       }
     }
-    setFirebaseUser(null);
-    setIsLegacyAdminLoggedIn(false);
-    setIsVisualEditMode(false);
-    setActiveSeoDrawerPageId(null);
-    if (typeof window !== 'undefined') localStorage.removeItem(`${LOCAL_STORAGE_PREFIX}admin`);
   };
 
   const toggleVisualEditMode = () => {
@@ -2122,90 +2240,180 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const approveBooking = async (id: string, customOptions?: { note?: string }) => {
     const paypalLink = `https://www.paypal.com/checkout/spudthepiper/pay?id=${id}`;
-    let updatedBooking: BookingEvent | null = null;
+    const existingBk = (bookings || []).find(b => b.id === id);
+    if (!existingBk) return;
 
-    const existingBk = bookings.find(b => b.id === id);
     const auditEntry: BookingAuditEntry = {
       id: `audit-${Date.now()}`,
       timestamp: new Date().toISOString(),
       action: 'Booking Request Approved',
       actor: 'Spud The Piper (Admin)',
-      details: `Approved date ${existingBk?.date || ''}. Official Brevo invoice & PayPal deposit link (£${existingBk?.depositAmount || 100}) dispatched to client.${customOptions?.note ? ` Admin Note: "${customOptions.note}"` : ''}`,
+      details: `Approved date ${existingBk.date || ''}. Official Brevo invoice & PayPal deposit link (£${existingBk.depositAmount || 100}) dispatched to client.${customOptions?.note ? ` Admin Note: "${customOptions.note}"` : ''}`,
       type: 'status_change'
     };
 
-    setBookings(prev => {
-      const updatedList = prev.map(b => {
-        if (b.id === id) {
-          const history = b.brevoEmailHistory || [];
-          const currentAudit = b.auditTrail || [];
-          updatedBooking = {
-            ...b,
-            status: 'approved' as BookingStatus,
-            approvedAt: new Date().toISOString(),
-            brevoEmailSent: true,
-            auditTrail: [auditEntry, ...currentAudit],
-            brevoEmailHistory: [
-              ...history,
-              {
-                type: 'Booking Approved & PayPal Deposit Link (via Brevo)',
-                sentAt: new Date().toISOString(),
-                status: 'delivered',
-                paypalLink
-              }
-            ]
-          };
-          return updatedBooking;
+    const history = existingBk.brevoEmailHistory || [];
+    const currentAudit = existingBk.auditTrail || [];
+    const updatedBooking: BookingEvent = {
+      ...existingBk,
+      status: 'approved' as BookingStatus,
+      approvedAt: new Date().toISOString(),
+      brevoEmailSent: true,
+      auditTrail: [auditEntry, ...currentAudit],
+      brevoEmailHistory: [
+        ...history,
+        {
+          type: 'Booking Approved & PayPal Deposit Link (via Brevo)',
+          sentAt: new Date().toISOString(),
+          status: 'delivered',
+          paypalLink
         }
-        return b;
-      });
-      return updatedList;
+      ]
+    };
+
+    setBookings(prev => prev.map(b => b.id === id ? updatedBooking : b));
+    await syncToFirestore('bookings', id, updatedBooking);
+
+    // Dispatch live transactional email via Brevo
+    try {
+      if (typeof window !== 'undefined') {
+        fetch('/api/brevo/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'booking_approved',
+            booking: updatedBooking,
+            paypalLink,
+            replyMessage: customOptions?.note
+          })
+        }).catch(err => console.warn('Live Brevo dispatch warning:', err));
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+
+    setActiveBrevoEmail({
+      isOpen: true,
+      recipientName: updatedBooking.clientName,
+      recipientEmail: updatedBooking.clientEmail,
+      booking: updatedBooking,
+      paypalLink
     });
 
-    if (updatedBooking) {
-      await syncToFirestore('bookings', id, updatedBooking);
+    addNotification({
+      type: 'booking_request',
+      title: 'Booking Approved & Brevo Email Sent',
+      message: `Brevo email sent to ${updatedBooking.clientName} with £${updatedBooking.depositAmount} PayPal deposit payment link.`,
+      actionUrl: '/admin/bookings',
+      relatedId: id
+    });
+  };
+
+  const resendApprovalEmail = async (idOrBooking: string | BookingEvent): Promise<{ success: boolean; error?: string; sendCount?: number }> => {
+    const id = typeof idOrBooking === 'string' ? idOrBooking : idOrBooking.id;
+    const existingBk = (bookings || []).find(b => b.id === id) || (typeof idOrBooking !== 'string' ? idOrBooking : activeBrevoEmail?.booking);
+    if (!existingBk) {
+      console.error('[resendApprovalEmail] No booking found for id:', id);
+      return { success: false, error: 'Booking record not found in system' };
     }
 
-    const bk = bookings.find(b => b.id === id) || updatedBooking;
-    if (bk) {
-      // Dispatch live transactional email via Brevo
-      try {
-        if (typeof window !== 'undefined') {
-          fetch('/api/brevo/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'booking_approved',
-              booking: { ...bk, status: 'approved' },
-              paypalLink,
-              replyMessage: customOptions?.note
-            })
-          }).catch(err => console.warn('Live Brevo dispatch warning:', err));
+    const nowIso = new Date().toISOString();
+    const formattedNow = new Date().toLocaleString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const paypalLink = `https://www.paypal.com/checkout/spudthepiper/pay?id=${existingBk.id}`;
+    const previousHistory = existingBk.brevoEmailHistory || [];
+    
+    // Calculate send count: initial approval is #1, each subsequent resend is #2, #3, etc.
+    const previousApprovalSends = previousHistory.filter(h => 
+      h.type.toLowerCase().includes('approv') || h.type.toLowerCase().includes('deposit link')
+    ).length;
+    const sendCount = Math.max(2, previousApprovalSends + 1);
+
+    const auditEntry: BookingAuditEntry = {
+      id: `audit-${Date.now()}`,
+      timestamp: nowIso,
+      action: `Brevo Approval Email Resent (Send #${sendCount})`,
+      actor: 'Spud The Piper (Admin)',
+      details: `Second / additional approval email (Send #${sendCount}) time-stamped and dispatched to ${existingBk.clientName} (${existingBk.clientEmail}) with £${existingBk.depositAmount || 100} PayPal deposit link and admin copy on ${formattedNow}.`,
+      type: 'message_sent'
+    };
+
+    const currentAudit = existingBk.auditTrail || [];
+    const updatedBooking: BookingEvent = {
+      ...existingBk,
+      brevoEmailSent: true,
+      auditTrail: [auditEntry, ...currentAudit],
+      brevoEmailHistory: [
+        ...previousHistory,
+        {
+          type: `Booking Approval Resent (Send #${sendCount})`,
+          sentAt: nowIso,
+          status: 'delivered',
+          paypalLink
         }
-      } catch (e) {
-        console.warn(e);
+      ]
+    };
+
+    setBookings(prev => prev.map(b => b.id === id ? updatedBooking : b));
+    await syncToFirestore('bookings', id, updatedBooking);
+
+    // Keep activeBrevoEmail preview in sync if currently open
+    setActiveBrevoEmail(prev => {
+      if (prev && prev.booking?.id === id) {
+        return {
+          ...prev,
+          booking: updatedBooking,
+          paypalLink
+        };
       }
+      return prev;
+    });
 
-      setActiveBrevoEmail({
-        isOpen: true,
-        recipientName: bk.clientName,
-        recipientEmail: bk.clientEmail,
-        booking: { ...bk, status: 'approved' },
-        paypalLink
-      });
+    // Dispatch live transactional email via Brevo
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch('/api/brevo/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'booking_approved',
+            booking: updatedBooking,
+            paypalLink,
+            replyMessage: `[Resend #${sendCount}] Official booking approval & PayPal deposit reminder.`
+          })
+        });
 
-      addNotification({
-        type: 'booking_request',
-        title: 'Booking Approved & Brevo Email Sent',
-        message: `Brevo email sent to ${bk.clientName} with £${bk.depositAmount} PayPal deposit payment link.`,
-        actionUrl: '/admin/bookings',
-        relatedId: id
-      });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.warn('Brevo resend response error:', errData);
+        }
+      }
+    } catch (e: any) {
+      console.warn('Error during Brevo resend dispatch:', e);
+      return { success: false, error: e?.message || 'Network error during resend' };
     }
+
+    addNotification({
+      type: 'booking_request',
+      title: `Brevo Approval Resent (Send #${sendCount})`,
+      message: `Successfully resent official booking approval & deposit link to ${existingBk.clientName} on ${formattedNow}.`,
+      actionUrl: '/admin/bookings',
+      relatedId: id
+    });
+
+    return { success: true, sendCount };
   };
 
   const rejectBooking = async (id: string, reason?: string, sendEmail: boolean = false) => {
-    const existingBk = bookings.find(b => b.id === id);
+    const existingBk = (bookings || []).find(b => b.id === id);
+    if (!existingBk) return;
+
     const auditEntry: BookingAuditEntry = {
       id: `audit-${Date.now()}`,
       timestamp: new Date().toISOString(),
@@ -2215,29 +2423,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: 'status_change'
     };
 
-    let updatedBooking: BookingEvent | null = null;
-    setBookings(prev => {
-      const updatedList = prev.map(b => {
-        if (b.id === id) {
-          const currentAudit = b.auditTrail || [];
-          updatedBooking = { 
-            ...b, 
-            status: 'cancelled' as BookingStatus,
-            declineReason: reason || b.declineReason,
-            auditTrail: [auditEntry, ...currentAudit]
-          };
-          return updatedBooking;
-        }
-        return b;
-      });
-      return updatedList;
-    });
+    const currentAudit = existingBk.auditTrail || [];
+    const updatedBooking: BookingEvent = { 
+      ...existingBk, 
+      status: 'cancelled' as BookingStatus,
+      declineReason: reason || existingBk.declineReason,
+      auditTrail: [auditEntry, ...currentAudit]
+    };
 
-    if (updatedBooking) {
-      await syncToFirestore('bookings', id, updatedBooking);
-    }
+    setBookings(prev => prev.map(b => b.id === id ? updatedBooking : b));
+    await syncToFirestore('bookings', id, updatedBooking);
 
-    if (existingBk && sendEmail && reason) {
+    if (sendEmail && reason) {
       try {
         if (typeof window !== 'undefined') {
           fetch('/api/brevo/send', {
@@ -2294,65 +2491,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: 'status_change'
     };
 
-    let updatedBooking: BookingEvent | null = null;
-    setBookings(prev => {
-      const updatedList = prev.map(b => {
-        if (b.id === id) {
-          const history = b.brevoEmailHistory || [];
-          const currentAudit = b.auditTrail || [];
-          updatedBooking = {
-            ...b,
-            status: 'deposit_paid' as BookingStatus,
-            depositPaidAt: nowIso,
-            depositAmountPaid: depositAmt,
-            depositPaymentMethod: 'PayPal',
-            paypalOrderId,
-            remainingBalance: remainingBal,
-            remainingBalancePaid: remainingBal === 0,
-            balanceDueDate,
-            auditTrail: [auditEntry, ...currentAudit],
-            brevoEmailHistory: [
-              ...history,
-              {
-                type: 'Deposit Confirmed & Official Receipt (via Brevo)',
-                sentAt: nowIso,
-                status: 'delivered'
-              }
-            ]
-          };
-          return updatedBooking;
+    const history = existingBk?.brevoEmailHistory || [];
+    const currentAudit = existingBk?.auditTrail || [];
+    const updatedBooking: BookingEvent = {
+      ...existingBk!,
+      status: 'deposit_paid' as BookingStatus,
+      depositPaidAt: nowIso,
+      depositAmountPaid: depositAmt,
+      depositPaymentMethod: 'PayPal',
+      paypalOrderId,
+      remainingBalance: remainingBal,
+      remainingBalancePaid: remainingBal === 0,
+      balanceDueDate,
+      auditTrail: [auditEntry, ...currentAudit],
+      brevoEmailHistory: [
+        ...history,
+        {
+          type: 'Deposit Confirmed & Official Receipt (via Brevo)',
+          sentAt: nowIso,
+          status: 'delivered'
         }
-        return b;
-      });
-      return updatedList;
-    });
+      ]
+    };
 
-    if (updatedBooking) {
-      await syncToFirestore('bookings', id, updatedBooking);
+    setBookings(prev => prev.map(b => b.id === id ? updatedBooking : b));
+    await syncToFirestore('bookings', id, updatedBooking);
 
-      // Dispatch live deposit confirmation email to client via Brevo with payment link for remainder
-      try {
-        if (typeof window !== 'undefined') {
-          fetch('/api/brevo/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'deposit_received',
-              booking: updatedBooking
-            })
-          }).catch(err => console.warn('Brevo receipt dispatch warning:', err));
-        }
-      } catch (e) {
-        console.warn(e);
+    // Dispatch live deposit confirmation email to client via Brevo with payment link for remainder
+    try {
+      if (typeof window !== 'undefined') {
+        fetch('/api/brevo/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'deposit_received',
+            booking: updatedBooking
+          })
+        }).catch(err => console.warn('Brevo receipt dispatch warning:', err));
       }
+    } catch (e) {
+      console.warn(e);
     }
 
-    const bk = bookings.find(b => b.id === id) || updatedBooking;
-    if (bk) {
+    if (existingBk) {
       addNotification({
         type: 'deposit_paid',
         title: `PayPal Deposit Paid: £${depositAmt}.00`,
-        message: `${bk.clientName} paid £${depositAmt} deposit via PayPal on ${paidDateFormatted}. Remaining balance: £${remainingBal}.00. Booking is CONFIRMED!`,
+        message: `${existingBk.clientName} paid £${depositAmt} deposit via PayPal on ${paidDateFormatted}. Remaining balance: £${remainingBal}.00. Booking is CONFIRMED!`,
         actionUrl: '/admin/bookings',
         relatedId: id
       });
@@ -2363,7 +2548,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     id: string, 
     options?: { transactionId?: string; method?: string; notes?: string }
   ) => {
-    const existingBk = bookings.find(b => b.id === id);
+    const existingBk = (bookings || []).find(b => b.id === id);
     if (!existingBk) return;
 
     const nowIso = new Date().toISOString();
@@ -2382,53 +2567,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: 'status_change'
     };
 
-    let updatedBooking: BookingEvent | null = null;
-    setBookings(prev => {
-      return prev.map(b => {
-        if (b.id === id) {
-          const currentAudit = b.auditTrail || [];
-          const history = b.brevoEmailHistory || [];
-          updatedBooking = {
-            ...b,
-            remainingBalance: 0,
-            remainingBalancePaid: true,
-            remainingBalancePaidAt: nowIso,
-            remainingBalancePaymentMethod: method,
-            remainingBalanceTransactionId: txId,
-            auditTrail: [auditEntry, ...currentAudit],
-            brevoEmailHistory: [
-              ...history,
-              {
-                type: 'Full Balance Settlement Receipt (via Brevo)',
-                sentAt: nowIso,
-                status: 'delivered'
-              }
-            ]
-          };
-          return updatedBooking;
+    const currentAudit = existingBk.auditTrail || [];
+    const history = existingBk.brevoEmailHistory || [];
+    const updatedBooking: BookingEvent = {
+      ...existingBk,
+      remainingBalance: 0,
+      remainingBalancePaid: true,
+      remainingBalancePaidAt: nowIso,
+      remainingBalancePaymentMethod: method,
+      remainingBalanceTransactionId: txId,
+      auditTrail: [auditEntry, ...currentAudit],
+      brevoEmailHistory: [
+        ...history,
+        {
+          type: 'Full Balance Settlement Receipt (via Brevo)',
+          sentAt: nowIso,
+          status: 'delivered'
         }
-        return b;
-      });
-    });
+      ]
+    };
 
-    if (updatedBooking) {
-      await syncToFirestore('bookings', id, updatedBooking);
+    setBookings(prev => prev.map(b => b.id === id ? updatedBooking : b));
+    await syncToFirestore('bookings', id, updatedBooking);
 
-      // Dispatch full settlement receipt email to client via Brevo
-      try {
-        if (typeof window !== 'undefined') {
-          fetch('/api/brevo/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'balance_paid_receipt',
-              booking: updatedBooking
-            })
-          }).catch(err => console.warn('Brevo balance receipt dispatch error:', err));
-        }
-      } catch (e) {
-        console.warn(e);
+    // Dispatch full settlement receipt email to client via Brevo
+    try {
+      if (typeof window !== 'undefined') {
+        fetch('/api/brevo/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'balance_paid_receipt',
+            booking: updatedBooking
+          })
+        }).catch(err => console.warn('Brevo balance receipt dispatch error:', err));
       }
+    } catch (e) {
+      console.warn(e);
     }
 
     addNotification({
@@ -2458,67 +2633,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: 'message_sent'
     };
 
-    let updatedBooking: BookingEvent | null = null;
-    setBookings(prev => {
-      return prev.map(b => {
-        if (b.id === id) {
-          const currentAudit = b.auditTrail || [];
-          const history = b.brevoEmailHistory || [];
-          updatedBooking = {
-            ...b,
-            sevenDayReminderSent: true,
-            sevenDayReminderSentAt: nowIso,
-            spudSevenDayAlertSent: true,
-            spudSevenDayAlertSentAt: nowIso,
-            auditTrail: [auditEntry, ...currentAudit],
-            brevoEmailHistory: [
-              ...history,
-              {
-                type: '7-Day Client Balance Reminder (via Brevo)',
-                sentAt: nowIso,
-                status: 'delivered'
-              }
-            ]
-          };
-          return updatedBooking;
+    const currentAudit = existingBk.auditTrail || [];
+    const history = existingBk.brevoEmailHistory || [];
+    const updatedBooking: BookingEvent = {
+      ...existingBk,
+      sevenDayReminderSent: true,
+      sevenDayReminderSentAt: nowIso,
+      spudSevenDayAlertSent: true,
+      spudSevenDayAlertSentAt: nowIso,
+      auditTrail: [auditEntry, ...currentAudit],
+      brevoEmailHistory: [
+        ...history,
+        {
+          type: '7-Day Client Balance Reminder (via Brevo)',
+          sentAt: nowIso,
+          status: 'delivered'
         }
-        return b;
-      });
-    });
+      ]
+    };
 
-    if (updatedBooking) {
-      await syncToFirestore('bookings', id, updatedBooking);
+    setBookings(prev => prev.map(b => b.id === id ? updatedBooking : b));
+    await syncToFirestore('bookings', id, updatedBooking);
 
-      // Dispatch Brevo email to client if balance is unpaid
-      if (!existingBk.remainingBalancePaid && remainingAmt > 0) {
-        try {
-          if (typeof window !== 'undefined') {
-            fetch('/api/brevo/send', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                type: 'client_balance_reminder_7day',
-                booking: updatedBooking
-              })
-            }).catch(err => console.warn('Brevo 7-day client reminder error:', err));
-          }
-        } catch (e) {}
-      }
-
-      // Dispatch 7-day alert to Spud
+    // Dispatch Brevo email to client if balance is unpaid
+    if (!existingBk.remainingBalancePaid && remainingAmt > 0) {
       try {
         if (typeof window !== 'undefined') {
           fetch('/api/brevo/send', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              type: 'admin_event_reminder_7day',
+              type: 'client_balance_reminder_7day',
               booking: updatedBooking
             })
-          }).catch(err => console.warn('Brevo 7-day spud alert error:', err));
+          }).catch(err => console.warn('Brevo 7-day client reminder error:', err));
         }
       } catch (e) {}
     }
+
+    // Dispatch 7-day alert to Spud
+    try {
+      if (typeof window !== 'undefined') {
+        fetch('/api/brevo/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'admin_event_reminder_7day',
+            booking: updatedBooking
+          })
+        }).catch(err => console.warn('Brevo 7-day spud alert error:', err));
+      }
+    } catch (e) {}
 
     addNotification({
       type: 'gig_reminder',
@@ -2532,7 +2697,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const sendOneDayReminder = async (id: string): Promise<{ success: boolean; error?: string }> => {
-    const existingBk = bookings.find(b => b.id === id);
+    const existingBk = (bookings || []).find(b => b.id === id);
     if (!existingBk) return { success: false, error: 'Booking not found' };
 
     const nowIso = new Date().toISOString();
@@ -2549,66 +2714,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: 'message_sent'
     };
 
-    let updatedBooking: BookingEvent | null = null;
-    setBookings(prev => {
-      return prev.map(b => {
-        if (b.id === id) {
-          const currentAudit = b.auditTrail || [];
-          const history = b.brevoEmailHistory || [];
-          updatedBooking = {
-            ...b,
-            oneDayReminderSent: true,
-            oneDayReminderSentAt: nowIso,
-            spudOneDayAlertSent: true,
-            spudOneDayAlertSentAt: nowIso,
-            auditTrail: [auditEntry, ...currentAudit],
-            brevoEmailHistory: [
-              ...history,
-              {
-                type: '1-Day Gig Briefing & Reminder (via Brevo)',
-                sentAt: nowIso,
-                status: 'delivered'
-              }
-            ]
-          };
-          return updatedBooking;
+    const currentAudit1 = existingBk.auditTrail || [];
+    const history1 = existingBk.brevoEmailHistory || [];
+    const updatedBooking1: BookingEvent = {
+      ...existingBk,
+      oneDayReminderSent: true,
+      oneDayReminderSentAt: nowIso,
+      spudOneDayAlertSent: true,
+      spudOneDayAlertSentAt: nowIso,
+      auditTrail: [auditEntry, ...currentAudit1],
+      brevoEmailHistory: [
+        ...history1,
+        {
+          type: '1-Day Gig Briefing & Reminder (via Brevo)',
+          sentAt: nowIso,
+          status: 'delivered'
         }
-        return b;
-      });
-    });
+      ]
+    };
 
-    if (updatedBooking) {
-      await syncToFirestore('bookings', id, updatedBooking);
+    setBookings(prev => prev.map(b => b.id === id ? updatedBooking1 : b));
+    await syncToFirestore('bookings', id, updatedBooking1);
 
-      // Dispatch urgent 1-day alert to Spud
+    // Dispatch urgent 1-day alert to Spud
+    try {
+      if (typeof window !== 'undefined') {
+        fetch('/api/brevo/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'admin_event_reminder_1day',
+            booking: updatedBooking1
+          })
+        }).catch(err => console.warn('Brevo 1-day spud alert error:', err));
+      }
+    } catch (e) {}
+
+    // Dispatch final balance notice to client if unpaid
+    if (!existingBk.remainingBalancePaid && remainingAmt > 0) {
       try {
         if (typeof window !== 'undefined') {
           fetch('/api/brevo/send', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              type: 'admin_event_reminder_1day',
-              booking: updatedBooking
+              type: 'client_balance_reminder_1day',
+              booking: updatedBooking1
             })
-          }).catch(err => console.warn('Brevo 1-day spud alert error:', err));
+          }).catch(err => console.warn('Brevo 1-day client reminder error:', err));
         }
       } catch (e) {}
-
-      // Dispatch final balance notice to client if unpaid
-      if (!existingBk.remainingBalancePaid && remainingAmt > 0) {
-        try {
-          if (typeof window !== 'undefined') {
-            fetch('/api/brevo/send', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                type: 'client_balance_reminder_1day',
-                booking: updatedBooking
-              })
-            }).catch(err => console.warn('Brevo 1-day client reminder error:', err));
-          }
-        } catch (e) {}
-      }
     }
 
     addNotification({
@@ -4371,6 +4526,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addBookingAudit,
       sendBookingMessage,
       approveBooking,
+      resendApprovalEmail,
       rejectBooking,
       markDepositPaid,
       markRemainingBalancePaid,
