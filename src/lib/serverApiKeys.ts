@@ -29,7 +29,7 @@ export async function getLiveServerApiKeys(): Promise<ServerApiKeys> {
     brevoApiKey: process.env.BREVO_API_KEY,
     brevoSenderEmail: process.env.BREVO_SENDER_EMAIL || 'info@spudthepiper.com',
     brevoSenderName: process.env.BREVO_SENDER_NAME || 'Spud the Piper',
-    brevoAdminAlertEmail: process.env.BREVO_ADMIN_ALERT_EMAIL || 'Spud@spudthepiper.com',
+    brevoAdminAlertEmail: process.env.BREVO_ADMIN_ALERT_EMAIL || 'info@spudthepiper.com',
     paypalClientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
     paypalClientSecret: process.env.PAYPAL_CLIENT_SECRET,
   };

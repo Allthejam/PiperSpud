@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     const apiKey = serverKeys.brevoApiKey;
     const senderEmail = serverKeys.brevoSenderEmail || 'info@spudthepiper.com';
     const senderName = serverKeys.brevoSenderName || 'Spud the Piper';
-    const adminAlertEmail = serverKeys.brevoAdminAlertEmail || 'Spud@spudthepiper.com';
+    const adminAlertEmail = serverKeys.brevoAdminAlertEmail || 'info@spudthepiper.com';
     const trustpilotInviteEmail = process.env.TRUSTPILOT_INVITE_EMAIL || 'spudthepiper.com+aebdc308b6@invite.trustpilot.com';
 
     let subject = '';

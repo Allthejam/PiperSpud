@@ -72,7 +72,7 @@ const DEFAULT_TEMPLATES: EmailTemplateDef[] = [
     id: 'admin_booking_alert',
     category: 'admin',
     name: '2. New Booking Request Alert (Spud Diary Alert)',
-    triggerDescription: 'Sent immediately to Spud@spudthepiper.com whenever a client submits a new booking inquiry on the website.',
+    triggerDescription: 'Sent immediately to info@spudthepiper.com whenever a client submits a new booking inquiry on the website.',
     recipientRole: 'Spud Admin',
     defaultSubject: '🔔 New Booking Request: {clientName} ({eventType} - {eventDate})',
     badgeLabel: 'New Inquiry In Diary',
@@ -150,7 +150,7 @@ const DEFAULT_TEMPLATES: EmailTemplateDef[] = [
     id: 'admin_event_reminder_7day',
     category: 'admin',
     name: '6. 7-Day Gig Briefing & Diary Alert (Spud Admin)',
-    triggerDescription: 'Sent to Spud@spudthepiper.com 7 days before an upcoming performance with the client briefing and balance status.',
+    triggerDescription: 'Sent to info@spudthepiper.com 7 days before an upcoming performance with the client briefing and balance status.',
     recipientRole: 'Spud Admin',
     defaultSubject: '📅 7-Day Gig Alert: {clientName} on {eventDate} at {venueName}',
     badgeLabel: 'Upcoming Gig in 7 Days',
@@ -165,7 +165,7 @@ const DEFAULT_TEMPLATES: EmailTemplateDef[] = [
     id: 'admin_event_reminder_1day',
     category: 'admin',
     name: '7. 1-Day Final Event Alert (Spud Admin)',
-    triggerDescription: 'Sent to Spud@spudthepiper.com the morning before a gig with the final equipment, attire, and venue access checklist.',
+    triggerDescription: 'Sent to info@spudthepiper.com the morning before a gig with the final equipment, attire, and venue access checklist.',
     recipientRole: 'Spud Admin',
     defaultSubject: '🎺 TOMORROW: Bagpiping for {clientName} at {venueName} ({timeSlot})',
     badgeLabel: 'Performance Tomorrow',
@@ -206,7 +206,7 @@ const DEFAULT_TEMPLATES: EmailTemplateDef[] = [
     id: 'admin_chat_alert',
     category: 'admin',
     name: '9. Live Website Chat Message Alert (Spud Admin)',
-    triggerDescription: 'Sent instantly to Spud@spudthepiper.com when a visitor posts a message in the website live chat.',
+    triggerDescription: 'Sent instantly to info@spudthepiper.com when a visitor posts a message in the website live chat.',
     recipientRole: 'Spud Admin',
     defaultSubject: '💬 Live Chat Message from {clientName}',
     badgeLabel: 'Live Website Chat Message',
@@ -314,7 +314,7 @@ export const AdminEmailTemplates: React.FC = () => {
   });
 
   const [isSavedSuccess, setIsSavedSuccess] = useState(false);
-  const [testEmailAddress, setTestEmailAddress] = useState('Spud@spudthepiper.com');
+  const [testEmailAddress, setTestEmailAddress] = useState('info@spudthepiper.com');
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [testSendResult, setTestSendResult] = useState<{ success: boolean; message: string } | null>(null);
 
@@ -681,7 +681,7 @@ export const AdminEmailTemplates: React.FC = () => {
                 type="email"
                 value={testEmailAddress}
                 onChange={(e) => setTestEmailAddress(e.target.value)}
-                placeholder="Spud@spudthepiper.com"
+                placeholder="info@spudthepiper.com"
                 className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-tartan-gold"
               />
 
@@ -784,7 +784,7 @@ export const AdminEmailTemplates: React.FC = () => {
                 <p>
                   <strong className="text-gray-400">To:</strong>{' '}
                   {activeTemplate.recipientRole === 'Client' ? sampleBooking.clientName : 'Callum "Spud" Fraser'}{' '}
-                  &lt;{activeTemplate.recipientRole === 'Client' ? sampleBooking.clientEmail : 'Spud@spudthepiper.com'}&gt;
+                  &lt;{activeTemplate.recipientRole === 'Client' ? sampleBooking.clientEmail : 'info@spudthepiper.com'}&gt;
                 </p>
                 <p className="text-white font-semibold pt-1 border-t border-slate-800">
                   <strong className="text-tartan-gold">Subject:</strong> {replacePlaceholders(activeTemplate.defaultSubject)}

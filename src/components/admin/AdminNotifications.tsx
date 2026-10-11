@@ -122,7 +122,7 @@ export const AdminNotifications: React.FC<{ onNavigateTab: (tab: string) => void
           <div>
             <span className="text-white font-bold block">Spud Fail-Safe Email Alerts (Brevo Active)</span>
             <span className="text-gray-300 text-[11px]">
-              Incoming live chats, offline questions & bookings are delivered instantly to <strong className="text-purple-300">Spud@spudthepiper.com</strong> so you never miss an inquiry on iOS or mobile.
+              Incoming live chats, offline questions & bookings are delivered instantly to <strong className="text-purple-300">info@spudthepiper.com</strong> so you never miss an inquiry on iOS or mobile.
             </span>
           </div>
         </div>
