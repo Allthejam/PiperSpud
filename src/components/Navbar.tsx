@@ -24,7 +24,9 @@ import {
   Info,
   Smartphone,
   Download,
-  Camera
+  Camera,
+  Video,
+  Globe
 } from 'lucide-react';
 
 import { SpudHeritageLogo } from '@/components/SpudHeritageLogo';
@@ -92,6 +94,7 @@ export const Navbar: React.FC = () => {
       href: '/',
       children: [
         { label: 'Welcome / Home', href: '/', desc: 'Main Highland Overview & Hero', icon: Compass },
+        { label: 'Meet Spud (Videos)', href: '/meet-spud', desc: 'Watch Spud Speak, Play & Share Stories', icon: Video },
         { label: 'Photo Gallery', href: '/gallery', desc: 'Weddings, Castle Venues & Highland Gatherings', icon: Camera },
         { label: 'About Spud', href: '/about', desc: '40+ Years of Piping Heritage', icon: Info },
         { label: 'How to Install App (PWA)', href: '/install', desc: '1-Tap Offline Bagpipe Music on Phone & PC', icon: Smartphone },
@@ -102,6 +105,7 @@ export const Navbar: React.FC = () => {
       href: '/services',
       children: [
         { label: 'All Services & Packages', href: '/services', desc: 'Weddings, Castles, Funerals & Corporate', icon: Sparkles },
+        { label: 'Tour & Coach Groups', href: '/tour-groups', desc: 'Scottish Welcome & Experiences for Visitors', icon: Globe },
         { label: 'Highland Attire & Tartans', href: '/attire', desc: 'No. 1 Feather Bonnet, Royal Stewart & Modern', icon: Shirt },
       ]
     },

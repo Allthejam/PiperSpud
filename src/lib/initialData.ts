@@ -22,7 +22,8 @@ import {
   GalleryItem,
   PricingConfig,
   PartnerItem,
-  AttireItem
+  AttireItem,
+  VideoItem
 } from '@/types/spud';
 
 export const defaultPermissions: Record<'owner' | 'admin' | 'editor', UserPermissions> = {
@@ -1763,6 +1764,20 @@ export const initialAttires: AttireItem[] = [
     bestFor: 'Romantic Highland Weddings, Destination Elopements & Celtic Themes',
     imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80',
     order: 5
+  }
+];
+
+export const initialVideos: VideoItem[] = [
+  {
+    id: 'vid-spud-intro',
+    title: 'Introducing Spud The Piper • Scottish Bagpiper',
+    youtubeUrl: 'https://youtu.be/38zXOmwZVBA',
+    youtubeId: '38zXOmwZVBA',
+    description: 'Listen to Spud the Piper introduce himself, his background, his passion for the Great Highland Bagpipe, and what makes a performance truly unforgettable.',
+    category: 'Introductions & Speaking',
+    isFeatured: true,
+    order: 1,
+    addedAt: '2026-10-11T12:00:00.000Z'
   }
 ];
 

@@ -62,6 +62,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.80
     },
     {
+      url: `${baseUrl}/meet-spud`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.90
+    },
+    {
+      url: `${baseUrl}/tour-groups`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.90
+    },
+    {
       url: `${baseUrl}/faq`,
       lastModified: now,
       changeFrequency: 'monthly',

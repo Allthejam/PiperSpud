@@ -447,5 +447,17 @@ export interface AttireItem {
   order?: number;
 }
 
+export interface VideoItem {
+  id: string;
+  title: string;
+  youtubeUrl: string;
+  youtubeId: string;
+  description: string;
+  category: 'Introductions & Speaking' | 'Live Castle Piping' | 'Traditions & Stories' | 'Weddings & Celebrations';
+  isFeatured?: boolean; // When true, can appear in the main hero player
+  order?: number;
+  addedAt?: string;
+}
+
 
 

@@ -28,7 +28,8 @@ import {
   GalleryItem,
   PricingConfig,
   PartnerItem,
-  AttireItem
+  AttireItem,
+  VideoItem
 } from '@/types/spud';
 import { 
   initialBookings, 
@@ -55,7 +56,8 @@ import {
   initialGallery,
   initialPricingConfig,
   initialPartners,
-  initialAttires
+  initialAttires,
+  initialVideos
 } from '@/lib/initialData';
 import { bagpipeSynth } from '@/lib/bagpipeSynth';
 import { db, auth } from '@/lib/firebase';
@@ -274,6 +276,13 @@ interface AppContextType {
   deleteAttire: (id: string) => Promise<boolean>;
   reorderAttires: (newOrderedList: AttireItem[]) => Promise<void>;
 
+  // Spud Video Showcase
+  videos: VideoItem[];
+  addVideo: (video: Omit<VideoItem, 'id'> | VideoItem) => Promise<string>;
+  updateVideo: (id: string, updates: Partial<VideoItem>) => Promise<boolean>;
+  deleteVideo: (id: string) => Promise<boolean>;
+  reorderVideos: (newOrderedList: VideoItem[]) => Promise<void>;
+
   // Cloud Database Sync
   isSyncingFirestore: boolean;
   syncAllToFirestore: () => Promise<{ success: boolean; count: number; error?: string }>;
@@ -470,6 +479,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(initialGallery);
   const [partners, setPartners] = useState<PartnerItem[]>(initialPartners);
   const [attires, setAttires] = useState<AttireItem[]>(initialAttires);
+  const [videos, setVideos] = useState<VideoItem[]>(initialVideos);
   const [showLiveStream, setShowLiveStreamState] = useState<boolean>(true);
   const [isSyncingFirestore, setIsSyncingFirestore] = useState<boolean>(false);
 
@@ -812,6 +822,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } catch (e) {}
       }
 
+      const savedVideos = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}videos`);
+      if (savedVideos) {
+        try {
+          const parsedVideos: VideoItem[] = JSON.parse(savedVideos);
+          if (Array.isArray(parsedVideos) && parsedVideos.length > 0) {
+            const initialMap = new Map(initialVideos.map(v => [v.id, v]));
+            const merged = parsedVideos.map(p => {
+              const init = initialMap.get(p.id);
+              return init ? { ...init, ...p } : p;
+            });
+            initialVideos.forEach(init => {
+              if (!merged.some(m => m.id === init.id)) merged.push(init);
+            });
+            setVideos(merged);
+          }
+        } catch (e) {}
+      }
+
       const savedStream = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}show_livestream`);
       if (savedStream !== null) {
         setShowLiveStreamState(savedStream === 'true');
@@ -879,6 +907,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubGallery = () => {};
     let unsubPartners = () => {};
     let unsubAttires = () => {};
+    let unsubVideos = () => {};
 
     try {
       // Real-time Firestore listener for 'users' collection
@@ -1259,6 +1288,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }, (err) => console.log('Firestore attires listener:', err.message));
 
+      // Real-time Firestore listener for videos (Meet Spud The Piper YouTube showcase)
+      unsubVideos = onSnapshot(collection(db, 'videos'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteVideos: VideoItem[] = [];
+          snapshot.forEach((d) => {
+            const data = d.data() as VideoItem;
+            if (data && (data.id || d.id)) {
+              remoteVideos.push({ ...data, id: data.id || d.id });
+            }
+          });
+          if (remoteVideos.length > 0) {
+            setVideos(prev => {
+              const currentList = prev && prev.length > 0 ? prev : initialVideos;
+              const merged = [...currentList];
+              remoteVideos.forEach(r => {
+                const idx = merged.findIndex(v => v.id === r.id);
+                if (idx >= 0) {
+                  merged[idx] = { ...merged[idx], ...r };
+                } else {
+                  merged.push(r);
+                }
+              });
+              merged.sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+              if (typeof window !== 'undefined') {
+                try {
+                  localStorage.setItem(`${LOCAL_STORAGE_PREFIX}videos`, JSON.stringify(merged));
+                } catch (e) {}
+              }
+              return merged;
+            });
+          }
+        }
+      }, (err) => console.log('Firestore videos listener:', err.message));
+
       // Real-time Firestore listener for chat_sessions
       unsubChatSessions = onSnapshot(collection(db, 'chat_sessions'), (snapshot) => {
         if (!snapshot.empty) {
@@ -1340,6 +1403,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubGallery();
       unsubPartners();
       unsubAttires();
+      unsubVideos();
     };
   }, []);
 
@@ -4003,6 +4067,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
+      // 18. Sync YouTube Videos Showcase
+      const videosToSync = videos && videos.length > 0 ? videos : initialVideos;
+      for (const v of videosToSync) {
+        if (v && v.id) {
+          await setDoc(doc(db, 'videos', v.id), JSON.parse(JSON.stringify(v)), { merge: true });
+          totalSynced++;
+        }
+      }
+
       console.log(`[Firestore SUCCESS] Full Cloud Sync Complete: ${totalSynced} documents verified in Firestore!`);
       addNotification({
         type: 'system',
@@ -4481,6 +4554,100 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // Video Showcase Handlers (Firestore & LocalStorage synced)
+  const addVideo = async (videoData: Omit<VideoItem, 'id'> | VideoItem): Promise<string> => {
+    const id = ('id' in videoData && videoData.id) ? videoData.id : `vid-${Date.now()}`;
+    const baseList = (videos && videos.length > 0) ? videos : initialVideos;
+    const newVideo: VideoItem = {
+      ...videoData,
+      id,
+      order: videoData.order ?? (baseList.length + 1),
+      addedAt: videoData.addedAt || new Date().toISOString()
+    };
+
+    if (db) {
+      for (const initItem of initialVideos) {
+        if (!baseList.some(b => b.id === initItem.id)) {
+          await syncToFirestore('videos', initItem.id, initItem);
+        }
+      }
+    }
+
+    setVideos(prev => {
+      const current = (prev && prev.length > 0) ? prev : initialVideos;
+      const exists = current.some(v => v.id === id);
+      const updated = exists ? current.map(v => v.id === id ? newVideo : v) : [...current, newVideo];
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}videos`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    await syncToFirestore('videos', id, newVideo);
+    addNotification({
+      type: 'system',
+      title: 'New Video Added to Showcase',
+      message: `Added: "${newVideo.title}"`,
+      actionUrl: '/meet-spud'
+    });
+    return id;
+  };
+
+  const updateVideo = async (id: string, updates: Partial<VideoItem>): Promise<boolean> => {
+    let targetVideo: VideoItem | null = null;
+    setVideos(prev => {
+      const current = (prev && prev.length > 0) ? prev : initialVideos;
+      const updated = current.map(v => {
+        if (v.id === id) {
+          targetVideo = { ...v, ...updates };
+          return targetVideo;
+        }
+        return v;
+      });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}videos`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+    if (targetVideo) {
+      await syncToFirestore('videos', id, targetVideo);
+      return true;
+    }
+    return false;
+  };
+
+  const deleteVideo = async (id: string): Promise<boolean> => {
+    setVideos(prev => {
+      const current = (prev && prev.length > 0) ? prev : initialVideos;
+      const updated = current.filter(v => v.id !== id);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}videos`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+    await deleteFromFirestore('videos', id);
+    addNotification({
+      type: 'system',
+      title: 'Video Removed',
+      message: `Removed video from Spud\'s video showcase.`,
+      actionUrl: '/meet-spud'
+    });
+    return true;
+  };
+
+  const reorderVideos = async (newOrderedList: VideoItem[]): Promise<void> => {
+    setVideos(newOrderedList);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}videos`, JSON.stringify(newOrderedList));
+    }
+    if (db) {
+      for (let i = 0; i < newOrderedList.length; i++) {
+        const item = { ...newOrderedList[i], order: i + 1 };
+        await syncToFirestore('videos', item.id, item);
+      }
+    }
+  };
+
   // Modal handlers
   const openBrevoPreview = (booking: BookingEvent) => {
     const paypalLink = `https://spudthepiper.com/pay?id=${booking.id}`;
@@ -4669,6 +4836,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateAttire,
       deleteAttire,
       reorderAttires,
+      videos,
+      addVideo,
+      updateVideo,
+      deleteVideo,
+      reorderVideos,
       isSyncingFirestore,
       syncAllToFirestore,
       activeBrevoEmail,
