@@ -433,9 +433,18 @@ export const TartanSelector: React.FC = () => {
                     label={`${selectedTartan.title} Photo`}
                     section="attire"
                   />
-                  <div className="absolute bottom-2 left-2 z-20 pointer-events-none">
-                    <span className="text-xs font-bold text-white bg-tartan-red/90 px-3 py-1 rounded-full border border-red-400 shadow-md">
-                      {selectedTartan.name}
+                  <div className="absolute bottom-2 left-2 z-20 flex items-center gap-1.5">
+                    <span 
+                      onClick={canManage ? (e) => handleOpenEditModal(selectedTartan, e) : undefined}
+                      className={`text-xs font-bold text-white bg-tartan-red/90 px-3 py-1 rounded-full border border-red-400 shadow-md flex items-center gap-1.5 ${
+                        canManage ? 'cursor-pointer hover:bg-red-700 transition' : ''
+                      }`}
+                      title={canManage ? "Click to edit attire name and details" : undefined}
+                    >
+                      <span>{selectedTartan.name}</span>
+                      {canManage && (
+                        <Edit3 className="w-3 h-3 text-tartan-gold shrink-0 opacity-80 hover:opacity-100" />
+                      )}
                     </span>
                   </div>
                 </div>
