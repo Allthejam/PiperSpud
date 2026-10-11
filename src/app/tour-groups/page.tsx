@@ -7,7 +7,6 @@ import { LiveChatWidget } from '@/components/LiveChatWidget';
 import { VisualPencilOverlay } from '@/components/VisualPencilOverlay';
 import { EditableElement } from '@/components/EditableElement';
 import { SpudHeritageLogo } from '@/components/SpudHeritageLogo';
-import { TartanSelector } from '@/components/TartanSelector';
 import { useApp } from '@/context/AppContext';
 import Link from 'next/link';
 import { 
@@ -29,11 +28,79 @@ import {
   Wine, 
   Send, 
   ArrowRight,
-  ShieldCheck
+  ShieldCheck,
+  ChevronLeft,
+  ChevronRight,
+  Quote
 } from 'lucide-react';
+
+interface PastTourEvent {
+  id: string;
+  title: string;
+  location: string;
+  groupType: string;
+  origin: string;
+  imageUrl: string;
+  description: string;
+  highlight: string;
+}
+
+const PAST_TOUR_EVENTS: PastTourEvent[] = [
+  {
+    id: 'event-1',
+    title: 'North American Coach Holiday Grand Arrival',
+    location: 'Cairngorms & Aviemore Highland Hotel',
+    groupType: 'Coach Holiday Tour (48 Passengers)',
+    origin: 'USA & Canada',
+    imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1000&q=80',
+    description: 'Surprise bagpipe welcoming ceremony as the luxury coach pulled up to the hotel. Spud greeted guests in full No. 1 Dress with "Scotland the Brave", followed by a spirited photo session with the passengers against the mountain backdrop.',
+    highlight: 'Full No. 1 Regalia & Personal Photos for Every Guest'
+  },
+  {
+    id: 'event-2',
+    title: 'Highland Loch Ness Excursion & Urquhart Castle',
+    location: 'Loch Ness Viewpoint, Inverness-shire',
+    groupType: 'Inverness Shore & Highlands Tour',
+    origin: 'Australia & New Zealand',
+    imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1000&q=80',
+    description: 'A breathtaking outdoor piping stop overlooking the dramatic waters of Loch Ness. Spud performed "Highland Cathedral" and "Skye Boat Song", then hosted a 20-minute Q&A showing how the bagpipes are tuned and answering Scottish clan questions.',
+    highlight: 'Outdoor Acoustic Piping with Dramatic Loch Views'
+  },
+  {
+    id: 'event-3',
+    title: 'Speyside Single Malt Distillery Gala Reception',
+    location: 'Speyside Historic Distillery, Moray',
+    groupType: 'Whisky Connoisseurs International Tour',
+    origin: 'Germany, Switzerland & Austria',
+    imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1000&q=80',
+    description: 'Spud piped international guests from their coach through the distillery copper stills to the private tasting warehouse. Delivered a stirring toast in traditional Gaelic before leading a celebratory march into their private banquet.',
+    highlight: 'Whisky Toast, Gaelic Salutation & Processional'
+  },
+  {
+    id: 'event-4',
+    title: 'Scottish Castle Evening Banquet & Address to the Haggis',
+    location: 'Historic Scottish Castle, Central Highlands',
+    groupType: 'European Cultural Heritage Tour (52 Guests)',
+    origin: 'International Travel Club',
+    imageUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1000&q=80',
+    description: 'Piped the arrival of the tour coach at the castle portcullis, followed by ceremonial piping of the Haggis into the grand banquet hall with Robert Burns recitation and unforgettable Scottish banter.',
+    highlight: 'Traditional Haggis Procession & Banquet Fanfare'
+  }
+];
 
 export default function TourGroupsPage() {
   const { addNotification, travelConfig } = useApp();
+
+  // Carousel State
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const handlePrevSlide = () => {
+    setCurrentSlide(prev => (prev === 0 ? PAST_TOUR_EVENTS.length - 1 : prev - 1));
+  };
+
+  const handleNextSlide = () => {
+    setCurrentSlide(prev => (prev === PAST_TOUR_EVENTS.length - 1 ? 0 : prev + 1));
+  };
 
   // Inquiry Form State
   const [operatorName, setOperatorName] = useState('');
@@ -302,8 +369,132 @@ export default function TourGroupsPage() {
         </div>
       </section>
 
-      {/* Attire Preview */}
-      <TartanSelector />
+      {/* Past Tour Group Events Carousel Showcase */}
+      <section className="py-20 bg-tartan-card border-b border-tartan-border relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+          
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-tartan-border/60 pb-6">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-tartan-gold/10 border border-tartan-gold/30 text-tartan-gold text-xs font-semibold">
+                <Camera className="w-4 h-4" />
+                <span>Memorable Highland Moments</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-white font-serif">
+                Examples of Past Tour Group Events
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-300 max-w-2xl">
+                Browse real moments from coach tours, castle hotel arrivals, and Loch Ness excursions where Spud created unforgettable memories for international visitors.
+              </p>
+            </div>
+
+            {/* Carousel Navigation Buttons */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handlePrevSlide}
+                className="p-3 rounded-2xl bg-tartan-navy hover:bg-tartan-dark text-gray-200 hover:text-tartan-gold border border-tartan-border transition shadow-md active:scale-95"
+                title="Previous Event"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <div className="px-3 text-xs font-bold font-mono text-tartan-gold">
+                {currentSlide + 1} / {PAST_TOUR_EVENTS.length}
+              </div>
+              <button
+                type="button"
+                onClick={handleNextSlide}
+                className="p-3 rounded-2xl bg-tartan-navy hover:bg-tartan-dark text-gray-200 hover:text-tartan-gold border border-tartan-border transition shadow-md active:scale-95"
+                title="Next Event"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Featured Carousel Slide */}
+          {PAST_TOUR_EVENTS[currentSlide] && (
+            <div className="bg-tartan-dark/80 rounded-3xl overflow-hidden border border-tartan-gold/50 shadow-2xl transition-all duration-500">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
+                
+                {/* Photo Side */}
+                <div className="lg:col-span-7 relative min-h-[300px] sm:min-h-[420px] bg-black overflow-hidden group">
+                  <img
+                    src={PAST_TOUR_EVENTS[currentSlide].imageUrl}
+                    alt={PAST_TOUR_EVENTS[currentSlide].title}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+                  
+                  {/* Origin Badge */}
+                  <div className="absolute top-4 left-4 z-10">
+                    <span className="px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-tartan-navy/90 text-tartan-gold border border-tartan-gold/50 shadow-lg flex items-center gap-1.5 backdrop-blur-md">
+                      <Globe className="w-3.5 h-3.5 text-tartan-gold" />
+                      <span>Origin: {PAST_TOUR_EVENTS[currentSlide].origin}</span>
+                    </span>
+                  </div>
+
+                  {/* Highlight pill */}
+                  <div className="absolute bottom-4 left-4 right-4 z-10">
+                    <div className="bg-slate-950/90 backdrop-blur-md p-3 rounded-xl border border-tartan-border/80 flex items-center gap-2 text-xs text-white">
+                      <Sparkles className="w-4 h-4 text-tartan-gold shrink-0" />
+                      <span className="font-semibold text-tartan-gold">Highlight:</span>
+                      <span className="truncate">{PAST_TOUR_EVENTS[currentSlide].highlight}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Details Side */}
+                <div className="lg:col-span-5 p-6 sm:p-10 flex flex-col justify-between space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-xs text-tartan-gold font-bold uppercase tracking-wider">
+                      <MapPin className="w-4 h-4 shrink-0" />
+                      <span>{PAST_TOUR_EVENTS[currentSlide].location}</span>
+                    </div>
+
+                    <h3 className="text-2xl sm:text-3xl font-extrabold text-white font-serif leading-tight">
+                      {PAST_TOUR_EVENTS[currentSlide].title}
+                    </h3>
+
+                    <div className="inline-block px-3 py-1 rounded-lg bg-tartan-navy text-xs font-semibold text-gray-300 border border-tartan-border">
+                      {PAST_TOUR_EVENTS[currentSlide].groupType}
+                    </div>
+
+                    <p className="text-sm text-gray-300 leading-relaxed pt-2">
+                      {PAST_TOUR_EVENTS[currentSlide].description}
+                    </p>
+                  </div>
+
+                  <div className="pt-4 border-t border-tartan-border/60 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      {PAST_TOUR_EVENTS.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setCurrentSlide(idx)}
+                          className={`h-2.5 rounded-full transition-all ${
+                            currentSlide === idx 
+                              ? 'w-8 bg-tartan-gold' 
+                              : 'w-2.5 bg-slate-700 hover:bg-slate-500'
+                          }`}
+                          title={`Jump to event ${idx + 1}`}
+                        />
+                      ))}
+                    </div>
+
+                    <a
+                      href="#tour-inquiry"
+                      className="px-4 py-2 bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider rounded-xl shadow hover:brightness-110 transition"
+                    >
+                      Enquire for this package
+                    </a>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+        </div>
+      </section>
 
       {/* Tour Inquiry Form Section */}
       <section id="tour-inquiry" className="py-20 bg-tartan-dark">
