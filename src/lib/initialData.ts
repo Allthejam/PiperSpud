@@ -1004,6 +1004,30 @@ export const initialSeoPages: SeoPageConfig[] = [
     schemaType: 'ContactPage, LocalBusiness'
   },
   {
+    pageId: 'meet-spud',
+    pageName: 'Meet Spud (Videos)',
+    path: '/meet-spud',
+    title: 'Meet Spud The Piper | Video Showcase & Highland Stories',
+    metaDescription: 'Watch Spud the Piper introduce his music, Highland bagpipes, and Scottish storytelling. View live performance videos, Burns recitations, and client greetings.',
+    keywords: ['Spud the Piper Videos', 'Watch Scottish Bagpiper', 'Meet Spud the Piper', 'Bagpipe Video Showcase', 'Scottish Bagpipes YouTube'],
+    canonicalUrl: 'https://www.spudthepiper.com/meet-spud',
+    ogImage: 'https://www.spudthepiper.com/og-image.png',
+    h1: 'Meet Spud The Piper • Video Showcase',
+    schemaType: 'VideoGallery, Person'
+  },
+  {
+    pageId: 'tour-groups',
+    pageName: 'Tour & Coach Groups',
+    path: '/tour-groups',
+    title: 'Tour & Coach Group Bagpipe Experiences | Spud the Piper Scotland',
+    metaDescription: 'Highland bagpipe welcoming ceremonies, castle arrivals, and traditional Highland Dancers for international coach tours and holiday groups in Scotland.',
+    keywords: ['Coach Tour Bagpiper Scotland', 'Tour Group Bagpipe Welcome', 'Highland Dancers Coach Tours', 'Aviemore Inverness Tour Entertainment', 'Scottish Castle Coach Welcome'],
+    canonicalUrl: 'https://www.spudthepiper.com/tour-groups',
+    ogImage: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&q=80',
+    h1: 'Highland Bagpipe Welcome for Tour Groups',
+    schemaType: 'TouristAttraction, TravelAgency'
+  },
+  {
     pageId: 'terms',
     pageName: 'Terms & Conditions',
     path: '/terms',

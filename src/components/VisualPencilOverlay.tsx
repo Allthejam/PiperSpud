@@ -1108,7 +1108,7 @@ export const VisualPencilOverlay: React.FC = () => {
                   <h3 className="text-lg font-bold text-white font-serif flex items-center gap-2">
                     <span>Google SEO & Structured Data Studio</span>
                     <span className="text-xs bg-tartan-dark text-tartan-gold font-mono px-2 py-0.5 rounded-full border border-tartan-border">
-                      All 14 Pages Enabled
+                      All {seoPages.length} Pages Enabled
                     </span>
                   </h3>
                   <p className="text-xs text-gray-400">Tune Meta Tags, SERP Snippets, OpenGraph Cards, and Schema.org for every page on the site</p>

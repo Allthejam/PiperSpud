@@ -727,7 +727,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (savedSeoPages) {
         try {
           const parsed = JSON.parse(savedSeoPages);
-          if (Array.isArray(parsed) && parsed.length > 0) setSeoPages(parsed);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const merged = [...parsed];
+            initialSeoPages.forEach(initPage => {
+              if (!merged.some(p => p.pageId === initPage.pageId)) {
+                merged.push(initPage);
+              }
+            });
+            setSeoPages(merged);
+          }
         } catch (e) {}
       }
 
