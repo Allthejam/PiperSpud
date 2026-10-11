@@ -38,7 +38,9 @@ import {
   Trash2,
   X,
   Upload,
-  Loader2
+  Loader2,
+  Swords,
+  Music
 } from 'lucide-react';
 
 interface PastTourEvent {
@@ -97,6 +99,17 @@ const initialTourEvents: PastTourEvent[] = [
     description: 'Piped the arrival of the tour coach at the castle portcullis, followed by ceremonial piping of the Haggis into the grand banquet hall with Robert Burns recitation and unforgettable Scottish banter.',
     highlight: 'Traditional Haggis Procession & Banquet Fanfare',
     order: 4
+  },
+  {
+    id: 'event-5',
+    title: 'Live Highland Dancers & Bagpipes Castle Showcase',
+    location: 'Highland Castle Courtyard, Aviemore & Cairngorms',
+    groupType: 'North American Cultural Coach Holiday (54 Guests)',
+    origin: 'USA, Canada & Australia',
+    imageUrl: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1000&q=80',
+    description: 'Spud piped stirring traditional Scottish reels while local champion Highland dancers performed the thrilling Sword Dance (Ghillie Callum) and Highland Fling on the castle terrace. Guests were then invited to join in for an unforgettable group reel and photo session.',
+    highlight: 'Authentic Sword Dance, Highland Fling & Guest Ceilidh Reel',
+    order: 5
   }
 ];
 
@@ -361,6 +374,7 @@ export default function TourGroupsPage() {
   const [tourDate, setTourDate] = useState('');
   const [locationOrHotel, setLocationOrHotel] = useState('');
   const [experienceType, setExperienceType] = useState('Coach Arrival & Traditional Highland Welcome');
+  const [includeDancers, setIncludeDancers] = useState(false);
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -374,7 +388,7 @@ export default function TourGroupsPage() {
       addNotification({
         type: 'booking_request',
         title: 'New Tour Group Inquiry',
-        message: `${operatorName || contactName} (${originCountry}) for ${groupSize} on ${tourDate} at ${locationOrHotel || 'Highlands'}`,
+        message: `${operatorName || contactName} (${originCountry}) for ${groupSize} on ${tourDate} at ${locationOrHotel || 'Highlands'}${includeDancers ? ' [Highland Dancers Requested]' : ''}`,
         actionUrl: '/admin'
       });
       setIsSubmitting(false);
@@ -617,6 +631,234 @@ export default function TourGroupsPage() {
               </div>
             </div>
 
+          </div>
+
+        </div>
+      </section>
+
+      {/* Live Highland Dancers & Bagpipes Feature Showcase */}
+      <section className="py-20 bg-gradient-to-b from-tartan-card via-tartan-navy to-tartan-dark border-t border-tartan-border relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-red-500/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 relative z-10">
+          
+          <div className="text-center max-w-3xl mx-auto space-y-3">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-tartan-gold/15 border border-tartan-gold/30 text-tartan-gold text-xs font-semibold shadow-md">
+              <Swords className="w-4 h-4 text-tartan-gold" />
+              <EditableElement
+                id="tour-dancers-badge"
+                tag="span"
+                defaultContent="Traditional Highland Dancers & Bagpipes Upgrade"
+                label="Highland Dancers Badge"
+                section="tour-groups"
+              />
+            </div>
+            
+            <EditableElement
+              id="tour-dancers-title"
+              tag="h2"
+              defaultContent="Spud & Highland Dancers: The Ultimate Scottish Spectacle"
+              className="text-3xl sm:text-5xl font-extrabold text-white font-serif tracking-tight"
+              label="Highland Dancers Section Title"
+              section="tour-groups"
+            />
+            
+            <EditableElement
+              id="tour-dancers-subtitle"
+              tag="p"
+              defaultContent="Bring the thrill of the Highland Games directly to your holidaymakers. Spud is accompanied by authentic, champion Highland dancers performing historic warrior dances and vibrant reels to his live piping."
+              className="text-sm sm:text-base text-gray-300 leading-relaxed max-w-2xl mx-auto"
+              label="Highland Dancers Section Subtitle"
+              section="tour-groups"
+            />
+          </div>
+
+          {/* 4 Feature Cards for the Dancing Showcase */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            
+            {/* Card 1: Sword Dance */}
+            <div className="bg-tartan-card rounded-3xl p-6 border border-tartan-gold/40 hover:border-tartan-gold transition-all duration-300 shadow-xl space-y-4 flex flex-col justify-between group">
+              <div className="space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-950/60 border border-amber-500/40 text-tartan-gold flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                  <Swords className="w-6 h-6 text-tartan-gold" />
+                </div>
+                <EditableElement
+                  id="tour-dance1-title"
+                  tag="h3"
+                  defaultContent="The Sword Dance (Ghillie Callum)"
+                  className="text-lg font-bold text-white font-serif"
+                  label="Dance 1 Title"
+                  section="tour-groups"
+                />
+                <EditableElement
+                  id="tour-dance1-desc"
+                  tag="p"
+                  defaultContent="The legendary ancient Scottish warrior dance dating back to King Malcolm Canmore (1054). Two broadswords are crossed on the ground as dancers execute intricate, lightning-fast leaps over the bare blades to Spud's accelerating tempo."
+                  className="text-xs text-gray-300 leading-relaxed"
+                  label="Dance 1 Description"
+                  section="tour-groups"
+                />
+              </div>
+              <div className="pt-3 border-t border-tartan-border/60 flex items-center gap-1.5 text-tartan-gold text-xs font-bold">
+                <Sparkles className="w-3.5 h-3.5" />
+                <EditableElement
+                  id="tour-dance1-badge"
+                  tag="span"
+                  defaultContent="The Iconic Warrior Climax"
+                  label="Dance 1 Badge"
+                  section="tour-groups"
+                />
+              </div>
+            </div>
+
+            {/* Card 2: Highland Fling & Seann Triubhas */}
+            <div className="bg-tartan-card rounded-3xl p-6 border border-tartan-gold/40 hover:border-tartan-gold transition-all duration-300 shadow-xl space-y-4 flex flex-col justify-between group">
+              <div className="space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-950/60 border border-amber-500/40 text-tartan-gold flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                  <Music className="w-6 h-6 text-tartan-gold" />
+                </div>
+                <EditableElement
+                  id="tour-dance2-title"
+                  tag="h3"
+                  defaultContent="Highland Fling & Seann Triubhas"
+                  className="text-lg font-bold text-white font-serif"
+                  label="Dance 2 Title"
+                  section="tour-groups"
+                />
+                <EditableElement
+                  id="tour-dance2-desc"
+                  tag="p"
+                  defaultContent="Celebrated victory dances full of athleticism, precision footwork, and swirling kilts. Dancers perform in authentic competition regalia (Highland & Aboyne dress) to classic pipe marches, strathspeys, and reels."
+                  className="text-xs text-gray-300 leading-relaxed"
+                  label="Dance 2 Description"
+                  section="tour-groups"
+                />
+              </div>
+              <div className="pt-3 border-t border-tartan-border/60 flex items-center gap-1.5 text-tartan-gold text-xs font-bold">
+                <Sparkles className="w-3.5 h-3.5" />
+                <EditableElement
+                  id="tour-dance2-badge"
+                  tag="span"
+                  defaultContent="World-Class Athletic Artistry"
+                  label="Dance 2 Badge"
+                  section="tour-groups"
+                />
+              </div>
+            </div>
+
+            {/* Card 3: Interactive Guest Ceilidh */}
+            <div className="bg-tartan-card rounded-3xl p-6 border border-tartan-gold/40 hover:border-tartan-gold transition-all duration-300 shadow-xl space-y-4 flex flex-col justify-between group">
+              <div className="space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-950/60 border border-amber-500/40 text-tartan-gold flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                  <Users className="w-6 h-6 text-tartan-gold" />
+                </div>
+                <EditableElement
+                  id="tour-dance3-title"
+                  tag="h3"
+                  defaultContent="Interactive Guest Ceilidh Steps"
+                  className="text-lg font-bold text-white font-serif"
+                  label="Dance 3 Title"
+                  section="tour-groups"
+                />
+                <EditableElement
+                  id="tour-dance3-desc"
+                  tag="p"
+                  defaultContent="Holidaymakers don't just watch — they can take part! Dancers gently invite coach guests up to learn basic Scottish steps and link arms for a fun, lively group reel filled with laughter, clapping, and Scottish cheer."
+                  className="text-xs text-gray-300 leading-relaxed"
+                  label="Dance 3 Description"
+                  section="tour-groups"
+                />
+              </div>
+              <div className="pt-3 border-t border-tartan-border/60 flex items-center gap-1.5 text-tartan-gold text-xs font-bold">
+                <Heart className="w-3.5 h-3.5" />
+                <EditableElement
+                  id="tour-dance3-badge"
+                  tag="span"
+                  defaultContent="Tour Group Crowd Favourite"
+                  label="Dance 3 Badge"
+                  section="tour-groups"
+                />
+              </div>
+            </div>
+
+            {/* Card 4: Photo Opportunities */}
+            <div className="bg-tartan-card rounded-3xl p-6 border border-tartan-gold/40 hover:border-tartan-gold transition-all duration-300 shadow-xl space-y-4 flex flex-col justify-between group">
+              <div className="space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-950/60 border border-amber-500/40 text-tartan-gold flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                  <Camera className="w-6 h-6 text-tartan-gold" />
+                </div>
+                <EditableElement
+                  id="tour-dance4-title"
+                  tag="h3"
+                  defaultContent="Piper & Dancers Photos"
+                  className="text-lg font-bold text-white font-serif"
+                  label="Dance 4 Title"
+                  section="tour-groups"
+                />
+                <EditableElement
+                  id="tour-dance4-desc"
+                  tag="p"
+                  defaultContent="Unbeatable photo opportunities! Guests pose holding the ceremonial swords, standing beside Spud in full military feather bonnet, and flanked by Highland dancers in traditional tartan attire against Scottish mountain backdrops."
+                  className="text-xs text-gray-300 leading-relaxed"
+                  label="Dance 4 Description"
+                  section="tour-groups"
+                />
+              </div>
+              <div className="pt-3 border-t border-tartan-border/60 flex items-center gap-1.5 text-tartan-gold text-xs font-bold">
+                <Camera className="w-3.5 h-3.5" />
+                <EditableElement
+                  id="tour-dance4-badge"
+                  tag="span"
+                  defaultContent="Unforgettable Keepsake Photos"
+                  label="Dance 4 Badge"
+                  section="tour-groups"
+                />
+              </div>
+            </div>
+
+          </div>
+
+          {/* Banner Box: How it Works & Fast Quote CTA */}
+          <div className="rounded-3xl bg-tartan-dark/90 p-6 sm:p-10 border border-tartan-gold/50 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-6">
+            <div className="space-y-2 max-w-2xl text-center lg:text-left">
+              <span className="text-xs font-bold text-tartan-gold uppercase tracking-wider flex items-center justify-center lg:justify-start gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-tartan-gold" />
+                <EditableElement
+                  id="tour-dancers-callout-badge"
+                  tag="span"
+                  defaultContent="Tailored for Coach Tour Itineraries"
+                  label="Dancers Callout Badge"
+                  section="tour-groups"
+                />
+              </span>
+              <EditableElement
+                id="tour-dancers-callout-title"
+                tag="h3"
+                defaultContent="Flexible Formats: 1 to 4+ Dancers for 15, 30, or 60 Minutes"
+                className="text-2xl font-bold text-white font-serif"
+                label="Dancers Callout Title"
+                section="tour-groups"
+              />
+              <EditableElement
+                id="tour-dancers-callout-desc"
+                tag="p"
+                defaultContent="Performances can take place outdoors on castle lawns, hotel terraces, lochside viewpoints, or indoors in hotel ballrooms and dining suites. Fully synchronized with your coach timetable."
+                className="text-xs sm:text-sm text-gray-300"
+                label="Dancers Callout Description"
+                section="tour-groups"
+              />
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0 flex-wrap justify-center">
+              <a
+                href="#tour-inquiry"
+                className="px-6 py-3.5 bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-xl hover:brightness-110 flex items-center gap-2 transition"
+              >
+                <Swords className="w-4 h-4" />
+                <span>Enquire with Highland Dancers</span>
+              </a>
+            </div>
           </div>
 
         </div>
@@ -1175,7 +1417,7 @@ export default function TourGroupsPage() {
                   Thank You! Your Tour Inquiry is Received
                 </h3>
                 <p className="text-sm text-gray-300 max-w-md mx-auto">
-                  Spud will review your coach schedule for <strong>{tourDate}</strong> and reply via email ({email}) and telephone with confirmation and details.
+                  Spud will review your coach schedule for <strong>{tourDate}</strong>{includeDancers ? ' (including Highland Dancers package)' : ''} and reply via email ({email}) and telephone with confirmation and details.
                 </p>
                 <div className="pt-4">
                   <button
@@ -1324,11 +1566,32 @@ export default function TourGroupsPage() {
                       className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-tartan-accent font-medium"
                     >
                       <option value="Coach Arrival & Traditional Highland Welcome">Coach Arrival & Traditional Highland Welcome (15-30m)</option>
+                      <option value="Bagpipes & Highland Dancers Show (Sword Dance, Fling & Piping)">Bagpipes & Highland Dancers Show (Sword Dance, Fling & Piping)</option>
                       <option value="Interactive Piping, Stories & Photo Session">Interactive Piping, Stories & Photo Session (45-60m)</option>
                       <option value="Evening Gala Dinner / Haggis Address">Evening Gala Dinner / Haggis Address</option>
                       <option value="Whisky Distillery Toast & Outdoor Piping">Whisky Distillery Toast & Outdoor Piping</option>
                     </select>
                   </div>
+                </div>
+
+                {/* Highland Dancers Checkbox Option */}
+                <div className="p-3.5 rounded-2xl bg-tartan-card border border-tartan-gold/50 flex items-start gap-3 shadow-md">
+                  <input
+                    type="checkbox"
+                    id="includeDancers"
+                    checked={includeDancers}
+                    onChange={(e) => setIncludeDancers(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border-tartan-border text-amber-500 focus:ring-amber-400 bg-tartan-dark cursor-pointer accent-amber-500"
+                  />
+                  <label htmlFor="includeDancers" className="text-xs text-gray-200 cursor-pointer space-y-0.5">
+                    <span className="block font-bold text-tartan-gold flex items-center gap-1.5">
+                      <Swords className="w-3.5 h-3.5" />
+                      <span>Include Live Highland Dancers (Sword Dance, Fling & Traditional Reels)</span>
+                    </span>
+                    <span className="block text-[11px] text-gray-400">
+                      Check this box to have champion Highland dancers in traditional regalia accompany Spud for your tour group event.
+                    </span>
+                  </label>
                 </div>
 
                 <div>
