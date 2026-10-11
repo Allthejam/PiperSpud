@@ -1187,13 +1187,15 @@ export default function TourGroupsPage() {
             </div>
           </div>
 
-          {/* Featured Carousel Slide - Fixed Rigid Height */}
+          {/* Featured Carousel Slide - Hard Fixed Height & Contained Aspect Frame */}
           {activeSlide && (
-            <div className="bg-tartan-dark/90 rounded-3xl overflow-hidden border border-tartan-gold/50 shadow-2xl relative h-[620px] sm:h-[580px] lg:h-[480px]">
-              
+            <div 
+              style={{ height: '480px', minHeight: '480px', maxHeight: '480px' }}
+              className="bg-tartan-dark/95 rounded-3xl overflow-hidden border border-tartan-gold/50 shadow-2xl relative w-full select-none"
+            >
               {/* Admin Floating Controls for Current Slide */}
               {canManage && (
-                <div className="absolute top-4 right-4 z-30 flex items-center gap-2 bg-slate-950/85 backdrop-blur-md p-1.5 rounded-xl border border-tartan-border shadow-xl">
+                <div className="absolute top-4 right-4 z-30 flex items-center gap-2 bg-slate-950/90 backdrop-blur-md p-1.5 rounded-xl border border-tartan-border shadow-2xl">
                   <button
                     type="button"
                     onClick={() => handleOpenEditModal(activeSlide)}
@@ -1215,16 +1217,19 @@ export default function TourGroupsPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 h-full w-full">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 w-full h-full">
                 
-                {/* Photo Side - Strictly Fixed Proportion & Object-Cover */}
-                <div className="h-[260px] sm:h-[280px] lg:h-full lg:col-span-7 relative bg-black overflow-hidden group shrink-0">
-                  <img
-                    src={activeSlide.imageUrl}
-                    alt={activeSlide.title}
-                    className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
+                {/* Photo Side - Strictly 100% of left half, absolute fill with object-cover */}
+                <div className="lg:col-span-7 relative w-full h-full bg-slate-950 overflow-hidden group">
+                  <div className="absolute inset-0 w-full h-full">
+                    <img
+                      src={activeSlide.imageUrl}
+                      alt={activeSlide.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
+                      className="transition-transform duration-700 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
+                  </div>
                   
                   {/* Origin Badge */}
                   <div className="absolute top-4 left-4 z-10">
@@ -1244,8 +1249,8 @@ export default function TourGroupsPage() {
                   </div>
                 </div>
 
-                {/* Details Side - Rigid Heights & Scrollable Body */}
-                <div className="h-[360px] sm:h-[300px] lg:h-full lg:col-span-5 p-5 sm:p-7 lg:p-8 flex flex-col justify-between overflow-hidden">
+                {/* Details Side - Strict 100% height, flex column between header, scrollable body, and controls */}
+                <div className="lg:col-span-5 p-6 sm:p-8 flex flex-col justify-between w-full h-full overflow-hidden bg-tartan-dark/60">
                   <div className="space-y-3 overflow-y-auto pr-1 flex-1">
                     <div className="flex items-center gap-2 text-xs text-tartan-gold font-bold uppercase tracking-wider">
                       <MapPin className="w-4 h-4 shrink-0" />
@@ -1265,7 +1270,7 @@ export default function TourGroupsPage() {
                     </p>
                   </div>
 
-                  <div className="pt-4 border-t border-tartan-border/60 flex items-center justify-between gap-3 shrink-0">
+                  <div className="pt-4 border-t border-tartan-border/60 flex items-center justify-between gap-3 shrink-0 mt-3">
                     <div className="flex items-center gap-2">
                       {tourEvents.map((_, idx) => (
                         <button
@@ -1388,7 +1393,7 @@ export default function TourGroupsPage() {
                       <input
                         type="text"
                         value={formOrigin}
-                        onChange={(e) => setOriginCountry(e.target.value)}
+                        onChange={(e) => setFormOrigin(e.target.value)}
                         placeholder="e.g. USA & Canada / Australia"
                         className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-tartan-accent"
                       />
