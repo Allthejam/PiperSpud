@@ -1187,13 +1187,13 @@ export default function TourGroupsPage() {
             </div>
           </div>
 
-          {/* Featured Carousel Slide */}
+          {/* Featured Carousel Slide - Fixed Rigid Height */}
           {activeSlide && (
-            <div className="bg-tartan-dark/80 rounded-3xl overflow-hidden border border-tartan-gold/50 shadow-2xl transition-all duration-500 relative">
+            <div className="bg-tartan-dark/90 rounded-3xl overflow-hidden border border-tartan-gold/50 shadow-2xl relative h-[620px] sm:h-[580px] lg:h-[480px]">
               
               {/* Admin Floating Controls for Current Slide */}
               {canManage && (
-                <div className="absolute top-4 right-4 z-30 flex items-center gap-2 bg-slate-950/80 backdrop-blur-md p-1.5 rounded-xl border border-tartan-border shadow-xl">
+                <div className="absolute top-4 right-4 z-30 flex items-center gap-2 bg-slate-950/85 backdrop-blur-md p-1.5 rounded-xl border border-tartan-border shadow-xl">
                   <button
                     type="button"
                     onClick={() => handleOpenEditModal(activeSlide)}
@@ -1215,10 +1215,10 @@ export default function TourGroupsPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:h-[480px]">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 h-full w-full">
                 
-                {/* Photo Side - Constant Height & Object-Cover */}
-                <div className="lg:col-span-7 relative h-72 sm:h-96 lg:h-full bg-black overflow-hidden group">
+                {/* Photo Side - Strictly Fixed Proportion & Object-Cover */}
+                <div className="h-[260px] sm:h-[280px] lg:h-full lg:col-span-7 relative bg-black overflow-hidden group shrink-0">
                   <img
                     src={activeSlide.imageUrl}
                     alt={activeSlide.title}
@@ -1236,23 +1236,23 @@ export default function TourGroupsPage() {
 
                   {/* Highlight pill */}
                   <div className="absolute bottom-4 left-4 right-4 z-10">
-                    <div className="bg-slate-950/90 backdrop-blur-md p-3 rounded-xl border border-tartan-border/80 flex items-center gap-2 text-xs text-white">
+                    <div className="bg-slate-950/90 backdrop-blur-md p-2.5 sm:p-3 rounded-xl border border-tartan-border/80 flex items-center gap-2 text-xs text-white shadow-lg">
                       <Sparkles className="w-4 h-4 text-tartan-gold shrink-0" />
-                      <span className="font-semibold text-tartan-gold">Highlight:</span>
+                      <span className="font-semibold text-tartan-gold shrink-0">Highlight:</span>
                       <span className="truncate">{activeSlide.highlight}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Details Side - Consistent Flex Container with scroll if needed */}
-                <div className="lg:col-span-5 p-6 sm:p-8 lg:p-9 flex flex-col justify-between space-y-4 lg:h-full overflow-y-auto">
-                  <div className="space-y-4">
+                {/* Details Side - Rigid Heights & Scrollable Body */}
+                <div className="h-[360px] sm:h-[300px] lg:h-full lg:col-span-5 p-5 sm:p-7 lg:p-8 flex flex-col justify-between overflow-hidden">
+                  <div className="space-y-3 overflow-y-auto pr-1 flex-1">
                     <div className="flex items-center gap-2 text-xs text-tartan-gold font-bold uppercase tracking-wider">
                       <MapPin className="w-4 h-4 shrink-0" />
-                      <span>{activeSlide.location}</span>
+                      <span className="truncate">{activeSlide.location}</span>
                     </div>
 
-                    <h3 className="text-2xl sm:text-3xl font-extrabold text-white font-serif leading-tight">
+                    <h3 className="text-xl sm:text-2xl font-extrabold text-white font-serif leading-tight">
                       {activeSlide.title}
                     </h3>
 
@@ -1260,12 +1260,12 @@ export default function TourGroupsPage() {
                       {activeSlide.groupType}
                     </div>
 
-                    <p className="text-sm text-gray-300 leading-relaxed pt-2">
+                    <p className="text-xs sm:text-sm text-gray-300 leading-relaxed pt-1">
                       {activeSlide.description}
                     </p>
                   </div>
 
-                  <div className="pt-4 border-t border-tartan-border/60 flex items-center justify-between gap-3">
+                  <div className="pt-4 border-t border-tartan-border/60 flex items-center justify-between gap-3 shrink-0">
                     <div className="flex items-center gap-2">
                       {tourEvents.map((_, idx) => (
                         <button
@@ -1283,7 +1283,7 @@ export default function TourGroupsPage() {
 
                     <a
                       href="#tour-inquiry"
-                      className="px-4 py-2 bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider rounded-xl shadow hover:brightness-110 transition"
+                      className="px-4 py-2 bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider rounded-xl shadow hover:brightness-110 transition shrink-0"
                     >
                       Enquire for this package
                     </a>
