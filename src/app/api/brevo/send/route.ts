@@ -404,7 +404,7 @@ export async function POST(req: NextRequest) {
     // ================= 5. Deposit Confirmed & Official Booking Receipt =================
     else if (type === 'deposit_received' && booking) {
       const remainingBalance = Math.max(0, booking.estimatedPrice - (booking.depositAmount || 0));
-      const balancePaymentLink = `https://paypal.me/spudthepiper/${remainingBalance}`;
+      const balancePaymentLink = `https://spudthepiper.com/pay?id=${booking.id}`;
       const dayBeforeDate = getDayBeforeFormatted(booking.date);
       const paidDateFormatted = booking.depositPaidAt 
         ? new Date(booking.depositPaidAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -491,7 +491,7 @@ export async function POST(req: NextRequest) {
     // ================= 6. 7-Day Balance & Event Reminder to Client =================
     else if (type === 'client_balance_reminder_7day' && booking) {
       const remainingBalance = Math.max(0, booking.estimatedPrice - (booking.depositAmount || 0));
-      const balancePaymentLink = `https://paypal.me/spudthepiper/${remainingBalance}`;
+      const balancePaymentLink = `https://spudthepiper.com/pay?id=${booking.id}`;
       const dayBeforeDate = getDayBeforeFormatted(booking.date);
 
       subject = `⏰ 7 Days Until Your Event: Final Balance Reminder - Spud the Piper (${booking.date})`;
@@ -634,7 +634,7 @@ export async function POST(req: NextRequest) {
     // ================= 9. 1-Day Final Balance Reminder to Client =================
     else if (type === 'client_balance_reminder_1day' && booking) {
       const remainingBalance = Math.max(0, booking.estimatedPrice - (booking.depositAmount || 0));
-      const balancePaymentLink = `https://paypal.me/spudthepiper/${remainingBalance}`;
+      const balancePaymentLink = `https://spudthepiper.com/pay?id=${booking.id}`;
 
       subject = `⚠️ Tomorrow's Performance & Final Balance: Spud the Piper (${booking.date})`;
       htmlContent = `

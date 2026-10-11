@@ -4445,7 +4445,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Modal handlers
   const openBrevoPreview = (booking: BookingEvent) => {
-    const paypalLink = `https://www.paypal.com/checkout/spudthepiper/pay?id=${booking.id}`;
+    const paypalLink = `https://spudthepiper.com/pay?id=${booking.id}`;
     setActiveBrevoEmail({
       isOpen: true,
       recipientName: booking.clientName,
