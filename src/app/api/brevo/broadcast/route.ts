@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MailingContact, EmailCampaign } from '@/types/spud';
+import { getLiveServerApiKeys } from '@/lib/serverApiKeys';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,13 +14,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing campaign details or recipients' }, { status: 400 });
     }
 
-    const apiKey = process.env.BREVO_API_KEY;
+    const serverKeys = await getLiveServerApiKeys();
+    const apiKey = serverKeys.brevoApiKey;
     if (!apiKey) {
       return NextResponse.json({ warning: 'Brevo API key not set, simulated broadcast success' }, { status: 200 });
     }
 
-    const senderEmail = process.env.BREVO_SENDER_EMAIL || 'info@spudthepiper.com';
-    const senderName = process.env.BREVO_SENDER_NAME || 'Spud the Piper';
+    const senderEmail = serverKeys.brevoSenderEmail || 'info@spudthepiper.com';
+    const senderName = serverKeys.brevoSenderName || 'Spud the Piper';
 
     // Build rich HTML email for the seasonal broadcast
     const generateHtml = (contactName: string) => `

@@ -1,3 +1,5 @@
+import { getLiveServerApiKeys } from '@/lib/serverApiKeys';
+
 const PAYPAL_MODE = process.env.PAYPAL_MODE || 'live';
 const PAYPAL_BASE_URL = PAYPAL_MODE === 'live' 
   ? 'https://api-m.paypal.com' 
@@ -7,11 +9,12 @@ const PAYPAL_BASE_URL = PAYPAL_MODE === 'live'
  * Generates an OAuth 2.0 access token using client credentials.
  */
 export async function getPayPalAccessToken(): Promise<string> {
-  const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
-  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+  const serverKeys = await getLiveServerApiKeys();
+  const clientId = serverKeys.paypalClientId || process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+  const clientSecret = serverKeys.paypalClientSecret || process.env.PAYPAL_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    throw new Error('PayPal client credentials are not configured in environment variables');
+    throw new Error('PayPal client credentials are not configured in environment variables or database');
   }
 
   const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');

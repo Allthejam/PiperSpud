@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BookingEvent } from '@/types/spud';
+import { getLiveServerApiKeys } from '@/lib/serverApiKeys';
 
 export async function POST(req: NextRequest) {
   try {
@@ -48,10 +49,11 @@ export async function POST(req: NextRequest) {
       eventDate?: string;
     };
 
-    const apiKey = process.env.BREVO_API_KEY;
-    const senderEmail = process.env.BREVO_SENDER_EMAIL || 'info@spudthepiper.com';
-    const senderName = process.env.BREVO_SENDER_NAME || 'Spud the Piper';
-    const adminAlertEmail = process.env.BREVO_ADMIN_ALERT_EMAIL || 'Spud@spudthepiper.com';
+    const serverKeys = await getLiveServerApiKeys();
+    const apiKey = serverKeys.brevoApiKey;
+    const senderEmail = serverKeys.brevoSenderEmail || 'info@spudthepiper.com';
+    const senderName = serverKeys.brevoSenderName || 'Spud the Piper';
+    const adminAlertEmail = serverKeys.brevoAdminAlertEmail || 'Spud@spudthepiper.com';
     const trustpilotInviteEmail = process.env.TRUSTPILOT_INVITE_EMAIL || 'spudthepiper.com+aebdc308b6@invite.trustpilot.com';
 
     let subject = '';
