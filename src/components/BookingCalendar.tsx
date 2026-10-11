@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import { EventType, HighlandDressOption } from '@/types/spud';
 import { calculateTravelCosts } from '@/lib/travelCalculator';
-import { initialTravelConfig, initialAttires } from '@/lib/initialData';
+import { initialTravelConfig } from '@/lib/initialData';
 
 export const BookingCalendar: React.FC = () => {
   const { 
@@ -75,47 +75,34 @@ export const BookingCalendar: React.FC = () => {
   const [venueName, setVenueName] = useState('');
   const [venueAddress, setVenueAddress] = useState('');
   const [venuePostcode, setVenuePostcode] = useState('');
-  const currentAttiresList = (attires && attires.length > 0) ? attires : initialAttires;
+  const currentAttiresList = attires || [];
   
   // Find selected attire from global state
   const globalAttireMatch = currentAttiresList.find(a => a.id === selectedAttireId);
-  const globalAttireDressNameBlock = cmsBlocks?.find(b => b.id === `tartan-${globalAttireMatch?.id}-dress-name`);
-  const globalAttirePhotoBlock = cmsBlocks?.find(b => b.id === `tartan-${globalAttireMatch?.id}-photo`);
-  const initialAttireChoice = globalAttireDressNameBlock?.content || globalAttirePhotoBlock?.content || globalAttireMatch?.name || globalAttireMatch?.title || currentAttiresList[0]?.name || 'Full No. 1 Dress (Feather Bonnet & Plaid)';
+  const initialAttireChoice = globalAttireMatch?.name || globalAttireMatch?.title || currentAttiresList[0]?.name || currentAttiresList[0]?.title || '';
 
   const [tartanChoice, setTartanChoice] = useState<string>(initialAttireChoice);
 
   // Keep tartanChoice synchronized whenever selectedAttireId or attires change in Tartan Studio
   useEffect(() => {
-    if (selectedAttireId) {
+    if (selectedAttireId && currentAttiresList.length > 0) {
       const match = currentAttiresList.find(a => a.id === selectedAttireId);
       if (match) {
-        const dressNameBlock = cmsBlocks?.find(b => b.id === `tartan-${match.id}-dress-name`);
-        const photoBlock = cmsBlocks?.find(b => b.id === `tartan-${match.id}-photo`);
-        const effectiveName = dressNameBlock?.content || photoBlock?.content || match.name || match.title;
-        setTartanChoice(effectiveName);
+        setTartanChoice(match.name || match.title);
       }
     }
-  }, [selectedAttireId, currentAttiresList, cmsBlocks]);
+  }, [selectedAttireId, currentAttiresList]);
 
   // Keep tartanChoice valid if active attire options are added or removed
   useEffect(() => {
     if (currentAttiresList.length > 0) {
-      const exists = currentAttiresList.some(a => {
-        const dressNameBlock = cmsBlocks?.find(b => b.id === `tartan-${a.id}-dress-name`);
-        const photoBlock = cmsBlocks?.find(b => b.id === `tartan-${a.id}-photo`);
-        const effectiveName = dressNameBlock?.content || photoBlock?.content || a.name || a.title;
-        return effectiveName === tartanChoice || (a.name || a.title) === tartanChoice;
-      });
+      const exists = currentAttiresList.some(a => (a.name || a.title) === tartanChoice);
       if (!exists) {
         const first = currentAttiresList[0];
-        const dressNameBlock = cmsBlocks?.find(b => b.id === `tartan-${first.id}-dress-name`);
-        const photoBlock = cmsBlocks?.find(b => b.id === `tartan-${first.id}-photo`);
-        const effectiveName = dressNameBlock?.content || photoBlock?.content || first.name || first.title;
-        setTartanChoice(effectiveName);
+        setTartanChoice(first.name || first.title);
       }
     }
-  }, [currentAttiresList, tartanChoice, cmsBlocks]);
+  }, [currentAttiresList, tartanChoice]);
 
   const [selectedTunes, setSelectedTunes] = useState<string[]>([]);
   const [visibleTuneCount, setVisibleTuneCount] = useState<number>(6); // 2 rows of 3
@@ -848,12 +835,7 @@ export const BookingCalendar: React.FC = () => {
                     onChange={(e) => {
                       const chosenVal = e.target.value;
                       setTartanChoice(chosenVal);
-                      const matched = currentAttiresList.find(a => {
-                        const dressNameBlock = cmsBlocks?.find(b => b.id === `tartan-${a.id}-dress-name`);
-                        const photoBlock = cmsBlocks?.find(b => b.id === `tartan-${a.id}-photo`);
-                        const effectiveName = dressNameBlock?.content || photoBlock?.content || a.name || a.title;
-                        return effectiveName === chosenVal || (a.name || a.title) === chosenVal;
-                      });
+                      const matched = currentAttiresList.find(a => (a.name || a.title) === chosenVal);
                       if (matched) {
                         setSelectedAttireId(matched.id);
                       }
@@ -861,11 +843,8 @@ export const BookingCalendar: React.FC = () => {
                     className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-3 text-white text-sm focus:outline-none focus:border-tartan-accent font-medium"
                   >
                     {currentAttiresList.map((attire) => {
-                      const dressNameBlock = cmsBlocks?.find(b => b.id === `tartan-${attire.id}-dress-name`);
-                      const photoBlock = cmsBlocks?.find(b => b.id === `tartan-${attire.id}-photo`);
-                      const titleBlock = cmsBlocks?.find(b => b.id === `tartan-${attire.id}-title`);
-                      const effectiveName = dressNameBlock?.content || photoBlock?.content || attire.name || attire.title;
-                      const effectiveTitle = titleBlock?.content || attire.title;
+                      const effectiveName = attire.name || attire.title;
+                      const effectiveTitle = attire.title;
                       return (
                         <option key={attire.id} value={effectiveName} className="bg-tartan-navy text-white">
                           {effectiveName} {effectiveTitle && effectiveTitle !== effectiveName ? `(${effectiveTitle})` : ''}

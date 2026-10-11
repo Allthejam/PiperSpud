@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { AttireItem } from '@/types/spud';
-import { initialAttires } from '@/lib/initialData';
 import { uploadToStorage } from '@/lib/firebase';
 import { 
   Sparkles, 
@@ -51,9 +50,9 @@ export const TartanSelector: React.FC = () => {
     updateCmsBlock
   } = useApp();
 
-  const currentAttiresList = (attires && attires.length > 0) ? attires : initialAttires;
+  const currentAttiresList = attires || [];
 
-  const selectedId = selectedAttireId || currentAttiresList[0]?.id || 'no1';
+  const selectedId = selectedAttireId || currentAttiresList[0]?.id || '';
   const setSelectedId = setSelectedAttireId;
 
   // Keep selectedId valid
@@ -67,9 +66,7 @@ export const TartanSelector: React.FC = () => {
   }, [currentAttiresList, selectedId, setSelectedId]);
 
   const selectedTartan = currentAttiresList.find(a => a.id === selectedId) || currentAttiresList[0];
-  const selectedPhotoBlock = cmsBlocks?.find(b => b.id === `tartan-${selectedTartan?.id}-photo`);
-  const selectedNameBlock = cmsBlocks?.find(b => b.id === `tartan-${selectedTartan?.id}-dress-name`);
-  const effectiveDressName = selectedNameBlock?.content || selectedPhotoBlock?.content || selectedTartan?.name || '';
+  const effectiveDressName = selectedTartan?.name || selectedTartan?.title || '';
 
   // Modal State for Add / Edit
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -188,12 +185,7 @@ export const TartanSelector: React.FC = () => {
           imageUrl: formImageUrl.trim() || '/og-image.png',
           colorScheme: formColors
         });
-        updateCmsBlock(`tartan-${editingAttireId}-dress-name`, formName.trim());
-        updateCmsBlock(`tartan-${editingAttireId}-photo`, formName.trim(), undefined, formImageUrl.trim() || '/og-image.png');
-        updateCmsBlock(`tartan-${editingAttireId}-title`, formTitle.trim());
-        updateCmsBlock(`tartan-${editingAttireId}-desc`, formDescription.trim());
-        updateCmsBlock(`tartan-${editingAttireId}-bestfor`, formBestFor.trim());
-        setSuccessMessage('Attire updated and synced with booking forms!');
+        setSuccessMessage('Attire updated and synced across all pages!');
       } else {
         // Create new
         const newId = await addAttire({
@@ -336,11 +328,8 @@ export const TartanSelector: React.FC = () => {
 
             {currentAttiresList.map((tartan) => {
               const isSelected = selectedTartan?.id === tartan.id;
-              const tartanTitleBlock = cmsBlocks?.find(b => b.id === `tartan-${tartan.id}-title`);
-              const tartanNameBlock = cmsBlocks?.find(b => b.id === `tartan-${tartan.id}-dress-name`);
-              const tartanPhotoBlock = cmsBlocks?.find(b => b.id === `tartan-${tartan.id}-photo`);
-              const displayTitle = tartanTitleBlock?.content || tartan.title;
-              const displaySubtitle = tartanNameBlock?.content || tartanPhotoBlock?.content || tartan.tagline;
+              const displayTitle = tartan.title || tartan.name;
+              const displaySubtitle = tartan.tagline || tartan.name;
 
               return (
                 <div
@@ -446,27 +435,17 @@ export const TartanSelector: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
                 
-                {/* Left Side: Uploadable & Editable Photo */}
+                {/* Left Side: Photo */}
                 <div className="relative rounded-2xl overflow-hidden border border-tartan-border shadow-inner group">
-                  <EditableElement
-                    id={`tartan-${selectedTartan.id}-photo`}
-                    isImage={true}
-                    defaultImageUrl={selectedTartan.imageUrl || '/og-image.png'}
-                    defaultAlt={`Spud the Piper in ${selectedTartan.title}`}
-                    defaultContent={effectiveDressName}
+                  <img
+                    src={selectedTartan.imageUrl || '/og-image.png'}
+                    alt={`Spud the Piper in ${selectedTartan.title || selectedTartan.name}`}
                     className="w-full h-72 sm:h-80 object-cover group-hover:scale-105 transition-transform duration-500"
-                    label={`${selectedTartan.title} Photo`}
-                    section="attire"
                   />
                   <div className="absolute bottom-2 left-2 z-20 flex items-center gap-2 max-w-[95%] flex-wrap">
-                    <EditableElement
-                      id={`tartan-${selectedTartan.id}-dress-name`}
-                      tag="span"
-                      defaultContent={effectiveDressName}
-                      className="text-xs font-bold text-white bg-tartan-red/95 px-3 py-1.5 rounded-full border border-red-400 shadow-lg inline-flex items-center gap-1.5 cursor-pointer hover:bg-red-700 transition"
-                      label="Attire Showcase Photograph Description"
-                      section="attire"
-                    />
+                    <span className="text-xs font-bold text-white bg-tartan-red/95 px-3 py-1.5 rounded-full border border-red-400 shadow-lg inline-flex items-center gap-1.5">
+                      {selectedTartan.name || selectedTartan.title}
+                    </span>
                     {canManage && (
                       <button
                         type="button"
@@ -488,13 +467,7 @@ export const TartanSelector: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 flex-wrap">
                     <div className="inline-block px-2.5 py-1 rounded-md bg-tartan-navy text-tartan-gold text-xs font-semibold border border-tartan-accent/30">
-                      <EditableElement
-                        id={`tartan-${selectedTartan.id}-tag-label`}
-                        tag="span"
-                        defaultContent="Ideal Matching"
-                        label={`${selectedTartan.title} Tag Label`}
-                        section="attire"
-                      />
+                      <span>Ideal Matching</span>
                     </div>
                     {/* Swatches in preview (only if colors exist) */}
                     {selectedTartan.colorScheme && selectedTartan.colorScheme.length > 0 && (
@@ -522,41 +495,21 @@ export const TartanSelector: React.FC = () => {
                     )}
                   </div>
                   
-                  <EditableElement
-                    id={`tartan-${selectedTartan.id}-title`}
-                    tag="h3"
-                    defaultContent={selectedTartan.title}
-                    className="text-2xl font-bold text-white font-serif"
-                    label={`${selectedTartan.title} Heading`}
-                    section="attire"
-                  />
+                  <h3 className="text-2xl font-bold text-white font-serif">
+                    {selectedTartan.title || selectedTartan.name}
+                  </h3>
 
-                  <EditableElement
-                    id={`tartan-${selectedTartan.id}-desc`}
-                    tag="p"
-                    defaultContent={selectedTartan.description}
-                    className="text-xs text-gray-300 leading-relaxed"
-                    label={`${selectedTartan.title} Description`}
-                    section="attire"
-                  />
+                  <p className="text-xs text-gray-300 leading-relaxed">
+                    {selectedTartan.description}
+                  </p>
 
                   <div className="pt-2">
-                    <EditableElement
-                      id={`tartan-${selectedTartan.id}-rec-header`}
-                      tag="p"
-                      defaultContent="Recommended For:"
-                      className="text-xs text-tartan-gold font-bold uppercase tracking-wider mb-1"
-                      label={`${selectedTartan.title} Recommended Header`}
-                      section="attire"
-                    />
-                    <EditableElement
-                      id={`tartan-${selectedTartan.id}-bestfor`}
-                      tag="p"
-                      defaultContent={selectedTartan.bestFor}
-                      className="text-xs text-white font-medium bg-tartan-dark/80 p-2.5 rounded-lg border border-tartan-border/60"
-                      label={`${selectedTartan.title} Recommended For`}
-                      section="attire"
-                    />
+                    <p className="text-xs text-tartan-gold font-bold uppercase tracking-wider mb-1">
+                      Recommended For:
+                    </p>
+                    <p className="text-xs text-white font-medium bg-tartan-dark/80 p-2.5 rounded-lg border border-tartan-border/60">
+                      {selectedTartan.bestFor}
+                    </p>
                   </div>
 
                   <div className="pt-2">

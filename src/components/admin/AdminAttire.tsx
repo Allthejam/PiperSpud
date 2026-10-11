@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { AttireItem } from '@/types/spud';
-import { initialAttires } from '@/lib/initialData';
 import { uploadToStorage } from '@/lib/firebase';
 import { 
   Shirt, 
@@ -50,7 +49,7 @@ export const AdminAttire: React.FC = () => {
     reorderAttires 
   } = useApp();
 
-  const currentAttiresList = (attires && attires.length > 0) ? attires : initialAttires;
+  const currentAttiresList = attires || [];
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -72,7 +71,7 @@ export const AdminAttire: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Preview selection
-  const [previewId, setPreviewId] = useState<string>(currentAttiresList[0]?.id || 'no1');
+  const [previewId, setPreviewId] = useState<string>(currentAttiresList[0]?.id || '');
   const previewAttire = currentAttiresList.find(a => a.id === previewId) || currentAttiresList[0];
 
   const handleOpenAddModal = () => {

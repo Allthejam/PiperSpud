@@ -1281,25 +1281,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
           });
           if (remoteAttires.length > 0) {
-            setAttires(prev => {
-              const currentList = prev && prev.length > 0 ? prev : initialAttires;
-              const merged = [...currentList];
-              remoteAttires.forEach(r => {
-                const idx = merged.findIndex(a => a.id === r.id);
-                if (idx >= 0) {
-                  merged[idx] = { ...merged[idx], ...r };
-                } else {
-                  merged.push(r);
-                }
-              });
-              merged.sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
-              if (typeof window !== 'undefined') {
-                try {
-                  localStorage.setItem(`${LOCAL_STORAGE_PREFIX}attires`, JSON.stringify(merged));
-                } catch (e) {}
-              }
-              return merged;
-            });
+            remoteAttires.sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+            setAttires(remoteAttires);
+            if (typeof window !== 'undefined') {
+              try {
+                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}attires`, JSON.stringify(remoteAttires));
+              } catch (e) {}
+            }
           }
         }
       }, (err) => console.log('Firestore attires listener:', err.message));
@@ -4489,17 +4477,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       order: attireData.order ?? (baseList.length + 1)
     };
 
-    // If base initialAttires were never persisted to Firestore yet, seed them first so they aren't lost
-    if (db) {
-      for (const initItem of initialAttires) {
-        if (!baseList.some(b => b.id === initItem.id)) {
-          await syncToFirestore('attires', initItem.id, initItem);
-        }
-      }
-    }
-
     setAttires(prev => {
-      const current = (prev && prev.length > 0) ? prev : initialAttires;
+      const current = prev || [];
       // If the item already exists by ID, replace it; otherwise append it
       const exists = current.some(a => a.id === id);
       const updated = exists ? current.map(a => a.id === id ? newAttire : a) : [...current, newAttire];
@@ -4522,7 +4501,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateAttire = async (id: string, updates: Partial<AttireItem>): Promise<boolean> => {
     let targetAttire: AttireItem | null = null;
     setAttires(prev => {
-      const current = (prev && prev.length > 0) ? prev : initialAttires;
+      const current = prev || [];
       const updated = current.map(a => {
         if (a.id === id) {
           targetAttire = { 
@@ -4548,7 +4527,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteAttire = async (id: string): Promise<boolean> => {
     setAttires(prev => {
-      const current = (prev && prev.length > 0) ? prev : initialAttires;
+      const current = prev || [];
       const updated = current.filter(a => a.id !== id);
       if (typeof window !== 'undefined') {
         localStorage.setItem(`${LOCAL_STORAGE_PREFIX}attires`, JSON.stringify(updated));
