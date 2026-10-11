@@ -40,6 +40,8 @@ const PRESET_TARTAN_COLORS = [
 export const TartanSelector: React.FC = () => {
   const { 
     attires, 
+    selectedAttireId,
+    setSelectedAttireId,
     addAttire, 
     updateAttire, 
     deleteAttire, 
@@ -51,7 +53,8 @@ export const TartanSelector: React.FC = () => {
 
   const currentAttiresList = (attires && attires.length > 0) ? attires : initialAttires;
 
-  const [selectedId, setSelectedId] = useState<string>(currentAttiresList[0]?.id || 'no1');
+  const selectedId = selectedAttireId || currentAttiresList[0]?.id || 'no1';
+  const setSelectedId = setSelectedAttireId;
 
   // Keep selectedId valid
   useEffect(() => {
@@ -61,7 +64,7 @@ export const TartanSelector: React.FC = () => {
         setSelectedId(currentAttiresList[0].id);
       }
     }
-  }, [currentAttiresList, selectedId]);
+  }, [currentAttiresList, selectedId, setSelectedId]);
 
   const selectedTartan = currentAttiresList.find(a => a.id === selectedId) || currentAttiresList[0];
   const selectedPhotoBlock = cmsBlocks?.find(b => b.id === `tartan-${selectedTartan?.id}-photo`);

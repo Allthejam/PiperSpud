@@ -271,6 +271,8 @@ interface AppContextType {
 
   // Highland Attire & Tartan Studio
   attires: AttireItem[];
+  selectedAttireId: string;
+  setSelectedAttireId: (id: string) => void;
   addAttire: (attire: Omit<AttireItem, 'id'> | AttireItem) => Promise<string>;
   updateAttire: (id: string, updates: Partial<AttireItem>) => Promise<boolean>;
   deleteAttire: (id: string) => Promise<boolean>;
@@ -479,6 +481,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(initialGallery);
   const [partners, setPartners] = useState<PartnerItem[]>(initialPartners);
   const [attires, setAttires] = useState<AttireItem[]>(initialAttires);
+  const [selectedAttireId, setSelectedAttireIdState] = useState<string>('no1');
   const [videos, setVideos] = useState<VideoItem[]>(initialVideos);
   const [showLiveStream, setShowLiveStreamState] = useState<boolean>(true);
   const [isSyncingFirestore, setIsSyncingFirestore] = useState<boolean>(false);
@@ -820,6 +823,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setAttires(parsedAttires);
           }
         } catch (e) {}
+      }
+
+      const savedSelectedAttire = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}selected_attire_id`);
+      if (savedSelectedAttire) {
+        setSelectedAttireIdState(savedSelectedAttire);
       }
 
       const savedVideos = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}videos`);
@@ -4549,6 +4557,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
+  const setSelectedAttireId = (id: string) => {
+    setSelectedAttireIdState(id);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}selected_attire_id`, id);
+      } catch (e) {}
+    }
+  };
+
   const reorderAttires = async (newOrderedList: AttireItem[]): Promise<void> => {
     setAttires(newOrderedList);
     if (typeof window !== 'undefined') {
@@ -4840,6 +4857,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deletePartner,
       reorderPartners,
       attires,
+      selectedAttireId,
+      setSelectedAttireId,
       addAttire,
       updateAttire,
       deleteAttire,
