@@ -109,8 +109,39 @@ export const EditableElement: React.FC<EditableElementProps> = ({
 
   const finalContent = (block && block.content !== undefined) ? block.content : (children || content);
 
+  const WrapperTag = isImage ? 'div' : (activeTag || 'p');
+
+  if (activeTag === 'a') {
+    return (
+      <a 
+        href={linkUrl || '#'} 
+        className={`relative group ${isInline ? 'inline-block' : 'block w-full'} ${finalClassName} ${canEdit ? 'ring-2 ring-tartan-gold/70 ring-dashed rounded-lg p-1 my-0.5 bg-tartan-navy/20' : ''}`}
+        onClick={linkUrl?.startsWith('#') ? (e) => {
+          e.preventDefault();
+          const target = document.getElementById(linkUrl.replace('#', ''));
+          if (target) target.scrollIntoView({ behavior: 'smooth' });
+        } : undefined}
+      >
+        {canEdit && (
+          <span className="absolute -top-3 right-0 z-30 inline-flex items-center gap-1">
+            <button
+              type="button"
+              onClick={handleEditClick}
+              className="bg-tartan-gold text-tartan-dark px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 shadow-lg hover:bg-yellow-400 transition-all opacity-90 hover:opacity-100 ring-1 ring-tartan-dark"
+              title={`Edit Element, Tag, Link & Color (<${String(activeTag).toUpperCase()}>)`}
+            >
+              <Edit3 className="w-2.5 h-2.5" />
+              <span className="uppercase font-mono">&lt;{String(activeTag)}&gt;</span>
+            </button>
+          </span>
+        )}
+        {finalContent}
+      </a>
+    );
+  }
+
   return (
-    <span className={`relative group ${isInline ? 'inline-block' : 'block w-full'} ${canEdit ? 'ring-2 ring-tartan-gold/70 ring-dashed rounded-lg p-1 my-0.5 bg-tartan-navy/20' : ''}`}>
+    <Tag className={`relative group ${isInline ? 'inline-block' : 'block w-full'} ${finalClassName} ${canEdit ? 'ring-2 ring-tartan-gold/70 ring-dashed rounded-lg p-1 my-0.5 bg-tartan-navy/20' : ''}`}>
       {canEdit && (
         <span className="absolute -top-3 right-0 z-30 inline-flex items-center gap-1">
           <button
@@ -124,19 +155,7 @@ export const EditableElement: React.FC<EditableElementProps> = ({
           </button>
         </span>
       )}
-      {activeTag === 'a' ? (
-        <a href={linkUrl || '#'} className={finalClassName} onClick={linkUrl?.startsWith('#') ? (e) => {
-          e.preventDefault();
-          const target = document.getElementById(linkUrl.replace('#', ''));
-          if (target) target.scrollIntoView({ behavior: 'smooth' });
-        } : undefined}>
-          {finalContent}
-        </a>
-      ) : (
-        <Tag className={finalClassName}>
-          {finalContent}
-        </Tag>
-      )}
-    </span>
+      {finalContent}
+    </Tag>
   );
 };
