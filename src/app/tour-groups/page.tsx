@@ -102,7 +102,20 @@ const initialTourEvents: PastTourEvent[] = [
   }
 ];
 
+export interface DancerFeatureTag {
+  id: string;
+  label: string;
+  icon?: 'Swords' | 'Music' | 'Users' | 'Sparkles' | 'Heart' | 'Camera';
+}
+
+const initialDancerTags: DancerFeatureTag[] = [
+  { id: 'tag-sword', label: 'Ghillie Callum Sword Dance', icon: 'Swords' },
+  { id: 'tag-fling', label: 'Highland Fling', icon: 'Music' },
+  { id: 'tag-photos', label: 'Guest Interaction & Photos', icon: 'Users' }
+];
+
 const LOCAL_STORAGE_TOUR_EVENTS_KEY = 'spud_tour_events';
+const LOCAL_STORAGE_DANCER_TAGS_KEY = 'spud_dancer_feature_tags';
 
 export default function TourGroupsPage() {
   const { addNotification, isAdminLoggedIn, isVisualEditMode } = useApp();
@@ -111,6 +124,15 @@ export default function TourGroupsPage() {
   // Tour events state with local & Firestore synchronization
   const [tourEvents, setTourEvents] = useState<PastTourEvent[]>(initialTourEvents);
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Highland Dancer Feature Highlights (Sword Dance, Fling, Photos, etc.)
+  const [dancerTags, setDancerTags] = useState<DancerFeatureTag[]>(initialDancerTags);
+  const [isDancerTagsModalOpen, setIsDancerTagsModalOpen] = useState(false);
+  const [newTagLabel, setNewTagLabel] = useState('');
+  const [newTagIcon, setNewTagIcon] = useState<'Swords' | 'Music' | 'Users' | 'Sparkles' | 'Heart' | 'Camera'>('Swords');
+  const [editingTagId, setEditingTagId] = useState<string | null>(null);
+  const [editingTagLabel, setEditingTagLabel] = useState('');
+  const [editingTagIcon, setEditingTagIcon] = useState<'Swords' | 'Music' | 'Users' | 'Sparkles' | 'Heart' | 'Camera'>('Swords');
 
   // Modal State for adding / editing carousel items
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -130,7 +152,7 @@ export default function TourGroupsPage() {
   const [eventToDelete, setEventToDelete] = useState<PastTourEvent | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Load persisted tour events on mount & set up Firestore real-time listener
+  // Load persisted tour events and dancer tags on mount & set up Firestore real-time listeners
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -143,6 +165,18 @@ export default function TourGroupsPage() {
         }
       } catch (e) {
         console.warn('Error reading local tour events:', e);
+      }
+
+      try {
+        const savedTags = localStorage.getItem(LOCAL_STORAGE_DANCER_TAGS_KEY);
+        if (savedTags) {
+          const parsed = JSON.parse(savedTags);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setDancerTags(parsed);
+          }
+        }
+      } catch (e) {
+        console.warn('Error reading local dancer tags:', e);
       }
     }
 
@@ -181,11 +215,89 @@ export default function TourGroupsPage() {
         }
       }, (err) => console.log('Firestore tour_events listener:', err.message));
 
-      return () => unsub();
+      const unsubTags = onSnapshot(doc(db, 'site_content', 'dancer_feature_tags'), (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          if (Array.isArray(data?.tags) && data.tags.length > 0) {
+            setDancerTags(data.tags as DancerFeatureTag[]);
+            if (typeof window !== 'undefined') {
+              try {
+                localStorage.setItem(LOCAL_STORAGE_DANCER_TAGS_KEY, JSON.stringify(data.tags));
+              } catch (err) {}
+            }
+          }
+        }
+      }, (err) => console.log('Firestore dancer_feature_tags listener:', err.message));
+
+      return () => {
+        unsub();
+        unsubTags();
+      };
     } catch (e) {
       console.warn('Firebase Firestore tour_events init:', e);
     }
   }, []);
+
+  // Save updated dancer tags to state, localStorage, and Firestore
+  const persistDancerTags = async (updatedTags: DancerFeatureTag[]) => {
+    setDancerTags(updatedTags);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(LOCAL_STORAGE_DANCER_TAGS_KEY, JSON.stringify(updatedTags));
+      } catch (e) {}
+    }
+    if (db) {
+      try {
+        await setDoc(doc(db, 'site_content', 'dancer_feature_tags'), { tags: updatedTags }, { merge: true });
+      } catch (err) {
+        console.warn('Could not save dancer tags to Firestore:', err);
+      }
+    }
+  };
+
+  const handleAddDancerTag = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTagLabel.trim()) return;
+    const newTag: DancerFeatureTag = {
+      id: `tag-${Date.now()}`,
+      label: newTagLabel.trim(),
+      icon: newTagIcon
+    };
+    const updated = [...dancerTags, newTag];
+    await persistDancerTags(updated);
+    setNewTagLabel('');
+    setNewTagIcon('Swords');
+  };
+
+  const handleDeleteDancerTag = async (id: string) => {
+    const updated = dancerTags.filter(t => t.id !== id);
+    await persistDancerTags(updated);
+  };
+
+  const handleStartEditDancerTag = (tag: DancerFeatureTag) => {
+    setEditingTagId(tag.id);
+    setEditingTagLabel(tag.label);
+    setEditingTagIcon(tag.icon || 'Swords');
+  };
+
+  const handleSaveEditDancerTag = async (id: string) => {
+    if (!editingTagLabel.trim()) return;
+    const updated = dancerTags.map(t => t.id === id ? { ...t, label: editingTagLabel.trim(), icon: editingTagIcon } : t);
+    await persistDancerTags(updated);
+    setEditingTagId(null);
+  };
+
+  const renderTagIcon = (iconName?: string) => {
+    switch (iconName) {
+      case 'Music': return <Music className="w-3.5 h-3.5" />;
+      case 'Users': return <Users className="w-3.5 h-3.5" />;
+      case 'Sparkles': return <Sparkles className="w-3.5 h-3.5" />;
+      case 'Heart': return <Heart className="w-3.5 h-3.5" />;
+      case 'Camera': return <Camera className="w-3.5 h-3.5" />;
+      case 'Swords':
+      default: return <Swords className="w-3.5 h-3.5" />;
+    }
+  };
 
   // Safe slide index clamping
   useEffect(() => {
@@ -700,16 +812,28 @@ export default function TourGroupsPage() {
                 section="tour-groups"
               />
 
-              <div className="pt-2 flex flex-wrap gap-2 text-[11px] font-bold text-gray-300">
-                <span className="px-3 py-1.5 rounded-lg bg-tartan-navy border border-tartan-border text-tartan-gold flex items-center gap-1.5">
-                  <Swords className="w-3.5 h-3.5" /> Ghillie Callum Sword Dance
-                </span>
-                <span className="px-3 py-1.5 rounded-lg bg-tartan-navy border border-tartan-border text-tartan-gold flex items-center gap-1.5">
-                  <Music className="w-3.5 h-3.5" /> Highland Fling
-                </span>
-                <span className="px-3 py-1.5 rounded-lg bg-tartan-navy border border-tartan-border text-tartan-gold flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5" /> Guest Interaction & Photos
-                </span>
+              <div className="pt-2 flex flex-wrap items-center gap-2 text-[11px] font-bold text-gray-300">
+                {dancerTags.map((tag) => (
+                  <span
+                    key={tag.id}
+                    className="px-3 py-1.5 rounded-lg bg-tartan-navy border border-tartan-border text-tartan-gold flex items-center gap-1.5 shadow-sm hover:border-tartan-gold/50 transition"
+                  >
+                    {renderTagIcon(tag.icon)}
+                    <span>{tag.label}</span>
+                  </span>
+                ))}
+
+                {canManage && (
+                  <button
+                    type="button"
+                    onClick={() => setIsDancerTagsModalOpen(true)}
+                    className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 flex items-center gap-1 text-[11px] font-bold shadow transition active:scale-95"
+                    title="Edit, Add, or Remove Dance Highlights"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Manage Highlights ({dancerTags.length})</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1522,6 +1646,187 @@ export default function TourGroupsPage() {
                 <span>{isDeleting ? 'Deleting...' : 'Delete Event'}</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Highland Dancer Feature Highlights Management Modal */}
+      {isDancerTagsModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-tartan-card border border-tartan-gold/60 rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl space-y-6">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-tartan-border pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center justify-center">
+                  <Swords className="w-5 h-5 text-tartan-gold" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white font-serif">Manage Dance Highlights</h3>
+                  <p className="text-xs text-gray-400">Edit, add, or remove tags displayed on the live Dancers banner</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDancerTagsModalOpen(false);
+                  setEditingTagId(null);
+                }}
+                className="p-2 text-gray-400 hover:text-white rounded-xl hover:bg-white/10 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Existing Tags List */}
+            <div className="space-y-3">
+              <label className="block text-xs font-bold text-tartan-gold uppercase tracking-wider">
+                Current Highlights ({dancerTags.length})
+              </label>
+
+              {dancerTags.length === 0 ? (
+                <div className="p-4 rounded-xl bg-tartan-dark border border-tartan-border text-center text-xs text-gray-400">
+                  No highlights currently added. Add a new highlight below!
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                  {dancerTags.map((tag) => (
+                    <div
+                      key={tag.id}
+                      className="p-3 rounded-xl bg-tartan-navy border border-tartan-border flex items-center justify-between gap-3"
+                    >
+                      {editingTagId === tag.id ? (
+                        <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                          <select
+                            value={editingTagIcon}
+                            onChange={(e) => setEditingTagIcon(e.target.value as any)}
+                            className="bg-tartan-dark text-white text-xs border border-tartan-border rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-tartan-gold"
+                          >
+                            <option value="Swords">⚔️ Swords (Sword Dance)</option>
+                            <option value="Music">🎵 Music (Highland Fling / Reel)</option>
+                            <option value="Users">👥 Users (Guests / Interaction)</option>
+                            <option value="Camera">📷 Camera (Photos / Keepsakes)</option>
+                            <option value="Sparkles">✨ Sparkles (Performance)</option>
+                            <option value="Heart">❤️ Heart (Crowd Favourite)</option>
+                          </select>
+                          <input
+                            type="text"
+                            value={editingTagLabel}
+                            onChange={(e) => setEditingTagLabel(e.target.value)}
+                            className="flex-1 bg-tartan-dark text-white text-xs border border-tartan-border rounded-lg px-3 py-1.5 focus:outline-none focus:border-tartan-gold"
+                            placeholder="e.g. Ghillie Callum Sword Dance"
+                          />
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleSaveEditDancerTag(tag.id)}
+                              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow flex items-center gap-1 transition"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Save</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingTagId(null)}
+                              className="px-2.5 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-gray-300 text-xs transition"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="p-1.5 rounded-lg bg-tartan-dark text-tartan-gold border border-tartan-border shrink-0">
+                              {renderTagIcon(tag.icon)}
+                            </span>
+                            <span className="text-xs font-semibold text-white truncate">
+                              {tag.label}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleStartEditDancerTag(tag)}
+                              className="p-1.5 rounded-lg bg-tartan-dark hover:bg-slate-700 text-gray-300 hover:text-white border border-tartan-border transition"
+                              title="Edit text / icon"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteDancerTag(tag.id)}
+                              className="p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/80 transition"
+                              title="Remove highlight"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Add New Tag Form */}
+            <form onSubmit={handleAddDancerTag} className="pt-4 border-t border-tartan-border space-y-3">
+              <label className="block text-xs font-bold text-tartan-gold uppercase tracking-wider flex items-center gap-1.5">
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add New Dance Highlight</span>
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                <div className="sm:col-span-4">
+                  <select
+                    value={newTagIcon}
+                    onChange={(e) => setNewTagIcon(e.target.value as any)}
+                    className="w-full bg-tartan-dark text-white text-xs border border-tartan-border rounded-xl px-3 py-2.5 focus:outline-none focus:border-tartan-gold"
+                  >
+                    <option value="Swords">⚔️ Sword Dance</option>
+                    <option value="Music">🎵 Highland Fling</option>
+                    <option value="Users">👥 Guests Interaction</option>
+                    <option value="Camera">📷 Photos / Selfie</option>
+                    <option value="Sparkles">✨ Performance</option>
+                    <option value="Heart">❤️ Crowd Favourite</option>
+                  </select>
+                </div>
+                <div className="sm:col-span-8 flex gap-2">
+                  <input
+                    type="text"
+                    required
+                    value={newTagLabel}
+                    onChange={(e) => setNewTagLabel(e.target.value)}
+                    placeholder="e.g. Traditional Strathspey & Reel"
+                    className="flex-1 bg-tartan-dark text-white text-xs border border-tartan-border rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-tartan-gold"
+                  />
+                  <button
+                    type="submit"
+                    className="px-4 py-2.5 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider shadow-md hover:brightness-110 flex items-center gap-1.5 shrink-0 transition"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+
+            {/* Modal Close Footer */}
+            <div className="pt-2 border-t border-tartan-border flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDancerTagsModalOpen(false);
+                  setEditingTagId(null);
+                }}
+                className="px-6 py-2.5 rounded-xl bg-tartan-navy hover:bg-slate-700 text-white font-bold text-xs border border-tartan-border shadow transition"
+              >
+                Close & Done
+              </button>
+            </div>
+
           </div>
         </div>
       )}
