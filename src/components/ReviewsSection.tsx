@@ -18,7 +18,8 @@ import {
   LayoutGrid,
   Sliders,
   Camera,
-  Loader2
+  Loader2,
+  Reply
 } from 'lucide-react';
 import { Review } from '@/types/spud';
 import { EditableElement } from './EditableElement';
@@ -322,6 +323,31 @@ export const ReviewsSection: React.FC = () => {
                   <p className="text-sm sm:text-base text-gray-100 leading-relaxed italic font-serif">
                     &quot;{approvedReviews[currentIndex]?.comment}&quot;
                   </p>
+
+                  {/* Spud the Piper Official Response */}
+                  {approvedReviews[currentIndex]?.spudResponse && (
+                    <div className="mt-4 p-3.5 sm:p-4 rounded-2xl bg-tartan-navy/95 border border-tartan-gold/40 shadow-inner relative overflow-hidden">
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full bg-gold-gradient flex items-center justify-center text-tartan-dark font-extrabold text-[10px] shadow">
+                            S
+                          </span>
+                          <span className="text-xs font-bold text-tartan-gold tracking-wide flex items-center gap-1">
+                            <Reply className="w-3.5 h-3.5 text-tartan-gold" />
+                            Response from Spud the Piper
+                          </span>
+                        </div>
+                        {approvedReviews[currentIndex]?.spudResponseDate && (
+                          <span className="text-[10px] text-gray-400 font-mono">
+                            {approvedReviews[currentIndex]?.spudResponseDate}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs sm:text-sm text-gray-200 italic leading-relaxed pl-7">
+                        &quot;{approvedReviews[currentIndex]?.spudResponse}&quot;
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Author Info */}
@@ -411,6 +437,26 @@ export const ReviewsSection: React.FC = () => {
                   <p className="text-xs sm:text-sm text-gray-200 italic leading-relaxed font-serif">
                     &quot;{approvedReviews[currentIndex]?.comment}&quot;
                   </p>
+
+                  {/* Spud Response Mobile */}
+                  {approvedReviews[currentIndex]?.spudResponse && (
+                    <div className="mt-3 p-3 rounded-xl bg-tartan-navy/90 border border-tartan-gold/30">
+                      <div className="flex items-center justify-between text-tartan-gold font-bold text-[11px] mb-1">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-4 h-4 rounded-full bg-gold-gradient text-tartan-dark flex items-center justify-center text-[9px] font-black">S</span>
+                          Response from Spud
+                        </span>
+                        {approvedReviews[currentIndex]?.spudResponseDate && (
+                          <span className="text-[9px] text-gray-400 font-normal">
+                            {approvedReviews[currentIndex]?.spudResponseDate}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-gray-300 italic leading-relaxed pl-5">
+                        &quot;{approvedReviews[currentIndex]?.spudResponse}&quot;
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-5 pt-3 border-t border-tartan-border flex items-center gap-3">
@@ -504,6 +550,26 @@ export const ReviewsSection: React.FC = () => {
                   <p className="text-xs sm:text-sm text-gray-200 leading-relaxed italic">
                     &quot;{rev.comment}&quot;
                   </p>
+
+                  {/* Spud Response Grid */}
+                  {rev.spudResponse && (
+                    <div className="mt-3 p-2.5 rounded-xl bg-tartan-navy/80 border border-tartan-gold/30 text-xs">
+                      <div className="flex items-center justify-between text-tartan-gold font-bold text-[11px] mb-1">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-4 h-4 rounded-full bg-gold-gradient text-tartan-dark flex items-center justify-center text-[9px] font-black">S</span>
+                          Response from Spud
+                        </span>
+                        {rev.spudResponseDate && (
+                          <span className="text-[9px] text-gray-400 font-normal">
+                            {rev.spudResponseDate}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-gray-300 italic leading-relaxed pl-5">
+                        &quot;{rev.spudResponse}&quot;
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Author Footer */}

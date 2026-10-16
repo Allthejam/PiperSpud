@@ -16,20 +16,29 @@ import {
   Edit2, 
   Plus, 
   X, 
-  Image as ImageIcon,
   Loader2,
-  Cloud
+  Cloud,
+  MessageSquare,
+  MessageCircle,
+  Reply,
+  Check
 } from 'lucide-react';
 import { Review } from '@/types/spud';
 
 export const AdminReviews: React.FC = () => {
-  const { reviews, approveReview, rejectReview, toggleFeatureReview, updateReview, deleteReview, submitReview } = useApp();
+  const { reviews, approveReview, rejectReview, toggleFeatureReview, updateReview, respondToReview, deleteReview, submitReview } = useApp();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingReview, setEditingReview] = useState<Partial<Review> | null>(null);
   const [editPhotoPreview, setEditPhotoPreview] = useState<string | null>(null);
   const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Spud Response Modal State
+  const [isResponseModalOpen, setIsResponseModalOpen] = useState(false);
+  const [respondingReview, setRespondingReview] = useState<Review | null>(null);
+  const [responseText, setResponseText] = useState('');
+  const [isSubmittingResponse, setIsSubmittingResponse] = useState(false);
 
   const pendingReviews = reviews.filter(r => r.status === 'pending');
   const approvedReviews = reviews.filter(r => r.status === 'approved');
@@ -114,6 +123,43 @@ export const AdminReviews: React.FC = () => {
     }
   };
 
+  const handleOpenResponse = (rev: Review) => {
+    setRespondingReview(rev);
+    setResponseText(rev.spudResponse || '');
+    setIsResponseModalOpen(true);
+  };
+
+  const handleSaveResponse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!respondingReview) return;
+
+    setIsSubmittingResponse(true);
+    try {
+      await respondToReview(respondingReview.id, responseText);
+      setIsResponseModalOpen(false);
+      setRespondingReview(null);
+      setResponseText('');
+    } catch (err: any) {
+      alert(`Error saving response: ${err?.message || err}`);
+    } finally {
+      setIsSubmittingResponse(false);
+    }
+  };
+
+  const handleRemoveResponse = async (revId: string) => {
+    if (!confirm('Remove Spud\'s response from this review?')) return;
+    try {
+      await respondToReview(revId, '');
+      if (respondingReview && respondingReview.id === revId) {
+        setIsResponseModalOpen(false);
+        setRespondingReview(null);
+        setResponseText('');
+      }
+    } catch (err: any) {
+      alert(`Error removing response: ${err?.message || err}`);
+    }
+  };
+
   return (
     <div className="space-y-8">
       
@@ -185,17 +231,47 @@ export const AdminReviews: React.FC = () => {
                   <h4 className="text-sm font-bold text-white font-serif">{rev.authorName}</h4>
                   <p className="text-xs text-tartan-gold">{rev.eventType} • {rev.location}</p>
                   <p className="text-xs text-gray-300 italic">&quot;{rev.comment}&quot;</p>
+
+                  {/* Spud Response if already drafted */}
+                  {rev.spudResponse && (
+                    <div className="mt-2 p-2.5 rounded-xl bg-tartan-navy/90 border border-tartan-gold/30 text-xs">
+                      <div className="flex items-center justify-between text-tartan-gold font-bold mb-1">
+                        <span className="flex items-center gap-1.5 text-[11px]">
+                          <Reply className="w-3 h-3 text-tartan-gold" /> Response from Spud
+                        </span>
+                        {rev.spudResponseDate && (
+                          <span className="text-[9px] text-gray-400 font-normal">{rev.spudResponseDate}</span>
+                        )}
+                      </div>
+                      <p className="text-gray-300 italic text-[11px] leading-relaxed">&quot;{rev.spudResponse}&quot;</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-3 border-t border-tartan-border flex items-center justify-between gap-2">
-                  <button
-                    onClick={() => handleOpenEdit(rev)}
-                    className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/10 flex items-center gap-1 text-xs"
-                    title="Edit review or replace photo"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                    <span>Edit</span>
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleOpenEdit(rev)}
+                      className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/10 flex items-center gap-1 text-xs"
+                      title="Edit review or replace photo"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                      <span>Edit</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleOpenResponse(rev)}
+                      className={`px-2 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+                        rev.spudResponse
+                          ? 'bg-tartan-gold/20 text-tartan-gold border border-tartan-gold/40 hover:bg-tartan-gold/30'
+                          : 'bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10'
+                      }`}
+                      title={rev.spudResponse ? "Edit Spud's response" : "Add Spud's response"}
+                    >
+                      <Reply className="w-3 h-3" />
+                      <span>{rev.spudResponse ? 'Edit Reply' : 'Reply'}</span>
+                    </button>
+                  </div>
 
                   <div className="flex items-center gap-2">
                     <button
@@ -262,6 +338,21 @@ export const AdminReviews: React.FC = () => {
                 </div>
 
                 <p className="text-xs text-gray-200 leading-relaxed italic">&quot;{rev.comment}&quot;</p>
+
+                {/* Spud Response Box */}
+                {rev.spudResponse && (
+                  <div className="mt-2.5 p-3 rounded-xl bg-tartan-navy/90 border border-tartan-gold/30 text-xs">
+                    <div className="flex items-center justify-between text-tartan-gold font-bold mb-1">
+                      <span className="flex items-center gap-1.5">
+                        <Reply className="w-3.5 h-3.5 text-tartan-gold" /> Response from Spud
+                      </span>
+                      {rev.spudResponseDate && (
+                        <span className="text-[10px] text-gray-400 font-normal">{rev.spudResponseDate}</span>
+                      )}
+                    </div>
+                    <p className="text-gray-300 italic text-xs leading-relaxed">&quot;{rev.spudResponse}&quot;</p>
+                  </div>
+                )}
               </div>
 
               <div className="pt-3 border-t border-tartan-border flex items-center justify-between gap-2">
@@ -271,6 +362,19 @@ export const AdminReviews: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={() => handleOpenResponse(rev)}
+                    className={`px-2 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+                      rev.spudResponse
+                        ? 'bg-tartan-gold/20 text-tartan-gold border border-tartan-gold/40 hover:bg-tartan-gold/30'
+                        : 'bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10'
+                    }`}
+                    title={rev.spudResponse ? "Edit Spud's response" : "Add Spud's response"}
+                  >
+                    <Reply className="w-3.5 h-3.5" />
+                    <span>{rev.spudResponse ? 'Edit Reply' : 'Reply'}</span>
+                  </button>
+
                   <button
                     onClick={() => handleOpenEdit(rev)}
                     className="p-1.5 text-gray-400 hover:text-white rounded hover:bg-white/10"
@@ -475,6 +579,134 @@ export const AdminReviews: React.FC = () => {
 
             </form>
 
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Spud's Response to Review */}
+      {isResponseModalOpen && respondingReview && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-tartan-card border border-tartan-gold/40 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 flex flex-col">
+            <div className="bg-tartan-navy px-6 py-4 border-b border-tartan-border flex items-center justify-between">
+              <h3 className="text-base font-bold text-white font-serif flex items-center gap-2">
+                <Reply className="w-5 h-5 text-tartan-gold" />
+                <span>Respond as Spud the Piper</span>
+              </h3>
+              <button
+                onClick={() => {
+                  setIsResponseModalOpen(false);
+                  setRespondingReview(null);
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveResponse} className="p-6 space-y-4">
+              {/* Original Review snippet */}
+              <div className="bg-tartan-dark/70 p-3.5 rounded-xl border border-tartan-border/60 text-xs">
+                <div className="flex items-center justify-between text-gray-400 mb-1">
+                  <span className="font-bold text-white">{respondingReview.authorName}</span>
+                  <span>{respondingReview.eventType}</span>
+                </div>
+                <p className="text-gray-300 italic">&quot;{respondingReview.comment}&quot;</p>
+              </div>
+
+              {/* Quick Scottish Gratitude Chips */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-tartan-gold mb-2">
+                  Quick Scottish Templates
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    {
+                      label: 'Wedding Blessing',
+                      text: 'Thank you so much! It was an absolute honour and pleasure piping for your magical wedding day. Wishing you both a lifetime of happiness!'
+                    },
+                    {
+                      label: 'Event Thanks',
+                      text: 'Slàinte mhath! Thank you for the wonderful words. Loved bringing the skirl of the pipes to such a fantastic gathering.'
+                    },
+                    {
+                      label: 'Heartfelt Gratitude',
+                      text: 'Thank you for having me! Sharing Scotland’s heritage and music with lovely people like you is why I love piping.'
+                    }
+                  ].map(chip => (
+                    <button
+                      type="button"
+                      key={chip.label}
+                      onClick={() => setResponseText(chip.text)}
+                      className="px-2.5 py-1 bg-tartan-navy hover:bg-tartan-gold/20 border border-tartan-border hover:border-tartan-gold/50 rounded-lg text-[11px] text-gray-200 hover:text-tartan-gold transition"
+                    >
+                      + {chip.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Response Textarea */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                  Your Public Response
+                </label>
+                <textarea
+                  rows={4}
+                  value={responseText}
+                  onChange={(e) => setResponseText(e.target.value)}
+                  placeholder="Write a personal, warm Scottish reply to this client..."
+                  className="w-full bg-tartan-dark border border-tartan-border rounded-xl p-3 text-white text-xs focus:outline-none focus:border-tartan-gold leading-relaxed"
+                  required
+                />
+                <p className="text-[10px] text-gray-400 mt-1">
+                  This reply will display under their review on the public website with an official &quot;Response from Spud the Piper&quot; badge.
+                </p>
+              </div>
+
+              {/* Buttons */}
+              <div className="pt-3 border-t border-tartan-border flex items-center justify-between">
+                {respondingReview.spudResponse ? (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveResponse(respondingReview.id)}
+                    className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 font-semibold"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Remove Response</span>
+                  </button>
+                ) : <div />}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsResponseModalOpen(false);
+                      setRespondingReview(null);
+                    }}
+                    className="px-4 py-2 bg-slate-800 text-gray-300 rounded-xl text-xs font-semibold hover:bg-slate-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingResponse || !responseText.trim()}
+                    className="px-5 py-2.5 bg-gold-gradient text-tartan-dark font-extrabold text-xs rounded-xl shadow-lg hover:brightness-110 disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {isSubmittingResponse ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Publish Response</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -33,7 +33,8 @@ import {
   MapPin,
   Share2,
   Image as ImageIcon,
-  CheckCircle2
+  CheckCircle2,
+  Reply
 } from 'lucide-react';
 import { ServicePackage } from '@/types/spud';
 
@@ -491,6 +492,27 @@ export default function ServiceDetailPage() {
                   <p className="text-xs sm:text-sm text-gray-300 italic leading-relaxed">
                     &ldquo;{rev.comment}&rdquo;
                   </p>
+
+                  {/* Spud Response if available */}
+                  {rev.spudResponse && (
+                    <div className="p-3 rounded-xl bg-tartan-navy/90 border border-tartan-gold/30 text-xs">
+                      <div className="flex items-center justify-between text-tartan-gold font-bold text-[11px] mb-1">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-4 h-4 rounded-full bg-gold-gradient text-tartan-dark flex items-center justify-center text-[9px] font-black">S</span>
+                          <Reply className="w-3 h-3 text-tartan-gold" />
+                          Response from Spud
+                        </span>
+                        {rev.spudResponseDate && (
+                          <span className="text-[9px] text-gray-400 font-normal">
+                            {rev.spudResponseDate}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-gray-300 italic leading-relaxed pl-5">
+                        &ldquo;{rev.spudResponse}&rdquo;
+                      </p>
+                    </div>
+                  )}
 
                   <div className="pt-2 border-t border-tartan-border flex items-center justify-between text-xs">
                     <div>

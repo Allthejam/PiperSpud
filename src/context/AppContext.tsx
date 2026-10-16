@@ -153,6 +153,7 @@ interface AppContextType {
   rejectReview: (id: string) => void;
   toggleFeatureReview: (id: string) => void;
   updateReview: (id: string, updates: Partial<Review>) => Promise<void>;
+  respondToReview: (id: string, responseText: string) => Promise<void>;
   deleteReview: (id: string) => Promise<void>;
 
   // Social Community & Forum
@@ -2993,6 +2994,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const respondToReview = async (id: string, responseText: string) => {
+    const trimmed = responseText.trim();
+    const updates: Partial<Review> = {
+      spudResponse: trimmed || undefined,
+      spudResponseDate: trimmed 
+        ? new Date().toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
+        : undefined
+    };
+    await updateReview(id, updates);
+    if (trimmed) {
+      addNotification({
+        type: 'system',
+        title: 'Spud Response Published',
+        message: 'Your official response to the review is live on the website.',
+        actionUrl: '/admin/reviews'
+      });
+    }
+  };
+
   const deleteReview = async (id: string) => {
     setReviews(prev => {
       const updated = prev.filter(r => r.id !== id);
@@ -4770,6 +4790,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       rejectReview,
       toggleFeatureReview,
       updateReview,
+      respondToReview,
       deleteReview,
       socialPosts,
       createSocialPost,

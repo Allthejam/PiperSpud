@@ -140,6 +140,8 @@ export interface Review {
   status: 'approved' | 'pending' | 'rejected';
   isFeatured: boolean;
   location?: string;
+  spudResponse?: string;
+  spudResponseDate?: string;
 }
 
 export interface ForumCategoryItem {
