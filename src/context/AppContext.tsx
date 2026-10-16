@@ -154,6 +154,7 @@ interface AppContextType {
   toggleFeatureReview: (id: string) => void;
   updateReview: (id: string, updates: Partial<Review>) => Promise<void>;
   respondToReview: (id: string, responseText: string) => Promise<void>;
+  responseToReview?: (id: string, responseText: string) => Promise<void>;
   deleteReview: (id: string) => Promise<void>;
 
   // Social Community & Forum
@@ -4791,6 +4792,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       toggleFeatureReview,
       updateReview,
       respondToReview,
+      responseToReview: respondToReview,
       deleteReview,
       socialPosts,
       createSocialPost,

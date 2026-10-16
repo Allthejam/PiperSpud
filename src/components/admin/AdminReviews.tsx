@@ -26,7 +26,9 @@ import {
 import { Review } from '@/types/spud';
 
 export const AdminReviews: React.FC = () => {
-  const { reviews, approveReview, rejectReview, toggleFeatureReview, updateReview, respondToReview, deleteReview, submitReview } = useApp();
+  const appContext = useApp();
+  const { reviews, approveReview, rejectReview, toggleFeatureReview, updateReview, deleteReview, submitReview } = appContext;
+  const respondToReview = appContext.respondToReview || (appContext as any).responseToReview;
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingReview, setEditingReview] = useState<Partial<Review> | null>(null);
@@ -135,7 +137,22 @@ export const AdminReviews: React.FC = () => {
 
     setIsSubmittingResponse(true);
     try {
-      await respondToReview(respondingReview.id, responseText);
+      const trimmed = responseText.trim();
+      const updates: Partial<Review> = {
+        spudResponse: trimmed || undefined,
+        spudResponseDate: trimmed 
+          ? new Date().toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
+          : undefined
+      };
+
+      if (typeof respondToReview === 'function') {
+        await respondToReview(respondingReview.id, responseText);
+      } else if (typeof updateReview === 'function') {
+        await updateReview(respondingReview.id, updates);
+      } else {
+        throw new Error('Review update service is not available. Please refresh the page.');
+      }
+
       setIsResponseModalOpen(false);
       setRespondingReview(null);
       setResponseText('');
@@ -149,7 +166,14 @@ export const AdminReviews: React.FC = () => {
   const handleRemoveResponse = async (revId: string) => {
     if (!confirm('Remove Spud\'s response from this review?')) return;
     try {
-      await respondToReview(revId, '');
+      if (typeof respondToReview === 'function') {
+        await respondToReview(revId, '');
+      } else if (typeof updateReview === 'function') {
+        await updateReview(revId, {
+          spudResponse: undefined,
+          spudResponseDate: undefined
+        });
+      }
       if (respondingReview && respondingReview.id === revId) {
         setIsResponseModalOpen(false);
         setRespondingReview(null);
