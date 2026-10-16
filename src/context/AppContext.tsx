@@ -132,7 +132,7 @@ interface AppContextType {
   approveBooking: (id: string, customOptions?: { note?: string }) => void;
   resendApprovalEmail: (idOrBooking: string | BookingEvent) => Promise<{ success: boolean; error?: string; sendCount?: number }>;
   rejectBooking: (id: string, reason?: string, sendEmail?: boolean) => void;
-  markDepositPaid: (id: string, paypalOrderId?: string) => Promise<void>;
+  markDepositPaid: (id: string, paypalOrderId?: string, options?: { method?: string; notes?: string; depositAmount?: number; sendEmail?: boolean }) => Promise<void>;
   markRemainingBalancePaid: (id: string, options?: { transactionId?: string; method?: string; notes?: string }) => Promise<void>;
   sendSevenDayReminder: (id: string) => Promise<{ success: boolean; error?: string }>;
   sendOneDayReminder: (id: string) => Promise<{ success: boolean; error?: string }>;
@@ -2547,12 +2547,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const markDepositPaid = async (id: string, paypalOrderId: string = `PP-TX-${Date.now().toString().slice(-6)}`) => {
+  const markDepositPaid = async (
+    id: string, 
+    paypalOrderId: string = `TX-${Date.now().toString().slice(-6)}`,
+    options?: { method?: string; notes?: string; depositAmount?: number; sendEmail?: boolean }
+  ) => {
     const existingBk = bookings.find(b => b.id === id);
+    if (!existingBk) return;
+
     const nowIso = new Date().toISOString();
-    const depositAmt = existingBk?.depositAmount || 100;
-    const totalEst = existingBk?.estimatedPrice || depositAmt;
+    const depositAmt = options?.depositAmount ?? (existingBk.depositAmount || 100);
+    const totalEst = existingBk.estimatedPrice || depositAmt;
     const remainingBal = Math.max(0, totalEst - depositAmt);
+    const method = options?.method || 'PayPal';
     
     // Compute day before event as balance due date
     let balanceDueDate = '';
@@ -2572,23 +2579,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       minute: '2-digit' 
     });
 
+    const isManual = method !== 'PayPal';
     const auditEntry: BookingAuditEntry = {
       id: `audit-${Date.now()}`,
       timestamp: nowIso,
-      action: 'PayPal Deposit Confirmed & Locked',
-      actor: 'PayPal Gateway / Admin Confirmation',
-      details: `Deposit of £${depositAmt}.00 paid via PayPal on ${paidDateFormatted}. Transaction ID: #${paypalOrderId}. Remaining Balance: £${remainingBal}.00 (Due 1 day prior to event: ${balanceDueDate || 'Day before'}). Event date officially LOCKED in diary.`,
+      action: isManual ? `Manual Deposit Recorded (${method}) & Locked` : 'PayPal Deposit Confirmed & Locked',
+      actor: isManual ? 'Spud The Piper (Admin)' : 'PayPal Gateway / Admin Confirmation',
+      details: `Deposit of £${depositAmt}.00 paid via ${method} on ${paidDateFormatted}. Ref: #${paypalOrderId}.${options?.notes ? ` Notes: "${options.notes}"` : ''} Remaining Balance: £${remainingBal}.00 (Due 1 day prior to event: ${balanceDueDate || 'Day before'}). Event date officially LOCKED in diary.`,
       type: 'status_change'
     };
 
     const history = existingBk?.brevoEmailHistory || [];
     const currentAudit = existingBk?.auditTrail || [];
     const updatedBooking: BookingEvent = {
-      ...existingBk!,
+      ...existingBk,
       status: 'deposit_paid' as BookingStatus,
       depositPaidAt: nowIso,
       depositAmountPaid: depositAmt,
-      depositPaymentMethod: 'PayPal',
+      depositPaymentMethod: method,
       paypalOrderId,
       remainingBalance: remainingBal,
       remainingBalancePaid: remainingBal === 0,
@@ -2597,7 +2605,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       brevoEmailHistory: [
         ...history,
         {
-          type: 'Deposit Confirmed & Official Receipt (via Brevo)',
+          type: isManual ? `Manual Deposit (${method}) Confirmed & Official Receipt (via Brevo)` : 'Deposit Confirmed & Official Receipt (via Brevo)',
           sentAt: nowIso,
           status: 'delivered'
         }
@@ -2607,31 +2615,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setBookings(prev => prev.map(b => b.id === id ? updatedBooking : b));
     await syncToFirestore('bookings', id, updatedBooking);
 
-    // Dispatch live deposit confirmation email to client via Brevo with payment link for remainder
-    try {
-      if (typeof window !== 'undefined') {
-        fetch('/api/brevo/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'deposit_received',
-            booking: updatedBooking
-          })
-        }).catch(err => console.warn('Brevo receipt dispatch warning:', err));
+    // Dispatch live deposit confirmation email to client via Brevo with payment link for remainder (unless explicitly opted out)
+    if (options?.sendEmail !== false) {
+      try {
+        if (typeof window !== 'undefined') {
+          fetch('/api/brevo/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'deposit_received',
+              booking: updatedBooking
+            })
+          }).catch(err => console.warn('Brevo receipt dispatch warning:', err));
+        }
+      } catch (e) {
+        console.warn(e);
       }
-    } catch (e) {
-      console.warn(e);
     }
 
-    if (existingBk) {
-      addNotification({
-        type: 'deposit_paid',
-        title: `PayPal Deposit Paid: £${depositAmt}.00`,
-        message: `${existingBk.clientName} paid £${depositAmt} deposit via PayPal on ${paidDateFormatted}. Remaining balance: £${remainingBal}.00. Booking is CONFIRMED!`,
-        actionUrl: '/admin/bookings',
-        relatedId: id
-      });
-    }
+    addNotification({
+      type: 'deposit_paid',
+      title: `${method} Deposit Paid: £${depositAmt}.00`,
+      message: `${existingBk.clientName} paid £${depositAmt} deposit via ${method} on ${paidDateFormatted}. Remaining balance: £${remainingBal}.00. Booking is CONFIRMED!`,
+      actionUrl: '/admin/bookings',
+      relatedId: id
+    });
   };
 
   const markRemainingBalancePaid = async (

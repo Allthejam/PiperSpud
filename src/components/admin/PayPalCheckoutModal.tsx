@@ -78,7 +78,7 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
       setIsPaid(true);
 
       // Automatically update booking in state, Firestore, and dispatch Brevo receipt
-      await markDepositPaid(currentBooking.id, captureData.captureId || data.orderID);
+      await markDepositPaid(currentBooking.id, captureData.captureId || data.orderID, { method: 'PayPal / Card' });
 
       setTimeout(() => {
         setIsPaid(false);
@@ -98,12 +98,15 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
         
         {/* PayPal Top Banner */}
         <div className="bg-[#003087] text-white px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xl font-extrabold italic text-[#0079C1]">
               Pay<span className="text-white">Pal</span>
             </span>
             <span className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded font-semibold uppercase tracking-wider">
               Live Gateway
+            </span>
+            <span className="text-xs bg-white/10 text-white/90 border border-white/20 px-2 py-0.5 rounded font-medium">
+              Take Phone / Card Payment
             </span>
           </div>
           <button onClick={onClose} className="text-gray-300 hover:text-white transition">

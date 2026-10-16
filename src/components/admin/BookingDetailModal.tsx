@@ -39,9 +39,13 @@ import {
   Ship,
   Globe,
   BellRing,
-  PoundSterling
+  PoundSterling,
+  Building2,
+  Link2,
+  Check
 } from 'lucide-react';
 import { BookingEvent, BookingAuditEntry, BookingMessage, HighlandDressOption } from '@/types/spud';
+import { ManualDepositModal } from '@/components/admin/ManualDepositModal';
 
 interface BookingDetailModalProps {
   booking: BookingEvent | null;
@@ -101,6 +105,23 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
 
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [approvalNote, setApprovalNote] = useState('');
+
+  // Manual Offline Deposit Modal & Copy Link
+  const [isManualDepositOpen, setIsManualDepositOpen] = useState(false);
+  const [isDepositLinkCopied, setIsDepositLinkCopied] = useState(false);
+
+  const handleCopyDepositLink = () => {
+    if (!booking) return;
+    const url = typeof window !== 'undefined' 
+      ? `${window.location.origin}/pay?id=${booking.id}` 
+      : `https://spudthepiper.com/pay?id=${booking.id}`;
+    
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(url).catch(() => {});
+    }
+    setIsDepositLinkCopied(true);
+    setTimeout(() => setIsDepositLinkCopied(false), 3000);
+  };
 
   // Synchronize state when booking changes
   React.useEffect(() => {
@@ -1206,10 +1227,40 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                 <button
                   type="button"
                   onClick={() => openPayPalModal(booking)}
-                  className="px-5 py-2.5 rounded-xl bg-[#0070BA] hover:bg-[#003087] text-white font-extrabold text-xs shadow flex items-center gap-1.5 transition"
+                  className="px-4 py-2.5 rounded-xl bg-[#0070BA] hover:bg-[#003087] text-white font-extrabold text-xs shadow flex items-center gap-1.5 transition"
+                  title="Take debit/credit card or PayPal deposit payment over phone"
                 >
                   <CreditCard className="w-4 h-4 text-yellow-300" />
-                  <span>Record / Test PayPal Deposit</span>
+                  <span>Take Card Payment (Phone)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsManualDepositOpen(true)}
+                  className="px-4 py-2.5 rounded-xl bg-amber-950/80 hover:bg-amber-900 text-amber-200 border border-amber-600/50 text-xs font-bold shadow flex items-center gap-1.5 transition"
+                  title="Record BACS bank transfer, cash, or offline deposit"
+                >
+                  <Building2 className="w-4 h-4 text-amber-400" />
+                  <span>Record Manual Deposit (BACS/Cash)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCopyDepositLink}
+                  className="px-4 py-2.5 rounded-xl bg-tartan-dark hover:bg-tartan-navy text-gray-300 hover:text-white text-xs font-semibold border border-tartan-border flex items-center gap-1.5 transition"
+                  title="Copy client's private deposit payment link"
+                >
+                  {isDepositLinkCopied ? (
+                    <>
+                      <Check className="w-4 h-4 text-green-400" />
+                      <span className="text-green-300 font-bold">Link Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Link2 className="w-4 h-4 text-blue-400" />
+                      <span>Copy Payment Link</span>
+                    </>
+                  )}
                 </button>
               </>
             )}
@@ -1344,6 +1395,15 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Manual Offline Deposit Modal (BACS, Cash, Cheque, Phone) */}
+      {isManualDepositOpen && booking && (
+        <ManualDepositModal
+          booking={booking}
+          isOpen={isManualDepositOpen}
+          onClose={() => setIsManualDepositOpen(false)}
+        />
       )}
 
     </div>

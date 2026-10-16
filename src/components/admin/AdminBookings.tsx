@@ -27,10 +27,14 @@ import {
   AlertCircle,
   BellRing,
   PoundSterling,
-  Send
+  Send,
+  Building2,
+  Link2,
+  Check
 } from 'lucide-react';
 import { BookingEvent, BookingStatus } from '@/types/spud';
 import { BookingDetailModal } from '@/components/admin/BookingDetailModal';
+import { ManualDepositModal } from '@/components/admin/ManualDepositModal';
 
 export const AdminBookings: React.FC = () => {
   const { 
@@ -49,6 +53,9 @@ export const AdminBookings: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBookingForModal, setSelectedBookingForModal] = useState<BookingEvent | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedBookingForManualDeposit, setSelectedBookingForManualDeposit] = useState<BookingEvent | null>(null);
+  const [isManualDepositOpen, setIsManualDepositOpen] = useState(false);
+  const [copiedBookingId, setCopiedBookingId] = useState<string | null>(null);
   const [actionFeedback, setActionFeedback] = useState<string>('');
 
   const safeBookings = bookings || [];
@@ -102,6 +109,29 @@ export const AdminBookings: React.FC = () => {
     await sendOneDayReminder(bk.id);
     setActionFeedback(`1-Day Final Gig Briefing dispatched to Spud and client!`);
     setTimeout(() => setActionFeedback(''), 4000);
+  };
+
+  const handleCopyPaymentLink = (e: React.MouseEvent, bk: BookingEvent) => {
+    e.stopPropagation();
+    const url = typeof window !== 'undefined' 
+      ? `${window.location.origin}/pay?id=${bk.id}` 
+      : `https://spudthepiper.com/pay?id=${bk.id}`;
+    
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(url).catch(() => {});
+    }
+    setCopiedBookingId(bk.id);
+    setActionFeedback(`Deposit payment link for ${bk.clientName} copied to clipboard!`);
+    setTimeout(() => {
+      setCopiedBookingId(null);
+      setActionFeedback('');
+    }, 3500);
+  };
+
+  const handleOpenManualDeposit = (e: React.MouseEvent, bk: BookingEvent) => {
+    e.stopPropagation();
+    setSelectedBookingForManualDeposit(bk);
+    setIsManualDepositOpen(true);
   };
 
   // Re-synchronize selected modal booking when bookings state changes
@@ -504,11 +534,42 @@ export const AdminBookings: React.FC = () => {
                     {isApproved && (
                       <>
                         <button
-                          onClick={() => openPayPalModal(bk)}
-                          className="px-4 py-2 rounded-xl bg-[#0070BA] hover:bg-[#003087] text-white font-extrabold text-xs shadow flex items-center gap-1.5"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openPayPalModal(bk);
+                          }}
+                          className="px-3.5 py-2 rounded-xl bg-[#0070BA] hover:bg-[#003087] text-white font-extrabold text-xs shadow flex items-center gap-1.5 transition"
+                          title="Take debit/credit card or PayPal deposit payment over phone"
                         >
-                          <CreditCard className="w-4 h-4 text-yellow-300" />
-                          <span>Test PayPal Deposit</span>
+                          <CreditCard className="w-3.5 h-3.5 text-yellow-300" />
+                          <span>Pay / Card (Phone)</span>
+                        </button>
+
+                        <button
+                          onClick={(e) => handleOpenManualDeposit(e, bk)}
+                          className="px-3.5 py-2 rounded-xl bg-amber-950/80 hover:bg-amber-900 text-amber-200 border border-amber-600/50 text-xs font-bold shadow flex items-center gap-1.5 transition"
+                          title="Record BACS bank transfer, cash, or offline deposit"
+                        >
+                          <Building2 className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Record Manual Deposit</span>
+                        </button>
+
+                        <button
+                          onClick={(e) => handleCopyPaymentLink(e, bk)}
+                          className="px-3 py-2 rounded-xl bg-tartan-dark hover:bg-tartan-navy text-gray-300 hover:text-white text-xs font-semibold border border-tartan-border flex items-center gap-1.5 transition"
+                          title="Copy client's private deposit payment link"
+                        >
+                          {copiedBookingId === bk.id ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-green-400" />
+                              <span className="text-green-300 font-bold">Link Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Link2 className="w-3.5 h-3.5 text-blue-400" />
+                              <span>Copy Link</span>
+                            </>
+                          )}
                         </button>
                       </>
                     )}
@@ -579,6 +640,18 @@ export const AdminBookings: React.FC = () => {
           onClose={() => {
             setIsDetailModalOpen(false);
             setSelectedBookingForModal(null);
+          }}
+        />
+      )}
+
+      {/* Manual Offline Deposit Modal (BACS, Cash, Cheque, Phone) */}
+      {isManualDepositOpen && selectedBookingForManualDeposit && (
+        <ManualDepositModal
+          booking={selectedBookingForManualDeposit}
+          isOpen={isManualDepositOpen}
+          onClose={() => {
+            setIsManualDepositOpen(false);
+            setSelectedBookingForManualDeposit(null);
           }}
         />
       )}

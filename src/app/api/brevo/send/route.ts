@@ -412,12 +412,13 @@ export async function POST(req: NextRequest) {
         ? new Date(booking.depositPaidAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
         : new Date().toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
+      const paymentMethod = booking.depositPaymentMethod || 'PayPal';
       subject = `✅ Deposit Received & Booking Locked: Spud the Piper (${booking.date})`;
       htmlContent = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background-color: #0d1527; color: #f8fafc; padding: 32px 24px; border-radius: 16px; border: 1px solid #22c55e;">
           <div style="text-align: center; border-bottom: 1px solid #1e293b; padding-bottom: 20px; margin-bottom: 24px;">
             <h1 style="color: #22c55e; margin: 0; font-size: 26px; font-family: Georgia, serif;">Official Booking Confirmed & Locked</h1>
-            <p style="color: #94a3b8; margin: 6px 0 0 0; font-size: 13px;">Deposit Paid via PayPal • Booking Reference #${booking.id.slice(0, 8)}</p>
+            <p style="color: #94a3b8; margin: 6px 0 0 0; font-size: 13px;">Deposit Paid via ${paymentMethod} • Booking Reference #${booking.id.slice(0, 8)}</p>
           </div>
 
           <div style="background-color: #131d33; padding: 22px; border-radius: 12px; border: 1px solid #1e293b; margin-bottom: 24px;">
@@ -425,7 +426,7 @@ export async function POST(req: NextRequest) {
               Dear <strong style="color: #c5a059;">${booking.clientName}</strong>,
             </p>
             <p style="font-size: 14px; line-height: 1.6; color: #e2e8f0;">
-              Thank you! Your deposit payment of <strong style="color: #22c55e;">£${booking.depositAmount}.00</strong> has been received via PayPal on <strong>${paidDateFormatted}</strong>. Your event date is now <strong style="color: #22c55e;">100% OFFICIALLY LOCKED</strong> in Spud's private diary.
+              Thank you! Your deposit payment of <strong style="color: #22c55e;">£${booking.depositAmount}.00</strong> has been received via ${paymentMethod} on <strong>${paidDateFormatted}</strong>. Your event date is now <strong style="color: #22c55e;">100% OFFICIALLY LOCKED</strong> in Spud's private diary.
             </p>
 
             <div style="background-color: #0b1120; border-radius: 10px; padding: 16px; margin: 18px 0; border-left: 4px solid #22c55e;">
