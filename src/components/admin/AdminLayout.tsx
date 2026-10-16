@@ -184,14 +184,38 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
       {/* Admin Layout Main Body */}
       <div className="flex-1 flex overflow-hidden">
         
-        {/* Desktop Sidebar Navigation */}
-        <aside className={`w-64 bg-tartan-card/95 border-r border-tartan-border/80 flex flex-col justify-between p-4 shrink-0 transition-all z-30 ${
-          isMobileNavOpen ? 'fixed inset-y-0 left-0 top-16 block' : 'hidden lg:flex'
+        {/* Mobile Navigation Backdrop Overlay */}
+        {isMobileNavOpen && (
+          <div 
+            onClick={() => setIsMobileNavOpen(false)}
+            className="fixed inset-0 top-16 bg-black/75 backdrop-blur-sm z-30 lg:hidden animate-in fade-in duration-200"
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Sidebar Navigation (Desktop + Mobile Drawer) */}
+        <aside className={`w-72 sm:w-80 lg:w-64 bg-tartan-card border-r border-tartan-border/80 flex flex-col shrink-0 transition-all z-40 ${
+          isMobileNavOpen 
+            ? 'fixed inset-y-0 left-0 top-16 bottom-0 h-[calc(100dvh-4rem)] shadow-2xl animate-in slide-in-from-left duration-200' 
+            : 'hidden lg:flex lg:h-[calc(100vh-4rem)]'
         }`}>
-          <div className="space-y-1">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-tartan-gold px-3 mb-2">
-              Management Modules
-            </p>
+          {/* Scrollable Navigation Area */}
+          <div className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-1 scrollbar-thin scrollbar-thumb-tartan-gold/20 pb-28 lg:pb-6 touch-pan-y">
+            
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between px-3 mb-2">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-tartan-gold">
+                Management Modules ({navItems.length})
+              </p>
+              <button
+                onClick={() => setIsMobileNavOpen(false)}
+                className="lg:hidden p-1.5 rounded-lg text-gray-400 hover:text-white bg-tartan-navy hover:bg-slate-700 transition"
+                title="Close Navigation"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -226,27 +250,30 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
                 </button>
               );
             })}
-          </div>
 
-          {/* Quick Automation Status Widget */}
-          <div className="bg-tartan-navy rounded-2xl p-3.5 border border-tartan-border space-y-2 text-[11px]">
-            <p className="font-bold text-tartan-gold uppercase tracking-wider flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Automations & Payments</span>
-            </p>
-            <div className="space-y-1.5 text-gray-300">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1"><Mail className="w-3 h-3 text-blue-400" /> Brevo Email:</span>
-                <span className="text-emerald-400 font-bold">Connected</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1"><CreditCard className="w-3 h-3 text-yellow-400" /> Payments:</span>
-                <span className="text-amber-400 font-bold">Cash / Direct Active</span>
+            {/* Quick Automation Status Widget */}
+            <div className="pt-4 mt-4 border-t border-tartan-border/60">
+              <div className="bg-tartan-navy rounded-2xl p-3.5 border border-tartan-border space-y-2 text-[11px]">
+                <p className="font-bold text-tartan-gold uppercase tracking-wider flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Automations & Payments</span>
+                </p>
+                <div className="space-y-1.5 text-gray-300">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1"><Mail className="w-3 h-3 text-blue-400" /> Brevo Email:</span>
+                    <span className="text-emerald-400 font-bold">Connected</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1"><CreditCard className="w-3 h-3 text-yellow-400" /> Payments:</span>
+                    <span className="text-amber-400 font-bold">Cash / Direct Active</span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-gray-400 pt-1 border-t border-tartan-border/50 leading-relaxed">
+                  Spud can approve gigs and accept cash or BACS right now. PayPal auto-capture activates once linked.
+                </p>
               </div>
             </div>
-            <p className="text-[10px] text-gray-400 pt-1 border-t border-tartan-border/50 leading-relaxed">
-              Spud can approve gigs and accept cash or BACS right now. PayPal auto-capture activates once linked.
-            </p>
+
           </div>
         </aside>
 
