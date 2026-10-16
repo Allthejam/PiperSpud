@@ -261,15 +261,15 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
                 <div className="space-y-1.5 text-gray-300">
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1"><Mail className="w-3 h-3 text-blue-400" /> Brevo Email:</span>
-                    <span className="text-emerald-400 font-bold">Connected</span>
+                    <span className="text-emerald-400 font-bold">Live Connected</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1"><CreditCard className="w-3 h-3 text-yellow-400" /> Payments:</span>
-                    <span className="text-amber-400 font-bold">Cash / Direct Active</span>
+                    <span className="flex items-center gap-1"><CreditCard className="w-3 h-3 text-emerald-400" /> PayPal Gateway:</span>
+                    <span className="text-emerald-400 font-bold">100% Live Active (GBP)</span>
                   </div>
                 </div>
                 <p className="text-[10px] text-gray-400 pt-1 border-t border-tartan-border/50 leading-relaxed">
-                  Spud can approve gigs and accept cash or BACS right now. PayPal auto-capture activates once linked.
+                  PayPal Live REST API &amp; auto-capture active. Client deposits are processed and captured directly into Spud&apos;s PayPal merchant account.
                 </p>
               </div>
             </div>
