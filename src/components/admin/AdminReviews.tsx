@@ -207,9 +207,19 @@ export const AdminReviews: React.FC = () => {
               >
                 {/* Attached Photo */}
                 {rev.photoUrl && (
-                  <div className="h-40 w-full -mx-5 -mt-5 mb-3 overflow-hidden relative">
-                    <img src={rev.photoUrl} alt={rev.authorName} className="w-full h-full object-cover" />
-                    <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-yellow-300 text-[10px] font-bold px-2 py-0.5 rounded border border-yellow-500/40 flex items-center gap-1">
+                  <div className="h-44 w-full -mx-5 -mt-5 mb-3 overflow-hidden relative bg-black/75 flex items-center justify-center">
+                    <img 
+                      src={rev.photoUrl} 
+                      alt="" 
+                      aria-hidden="true" 
+                      className="absolute inset-0 w-full h-full object-cover blur-xl opacity-35 scale-110 pointer-events-none" 
+                    />
+                    <img 
+                      src={rev.photoUrl} 
+                      alt={rev.authorName} 
+                      className="w-full h-full object-contain relative z-10 p-1" 
+                    />
+                    <div className="absolute top-2 left-2 z-20 bg-black/60 backdrop-blur-sm text-yellow-300 text-[10px] font-bold px-2 py-0.5 rounded border border-yellow-500/40 flex items-center gap-1">
                       <Camera className="w-3 h-3" />
                       <span>Client Photo Attached</span>
                     </div>
@@ -317,9 +327,19 @@ export const AdminReviews: React.FC = () => {
             >
               {/* Photo if present */}
               {rev.photoUrl && (
-                <div className="h-36 w-full -mx-5 -mt-5 mb-2 overflow-hidden relative">
-                  <img src={rev.photoUrl} alt={rev.authorName} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-tartan-dark to-transparent" />
+                <div className="h-44 w-full -mx-5 -mt-5 mb-2 overflow-hidden relative bg-black/75 flex items-center justify-center">
+                  <img 
+                    src={rev.photoUrl} 
+                    alt="" 
+                    aria-hidden="true" 
+                    className="absolute inset-0 w-full h-full object-cover blur-xl opacity-35 scale-110 pointer-events-none" 
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-tartan-dark to-transparent pointer-events-none" />
+                  <img 
+                    src={rev.photoUrl} 
+                    alt={rev.authorName} 
+                    className="w-full h-full object-contain relative z-10 p-1" 
+                  />
                 </div>
               )}
 

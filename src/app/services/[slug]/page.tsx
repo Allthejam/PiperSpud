@@ -34,9 +34,13 @@ import {
   Share2,
   Image as ImageIcon,
   CheckCircle2,
-  Reply
+  Reply,
+  ZoomIn,
+  X,
+  Quote,
+  ChevronLeft
 } from 'lucide-react';
-import { ServicePackage } from '@/types/spud';
+import { ServicePackage, Review } from '@/types/spud';
 
 const getServiceIcon = (iconName?: string) => {
   switch (iconName) {
@@ -67,6 +71,7 @@ export default function ServiceDetailPage() {
   } = useApp();
 
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+  const [popoutReview, setPopoutReview] = useState<Review | null>(null);
 
   // Smart slug resolution: support /services/service-1, custom slugs, IDs, and legacy URL patterns
   const service = (() => {
@@ -479,7 +484,33 @@ export default function ServiceDetailPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {displayReviews.map((rev) => (
-                <div key={rev.id} className="bg-tartan-dark rounded-3xl p-6 border border-tartan-border/80 shadow-xl space-y-4">
+                <div key={rev.id} className="bg-tartan-dark rounded-3xl p-6 border border-tartan-border/80 shadow-xl space-y-4 overflow-hidden">
+                  {/* Photo if present */}
+                  {rev.photoUrl && (
+                    <div 
+                      onClick={() => setPopoutReview(rev)}
+                      className="h-44 sm:h-52 w-full -mx-6 -mt-6 mb-3 overflow-hidden relative cursor-pointer bg-black/75 flex items-center justify-center group select-none"
+                      title="Click to view full photo and story"
+                    >
+                      <img 
+                        src={rev.photoUrl} 
+                        alt="" 
+                        aria-hidden="true" 
+                        className="absolute inset-0 w-full h-full object-cover blur-xl opacity-35 scale-110 pointer-events-none" 
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-tartan-card via-black/10 to-black/30 pointer-events-none" />
+                      <img 
+                        src={rev.photoUrl} 
+                        alt={rev.authorName}
+                        className="w-full h-full object-contain relative z-10 p-1 group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute top-2.5 right-2.5 z-20 opacity-0 group-hover:opacity-100 bg-black/80 backdrop-blur-md text-tartan-gold text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-tartan-gold/40 flex items-center gap-1 shadow transition-all">
+                        <ZoomIn className="w-3 h-3" />
+                        <span>Pop Out</span>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
                       {[...Array(5)].map((_, i) => (
@@ -602,6 +633,116 @@ export default function ServiceDetailPage() {
           </div>
         </div>
       </section>
+
+      {/* Fullscreen Photo & Review Pop-Out Lightbox */}
+      {popoutReview && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200"
+          onClick={() => setPopoutReview(null)}
+        >
+          <div 
+            className="bg-tartan-card border-2 border-tartan-gold/50 rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-hidden shadow-2xl flex flex-col md:flex-row relative animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Close Button */}
+            <button 
+              onClick={() => setPopoutReview(null)}
+              className="absolute top-3 right-3 z-30 p-2.5 rounded-full bg-black/80 hover:bg-red-600 text-white border border-white/20 transition shadow-xl"
+              title="Close (Esc)"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Photo Side */}
+            <div className="md:w-3/5 bg-black/90 flex items-center justify-center relative min-h-[300px] sm:min-h-[400px] p-4 overflow-hidden border-b md:border-b-0 md:border-r border-tartan-border select-none">
+              {popoutReview.photoUrl ? (
+                <>
+                  <img 
+                    src={popoutReview.photoUrl} 
+                    alt="" 
+                    aria-hidden="true" 
+                    className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-35 scale-125 pointer-events-none"
+                  />
+                  <img 
+                    src={popoutReview.photoUrl} 
+                    alt={popoutReview.authorName} 
+                    className="max-h-[55vh] md:max-h-[80vh] w-auto max-w-full object-contain relative z-10 rounded-2xl shadow-2xl border border-white/10"
+                  />
+                </>
+              ) : null}
+            </div>
+
+            {/* Review & Story Side */}
+            <div className="md:w-2/5 p-6 sm:p-8 flex flex-col justify-between overflow-y-auto max-h-[50vh] md:max-h-[80vh] space-y-6 bg-gradient-to-b from-tartan-card to-tartan-navy">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-2 pr-10 md:pr-0">
+                  <div className="flex items-center gap-1 text-yellow-400">
+                    {[...Array(popoutReview.rating || 5)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-yellow-400" />
+                    ))}
+                  </div>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-tartan-dark bg-gold-gradient px-2.5 py-1 rounded-full shadow">
+                    Verified Client
+                  </span>
+                </div>
+
+                <div className="relative">
+                  <Quote className="w-8 h-8 text-tartan-gold/20 -mb-2" />
+                  <p className="text-sm sm:text-base text-gray-100 italic font-serif leading-relaxed">
+                    &ldquo;{popoutReview.comment}&rdquo;
+                  </p>
+                </div>
+
+                {popoutReview.spudResponse && (
+                  <div className="p-4 rounded-2xl bg-tartan-navy/95 border border-tartan-gold/40 shadow-inner space-y-1.5">
+                    <div className="flex items-center justify-between text-tartan-gold font-bold text-xs">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-4 h-4 rounded-full bg-gold-gradient text-tartan-dark flex items-center justify-center text-[9px] font-black">S</span>
+                        Response from Spud
+                      </span>
+                      {popoutReview.spudResponseDate && (
+                        <span className="text-[10px] text-gray-400 font-mono">{popoutReview.spudResponseDate}</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-200 italic leading-relaxed pl-5">
+                      &ldquo;{popoutReview.spudResponse}&rdquo;
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-tartan-border/80 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-gold-gradient flex items-center justify-center text-tartan-dark font-serif font-extrabold text-sm shadow shrink-0">
+                    {popoutReview.authorName?.slice(0, 1) || '★'}
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="text-sm font-bold text-white font-serif truncate">{popoutReview.authorName}</h4>
+                    <p className="text-xs text-tartan-gold font-medium truncate">{popoutReview.eventType}</p>
+                    {popoutReview.location && (
+                      <p className="text-[11px] text-gray-400 flex items-center gap-1 mt-0.5 truncate">
+                        <MapPin className="w-3 h-3 text-tartan-gold shrink-0" />
+                        <span className="truncate">{popoutReview.location}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-gray-400 pt-1">
+                  <span className="font-mono text-[11px]">{popoutReview.date}</span>
+                  <button
+                    onClick={() => setPopoutReview(null)}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold transition text-xs border border-white/10"
+                  >
+                    Close (Esc)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       <Footer />
       <LiveChatWidget />

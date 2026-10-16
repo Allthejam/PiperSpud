@@ -19,7 +19,9 @@ import {
   Sliders,
   Camera,
   Loader2,
-  Reply
+  Reply,
+  ZoomIn,
+  Maximize2
 } from 'lucide-react';
 import { Review } from '@/types/spud';
 import { EditableElement } from './EditableElement';
@@ -32,6 +34,9 @@ export const ReviewsSection: React.FC = () => {
   const [viewMode, setViewMode] = useState<'carousel' | 'grid'>('carousel');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+
+  // Pop-Out Lightbox State for Large Photos & Reading
+  const [popoutReview, setPopoutReview] = useState<Review | null>(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -48,6 +53,39 @@ export const ReviewsSection: React.FC = () => {
 
   // Filter approved reviews for public view
   const approvedReviews = reviews.filter(r => r.status === 'approved');
+
+  // Photos pop-out navigation
+  const reviewsWithPhotos = approvedReviews.filter(r => Boolean(r.photoUrl));
+  const currentPopoutIndex = popoutReview 
+    ? reviewsWithPhotos.findIndex(r => r.id === popoutReview.id) 
+    : -1;
+
+  const handleNextPopout = () => {
+    if (reviewsWithPhotos.length === 0 || currentPopoutIndex === -1) return;
+    const nextIdx = (currentPopoutIndex + 1) % reviewsWithPhotos.length;
+    setPopoutReview(reviewsWithPhotos[nextIdx]);
+  };
+
+  const handlePrevPopout = () => {
+    if (reviewsWithPhotos.length === 0 || currentPopoutIndex === -1) return;
+    const prevIdx = (currentPopoutIndex - 1 + reviewsWithPhotos.length) % reviewsWithPhotos.length;
+    setPopoutReview(reviewsWithPhotos[prevIdx]);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!popoutReview) return;
+      if (e.key === 'Escape') {
+        setPopoutReview(null);
+      } else if (e.key === 'ArrowRight') {
+        handleNextPopout();
+      } else if (e.key === 'ArrowLeft') {
+        handlePrevPopout();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [popoutReview, currentPopoutIndex, reviewsWithPhotos]);
 
   // Auto-play Right-to-Left carousel effect
   useEffect(() => {
@@ -261,13 +299,30 @@ export const ReviewsSection: React.FC = () => {
                 className="col-span-3 opacity-50 hover:opacity-90 scale-90 hover:scale-95 transition-all duration-500 cursor-pointer bg-tartan-card rounded-3xl p-5 border border-tartan-border shadow-lg flex flex-col justify-between h-[390px] overflow-hidden"
               >
                 {approvedReviews[prevIndex]?.photoUrl && (
-                  <div className="h-28 w-full -mx-5 -mt-5 mb-3 overflow-hidden rounded-t-3xl relative">
+                  <div 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPopoutReview(approvedReviews[prevIndex]);
+                    }}
+                    className="h-32 w-full -mx-5 -mt-5 mb-3 overflow-hidden rounded-t-3xl relative bg-black/60 flex items-center justify-center group cursor-pointer"
+                    title="Click to view full photo & review"
+                  >
+                    <img 
+                      src={approvedReviews[prevIndex].photoUrl} 
+                      alt="" 
+                      aria-hidden="true"
+                      className="absolute inset-0 w-full h-full object-cover blur-lg opacity-30 scale-110 pointer-events-none" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-tartan-card to-transparent pointer-events-none" />
                     <img 
                       src={approvedReviews[prevIndex].photoUrl} 
                       alt={approvedReviews[prevIndex].authorName}
-                      className="w-full h-full object-cover grayscale hover:grayscale-0 transition"
+                      className="w-full h-full object-contain relative z-10 p-1 grayscale group-hover:grayscale-0 transition duration-300"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-tartan-card to-transparent" />
+                    <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 bg-black/70 backdrop-blur-sm text-tartan-gold text-[9px] font-bold px-2 py-0.5 rounded-full border border-tartan-gold/30 flex items-center gap-1 transition">
+                      <ZoomIn className="w-2.5 h-2.5" />
+                      <span>View</span>
+                    </div>
                   </div>
                 )}
                 <div className="space-y-2">
@@ -294,16 +349,35 @@ export const ReviewsSection: React.FC = () => {
 
                 {/* Optional Client Photo Banner */}
                 {approvedReviews[currentIndex]?.photoUrl && (
-                  <div className="h-44 w-full -mx-7 -mt-7 mb-4 overflow-hidden rounded-t-3xl relative group">
+                  <div 
+                    onClick={() => setPopoutReview(approvedReviews[currentIndex])}
+                    className="h-60 sm:h-72 w-full -mx-7 -mt-7 mb-4 overflow-hidden rounded-t-3xl relative group cursor-pointer bg-black/75 flex items-center justify-center select-none"
+                    title="Click to expand full photo and story"
+                  >
+                    {/* Ambient blurred backdrop so photo fills area naturally without empty cuts */}
+                    <img 
+                      src={approvedReviews[currentIndex].photoUrl} 
+                      alt="" 
+                      aria-hidden="true"
+                      className="absolute inset-0 w-full h-full object-cover blur-xl opacity-35 scale-110 pointer-events-none" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-tartan-card via-black/10 to-black/30 pointer-events-none" />
+
+                    {/* Crisp complete image fitting card without heads/feet cropped */}
                     <img 
                       src={approvedReviews[currentIndex].photoUrl} 
                       alt={approvedReviews[currentIndex].authorName}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      className="w-full h-full object-contain relative z-10 p-1.5 group-hover:scale-[1.02] transition-transform duration-500"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-tartan-card via-transparent to-black/30" />
-                    <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-tartan-gold text-[10px] font-bold px-2.5 py-1 rounded-full border border-tartan-gold/40 flex items-center gap-1.5 shadow">
-                      <Camera className="w-3 h-3" />
+
+                    <div className="absolute top-3 left-3 z-20 bg-black/70 backdrop-blur-md text-tartan-gold text-[10px] font-bold px-2.5 py-1 rounded-full border border-tartan-gold/40 flex items-center gap-1.5 shadow">
+                      <Camera className="w-3 h-3 text-tartan-gold" />
                       <span>Client Experience Photo</span>
+                    </div>
+
+                    <div className="absolute top-3 right-3 z-20 bg-gold-gradient text-tartan-dark text-[10px] font-extrabold px-3 py-1 rounded-full shadow flex items-center gap-1.5 group-hover:scale-105 transition-all">
+                      <ZoomIn className="w-3.5 h-3.5" />
+                      <span>Click to Pop Out & Read</span>
                     </div>
                   </div>
                 )}
@@ -381,13 +455,30 @@ export const ReviewsSection: React.FC = () => {
                 className="col-span-3 opacity-50 hover:opacity-90 scale-90 hover:scale-95 transition-all duration-500 cursor-pointer bg-tartan-card rounded-3xl p-5 border border-tartan-border shadow-lg flex flex-col justify-between h-[390px] overflow-hidden"
               >
                 {approvedReviews[nextIndex]?.photoUrl && (
-                  <div className="h-28 w-full -mx-5 -mt-5 mb-3 overflow-hidden rounded-t-3xl relative">
+                  <div 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPopoutReview(approvedReviews[nextIndex]);
+                    }}
+                    className="h-32 w-full -mx-5 -mt-5 mb-3 overflow-hidden rounded-t-3xl relative bg-black/60 flex items-center justify-center group cursor-pointer"
+                    title="Click to view full photo & review"
+                  >
+                    <img 
+                      src={approvedReviews[nextIndex].photoUrl} 
+                      alt="" 
+                      aria-hidden="true"
+                      className="absolute inset-0 w-full h-full object-cover blur-lg opacity-30 scale-110 pointer-events-none" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-tartan-card to-transparent pointer-events-none" />
                     <img 
                       src={approvedReviews[nextIndex].photoUrl} 
                       alt={approvedReviews[nextIndex].authorName}
-                      className="w-full h-full object-cover grayscale hover:grayscale-0 transition"
+                      className="w-full h-full object-contain relative z-10 p-1 grayscale group-hover:grayscale-0 transition duration-300"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-tartan-card to-transparent" />
+                    <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 bg-black/70 backdrop-blur-sm text-tartan-gold text-[9px] font-bold px-2 py-0.5 rounded-full border border-tartan-gold/30 flex items-center gap-1 transition">
+                      <ZoomIn className="w-2.5 h-2.5" />
+                      <span>View</span>
+                    </div>
                   </div>
                 )}
                 <div className="space-y-2">
@@ -412,13 +503,27 @@ export const ReviewsSection: React.FC = () => {
             <div className="md:hidden">
               <div className="bg-gradient-to-b from-tartan-card to-tartan-navy rounded-3xl p-6 border-2 border-tartan-gold shadow-2xl relative overflow-hidden">
                 {approvedReviews[currentIndex]?.photoUrl && (
-                  <div className="h-44 w-full -mx-6 -mt-6 mb-4 overflow-hidden rounded-t-3xl relative">
+                  <div 
+                    onClick={() => setPopoutReview(approvedReviews[currentIndex])}
+                    className="h-60 sm:h-64 w-full -mx-6 -mt-6 mb-4 overflow-hidden rounded-t-3xl relative cursor-pointer bg-black/75 flex items-center justify-center group select-none"
+                    title="Tap to view full photo and story"
+                  >
+                    <img 
+                      src={approvedReviews[currentIndex].photoUrl} 
+                      alt="" 
+                      aria-hidden="true" 
+                      className="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110 pointer-events-none" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-tartan-card to-transparent pointer-events-none" />
                     <img 
                       src={approvedReviews[currentIndex].photoUrl} 
                       alt={approvedReviews[currentIndex].authorName}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain relative z-10 p-1.5"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-tartan-card to-transparent" />
+                    <div className="absolute top-2.5 right-2.5 z-20 bg-black/70 backdrop-blur-md text-tartan-gold text-[10px] font-bold px-2.5 py-1 rounded-full border border-tartan-gold/40 flex items-center gap-1 shadow">
+                      <ZoomIn className="w-3 h-3" />
+                      <span>Tap to Pop Out</span>
+                    </div>
                   </div>
                 )}
 
@@ -523,13 +628,27 @@ export const ReviewsSection: React.FC = () => {
               >
                 {/* Review Photo if uploaded */}
                 {rev.photoUrl && (
-                  <div className="h-36 w-full -mx-6 -mt-6 mb-4 overflow-hidden relative">
+                  <div 
+                    onClick={() => setPopoutReview(rev)}
+                    className="h-48 sm:h-52 w-full -mx-6 -mt-6 mb-4 overflow-hidden relative cursor-pointer bg-black/75 rounded-t-3xl flex items-center justify-center group select-none"
+                    title="Click to pop out larger photo & read testimonial"
+                  >
+                    <img 
+                      src={rev.photoUrl} 
+                      alt="" 
+                      aria-hidden="true" 
+                      className="absolute inset-0 w-full h-full object-cover blur-xl opacity-35 scale-110 pointer-events-none" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-tartan-card via-black/10 to-black/30 pointer-events-none" />
                     <img 
                       src={rev.photoUrl} 
                       alt={rev.authorName}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-contain relative z-10 p-1 group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-tartan-card to-transparent" />
+                    <div className="absolute top-2.5 right-2.5 z-20 opacity-0 group-hover:opacity-100 bg-black/80 backdrop-blur-md text-tartan-gold text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-tartan-gold/40 flex items-center gap-1 shadow transition-all">
+                      <ZoomIn className="w-3 h-3" />
+                      <span>Pop Out</span>
+                    </div>
                   </div>
                 )}
 
@@ -739,6 +858,165 @@ export const ReviewsSection: React.FC = () => {
                   </div>
                 </form>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* ================= PHOTO & REVIEW POP-OUT LIGHTBOX MODAL ================= */}
+        {popoutReview && (
+          <div 
+            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200"
+            onClick={() => setPopoutReview(null)}
+          >
+            <div 
+              className="bg-tartan-card border-2 border-tartan-gold/50 rounded-3xl max-w-5xl w-full max-h-[92vh] overflow-hidden shadow-2xl flex flex-col md:flex-row relative animate-in zoom-in-95 duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button 
+                onClick={() => setPopoutReview(null)}
+                className="absolute top-3 right-3 z-30 p-2.5 rounded-full bg-black/80 hover:bg-red-600 text-white border border-white/20 transition-all shadow-xl group"
+                title="Close Lightbox (Esc)"
+              >
+                <X className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+              </button>
+
+              {/* Left / Main Column: Full Photo with Navigation */}
+              <div className="md:w-3/5 bg-black/90 flex items-center justify-center relative min-h-[300px] sm:min-h-[420px] p-3 sm:p-6 overflow-hidden border-b md:border-b-0 md:border-r border-tartan-border select-none">
+                {popoutReview.photoUrl ? (
+                  <>
+                    {/* Ambient backdrop */}
+                    <img 
+                      src={popoutReview.photoUrl} 
+                      alt="" 
+                      aria-hidden="true" 
+                      className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-35 scale-125 pointer-events-none"
+                    />
+
+                    {/* Crisp Full Image */}
+                    <img 
+                      src={popoutReview.photoUrl} 
+                      alt={popoutReview.authorName} 
+                      className="max-h-[55vh] md:max-h-[80vh] w-auto max-w-full object-contain relative z-10 rounded-2xl shadow-2xl border border-white/10"
+                    />
+
+                    {/* Next / Prev Navigation overlay buttons */}
+                    {reviewsWithPhotos.length > 1 && (
+                      <>
+                        <button
+                          onClick={handlePrevPopout}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/70 hover:bg-tartan-gold hover:text-tartan-dark text-white border border-white/20 flex items-center justify-center transition shadow-lg"
+                          title="Previous Photo (Left Arrow)"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={handleNextPopout}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/70 hover:bg-tartan-gold hover:text-tartan-dark text-white border border-white/20 flex items-center justify-center transition shadow-lg"
+                          title="Next Photo (Right Arrow)"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+                      </>
+                    )}
+
+                    {/* Photo index pill */}
+                    {currentPopoutIndex !== -1 && (
+                      <div className="absolute bottom-3 left-3 z-20 bg-black/70 backdrop-blur-md text-gray-300 text-[11px] font-mono px-3 py-1 rounded-full border border-white/10 flex items-center gap-1.5">
+                        <Camera className="w-3.5 h-3.5 text-tartan-gold" />
+                        <span>Photo {currentPopoutIndex + 1} of {reviewsWithPhotos.length}</span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center p-8 text-gray-400">
+                    <Camera className="w-12 h-12 text-tartan-gold/40 mx-auto mb-2" />
+                    <p className="text-xs">No client photo attached</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column: Full Client Testimonial & Spud's Reply */}
+              <div className="md:w-2/5 p-6 sm:p-8 flex flex-col justify-between overflow-y-auto max-h-[50vh] md:max-h-[85vh] space-y-6 bg-gradient-to-b from-tartan-card to-tartan-navy">
+                <div className="space-y-4">
+                  
+                  {/* Rating & Verified Client Badge */}
+                  <div className="flex items-center justify-between gap-2 pr-10 md:pr-0">
+                    <div className="flex items-center gap-1 text-yellow-400">
+                      {[...Array(popoutReview.rating || 5)].map((_, i) => (
+                        <Star key={i} className="w-4 h-4 fill-yellow-400" />
+                      ))}
+                    </div>
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-tartan-dark bg-gold-gradient px-2.5 py-1 rounded-full shadow">
+                      Verified Client
+                    </span>
+                  </div>
+
+                  {/* Testimonial Quote */}
+                  <div className="relative">
+                    <Quote className="w-8 h-8 text-tartan-gold/20 -mb-2" />
+                    <p className="text-sm sm:text-base text-gray-100 italic font-serif leading-relaxed">
+                      &quot;{popoutReview.comment}&quot;
+                    </p>
+                  </div>
+
+                  {/* Spud's Response if present */}
+                  {popoutReview.spudResponse && (
+                    <div className="p-4 rounded-2xl bg-tartan-navy/95 border border-tartan-gold/40 shadow-inner space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full bg-gold-gradient flex items-center justify-center text-tartan-dark font-black text-[10px]">
+                            S
+                          </span>
+                          <span className="text-xs font-bold text-tartan-gold flex items-center gap-1">
+                            <Reply className="w-3.5 h-3.5 text-tartan-gold" />
+                            Response from Spud the Piper
+                          </span>
+                        </div>
+                        {popoutReview.spudResponseDate && (
+                          <span className="text-[10px] text-gray-400 font-mono">
+                            {popoutReview.spudResponseDate}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-200 italic leading-relaxed pl-6">
+                        &quot;{popoutReview.spudResponse}&quot;
+                      </p>
+                    </div>
+                  )}
+
+                </div>
+
+                {/* Author Info & Close Actions */}
+                <div className="pt-4 border-t border-tartan-border/80 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-gold-gradient flex items-center justify-center text-tartan-dark font-serif font-extrabold text-base shadow-lg shrink-0">
+                      {popoutReview.authorName?.slice(0, 1) || '★'}
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-base font-bold text-white font-serif truncate">{popoutReview.authorName}</h4>
+                      <p className="text-xs text-tartan-gold font-medium truncate">{popoutReview.eventType}</p>
+                      {popoutReview.location && (
+                        <p className="text-[11px] text-gray-400 flex items-center gap-1 mt-0.5 truncate">
+                          <MapPin className="w-3 h-3 text-tartan-gold shrink-0" />
+                          <span className="truncate">{popoutReview.location}</span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-gray-400 pt-1">
+                    <span className="font-mono text-[11px]">{popoutReview.date}</span>
+                    <button
+                      onClick={() => setPopoutReview(null)}
+                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold transition text-xs border border-white/10"
+                    >
+                      Close (Esc)
+                    </button>
+                  </div>
+                </div>
+
+              </div>
             </div>
           </div>
         )}
