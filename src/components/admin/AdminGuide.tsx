@@ -86,6 +86,11 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
         {
           title: 'Step 4: Message the Client or Send Brevo Approval',
           description: 'You can type a personalized reply right inside the "Message Client Directly" box and hit "Send Brevo Message" — the client receives a professional branded email and every message is permanently recorded in the Audit Trail. When ready, click "Approve Booking & Send Invoice" to deliver their deposit payment link.',
+        },
+        {
+          title: 'Step 5: Flexible Payment Options (Online, Phone Card, BACS/Cash, or WhatsApp Link)',
+          description: 'Once approved, the client is sent their payment link. In addition, you have three flexible payment controls right on the booking card: "Pay / Card (Phone)" to take card details over the phone, "Record Manual Deposit" for BACS or cash payments, and "Copy Link" to send the payment link via WhatsApp or text message.',
+          tip: 'Any of these payment actions automatically locks the date as Confirmed and issues the official Brevo receipt!'
         }
       ],
       faq: [
@@ -101,40 +106,62 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
     },
     {
       id: 'payments',
-      title: '💳 2. PayPal Deposit Logs, Remaining Balance & 7-Day Watchdog',
-      shortDesc: 'Live PayPal deposit tracking, remaining balance calculation, automated 7-day payment reminders, and day-before event alerts.',
+      title: '💳 2. Payment Gateway: Online Deposits, Phone Card Terminal, BACS & Cash',
+      shortDesc: 'Live automated PayPal deposits, taking card payments over the phone, recording offline BACS/cash deposits, 1-click WhatsApp link copying, and the 7-day payment watchdog.',
       icon: CreditCard,
       badge: 'Automations & Cashflow',
       badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
       targetTab: 'bookings',
       steps: [
         {
-          title: 'Step 1: Live PayPal Deposit Logging & Instant Receipt',
-          description: 'When a client pays their deposit via PayPal, the system automatically logs the transaction: "Deposit Paid via PayPal on [Date & Time]", locks the booking as Confirmed (green badge), and immediately sends the client a branded Brevo Thank You email containing their booking confirmation and PayPal link to pay the remaining balance.',
-          tip: 'Both the main Bookings overview and the detailed modal show the exact deposit paid, transaction timestamp, and remaining balance due.'
+          title: 'Step 1: Automated Client Online Payments (PayPal / Debit / Credit Card)',
+          description: 'When you approve a booking, Brevo automatically emails the client an official invoice containing their private payment link. The client can pay their deposit online in seconds using PayPal, Debit Card, or Credit Card. Once paid, the system automatically marks the booking Confirmed & Locked (green badge), records the transaction in the audit trail, and immediately dispatches the official Brevo Confirmed Receipt with remaining balance details.',
+          tip: 'Both the main Bookings list and the detailed dossier show the exact deposit paid, payment method, transaction reference, and remaining balance due.'
         },
         {
-          title: 'Step 2: Remaining Balance Due Date (1 Day Before Event)',
-          description: 'The remaining balance (e.g. Total £480 - £150 deposit = £330 remaining) is scheduled to be paid by the day before the event. The client can click their unique balance link anytime to settle up securely via PayPal.',
+          title: 'Step 2: Taking Card Payments Over the Phone ("Pay / Card (Phone)")',
+          description: 'If a client calls you up wanting to pay their deposit with their debit or credit card over the phone, click the blue "Pay / Card (Phone)" button. This opens the secure live payment terminal right inside the Back Office where you can enter their card details. The transaction is processed immediately into your PayPal merchant account and the date is instantly locked.',
+          tip: 'Perfect for older clients, wedding planners, or corporate organizers who prefer phone transactions.'
         },
         {
-          title: 'Step 3: Automated 7-Day Payment Reminder Watchdog',
-          description: 'If the remaining balance has not been paid 7 days before the event, the automated diary watchdog automatically sends a polite payment reminder email to the client, while sending Spud an alert notification so you are always in the loop.',
+          title: 'Step 3: Recording Manual Deposits ("Record Manual Deposit" for BACS / Cash)',
+          description: 'If a client pays their deposit by direct bank transfer (BACS) into your bank account, pays cash in person, or sends a cheque, click "Record Manual Deposit". You can choose the payment method (BACS, Cash, Phone Card, Cheque), enter the bank reference or statement memo, and click "Confirm Deposit & Lock Date". This updates the diary, recalculates the remaining balance, and optionally sends the client an official Brevo confirmation receipt.',
+          tip: 'The Brevo confirmation email dynamically updates to show "Deposit Paid via BACS" or "Deposit Paid via Cash" instead of PayPal.'
+        },
+        {
+          title: 'Step 4: 1-Click WhatsApp & SMS Payment Link ("Copy Link")',
+          description: 'If a client says they did not see their email or you are communicating via WhatsApp or text message, click the "Copy Link" button on their booking card. The client\'s private invoice link (e.g. https://spudthepiper.com/pay?id=...) is copied to your clipboard instantly with a green checkmark confirmation, ready to paste straight into your chat.',
+        },
+        {
+          title: 'Step 5: Remaining Balance Due Date & 7-Day Automated Watchdog',
+          description: 'The remaining balance (e.g. Total £480 - £150 deposit = £330 remaining) is scheduled to be paid by the day before the event. If the balance has not been settled 7 days prior to the gig, the automated diary watchdog sends a polite reminder email to the client, while alerting Spud.',
           tip: 'Spud also receives an automated 1-Day Urgent Briefing email 24 hours before the gig with venue address, client phone number, and timing breakdown so you never miss an event.'
         },
         {
-          title: 'Step 4: Mark Remainder Paid for Cash or BACS Transfers',
-          description: 'If a client pays the remaining balance in cash on the day or sends a direct bank transfer, click "Mark Remaining Balance Paid" in the booking details. This updates the status to "Fully Paid & Settled" and clears the balance to £0.00.',
+          title: 'Step 6: Mark Remaining Balance Paid for Cash on the Day or Bank Transfer',
+          description: 'When the client settles their remaining balance in cash on the day of the performance or via direct bank transfer, click "Mark Remainder Paid (£...)" on the booking. This flags the gig as "100% Fully Settled", records the audit timestamp, and issues the full final settlement receipt via Brevo.',
         }
       ],
       faq: [
+        {
+          q: 'What if a client pays by bank transfer (BACS)?',
+          a: 'Click "Record Manual Deposit" on the booking card, select "BACS / Direct Bank Transfer", verify the reference or statement note, and click "Confirm Deposit & Lock Date". The booking is immediately confirmed in your diary and the client receives their official Brevo receipt.'
+        },
+        {
+          q: 'Can I take card payments over the phone for clients?',
+          a: 'Yes! Click "Pay / Card (Phone)" on any approved booking. You can enter their debit/credit card details into the secure virtual terminal directly.'
+        },
+        {
+          q: 'How do I send a client their payment link via WhatsApp or text?',
+          a: 'Click "Copy Link" on the booking card. The full secure payment URL is copied to your clipboard ready to paste into WhatsApp, Messenger, or an SMS.'
+        },
         {
           q: 'Can I manually trigger the 7-day or 1-day reminder emails?',
           a: 'Yes! Inside any confirmed booking modal, you will find buttons for "Send 7-Day Balance Reminder" and "Send 1-Day Event Briefing" to dispatch them with 1 click anytime.'
         },
         {
           q: 'What if a client pays the full amount upfront?',
-          a: 'If the full amount is settled, the remaining balance immediately shows £0.00 with a green "Fully Settled" badge, and no payment reminders will be sent.'
+          a: 'If the full amount is settled, the remaining balance immediately shows £0.00 with a green "Fully Settled" badge, and no balance reminder emails will be sent.'
         }
       ]
     },
