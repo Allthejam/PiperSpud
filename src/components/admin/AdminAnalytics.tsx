@@ -179,7 +179,7 @@ export const AdminAnalytics: React.FC = () => {
 
             {/* External Google Analytics Console Link */}
             <a
-              href="https://analytics.google.com/analytics/web/"
+              href={`https://analytics.google.com/analytics/web/#/p${analyticsData?.propertyId || '558351341'}/reports/intelligenthome`}
               target="_blank"
               rel="noopener noreferrer"
               className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-extrabold text-xs shadow-lg flex items-center justify-center gap-1.5 transition"
