@@ -7,6 +7,9 @@ interface ServerApiKeys {
   brevoAdminAlertEmail?: string;
   paypalClientId?: string;
   paypalClientSecret?: string;
+  gaPropertyId?: string;
+  gaClientEmail?: string;
+  gaPrivateKey?: string;
 }
 
 let cachedKeys: ServerApiKeys | null = null;
@@ -15,7 +18,7 @@ const CACHE_DURATION_MS = 60 * 1000; // Cache for 60 seconds
 
 /**
  * Fetch API credentials from process.env with automatic dynamic fallback to Firestore settings/api_keys
- * Ensures Brevo transactional email and PayPal live payments work 100% reliably in Cloud Run / App Hosting
+ * Ensures Brevo transactional email, PayPal live payments, and Google Analytics work 100% reliably in Cloud Run / App Hosting
  * even if environment variables are not injected directly into the container.
  */
 export async function getLiveServerApiKeys(): Promise<ServerApiKeys> {
@@ -32,10 +35,13 @@ export async function getLiveServerApiKeys(): Promise<ServerApiKeys> {
     brevoAdminAlertEmail: process.env.BREVO_ADMIN_ALERT_EMAIL || 'info@spudthepiper.com',
     paypalClientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
     paypalClientSecret: process.env.PAYPAL_CLIENT_SECRET,
+    gaPropertyId: process.env.GA_PROPERTY_ID,
+    gaClientEmail: process.env.GA_CLIENT_EMAIL,
+    gaPrivateKey: process.env.GA_PRIVATE_KEY,
   };
 
-  // If both keys are already present in process.env, return immediately
-  if (keys.brevoApiKey && keys.paypalClientSecret) {
+  // If all keys are already present in process.env, return immediately
+  if (keys.brevoApiKey && keys.paypalClientSecret && keys.gaPropertyId && keys.gaPrivateKey) {
     cachedKeys = keys;
     lastFetchTime = now;
     return keys;
@@ -69,6 +75,15 @@ export async function getLiveServerApiKeys(): Promise<ServerApiKeys> {
         }
         if (!keys.paypalClientSecret && fields.paypalClientSecret?.stringValue) {
           keys.paypalClientSecret = fields.paypalClientSecret.stringValue;
+        }
+        if (!keys.gaPropertyId && fields.gaPropertyId?.stringValue) {
+          keys.gaPropertyId = fields.gaPropertyId.stringValue;
+        }
+        if (!keys.gaClientEmail && fields.gaClientEmail?.stringValue) {
+          keys.gaClientEmail = fields.gaClientEmail.stringValue;
+        }
+        if (!keys.gaPrivateKey && fields.gaPrivateKey?.stringValue) {
+          keys.gaPrivateKey = fields.gaPrivateKey.stringValue;
         }
       }
     }

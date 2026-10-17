@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
+import { getLiveServerApiKeys } from '@/lib/serverApiKeys';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,11 +13,12 @@ const cache: Record<string, CacheEntry> = {};
 const CACHE_TTL_HISTORICAL_MS = 5 * 60 * 1000; // 5 minutes
 const CACHE_TTL_REALTIME_MS = 30 * 1000;       // 30 seconds
 
-// Safe client initializer
-function getAnalyticsClient() {
-  const propertyId = process.env.GA_PROPERTY_ID || process.env.NEXT_PUBLIC_GA_PROPERTY_ID;
-  const clientEmail = process.env.GA_CLIENT_EMAIL;
-  let privateKey = process.env.GA_PRIVATE_KEY;
+// Safe client initializer with dynamic Firestore fallback for Firebase Cloud Hosting
+async function getAnalyticsClient() {
+  const keys = await getLiveServerApiKeys();
+  const propertyId = keys.gaPropertyId || process.env.GA_PROPERTY_ID || process.env.NEXT_PUBLIC_GA_PROPERTY_ID;
+  const clientEmail = keys.gaClientEmail || process.env.GA_CLIENT_EMAIL;
+  let privateKey = keys.gaPrivateKey || process.env.GA_PRIVATE_KEY;
 
   if (!propertyId || !clientEmail || !privateKey) {
     return { client: null, propertyId: null, isConfigured: false };
@@ -125,7 +127,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(cache[cacheKey].data);
     }
 
-    const { client, propertyId, isConfigured } = getAnalyticsClient();
+    const { client, propertyId, isConfigured } = await getAnalyticsClient();
 
     // If credentials are not yet set in environment, return rich preview data
     if (!isConfigured || !client || !propertyId) {
