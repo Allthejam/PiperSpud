@@ -29,7 +29,8 @@ import {
   Building,
   FileText,
   Shirt,
-  Video
+  Video,
+  BarChart3
 } from 'lucide-react';
 import { BrevoEmailModal } from './BrevoEmailModal';
 import { PayPalCheckoutModal } from './PayPalCheckoutModal';
@@ -79,6 +80,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
     { id: 'social-links', label: 'Social Media Links', icon: Share2 },
     { id: 'reviews', label: 'Review Moderation', icon: Star },
     { id: 'seo', label: 'SEO & Meta Studio', icon: Search },
+    { id: 'analytics', label: 'Website Analytics & Traffic', icon: BarChart3, badge: 'Live' },
     { id: 'security', label: 'Admin Team & Security', icon: ShieldCheck },
     { id: 'notifications', label: 'Notification Center', icon: Bell, badgeCount: unreadNotifCount },
     { id: 'guide', label: "Spud's User Manual & Guide", icon: BookOpen, badge: 'Guide' }

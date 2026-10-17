@@ -24,6 +24,7 @@ import { AdminPartners } from '@/components/admin/AdminPartners';
 import { AdminEmailTemplates } from '@/components/admin/AdminEmailTemplates';
 import { AdminAttire } from '@/components/admin/AdminAttire';
 import { AdminVideos } from '@/components/admin/AdminVideos';
+import { AdminAnalytics } from '@/components/admin/AdminAnalytics';
 import { AdminLoginModal } from '@/components/AdminLoginModal';
 import { ShieldAlert, ArrowLeft, RefreshCw, AlertTriangle, Loader2 } from 'lucide-react';
 
@@ -192,6 +193,7 @@ export default function AdminPage() {
         {activeTab === 'social-links' && <AdminSocialLinks />}
         {activeTab === 'reviews' && <AdminReviews />}
         {activeTab === 'seo' && <AdminSeoStudio />}
+        {activeTab === 'analytics' && <AdminAnalytics />}
         {activeTab === 'security' && <AdminSecurityControl />}
         {activeTab === 'notifications' && <AdminNotifications onNavigateTab={setActiveTab} />}
       </AdminLayout>

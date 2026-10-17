@@ -29,7 +29,8 @@ import {
   Share2,
   Bell,
   AlertTriangle,
-  Receipt
+  Receipt,
+  BarChart3
 } from 'lucide-react';
 
 interface AdminGuideProps {
@@ -400,6 +401,48 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
         {
           q: 'What if I forget my password?',
           a: 'Click "Forgot Password?" on the login screen. Firebase will instantly send a password reset link to your email address.'
+        }
+      ]
+    },
+    {
+      id: 'analytics-guide',
+      title: '📊 11. Website Traffic, Real-Time Radar & Google Analytics',
+      shortDesc: 'How to monitor live active website visitors, top performing pages, visitor geography, and traffic channels on spudthepiper.com.',
+      icon: BarChart3,
+      badge: 'Live Traffic',
+      badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+      targetTab: 'analytics',
+      steps: [
+        {
+          title: 'Step 1: Open Website Analytics & Traffic',
+          description: 'Click on "Website Analytics & Traffic" in the Back Office sidebar. At the top of the page, you will see a green pulsing beacon showing how many live visitors are browsing spudthepiper.com right now.',
+          tip: 'The real-time radar automatically polls every 30 seconds to keep your live numbers completely up to date.'
+        },
+        {
+          title: 'Step 2: Filter by Date (Today, 7 Days, 30 Days, 90 Days)',
+          description: 'Use the quick filter pills at the top right to switch between Today (last 24 hours), Last 7 Days, Last 30 Days, or Last 90 Days. All graphs, page views, and visitor numbers recalculate instantly.',
+        },
+        {
+          title: 'Step 3: Discover Which Pages Couples & Clients Visit Most',
+          description: 'The "Top Performing Pages" table reveals which parts of your site get the most attention — such as the Homepage (/), the Tartan & Attire Studio (/attire), Wedding Services, Reviews, and Booking Inquiries.',
+        },
+        {
+          title: 'Step 4: Check Where Your Visitors Come From (Geography & Referrals)',
+          description: 'See the exact breakdown of Scottish & UK visitors alongside international tourists planning weddings in Scotland (United States, Canada, Australia, Germany). The "Traffic Channels" section reveals how many arrive from Google Search, direct visits, Facebook, or Trustpilot.',
+        },
+        {
+          title: 'Step 5: 1-Click Launch to Official Google Analytics 4',
+          description: 'Click the golden "Google Analytics" button at the top right of the page to launch straight into your official Google Analytics 4 property (G-1RJRSHLQND) for deep dives whenever you want.',
+        }
+      ],
+      faq: [
+        {
+          q: 'Is Google Analytics already tracking visitors on my live website?',
+          a: 'Yes! Google tag G-1RJRSHLQND is active on every page of spudthepiper.com, tracking visitors, sessions, device types, and page views.'
+        },
+        {
+          q: 'Do I need to do anything to keep the analytics running?',
+          a: 'No! Everything runs automatically in the background. The dashboard caches data to load instantly in under 50ms and saves API quotas.'
         }
       ]
     }
