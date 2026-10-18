@@ -58,6 +58,8 @@ import {
   initialAdminWhitelist,
   initialUsers,
   defaultPermissions,
+  ALL_ADMIN_MODULES,
+  AdminModuleMeta,
   initialFaqs,
   initialGallery,
   initialPricingConfig,
@@ -97,6 +99,7 @@ interface AppContextType {
   addUser: (email: string, name?: string, role?: UserRole, permissions?: Partial<UserPermissions>, avatarUrl?: string) => Promise<boolean>;
   updateUser: (id: string, updates: Partial<UserRecord>) => Promise<boolean>;
   updateUserPermissions: (id: string, permissions: Partial<UserPermissions>) => Promise<boolean>;
+  syncAllUsersToFirestore: () => Promise<{ success: boolean; count: number; error?: string }>;
   toggleUserOnlineStatus: (id: string, isOnline: boolean) => Promise<void>;
   removeUser: (idOrEmail: string) => Promise<boolean>;
   addAuthorizedAdmin: (email: string, name?: string, role?: UserRole) => Promise<boolean>;
@@ -1037,11 +1040,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
         if (!snapshot.empty) {
           const remoteUsers: UserRecord[] = [];
+          const usersToBackfill: UserRecord[] = [];
+
           snapshot.forEach((d) => {
             const data = d.data() as UserRecord;
             // Only accept valid accounts with an email address (ignoring corrupt/empty mockups)
             if (data && data.email && data.email.includes('@')) {
-              remoteUsers.push({ ...data, id: data.id || d.id });
+              const role: UserRole = (data.email.toLowerCase() === 'piperspud@gmail.com' || data.role === 'owner') 
+                ? 'owner' 
+                : (data.role || 'admin');
+              const roleDefaults = defaultPermissions[role] || defaultPermissions.admin;
+
+              // Check if all 23 modules are present in permissions
+              const existingModules = (data.permissions?.modules || {}) as ModulePermissions;
+              const isMissingModules = !data.permissions?.modules || Object.keys(existingModules).length < ALL_ADMIN_MODULES.length;
+
+              const fullModules: ModulePermissions = ALL_ADMIN_MODULES.reduce((acc: ModulePermissions, m: AdminModuleMeta) => {
+                acc[m.id] = existingModules[m.id] || roleDefaults.modules?.[m.id] || (role === 'owner' || role === 'developer' ? 'edit' : 'view');
+                return acc;
+              }, {} as ModulePermissions);
+
+              const userRecord: UserRecord = {
+                ...data,
+                id: data.id || d.id,
+                role,
+                permissions: {
+                  ...roleDefaults,
+                  ...(data.permissions || {}),
+                  modules: fullModules
+                }
+              };
+
+              remoteUsers.push(userRecord);
+
+              if (isMissingModules) {
+                usersToBackfill.push(userRecord);
+              }
             }
           });
 
@@ -1052,6 +1086,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 localStorage.setItem(`${LOCAL_STORAGE_PREFIX}users`, JSON.stringify(remoteUsers));
                 localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`, JSON.stringify(remoteUsers));
               } catch (e) {}
+            }
+
+            // Immediately backfill any users missing module permissions directly in Firestore
+            if (usersToBackfill.length > 0 && db) {
+              const firestore = db;
+              usersToBackfill.forEach((u) => {
+                if (u && u.id) {
+                  setDoc(doc(firestore, 'users', u.id), JSON.parse(JSON.stringify(u)), { merge: true })
+                    .catch((err) => console.warn('Error backfilling user modules to Firestore:', err));
+                }
+              });
             }
 
             // Check if any admin or owner is currently online
@@ -1908,10 +1953,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     if (db) {
       try {
-        await setDoc(doc(db, 'users', id), newUser, { merge: true });
-        await setDoc(doc(db, 'settings', 'admin_whitelist'), { admins: updated }, { merge: true });
+        await setDoc(doc(db, 'users', id), JSON.parse(JSON.stringify(newUser)), { merge: true });
+        await setDoc(doc(db, 'settings', 'admin_whitelist'), { admins: JSON.parse(JSON.stringify(updated)) }, { merge: true });
       } catch (e) {
-        console.warn('Firestore user save warning:', e);
+        console.error('Firestore user save error:', e);
       }
     }
     addNotification({
@@ -1939,8 +1984,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     if (db && targetUser) {
       try {
-        await setDoc(doc(db, 'users', id), targetUser, { merge: true });
-        await setDoc(doc(db, 'settings', 'admin_whitelist'), { admins: updated }, { merge: true });
+        await setDoc(doc(db, 'users', id), JSON.parse(JSON.stringify(targetUser)), { merge: true });
+        await setDoc(doc(db, 'settings', 'admin_whitelist'), { admins: JSON.parse(JSON.stringify(updated)) }, { merge: true });
 
         const isOwnerOrSpud = (targetUser as UserRecord).role === 'owner' || (targetUser as UserRecord).email?.toLowerCase() === 'piperspud@gmail.com';
         if (updates.avatarUrl && isOwnerOrSpud) {
@@ -1979,7 +2024,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
       } catch (e) {
-        console.warn('Firestore updateUser warning:', e);
+        console.error('Firestore updateUser error:', e);
       }
     }
     return true;
@@ -1988,15 +2033,79 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateUserPermissions = async (id: string, permissions: Partial<UserPermissions>): Promise<boolean> => {
     const target = (users || []).find(u => u && u.id === id);
     if (!target) return false;
+
+    const role: UserRole = target.role || 'admin';
+    const roleDefaults = defaultPermissions[role] || defaultPermissions.admin;
+    const baseModules = (target.permissions?.modules || roleDefaults.modules || {}) as ModulePermissions;
+
+    const fullModules: ModulePermissions = ALL_ADMIN_MODULES.reduce((acc: ModulePermissions, m: AdminModuleMeta) => {
+      const explicit = permissions.modules?.[m.id];
+      if (explicit !== undefined) {
+        acc[m.id] = explicit;
+      } else {
+        acc[m.id] = baseModules[m.id] || roleDefaults.modules?.[m.id] || (role === 'owner' || role === 'developer' ? 'edit' : 'view');
+      }
+      return acc;
+    }, {} as ModulePermissions);
+
     const newPerms: UserPermissions = { 
+      ...roleDefaults,
       ...target.permissions, 
       ...permissions,
-      modules: {
-        ...(target.permissions?.modules || {}),
-        ...(permissions.modules || {})
-      }
+      modules: fullModules
     };
     return await updateUser(id, { permissions: newPerms });
+  };
+
+  const syncAllUsersToFirestore = async (): Promise<{ success: boolean; count: number; error?: string }> => {
+    if (!db) return { success: false, count: 0, error: 'Database is not initialized.' };
+    try {
+      const firestore = db;
+      const currentUsers = (users && users.length > 0) ? users : initialUsers;
+      let count = 0;
+      const updatedList: UserRecord[] = [];
+
+      for (const u of currentUsers) {
+        if (!u || !u.email) continue;
+        const role: UserRole = (u.email.toLowerCase() === 'piperspud@gmail.com' || u.role === 'owner') ? 'owner' : (u.role || 'admin');
+        const roleDefaults = defaultPermissions[role] || defaultPermissions.admin;
+
+        const baseModules = (u.permissions?.modules || roleDefaults.modules || {}) as ModulePermissions;
+        const fullModules: ModulePermissions = ALL_ADMIN_MODULES.reduce((acc: ModulePermissions, m: AdminModuleMeta) => {
+          acc[m.id] = baseModules[m.id] || roleDefaults.modules?.[m.id] || (role === 'owner' || role === 'developer' ? 'edit' : 'view');
+          return acc;
+        }, {} as ModulePermissions);
+
+        const cleanUser: UserRecord = {
+          ...u,
+          id: u.id || `user-${u.email.toLowerCase().replace(/[^a-zA-Z0-9]/g, '_')}`,
+          role,
+          lastActive: new Date().toISOString(),
+          permissions: {
+            ...roleDefaults,
+            ...(u.permissions || {}),
+            modules: fullModules
+          }
+        };
+
+        const payload = JSON.parse(JSON.stringify(cleanUser));
+        await setDoc(doc(firestore, 'users', cleanUser.id), payload, { merge: true });
+        updatedList.push(cleanUser);
+        count++;
+      }
+
+      await setDoc(doc(firestore, 'settings', 'admin_whitelist'), { admins: JSON.parse(JSON.stringify(updatedList)) }, { merge: true });
+      setUsers(updatedList);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}users`, JSON.stringify(updatedList));
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`, JSON.stringify(updatedList));
+      }
+
+      return { success: true, count };
+    } catch (err: any) {
+      console.error('syncAllUsersToFirestore error:', err);
+      return { success: false, count: 0, error: err?.message || String(err) };
+    }
   };
 
   const toggleUserOnlineStatus = async (id: string, isOnline: boolean): Promise<void> => {
@@ -5787,6 +5896,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addUser,
       updateUser,
       updateUserPermissions,
+      syncAllUsersToFirestore,
       toggleUserOnlineStatus,
       removeUser,
       addAuthorizedAdmin,

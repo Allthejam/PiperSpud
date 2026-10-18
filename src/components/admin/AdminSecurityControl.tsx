@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { 
   ShieldCheck, 
@@ -44,6 +44,7 @@ export const AdminSecurityControl: React.FC = () => {
     addUser, 
     updateUser,
     updateUserPermissions,
+    syncAllUsersToFirestore,
     toggleUserOnlineStatus,
     removeUser,
     spudProfileAvatar,
@@ -59,6 +60,7 @@ export const AdminSecurityControl: React.FC = () => {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSyncingAll, setIsSyncingAll] = useState(false);
 
   // Avatar Modal State for existing users
   const [avatarModalUser, setAvatarModalUser] = useState<UserRecord | null>(null);
@@ -140,6 +142,38 @@ export const AdminSecurityControl: React.FC = () => {
     { groupName: 'System, SEO & Security' as const, modules: ALL_ADMIN_MODULES.filter(m => m.group === 'System, SEO & Security') },
   ], []);
 
+  // Auto-backfill Firestore database if any user in memory is missing full 23 modules
+  useEffect(() => {
+    if (isOwnerOrDev && users.length > 0) {
+      const anyMissing = users.some(u => !u.permissions?.modules || Object.keys(u.permissions.modules).length < ALL_ADMIN_MODULES.length);
+      if (anyMissing) {
+        syncAllUsersToFirestore().catch(e => console.warn('Auto sync modules error:', e));
+      }
+    }
+  }, [isOwnerOrDev, users.length]);
+
+  const handleSyncAll = async () => {
+    if (!isOwnerOrDev) {
+      setFeedback({ type: 'error', message: 'Only the Owner and Developer can sync database permissions.' });
+      return;
+    }
+    setIsSyncingAll(true);
+    setFeedback(null);
+    const res = await syncAllUsersToFirestore();
+    setIsSyncingAll(false);
+    if (res.success) {
+      setFeedback({
+        type: 'success',
+        message: `Successfully synchronized and verified all ${res.count} users & granular module permissions in the Firestore 'users' collection!`
+      });
+    } else {
+      setFeedback({
+        type: 'error',
+        message: `Could not sync to Firestore: ${res.error || 'Unknown error'}`
+      });
+    }
+  };
+
   const handleRoleChange = (role: UserRole) => {
     setNewRole(role);
     const defaults = defaultPermissions[role] || defaultPermissions.admin;
@@ -153,11 +187,18 @@ export const AdminSecurityControl: React.FC = () => {
     }
     const currentModules = user.permissions?.modules || defaultPermissions[user.role]?.modules || {};
     const updatedModules = { ...currentModules, [moduleId]: level };
-    await updateUserPermissions(user.id, { modules: updatedModules });
-    setFeedback({ 
-      type: 'success', 
-      message: `Updated ${String(moduleId)} permission to '${level.toUpperCase()}' for ${user.name || user.email}.` 
-    });
+    const success = await updateUserPermissions(user.id, { modules: updatedModules });
+    if (success) {
+      setFeedback({ 
+        type: 'success', 
+        message: `Synced to Firestore database: '${String(moduleId)}' set to '${level.toUpperCase()}' for ${user.name || user.email}.` 
+      });
+    } else {
+      setFeedback({
+        type: 'error',
+        message: `Could not save permission for '${String(moduleId)}' to Firestore database.`
+      });
+    }
   };
 
   const handleSetAllModules = async (user: UserRecord, level: ModuleAccessLevel) => {
@@ -169,11 +210,18 @@ export const AdminSecurityControl: React.FC = () => {
       acc[m.id] = level;
       return acc;
     }, {} as ModulePermissions);
-    await updateUserPermissions(user.id, { modules: newModules });
-    setFeedback({
-      type: 'success',
-      message: `Set all module permissions to '${level.toUpperCase()}' for ${user.name || user.email}.`
-    });
+    const success = await updateUserPermissions(user.id, { modules: newModules });
+    if (success) {
+      setFeedback({
+        type: 'success',
+        message: `Synced all module permissions to '${level.toUpperCase()}' for ${user.name || user.email} in Firestore database.`
+      });
+    } else {
+      setFeedback({
+        type: 'error',
+        message: 'Could not sync all modules to Firestore database.'
+      });
+    }
   };
 
   const handleResetToRoleDefaults = async (user: UserRecord) => {
@@ -182,14 +230,21 @@ export const AdminSecurityControl: React.FC = () => {
       return;
     }
     const roleDefaults = defaultPermissions[user.role] || defaultPermissions.admin;
-    await updateUserPermissions(user.id, { 
+    const success = await updateUserPermissions(user.id, { 
       ...roleDefaults,
       modules: { ...roleDefaults.modules }
     });
-    setFeedback({
-      type: 'success',
-      message: `Reset permissions to defaults for role '${user.role}' for ${user.name || user.email}.`
-    });
+    if (success) {
+      setFeedback({
+        type: 'success',
+        message: `Reset permissions to defaults for role '${user.role}' for ${user.name || user.email} and saved to Firestore.`
+      });
+    } else {
+      setFeedback({
+        type: 'error',
+        message: 'Could not reset permissions in Firestore database.'
+      });
+    }
   };
 
   const handleChangeUserRole = async (user: UserRecord, targetRole: UserRole) => {
@@ -298,7 +353,20 @@ export const AdminSecurityControl: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            {isOwnerOrDev && (
+              <button
+                type="button"
+                onClick={handleSyncAll}
+                disabled={isSyncingAll}
+                className="px-4 py-2.5 rounded-xl bg-tartan-accent/20 hover:bg-tartan-accent/30 border border-tartan-accent/50 text-tartan-gold text-xs font-bold transition-all shadow-md hover:shadow-tartan-accent/20 flex items-center gap-2 disabled:opacity-50"
+                title="Force update all user accounts and 23 module permissions directly into Firestore database"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncingAll ? 'animate-spin text-yellow-400' : ''}`} />
+                <span>{isSyncingAll ? 'Syncing to Database...' : 'Sync Database Permissions'}</span>
+              </button>
+            )}
+
             <div className="flex items-center gap-3 bg-tartan-dark/80 border border-tartan-border p-3.5 rounded-2xl">
               <div className="w-12 h-12 rounded-xl bg-tartan-accent/20 text-tartan-gold flex items-center justify-center font-serif text-xl font-bold border border-tartan-accent/30">
                 {users.length}
@@ -523,9 +591,23 @@ export const AdminSecurityControl: React.FC = () => {
               <h2 className="text-sm font-bold text-white">Firestore Users & Permissions</h2>
               <p className="text-[11px] text-gray-400">Real-time status, role and module access</p>
             </div>
-            <span className="text-[11px] bg-tartan-navy px-3 py-1 rounded-full border border-tartan-border text-gray-300 font-semibold">
-              {users.length} Users in Database
-            </span>
+            <div className="flex items-center gap-2">
+              {isOwnerOrDev && (
+                <button
+                  type="button"
+                  onClick={handleSyncAll}
+                  disabled={isSyncingAll}
+                  className="text-xs bg-tartan-navy hover:bg-tartan-accent/20 border border-tartan-accent/40 text-tartan-gold font-bold px-3 py-1 rounded-full flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                  title="Force re-sync all user records with full module permissions into Firestore"
+                >
+                  <RefreshCw className={`w-3 h-3 ${isSyncingAll ? 'animate-spin' : ''}`} />
+                  <span>{isSyncingAll ? 'Syncing...' : 'Sync to DB'}</span>
+                </button>
+              )}
+              <span className="text-[11px] bg-tartan-navy px-3 py-1 rounded-full border border-tartan-border text-gray-300 font-semibold">
+                {users.length} Users in Database
+              </span>
+            </div>
           </div>
 
           <div className="space-y-3.5">
