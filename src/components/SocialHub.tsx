@@ -238,6 +238,61 @@ export const SocialHub: React.FC = () => {
     return 0;
   };
 
+  // Helper function to dynamically format relative post age (e.g. "Just now", "45 mins ago", "1 week ago")
+  const formatPostTime = (post?: { timestamp?: string; createdAt?: string; id?: string } | null): string => {
+    if (!post) return 'Recently';
+
+    let dateMs: number | null = null;
+
+    if (post.createdAt) {
+      const parsed = new Date(post.createdAt).getTime();
+      if (!isNaN(parsed) && parsed > 0) dateMs = parsed;
+    }
+
+    if (!dateMs && post.timestamp && !/ago|yesterday|just now/i.test(post.timestamp)) {
+      const parsed = new Date(post.timestamp).getTime();
+      if (!isNaN(parsed) && parsed > 0) dateMs = parsed;
+    }
+
+    if (!dateMs && post.id) {
+      const match = post.id.match(/\d{12,}/);
+      if (match) {
+        const parsed = parseInt(match[0], 10);
+        if (!isNaN(parsed) && parsed > 1600000000000) dateMs = parsed;
+      }
+    }
+
+    if (dateMs) {
+      const now = Date.now();
+      const diffMs = now - dateMs;
+
+      if (diffMs < 0) return 'Just now';
+
+      const diffSecs = Math.floor(diffMs / 1000);
+      const diffMins = Math.floor(diffSecs / 60);
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
+      const diffWeeks = Math.floor(diffDays / 7);
+
+      if (diffSecs < 60) return 'Just now';
+      if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+      if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+      if (diffDays === 1) return 'Yesterday';
+      if (diffDays < 7) return `${diffDays} days ago`;
+      if (diffWeeks === 1) return '1 week ago';
+      if (diffWeeks < 5) return `${diffWeeks} weeks ago`;
+
+      const postDate = new Date(dateMs);
+      return postDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    if (post.timestamp && post.timestamp !== 'Just now') {
+      return post.timestamp;
+    }
+
+    return 'Recently';
+  };
+
   // Feed & Forum Sorting (Recent vs Most Popular/Liked)
   const [feedSort, setFeedSort] = useState<'recent' | 'popular'>('recent');
 
@@ -1019,19 +1074,30 @@ export const SocialHub: React.FC = () => {
                         <div>
                           <div className="flex items-center gap-2.5 flex-wrap">
                             <span className="text-base sm:text-lg font-bold text-white font-serif">
-                              {post.authorName}
+                              {(() => {
+                                if (isSpud) return 'Spud the Piper';
+                                if (!post.authorName) return 'Highland Friend';
+                                return post.authorName.replace(/\b[a-z]/g, char => char.toUpperCase());
+                              })()}
                             </span>
-                            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm ${
                               isSpud 
-                                ? 'bg-tartan-accent/20 text-tartan-gold border border-tartan-accent/40' 
-                                : 'bg-slate-800 text-gray-300'
+                                ? 'bg-amber-500/20 text-tartan-gold border border-amber-500/40' 
+                                : 'bg-slate-800 text-gray-300 border border-slate-700'
                             }`}>
-                              {post.authorRole}
+                              {isSpud ? (
+                                <>
+                                  <Sparkles className="w-3 h-3 text-amber-400" />
+                                  <span>Official Artist</span>
+                                </>
+                              ) : (
+                                <span>{post.authorRole || 'Guest'}</span>
+                              )}
                             </span>
                           </div>
 
                           <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5 flex-wrap">
-                            <span>{post.timestamp}</span>
+                            <span className="text-gray-300 font-medium">{formatPostTime(post)}</span>
                             <span>•</span>
                             <Globe className="w-3.5 h-3.5 text-gray-500" />
                             {post.eventLocation && (
@@ -1294,11 +1360,18 @@ export const SocialHub: React.FC = () => {
                                     ? 'bg-tartan-navy border border-tartan-accent/50' 
                                     : 'bg-slate-800/80 border border-slate-700/50'
                                 }`}>
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-bold text-white">{comment.authorName}</span>
-                                    {isSpudComment && (
-                                      <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded border border-amber-500/30">
-                                        Spud (Official)
+                                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-bold text-white">{comment.authorName}</span>
+                                      {isSpudComment && (
+                                        <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded border border-amber-500/30">
+                                          Spud (Official)
+                                        </span>
+                                      )}
+                                    </div>
+                                    {comment.createdAt && (
+                                      <span className="text-[11px] text-gray-400 font-medium">
+                                        {formatPostTime({ createdAt: comment.createdAt, id: comment.id })}
                                       </span>
                                     )}
                                   </div>
@@ -1600,7 +1673,7 @@ export const SocialHub: React.FC = () => {
                   <div className="flex items-center gap-4 text-xs text-gray-400 pt-1 flex-wrap">
                     <span>Started by <strong className="text-white">{activeThread.authorName}</strong></span>
                     <span>•</span>
-                    <span>{activeThread.timestamp}</span>
+                    <span>{formatPostTime(activeThread)}</span>
                     <span>•</span>
                     <span className="text-tartan-gold font-semibold">{activeThread.comments?.length || 0} Replies</span>
                     <span>•</span>
@@ -1612,7 +1685,7 @@ export const SocialHub: React.FC = () => {
                 <div className="bg-tartan-dark/95 rounded-3xl border border-tartan-border shadow-2xl overflow-hidden">
                   <div className="bg-gradient-to-r from-tartan-navy/60 to-transparent px-6 py-3.5 border-b border-tartan-border/70 flex items-center justify-between text-xs text-gray-400 font-semibold">
                     <span className="text-tartan-gold font-bold uppercase tracking-wider">Original Post #1 (Topic Starter)</span>
-                    <span>{activeThread.timestamp}</span>
+                    <span>{formatPostTime(activeThread)}</span>
                   </div>
 
                   <div className="p-6 sm:p-8 flex flex-col md:flex-row gap-6">
@@ -1999,7 +2072,7 @@ export const SocialHub: React.FC = () => {
 
                             {/* Column 4: Last Activity */}
                             <div className="col-span-2 text-left md:text-right w-full md:w-auto text-xs text-gray-400 flex md:flex-col justify-between md:justify-center">
-                              <span className="font-medium text-gray-300">{post.timestamp}</span>
+                              <span className="font-medium text-gray-300">{formatPostTime(post)}</span>
                               <span className="text-[11px] text-tartan-gold group-hover:underline">Open Discussion →</span>
                             </div>
                           </div>
@@ -2133,7 +2206,7 @@ export const SocialHub: React.FC = () => {
                             <div className="text-[11px] text-gray-400 flex items-center gap-2 flex-wrap pt-0.5">
                               <span>by <strong className="text-white">{post.authorName}</strong> ({post.authorRole})</span>
                               <span>•</span>
-                              <span>{post.timestamp}</span>
+                              <span>{formatPostTime(post)}</span>
                               {post.eventLocation && (
                                 <>
                                   <span>•</span>

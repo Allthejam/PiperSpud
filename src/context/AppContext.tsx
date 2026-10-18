@@ -630,7 +630,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try {
           const parsed: SocialPost[] = JSON.parse(savedPosts);
           const demoIds = new Set(['feed-exp-1', 'feed-1', 'feed-2', 'feed-3', 'feed-4', 'feed-5', 'feed-6', 'forum-1', 'forum-2', 'forum-3', 'forum-4', 'post-1', 'post-2', 'post-3', 'post-4', 'post-5', 'post-6', 'post-7', 'post-8']);
-          const clean = Array.isArray(parsed) ? parsed.filter(p => !demoIds.has(p.id)) : [];
+          const clean = Array.isArray(parsed) 
+            ? parsed.filter((p: SocialPost) => !demoIds.has(p.id)).map((p: SocialPost) => {
+                if (!p.createdAt) {
+                  const match = p.id.match(/\d{12,}/);
+                  if (match) {
+                    const ms = parseInt(match[0], 10);
+                    if (!isNaN(ms) && ms > 1600000000000) {
+                      return { ...p, createdAt: new Date(ms).toISOString() };
+                    }
+                  }
+                }
+                return p;
+              })
+            : [];
           setSocialPosts(clean);
           localStorage.setItem(`${LOCAL_STORAGE_PREFIX}social`, JSON.stringify(clean));
         } catch (e) {
@@ -1093,8 +1106,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           snapshot.forEach((d) => {
             const data = d.data() as SocialPost;
             if (data && !demoIds.has(data.id)) {
+              let normalizedCreatedAt = data.createdAt;
+              if (!normalizedCreatedAt) {
+                const match = data.id.match(/\d{12,}/);
+                if (match) {
+                  const ms = parseInt(match[0], 10);
+                  if (!isNaN(ms) && ms > 1600000000000) {
+                    normalizedCreatedAt = new Date(ms).toISOString();
+                  }
+                }
+              }
+
               remotePosts.push({
                 ...data,
+                createdAt: normalizedCreatedAt,
                 likes: typeof data.likes === 'number' ? Math.max(0, data.likes) : 0,
                 likedByMe: likedSet.has(data.id)
               });

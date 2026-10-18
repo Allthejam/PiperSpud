@@ -86,9 +86,10 @@ service cloud.firestore {
     // ==========================================
     match /social_posts/{postId} {
       allow read: if true;
-      allow create, delete: if isAuthenticated();
+      allow create: if true;
       allow update: if isAuthenticated() || 
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']));
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'comments']));
+      allow delete: if isAuthenticated();
     }
 
     // ==========================================
