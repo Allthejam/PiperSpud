@@ -65,6 +65,7 @@ import {
 } from '@/lib/initialData';
 import { bagpipeSynth } from '@/lib/bagpipeSynth';
 import { db, auth } from '@/lib/firebase';
+import { deduplicateAndMergeContacts, normalizeEmail } from '@/lib/mailingDeduplicator';
 import { collection, doc, onSnapshot, setDoc, deleteDoc, updateDoc, increment, query, where, getDocs } from 'firebase/firestore';
 import { 
   signInWithEmailAndPassword, 
@@ -340,6 +341,8 @@ interface AppContextType {
   clearBroadcastAudits: () => Promise<void>;
   optOutContact: (email: string, reason?: string) => Promise<boolean>;
   optInContact: (email: string) => Promise<boolean>;
+  optOutEmails: string[];
+  deduplicateAndCleanMailingList: () => Promise<{ before: number; after: number; duplicatesRemoved: number }>;
   // Live Stream Visibility & Control
   showLiveStream: boolean;
   toggleLiveStream: () => void;
@@ -503,6 +506,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [mailingContacts, setMailingContacts] = useState<MailingContact[]>(initialMailingContacts);
   const [emailCampaigns, setEmailCampaigns] = useState<EmailCampaign[]>(initialCampaigns);
   const [broadcastAudits, setBroadcastAudits] = useState<BroadcastAuditEntry[]>([]);
+  const [optOutEmails, setOptOutEmails] = useState<string[]>([]);
+  const optOutEmailsRef = React.useRef<Set<string>>(new Set());
   const [faqs, setFaqs] = useState<FaqItem[]>(initialFaqs);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(initialGallery);
   const [partners, setPartners] = useState<PartnerItem[]>(initialPartners);
@@ -998,6 +1003,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubMailing = () => {};
     let unsubCampaigns = () => {};
     let unsubAudits = () => {};
+    let unsubOptOuts = () => {};
     let unsubFaqs = () => {};
     let unsubGallery = () => {};
     let unsubPartners = () => {};
@@ -1283,7 +1289,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }, (err) => console.log('Firestore notifications listener:', err.message));
 
-      // Real-time Firestore listener for mailing_contacts
+      // Real-time Firestore listener for mailing_contacts with automatic deduplication
       unsubMailing = onSnapshot(collection(db, 'mailing_contacts'), (snapshot) => {
         if (!snapshot.empty) {
           const remoteContacts: MailingContact[] = [];
@@ -1292,13 +1298,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (data) remoteContacts.push({ ...data, id: data.id || d.id });
           });
           const mockIds = new Set(['mc-1', 'mc-2', 'mc-3', 'mc-4', 'mc-5', 'mc-6']);
-          const clean = remoteContacts.filter(m => m && m.id && !mockIds.has(m.id));
-          clean.sort((a, b) => new Date(b.addedAt || 0).getTime() - new Date(a.addedAt || 0).getTime());
-          setMailingContacts(clean);
+          const rawClean = remoteContacts.filter(m => m && m.id && !mockIds.has(m.id));
+          const { cleanContacts } = deduplicateAndMergeContacts(rawClean, optOutEmailsRef.current);
+          cleanContacts.sort((a, b) => new Date(b.addedAt || 0).getTime() - new Date(a.addedAt || 0).getTime());
+          setMailingContacts(cleanContacts);
         } else {
           setMailingContacts([]);
         }
       }, (err) => console.log('Firestore mailing_contacts listener:', err.message));
+
+      // Real-time Firestore listener for opt_outs collection
+      unsubOptOuts = onSnapshot(collection(db, 'opt_outs'), (snapshot) => {
+        if (!snapshot.empty) {
+          const list: string[] = [];
+          snapshot.forEach(d => {
+            const data = d.data();
+            const email = (data.email || d.id || '').trim().toLowerCase();
+            if (data.status === 'unsubscribed' && email) {
+              list.push(email);
+            }
+          });
+          setOptOutEmails(list);
+          optOutEmailsRef.current = new Set(list);
+          // Immediately enforce opt-out on any matching contacts in state
+          setMailingContacts(prev => {
+            const { cleanContacts } = deduplicateAndMergeContacts(prev, new Set(list));
+            return cleanContacts;
+          });
+        } else {
+          setOptOutEmails([]);
+          optOutEmailsRef.current = new Set();
+        }
+      }, (err) => console.log('Firestore opt_outs listener:', err.message));
 
       // Real-time Firestore listener for email_campaigns
       unsubCampaigns = onSnapshot(collection(db, 'email_campaigns'), (snapshot) => {
@@ -1567,6 +1598,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubMailing();
       unsubCampaigns();
       unsubAudits();
+      unsubOptOuts();
       unsubFaqs();
       unsubGallery();
       unsubPartners();
@@ -4512,74 +4544,101 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const optOutContact = async (email: string, reason?: string): Promise<boolean> => {
-    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanEmail = normalizeEmail(email);
     if (!cleanEmail) return false;
 
-    setMailingContacts(prev => {
-      const exists = prev.some(c => (c.email || '').toLowerCase().trim() === cleanEmail);
-      let updated: MailingContact[];
-      if (exists) {
-        updated = prev.map(c => {
-          if ((c.email || '').toLowerCase().trim() === cleanEmail) {
-            return {
-              ...c,
-              status: 'unsubscribed' as const,
-              unsubscribedAt: new Date().toISOString(),
-              unsubscribeReason: reason || 'Client opted out'
-            };
-          }
-          return c;
-        });
-      } else {
-        const newRecord: MailingContact = {
-          id: `optout-${Date.now()}`,
-          name: cleanEmail.split('@')[0],
-          email: cleanEmail,
-          source: 'manual',
-          status: 'unsubscribed',
-          tags: ['Opted Out'],
-          addedAt: new Date().toISOString(),
-          unsubscribedAt: new Date().toISOString(),
-          unsubscribeReason: reason || 'Client opted out',
-          brevoSynced: true
-        };
-        updated = [...prev, newRecord];
-      }
+    // 1. Immediately record in optOutEmails state & ref
+    setOptOutEmails(prev => Array.from(new Set([...prev, cleanEmail])));
+    optOutEmailsRef.current.add(cleanEmail);
 
+    // 2. Look up any existing booking for this email to retain client's full name, phone, venue
+    const clientBooking = (bookings || []).find(b => normalizeEmail(b.clientEmail) === cleanEmail);
+
+    // 3. Update mailingContacts state with deduplication
+    setMailingContacts(prev => {
+      const isPresent = prev.some(c => normalizeEmail(c.email) === cleanEmail);
+      let list = isPresent 
+        ? prev.map(c => normalizeEmail(c.email) === cleanEmail ? {
+            ...c,
+            status: 'unsubscribed' as const,
+            unsubscribedAt: new Date().toISOString(),
+            unsubscribeReason: reason || 'Client opted out'
+          } : c)
+        : [
+            ...prev,
+            {
+              id: clientBooking ? `contact-crm-${clientBooking.id}` : `optout-${Date.now()}`,
+              name: clientBooking?.clientName || cleanEmail.split('@')[0],
+              email: cleanEmail,
+              phone: clientBooking?.clientPhone || undefined,
+              source: clientBooking ? 'booking' as const : 'manual' as const,
+              status: 'unsubscribed' as const,
+              tags: clientBooking ? ['Opted Out', 'CRM Client'] : ['Opted Out'],
+              venueName: clientBooking?.venueName,
+              eventType: clientBooking?.eventType,
+              eventDate: clientBooking?.date,
+              addedAt: new Date().toISOString(),
+              unsubscribedAt: new Date().toISOString(),
+              unsubscribeReason: reason || 'Client opted out',
+              brevoSynced: true
+            }
+          ];
+
+      const { cleanContacts } = deduplicateAndMergeContacts(list, optOutEmailsRef.current);
       if (typeof window !== 'undefined') {
         try {
-          localStorage.setItem(`${LOCAL_STORAGE_PREFIX}mailing_contacts`, JSON.stringify(updated));
+          localStorage.setItem(`${LOCAL_STORAGE_PREFIX}mailing_contacts`, JSON.stringify(cleanContacts));
         } catch (e) {}
       }
-      return updated;
+      return cleanContacts;
     });
 
+    // 4. Update Firestore with deduplication
     if (db) {
       try {
-        const q = query(collection(db, 'mailing_contacts'), where('email', '==', cleanEmail));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          snap.forEach((docSnap: any) => {
-            updateDoc(docSnap.ref, {
-              status: 'unsubscribed',
-              unsubscribedAt: new Date().toISOString(),
-              unsubscribeReason: reason || 'Client opted out'
-            }).catch(e => console.warn(e));
-          });
-        } else {
-          const newDocRef = doc(collection(db, 'mailing_contacts'));
-          setDoc(newDocRef, {
-            id: newDocRef.id,
-            email: cleanEmail,
-            name: cleanEmail.split('@')[0],
-            source: 'manual',
+        const optOutDocId = cleanEmail.replace(/[^a-zA-Z0-9_-]/g, '_');
+        await setDoc(doc(db, 'opt_outs', optOutDocId), {
+          email: cleanEmail,
+          status: 'unsubscribed',
+          updatedAt: new Date().toISOString(),
+          reason: reason || 'Client opted out'
+        }, { merge: true });
+
+        const snap = await getDocs(collection(db, 'mailing_contacts'));
+        const matchingDocs: any[] = [];
+        snap.forEach((d: any) => {
+          if (normalizeEmail(d.data().email) === cleanEmail) {
+            matchingDocs.push(d);
+          }
+        });
+
+        if (matchingDocs.length > 0) {
+          await updateDoc(matchingDocs[0].ref, {
             status: 'unsubscribed',
-            tags: ['Opted Out'],
+            unsubscribedAt: new Date().toISOString(),
+            unsubscribeReason: reason || 'Client opted out'
+          });
+          for (let i = 1; i < matchingDocs.length; i++) {
+            await deleteDoc(matchingDocs[i].ref).catch(e => console.warn(e));
+          }
+        } else {
+          const docId = `contact-${optOutDocId}`;
+          await setDoc(doc(db, 'mailing_contacts', docId), {
+            id: docId,
+            name: clientBooking?.clientName || cleanEmail.split('@')[0],
+            email: cleanEmail,
+            phone: clientBooking?.clientPhone || undefined,
+            source: clientBooking ? 'booking' : 'manual',
+            status: 'unsubscribed',
+            tags: clientBooking ? ['Opted Out', 'CRM Client'] : ['Opted Out'],
+            venueName: clientBooking?.venueName || undefined,
+            eventType: clientBooking?.eventType || undefined,
+            eventDate: clientBooking?.date || undefined,
             addedAt: new Date().toISOString(),
             unsubscribedAt: new Date().toISOString(),
             unsubscribeReason: reason || 'Client opted out',
             brevoSynced: true
-          }).catch(e => console.warn(e));
+          }, { merge: true });
         }
       } catch (e) {
         console.warn('Firestore optOutContact warning:', e);
@@ -4589,12 +4648,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const optInContact = async (email: string): Promise<boolean> => {
-    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanEmail = normalizeEmail(email);
     if (!cleanEmail) return false;
+
+    setOptOutEmails(prev => prev.filter(e => e !== cleanEmail));
+    optOutEmailsRef.current.delete(cleanEmail);
 
     setMailingContacts(prev => {
       const updated = prev.map(c => {
-        if ((c.email || '').toLowerCase().trim() === cleanEmail) {
+        if (normalizeEmail(c.email) === cleanEmail) {
           return {
             ...c,
             status: 'subscribed' as const,
@@ -4604,30 +4666,104 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
         return c;
       });
+      const { cleanContacts } = deduplicateAndMergeContacts(updated, optOutEmailsRef.current);
       if (typeof window !== 'undefined') {
         try {
-          localStorage.setItem(`${LOCAL_STORAGE_PREFIX}mailing_contacts`, JSON.stringify(updated));
+          localStorage.setItem(`${LOCAL_STORAGE_PREFIX}mailing_contacts`, JSON.stringify(cleanContacts));
         } catch (e) {}
       }
-      return updated;
+      return cleanContacts;
     });
 
     if (db) {
       try {
-        const q = query(collection(db, 'mailing_contacts'), where('email', '==', cleanEmail));
-        const snap = await getDocs(q);
-        snap.forEach((docSnap: any) => {
-          updateDoc(docSnap.ref, {
-            status: 'subscribed',
-            unsubscribedAt: null,
-            unsubscribeReason: null
-          }).catch(e => console.warn(e));
+        const optOutDocId = cleanEmail.replace(/[^a-zA-Z0-9_-]/g, '_');
+        await deleteDoc(doc(db, 'opt_outs', optOutDocId)).catch(e => console.warn(e));
+
+        const snap = await getDocs(collection(db, 'mailing_contacts'));
+        snap.forEach((d: any) => {
+          if (normalizeEmail(d.data().email) === cleanEmail) {
+            updateDoc(d.ref, {
+              status: 'subscribed',
+              unsubscribedAt: null,
+              unsubscribeReason: null
+            }).catch(e => console.warn(e));
+          }
         });
       } catch (e) {
         console.warn('Firestore optInContact warning:', e);
       }
     }
     return true;
+  };
+
+  const deduplicateAndCleanMailingList = async () => {
+    const baseContacts = [...mailingContacts];
+    const { cleanContacts, duplicateCount } = deduplicateAndMergeContacts(baseContacts, optOutEmailsRef.current);
+
+    setMailingContacts(cleanContacts);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}mailing_contacts`, JSON.stringify(cleanContacts));
+      } catch (e) {}
+    }
+
+    let dbDuplicatesRemoved = 0;
+    if (db) {
+      try {
+        const snap = await getDocs(collection(db, 'mailing_contacts'));
+        const seenDocEmails = new Map<string, any>();
+        const docsToDelete: any[] = [];
+        const docsToUpdate: { ref: any; updates: any }[] = [];
+
+        snap.forEach((d: any) => {
+          const data = d.data();
+          const email = normalizeEmail(data.email);
+          if (!email || !email.includes('@')) {
+            docsToDelete.push(d.ref);
+            return;
+          }
+
+          const isOptedOut = data.status === 'unsubscribed' || optOutEmailsRef.current.has(email);
+
+          if (!seenDocEmails.has(email)) {
+            seenDocEmails.set(email, { ref: d.ref, data });
+            if (isOptedOut && data.status !== 'unsubscribed') {
+              docsToUpdate.push({
+                ref: d.ref,
+                updates: { status: 'unsubscribed', unsubscribedAt: data.unsubscribedAt || new Date().toISOString() }
+              });
+            }
+          } else {
+            const existing = seenDocEmails.get(email);
+            if (isOptedOut && existing.data.status !== 'unsubscribed') {
+              docsToUpdate.push({
+                ref: existing.ref,
+                updates: { status: 'unsubscribed', unsubscribedAt: new Date().toISOString() }
+              });
+              existing.data.status = 'unsubscribed';
+            }
+            docsToDelete.push(d.ref);
+            dbDuplicatesRemoved++;
+          }
+        });
+
+        for (const item of docsToUpdate) {
+          await updateDoc(item.ref, item.updates).catch(e => console.warn(e));
+        }
+        for (const ref of docsToDelete) {
+          await deleteDoc(ref).catch(e => console.warn(e));
+        }
+      } catch (err) {
+        console.warn('Firestore deduplication scan error:', err);
+      }
+    }
+
+    return {
+      before: baseContacts.length,
+      after: cleanContacts.length,
+      duplicatesRemoved: duplicateCount + dbDuplicatesRemoved
+    };
   };
 
   const dispatchBroadcastCampaign = async (campaign: EmailCampaign, recipients: MailingContact[]) => {
@@ -5476,6 +5612,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       clearBroadcastAudits,
       optOutContact,
       optInContact,
+      optOutEmails,
+      deduplicateAndCleanMailingList,
       showLiveStream,
       toggleLiveStream,
       setShowLiveStream,

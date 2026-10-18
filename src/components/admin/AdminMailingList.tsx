@@ -27,9 +27,11 @@ import {
   X,
   AlertCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  ShieldCheck
 } from 'lucide-react';
 import { MailingContact, EmailCampaign, BroadcastAuditEntry } from '@/types/spud';
+import { deduplicateAndMergeContacts, normalizeEmail } from '@/lib/mailingDeduplicator';
 
 export const AdminMailingList: React.FC = () => {
   const { 
@@ -43,6 +45,8 @@ export const AdminMailingList: React.FC = () => {
     clearBroadcastAudits,
     optOutContact,
     optInContact,
+    optOutEmails,
+    deduplicateAndCleanMailingList,
     bookings
   } = useApp();
 
@@ -52,8 +56,9 @@ export const AdminMailingList: React.FC = () => {
   const [excludedEmails, setExcludedEmails] = useState<string[]>([]);
   const [expandedAuditId, setExpandedAuditId] = useState<string | null>(null);
 
-  // Sync CRM state
+  // Sync & Deduplication state
   const [isSyncingCrm, setIsSyncingCrm] = useState(false);
+  const [isDeduplicating, setIsDeduplicating] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
 
   // New Contact Modal State
@@ -67,17 +72,13 @@ export const AdminMailingList: React.FC = () => {
   const [newNotes, setNewNotes] = useState('');
 
   // Automatically derive contacts from all CRM bookings if not already in mailingContacts
-  const derivedCrmContacts = React.useMemo(() => {
-    const existingEmails = new Set(
-      (mailingContacts || []).map(c => (c.email || '').toLowerCase().trim())
-    );
-    const result: MailingContact[] = [];
-
-    (bookings || []).forEach(b => {
-      if (!b || !b.clientEmail) return;
-      const cleanEmail = b.clientEmail.toLowerCase().trim();
-      if (!cleanEmail || existingEmails.has(cleanEmail)) return;
-      existingEmails.add(cleanEmail);
+  // Unified list of all audience contacts (Mailing DB + CRM Bookings), strictly deduplicated by email
+  const allAudienceContacts = React.useMemo(() => {
+    // 1. Build list from bookings (CRM)
+    const crmBookingContacts: MailingContact[] = (bookings || []).map(b => {
+      if (!b || !b.clientEmail) return null;
+      const cleanEmail = normalizeEmail(b.clientEmail);
+      if (!cleanEmail || !cleanEmail.includes('@')) return null;
 
       const isWedding = (b.eventType || '').toLowerCase().includes('wedding') || (b.eventType || '').toLowerCase().includes('handfasting');
       const isCorporate = (b.eventType || '').toLowerCase().includes('corporate') || (b.eventType || '').toLowerCase().includes('gala') || (b.venueName || '').toLowerCase().includes('castle');
@@ -87,13 +88,13 @@ export const AdminMailingList: React.FC = () => {
       if (isCorporate) tags.push('Corporate & Castle');
       if (b.status === 'deposit_paid') tags.push('Deposit Paid');
 
-      result.push({
+      return {
         id: `crm-${b.id}`,
         name: b.clientName || 'Valued Client',
         email: cleanEmail,
         phone: b.clientPhone || undefined,
-        source: 'booking',
-        status: 'subscribed',
+        source: 'booking' as const,
+        status: 'subscribed' as const,
         tags,
         eventType: b.eventType || 'Event',
         eventDate: b.date,
@@ -101,16 +102,26 @@ export const AdminMailingList: React.FC = () => {
         notes: b.notes || undefined,
         addedAt: b.createdAt || new Date().toISOString(),
         brevoSynced: true
-      });
-    });
+      };
+    }).filter(Boolean) as MailingContact[];
 
-    return result;
-  }, [mailingContacts, bookings]);
+    // 2. Combine with existing mailingContacts
+    const combined = [...crmBookingContacts, ...(mailingContacts || [])];
 
-  // Unified list of all audience contacts (Mailing DB + CRM Bookings)
-  const allAudienceContacts = React.useMemo(() => {
-    return [...(mailingContacts || []), ...derivedCrmContacts];
-  }, [mailingContacts, derivedCrmContacts]);
+    // 3. Deduplicate and merge: if ANY record is unsubscribed, status is 'unsubscribed'!
+    const optOutSet = new Set(optOutEmails || []);
+    const { cleanContacts } = deduplicateAndMergeContacts(combined, optOutSet);
+
+    // Sort by addedAt / eventDate descending
+    return cleanContacts.sort((a, b) => new Date(b.addedAt || 0).getTime() - new Date(a.addedAt || 0).getTime());
+  }, [mailingContacts, bookings, optOutEmails]);
+
+  // Auto-clean duplicates on mount
+  React.useEffect(() => {
+    if (deduplicateAndCleanMailingList) {
+      deduplicateAndCleanMailingList().catch(() => {});
+    }
+  }, [deduplicateAndCleanMailingList]);
 
   // Campaign Composer State
   const safeCampaigns = emailCampaigns || [];
@@ -132,12 +143,29 @@ export const AdminMailingList: React.FC = () => {
   const [isDispatching, setIsDispatching] = useState(false);
   const [dispatchResult, setDispatchResult] = useState<{ success: boolean; count: number; message: string } | null>(null);
 
+  // 1-Click Scan & Deduplicate Contacts
+  const handleDeduplicate = async () => {
+    setIsDeduplicating(true);
+    setSyncFeedback(null);
+    try {
+      const res = await deduplicateAndCleanMailingList();
+      setSyncFeedback(`Scan complete: ${res.duplicatesRemoved} duplicate contact records cleaned and merged. Audience is now completely unified with 0 duplicates.`);
+      setTimeout(() => setSyncFeedback(null), 6000);
+    } catch (e: any) {
+      setSyncFeedback('Notice: ' + (e?.message || 'Could not clean duplicates'));
+      setTimeout(() => setSyncFeedback(null), 6000);
+    } finally {
+      setIsDeduplicating(false);
+    }
+  };
+
   // 1-Click Sync all CRM contacts into Firestore mailing list
   const handleSyncCrm = async () => {
     setIsSyncingCrm(true);
     setSyncFeedback(null);
     try {
       const res = await syncCrmToMailingList();
+      await deduplicateAndCleanMailingList();
       setSyncFeedback(`Successfully synchronized ${res.syncedCount} client accounts from your CRM into your permanent mailing list! Total audience: ${res.total}`);
       setTimeout(() => setSyncFeedback(null), 6000);
     } catch (err: any) {
@@ -315,6 +343,15 @@ export const AdminMailingList: React.FC = () => {
           >
             <RefreshCw className={`w-4 h-4 ${isSyncingCrm ? 'animate-spin' : ''}`} />
             <span>{isSyncingCrm ? 'Syncing CRM...' : 'Sync CRM Contacts'}</span>
+          </button>
+          <button
+            onClick={handleDeduplicate}
+            disabled={isDeduplicating}
+            className="px-4 py-2.5 rounded-xl bg-tartan-navy hover:bg-slate-700 text-gray-200 border border-slate-700 font-bold text-xs flex items-center gap-2 shadow-lg transition-all disabled:opacity-50"
+            title="Scan database, merge any duplicate emails, and enforce opt-out preference"
+          >
+            <ShieldCheck className={`w-4 h-4 text-emerald-400 ${isDeduplicating ? 'animate-spin' : ''}`} />
+            <span>{isDeduplicating ? 'Scanning...' : 'Scan & Clean Duplicates'}</span>
           </button>
           <button
             onClick={() => setIsAddContactModalOpen(true)}
