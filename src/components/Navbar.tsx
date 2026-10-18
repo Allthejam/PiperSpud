@@ -26,7 +26,8 @@ import {
   Download,
   Camera,
   Video,
-  Globe
+  Globe,
+  BookOpen
 } from 'lucide-react';
 
 import { SpudHeritageLogo } from '@/components/SpudHeritageLogo';
@@ -94,6 +95,7 @@ export const Navbar: React.FC = () => {
       href: '/',
       children: [
         { label: 'Welcome / Home', href: '/', desc: 'Main Highland Overview & Hero', icon: Compass },
+        { label: "Spud's Blog & Videos", href: '/blog', desc: 'Real Castle Weddings, Stories & Video Diary', icon: BookOpen },
         { label: 'Meet Spud (Videos)', href: '/meet-spud', desc: 'Watch Spud Speak, Play & Share Stories', icon: Video },
         { label: 'Photo Gallery', href: '/gallery', desc: 'Weddings, Castle Venues & Highland Gatherings', icon: Camera },
         { label: 'About Spud', href: '/about', desc: '40+ Years of Piping Heritage', icon: Info },
@@ -108,6 +110,10 @@ export const Navbar: React.FC = () => {
         { label: 'Tour & Coach Groups', href: '/tour-groups', desc: 'Scottish Welcome & Experiences for Visitors', icon: Globe },
         { label: 'Highland Attire & Tartans', href: '/attire', desc: 'No. 1 Feather Bonnet, Royal Stewart & Modern', icon: Shirt },
       ]
+    },
+    {
+      label: 'Blog',
+      href: '/blog',
     },
     {
       label: 'Tunes',

@@ -29,7 +29,8 @@ import {
   PricingConfig,
   PartnerItem,
   AttireItem,
-  VideoItem
+  VideoItem,
+  BlogPost
 } from '@/types/spud';
 import { 
   initialBookings, 
@@ -57,7 +58,8 @@ import {
   initialPricingConfig,
   initialPartners,
   initialAttires,
-  initialVideos
+  initialVideos,
+  initialBlogPosts
 } from '@/lib/initialData';
 import { bagpipeSynth } from '@/lib/bagpipeSynth';
 import { db, auth } from '@/lib/firebase';
@@ -287,6 +289,14 @@ interface AppContextType {
   deleteVideo: (id: string) => Promise<boolean>;
   reorderVideos: (newOrderedList: VideoItem[]) => Promise<void>;
 
+  // Spud's Blog & Video Distribution Hub
+  blogPosts: BlogPost[];
+  addBlogPost: (post: Omit<BlogPost, 'id' | 'createdAt'> | BlogPost) => Promise<string>;
+  updateBlogPost: (id: string, updates: Partial<BlogPost>) => Promise<boolean>;
+  deleteBlogPost: (id: string) => Promise<boolean>;
+  togglePublishBlogPost: (id: string) => Promise<boolean>;
+  likeBlogPost: (id: string) => Promise<void>;
+
   // Cloud Database Sync
   isSyncingFirestore: boolean;
   syncAllToFirestore: () => Promise<{ success: boolean; count: number; error?: string }>;
@@ -485,6 +495,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [attires, setAttires] = useState<AttireItem[]>(initialAttires);
   const [selectedAttireId, setSelectedAttireIdState] = useState<string>('no1');
   const [videos, setVideos] = useState<VideoItem[]>(initialVideos);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(initialBlogPosts);
   const [showLiveStream, setShowLiveStreamState] = useState<boolean>(true);
   const [isSyncingFirestore, setIsSyncingFirestore] = useState<boolean>(false);
 
@@ -858,6 +869,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } catch (e) {}
       }
 
+      const savedBlogPosts = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}blog_posts`);
+      if (savedBlogPosts) {
+        try {
+          const parsedBlog: BlogPost[] = JSON.parse(savedBlogPosts);
+          if (Array.isArray(parsedBlog) && parsedBlog.length > 0) {
+            const initialMap = new Map<string, BlogPost>(initialBlogPosts.map(p => [p.id, p]));
+            const merged = parsedBlog.map(p => {
+              const init = initialMap.get(p.id);
+              return init ? { ...init, ...p } : p;
+            });
+            initialBlogPosts.forEach(init => {
+              if (!merged.some(m => m.id === init.id)) merged.push(init);
+            });
+            setBlogPosts(merged);
+          }
+        } catch (e) {}
+      }
+
       const savedStream = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}show_livestream`);
       if (savedStream !== null) {
         setShowLiveStreamState(savedStream === 'true');
@@ -926,6 +955,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubPartners = () => {};
     let unsubAttires = () => {};
     let unsubVideos = () => {};
+    let unsubBlogPosts = () => {};
 
     try {
       // Real-time Firestore listener for 'users' collection
@@ -1328,6 +1358,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }, (err) => console.log('Firestore videos listener:', err.message));
 
+      // Real-time Firestore listener for blog_posts (Spud's Highland Blog & Video Stories)
+      unsubBlogPosts = onSnapshot(collection(db, 'blog_posts'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remotePosts: BlogPost[] = [];
+          snapshot.forEach((d) => {
+            const data = d.data() as BlogPost;
+            if (data && (data.id || d.id)) {
+              remotePosts.push({ ...data, id: data.id || d.id });
+            }
+          });
+          if (remotePosts.length > 0) {
+            setBlogPosts(prev => {
+              const currentList = prev && prev.length > 0 ? prev : initialBlogPosts;
+              const merged = [...currentList];
+              remotePosts.forEach(r => {
+                const idx = merged.findIndex(v => v.id === r.id);
+                if (idx >= 0) {
+                  merged[idx] = { ...merged[idx], ...r };
+                } else {
+                  merged.push(r);
+                }
+              });
+              merged.sort((a, b) => new Date(b.publishDate || b.createdAt || 0).getTime() - new Date(a.publishDate || a.createdAt || 0).getTime());
+              if (typeof window !== 'undefined') {
+                try {
+                  localStorage.setItem(`${LOCAL_STORAGE_PREFIX}blog_posts`, JSON.stringify(merged));
+                } catch (e) {}
+              }
+              return merged;
+            });
+          }
+        }
+      }, (err) => console.log('Firestore blog_posts listener:', err.message));
+
       // Real-time Firestore listener for chat_sessions
       unsubChatSessions = onSnapshot(collection(db, 'chat_sessions'), (snapshot) => {
         if (!snapshot.empty) {
@@ -1410,6 +1474,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubPartners();
       unsubAttires();
       unsubVideos();
+      unsubBlogPosts();
     };
   }, []);
 
@@ -4117,6 +4182,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
+      // 19. Sync Blog Posts & Video Stories
+      const blogToSync = blogPosts && blogPosts.length > 0 ? blogPosts : initialBlogPosts;
+      for (const b of blogToSync) {
+        if (b && b.id) {
+          await setDoc(doc(db, 'blog_posts', b.id), JSON.parse(JSON.stringify(b)), { merge: true });
+          totalSynced++;
+        }
+      }
+
       console.log(`[Firestore SUCCESS] Full Cloud Sync Complete: ${totalSynced} documents verified in Firestore!`);
       addNotification({
         type: 'system',
@@ -4689,6 +4763,145 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // Spud's Blog & Video Distribution Hub Handlers
+  const addBlogPost = async (postData: Omit<BlogPost, 'id' | 'createdAt'> | BlogPost): Promise<string> => {
+    const id = ('id' in postData && postData.id) ? postData.id : `post-${Date.now()}`;
+    const now = new Date().toISOString();
+    const baseList = (blogPosts && blogPosts.length > 0) ? blogPosts : initialBlogPosts;
+    const newPost: BlogPost = {
+      ...postData,
+      id,
+      author: postData.author || 'Spud The Piper',
+      publishDate: postData.publishDate || now.split('T')[0],
+      isPublished: postData.isPublished !== undefined ? postData.isPublished : true,
+      views: postData.views ?? 0,
+      likes: postData.likes ?? 0,
+      createdAt: ('createdAt' in postData && postData.createdAt) ? postData.createdAt : now,
+      updatedAt: now
+    };
+
+    if (db) {
+      for (const initItem of initialBlogPosts) {
+        if (!baseList.some(b => b.id === initItem.id)) {
+          await syncToFirestore('blog_posts', initItem.id, initItem);
+        }
+      }
+    }
+
+    setBlogPosts(prev => {
+      const current = (prev && prev.length > 0) ? prev : initialBlogPosts;
+      const exists = current.some(p => p.id === id);
+      const updated = exists ? current.map(p => p.id === id ? newPost : p) : [newPost, ...current];
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}blog_posts`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    await syncToFirestore('blog_posts', id, newPost);
+    addNotification({
+      type: 'system',
+      title: 'New Story Published to Spud\'s Blog',
+      message: `"${newPost.title}" is now published.`,
+      actionUrl: `/blog?story=${newPost.slug}`
+    });
+    return id;
+  };
+
+  const updateBlogPost = async (id: string, updates: Partial<BlogPost>): Promise<boolean> => {
+    let targetPost: BlogPost | null = null;
+    const now = new Date().toISOString();
+    setBlogPosts(prev => {
+      const current = (prev && prev.length > 0) ? prev : initialBlogPosts;
+      const updated = current.map(p => {
+        if (p.id === id) {
+          targetPost = { ...p, ...updates, updatedAt: now };
+          return targetPost;
+        }
+        return p;
+      });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}blog_posts`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    if (targetPost) {
+      await syncToFirestore('blog_posts', id, targetPost);
+      return true;
+    }
+    return false;
+  };
+
+  const deleteBlogPost = async (id: string): Promise<boolean> => {
+    setBlogPosts(prev => {
+      const current = (prev && prev.length > 0) ? prev : initialBlogPosts;
+      const updated = current.filter(p => p.id !== id);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}blog_posts`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+    await deleteFromFirestore('blog_posts', id);
+    addNotification({
+      type: 'system',
+      title: 'Blog Story Removed',
+      message: 'The story was deleted from Spud\'s blog.',
+      actionUrl: '/admin'
+    });
+    return true;
+  };
+
+  const togglePublishBlogPost = async (id: string): Promise<boolean> => {
+    let newStatus = false;
+    let targetPost: BlogPost | null = null;
+    setBlogPosts(prev => {
+      const current = (prev && prev.length > 0) ? prev : initialBlogPosts;
+      const updated = current.map(p => {
+        if (p.id === id) {
+          newStatus = !p.isPublished;
+          targetPost = { ...p, isPublished: newStatus, updatedAt: new Date().toISOString() };
+          return targetPost;
+        }
+        return p;
+      });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}blog_posts`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    if (targetPost) {
+      await syncToFirestore('blog_posts', id, targetPost);
+    }
+    return newStatus;
+  };
+
+  const likeBlogPost = async (id: string): Promise<void> => {
+    setBlogPosts(prev => {
+      const current = (prev && prev.length > 0) ? prev : initialBlogPosts;
+      const updated = current.map(p => {
+        if (p.id === id) {
+          return { ...p, likes: (p.likes ?? 0) + 1 };
+        }
+        return p;
+      });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}blog_posts`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+    try {
+      if (db) {
+        await updateDoc(doc(db, 'blog_posts', id), {
+          likes: increment(1)
+        });
+      }
+    } catch (e) {
+      console.warn('Could not update likes on Firestore:', e);
+    }
+  };
+
   // Modal handlers
   const openBrevoPreview = (booking: BookingEvent) => {
     const paypalLink = `https://spudthepiper.com/pay?id=${booking.id}`;
@@ -4886,6 +5099,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateVideo,
       deleteVideo,
       reorderVideos,
+      blogPosts,
+      addBlogPost,
+      updateBlogPost,
+      deleteBlogPost,
+      togglePublishBlogPost,
+      likeBlogPost,
       isSyncingFirestore,
       syncAllToFirestore,
       activeBrevoEmail,

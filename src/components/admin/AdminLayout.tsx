@@ -30,7 +30,8 @@ import {
   FileText,
   Shirt,
   Video,
-  BarChart3
+  BarChart3,
+  Newspaper
 } from 'lucide-react';
 import { BrevoEmailModal } from './BrevoEmailModal';
 import { PayPalCheckoutModal } from './PayPalCheckoutModal';
@@ -68,6 +69,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
     { id: 'services', label: 'Services, Pricing & POA Studio', icon: Sparkles },
     { id: 'attire', label: 'Tartan & Attire Studio', icon: Shirt },
     { id: 'videos', label: 'Meet Spud Video Hub', icon: Video, badge: 'New' },
+    { id: 'blog', label: "Spud's Blog & Video Studio", icon: Newspaper, badge: 'New' },
     { id: 'messages', label: 'Message Center', icon: MessageSquare, badgeCount: unreadChatCount },
     { id: 'gallery', label: 'Photo Gallery Manager', icon: Camera },
     { id: 'travel-expenses', label: 'Travel & Additional Expenses', icon: Compass },

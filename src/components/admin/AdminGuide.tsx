@@ -30,7 +30,8 @@ import {
   Bell,
   AlertTriangle,
   Receipt,
-  BarChart3
+  BarChart3,
+  Newspaper
 } from 'lucide-react';
 
 interface AdminGuideProps {
@@ -443,6 +444,58 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
         {
           q: 'Do I need to do anything to keep the analytics running?',
           a: 'No! Everything runs automatically in the background. The dashboard caches data to load instantly in under 50ms and saves API quotas.'
+        }
+      ]
+    },
+    {
+      id: 'blog-hub',
+      title: "📖 12. Spud's Blog & Video Distribution Hub",
+      shortDesc: 'How to write stories, embed YouTube video vlogs, choose service categories, and 1-click share to Facebook so all social traffic lands on spudthepiper.com.',
+      icon: Newspaper,
+      badge: 'Hub & Spoke Marketing',
+      badgeColor: 'bg-red-500/20 text-red-300 border-red-500/40',
+      targetTab: 'blog',
+      steps: [
+        {
+          title: 'Step 1: Upload Your Video to YouTube First',
+          description: 'Upload your video clip (e.g. Castle wedding performance, piping workshop, or Highland vlog) to your YouTube channel. Copy the link (from your phone or PC).',
+          tip: 'Uploading to YouTube ensures super-fast, HD video playback that works on all devices without slowing down your website.'
+        },
+        {
+          title: 'Step 2: Click "Spud\'s Blog & Video Studio" in Back Office',
+          description: 'In the left menu, click "Spud\'s Blog & Video Studio" and click the golden "Write New Story" button.',
+        },
+        {
+          title: 'Step 3: Paste YouTube Link & Watch Instant Preview',
+          description: 'Paste your YouTube link into the YouTube Video field. The Back Office automatically extracts the video ID and renders an instant live video preview so you can verify it immediately.',
+          tip: 'You can leave the Cover Image blank! The system will automatically fetch YouTube\'s high-resolution thumbnail for you.'
+        },
+        {
+          title: 'Step 4: Select Service Category & Event Details',
+          description: 'Choose which service this story belongs to (e.g. Scottish Castle Weddings, Highland Bagpipe Experience, Highland Elopements, Burns Suppers) or enter a custom category. Add the Castle / Venue name, Tartan worn, and key tunes played (e.g. Highland Cathedral).',
+        },
+        {
+          title: 'Step 5: Write the Story & Publish',
+          description: 'Type out the story of the day—the atmosphere, guest reactions, and funny moments. Ensure "Publish to Live Site" is checked and hit "Publish Story". It goes live immediately on spudthepiper.com/blog!',
+        },
+        {
+          title: 'Step 6: 1-Click "Share to Facebook" or Copy Ready-to-Paste Caption',
+          description: 'On your blog card in the Back Office, click "Facebook" to open the Facebook share window with your website link pre-filled, or click "Copy ready-to-paste Facebook Post text with Link" to paste directly into your Facebook app or page.',
+          tip: 'When followers click on Facebook, they land directly on spudthepiper.com where they can read your story, watch the video, and click "Check Spud\'s Availability" to book you!'
+        }
+      ],
+      faq: [
+        {
+          q: 'Why should I post to the website first instead of only on Facebook?',
+          a: 'When you post only on Facebook, Facebook keeps the visitors. When you post on spudthepiper.com and share the link to Facebook, every curious follower visits your own website, sees your availability, explores your packages, and submits booking inquiries!'
+        },
+        {
+          q: 'Can I add custom categories that are not on the service list?',
+          a: 'Yes! Select "+ Other / Custom Topic Category..." in the category dropdown to enter any topic you want, such as "Spud\'s Video Vlogs", "Behind the Scenes", or "Highland Piping Tips".'
+        },
+        {
+          q: 'Can I draft stories before making them public?',
+          a: 'Yes! You can toggle any story between "Published" and "Draft" with one click. Drafts stay safely stored in your Back Office and will not appear on the public website until you are ready.'
         }
       ]
     }

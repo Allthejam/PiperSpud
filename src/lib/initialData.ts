@@ -23,7 +23,8 @@ import {
   PricingConfig,
   PartnerItem,
   AttireItem,
-  VideoItem
+  VideoItem,
+  BlogPost
 } from '@/types/spud';
 
 export const defaultPermissions: Record<'owner' | 'admin' | 'editor', UserPermissions> = {
@@ -1804,6 +1805,144 @@ export const initialVideos: VideoItem[] = [
     addedAt: '2026-10-11T12:00:00.000Z'
   }
 ];
+
+export const initialBlogPosts: BlogPost[] = [
+  {
+    id: 'post-eilean-donan-castle-wedding',
+    slug: 'eilean-donan-castle-scottish-wedding',
+    title: 'A Misty Castle Ceremony: Piping at Eilean Donan Castle',
+    subtitle: 'Soulful bagpipes echoing across Loch Duich for a breathtaking Scottish castle wedding',
+    excerpt: 'Watch the video from our magical wedding day at Eilean Donan Castle, welcoming guests across the stone bridge and piping Highland Cathedral as the bride stepped into the historic courtyard.',
+    content: `There is no place on Earth quite like Eilean Donan Castle when the morning mist begins to lift over Loch Duich.
+
+I arrived two hours before ceremony time in my Full Ceremonial Number 1 Military Dress—feather bonnet, full plaid, and silver buckles polished to a shine. The wind was gentle, just enough to catch the plaid, and the acoustic resonance off the ancient thirteenth-century stone ramparts was pure magic.
+
+As the guests made their way across the iconic arched stone bridge, I stood at the castle gatehouse playing "The Skye Boat Song" and welcoming friends and family who had traveled from all over Scotland and North America.
+
+When the ceremony commenced, the acoustic chanter notes of "Highland Cathedral" rang out across the courtyard as the bride entered. You could hear a pin drop between the drone harmonies.
+
+Following the vows and a celebratory quaich toast, we launched straight into "Mairi's Wedding" as the newlyweds exited through a storm of confetti. Moments like this remind me why I have spent over 40 years playing the pipes. Check out the video clip above for a taste of the day!`,
+    category: 'Scottish Castle & Highland Weddings',
+    isCustomCategory: false,
+    youtubeUrl: 'https://youtu.be/38zXOmwZVBA',
+    youtubeId: '38zXOmwZVBA',
+    featuredImageUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&auto=format&fit=crop&q=80',
+    venueName: 'Eilean Donan Castle',
+    venueLocation: 'Dornie, Kyle of Lochalsh, Scottish Highlands',
+    tartanChoice: 'Full No. 1 Dress (Feather Bonnet & Plaid)',
+    tunesPlayed: ['Highland Cathedral', 'Mairi\'s Wedding', 'Scotland the Brave'],
+    author: 'Spud The Piper',
+    publishDate: '2026-10-15',
+    isPublished: true,
+    isFeatured: true,
+    readTimeMinutes: 4,
+    views: 1420,
+    likes: 88,
+    tags: ['Castle Wedding', 'Highland Bagpipe', 'Eilean Donan', 'Highland Cathedral', 'Full Number 1 Dress'],
+    createdAt: '2026-10-15T11:00:00.000Z'
+  },
+  {
+    id: 'post-highland-bagpipe-experience-loch-lomond',
+    slug: 'highland-bagpipe-experience-loch-lomond',
+    title: 'Teaching Chanters & Laughs at Loch Lomond Holiday Lodge',
+    subtitle: 'How a group of visiting friends from Amsterdam mastered the Scottish scale in under an hour',
+    excerpt: 'A hilarious and unforgettable hands-on Highland Bagpipe Experience on the shores of Loch Lomond. Practice chanters, laughter, and letting everyone have a go at the big pipes!',
+    content: `Last week I drove out to a stunning private lodge overlooking Loch Lomond for one of my favorite bookings: The Ultimate Highland Bagpipe Experience.
+
+A group of six friends visiting Scotland had booked a 90-minute workshop to kick off their Highland road trip. When I walked in with my kilt and a bundle of sanitised practice chanters, the curiosity in the room was electric!
+
+We started with a quick rundown of how the bag, blowpipe, and drones function together—it's essentially a lungs-and-bellows engine that hasn't changed fundamentally in hundreds of years. Within 20 minutes, every single one of them was playing the basic Scottish scale and attempting "Scotland the Brave"!
+
+Then came the grand finale: "Have a Shot on the Big Pipes". Holding up the full bagpipes, squeezing the bag under the arm, and trying to keep three drone reeds vibrating all at once produced tears of laughter. We finished with a private mini-concert by the wood-burning stove and souvenir photos in the feather bonnet.
+
+If you are renting a holiday cottage or lodge in Scotland, there is no better way to spend an afternoon!`,
+    category: 'The Ultimate Highland Bagpipe Experience',
+    isCustomCategory: false,
+    youtubeUrl: 'https://youtu.be/38zXOmwZVBA',
+    youtubeId: '38zXOmwZVBA',
+    featuredImageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&auto=format&fit=crop&q=80',
+    venueName: 'Loch Lomond Holiday Lodges',
+    venueLocation: 'Loch Lomond, Argyll',
+    tartanChoice: 'Modern Day Highland Tweed Jacket',
+    tunesPlayed: ['The Skye Boat Song', 'Scotland the Brave', 'Flower of Scotland'],
+    author: 'Spud The Piper',
+    publishDate: '2026-10-10',
+    isPublished: true,
+    isFeatured: false,
+    readTimeMinutes: 3,
+    views: 980,
+    likes: 64,
+    tags: ['Bagpipe Experience', 'Loch Lomond', 'Practice Chanter', 'Scottish Workshop', 'Holiday Lodge Entertainment'],
+    createdAt: '2026-10-10T14:30:00.000Z'
+  },
+  {
+    id: 'post-glencoe-mountain-elopement',
+    slug: 'glencoe-mountain-intimate-elopement',
+    title: 'Wild Mountain Romance: An Intimate Handfasting in Glencoe',
+    subtitle: 'Pure acoustic drone echoes amidst the towering peaks of the Three Sisters',
+    excerpt: 'Hiking into the heart of Glencoe with Highland bagpipes for a romantic two-person handfasting ceremony amidst the Scottish heather and mist.',
+    content: `Glencoe has a soul that cannot be captured in words—it has to be heard.
+
+For Sarah and Callum's elopement, we hiked 15 minutes up into the heather beneath the towering buttresses of the Three Sisters. They had traveled from Canada to exchange their private vows with just their celebrant, their photographer, and myself.
+
+As the couple stood on the rocky outcrop overlooking the valley, I struck up the pipes from 50 yards away with Dougie MacLean's "Caledonia". The sound bounced off the granite peaks, creating a natural cathedral of sound.
+
+During the Celtic handfasting cord ritual, I transitioned gently into "The Skye Boat Song". After they sealed their vows with a dram of 12-year-old single malt from their silver quaich, we celebrated with upbeat Scottish jigs as the evening golden hour bathed the mountains in amber light.
+
+An unforgettable privilege to be the sole musical witness to such a private milestone.`,
+    category: 'Highland Elopements & Intimate Vows',
+    isCustomCategory: false,
+    youtubeUrl: 'https://youtu.be/38zXOmwZVBA',
+    youtubeId: '38zXOmwZVBA',
+    featuredImageUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200&auto=format&fit=crop&q=80',
+    venueName: 'The Three Sisters, Glencoe',
+    venueLocation: 'Glencoe Valley, Scottish Highlands',
+    tartanChoice: 'Black Watch Tartan (Military Green/Blue)',
+    tunesPlayed: ['The Skye Boat Song (Outlander Theme)', 'Caledonia', 'Wild Mountain Thyme'],
+    author: 'Spud The Piper',
+    publishDate: '2026-10-04',
+    isPublished: true,
+    isFeatured: false,
+    readTimeMinutes: 3,
+    views: 1150,
+    likes: 79,
+    tags: ['Glencoe Elopement', 'Highland Elopement', 'Handfasting', 'Outlander Theme', 'Black Watch Tartan'],
+    createdAt: '2026-10-04T09:15:00.000Z'
+  },
+  {
+    id: 'post-burns-supper-hopetoun-house',
+    slug: 'piping-in-the-haggis-hopetoun-house',
+    title: 'Piping in the Great Chieftain o\' the Puddin-Race!',
+    subtitle: 'The pomp, poetry, and midnight roar of a classic Scottish Burns Night',
+    excerpt: 'Leading the ceremonial chef and Haggis into the grand ballroom at Hopetoun House, followed by rousing reels and Auld Lang Syne.',
+    content: `There is no Scottish tradition quite as raucous, theatrical, and heartwarming as a proper Burns Supper.
+
+At Hopetoun House just outside Edinburgh, 180 guests had gathered under the chandeliers. When the double doors swung open, I stepped forward in the Royal Stewart Tartan playing "A Man's a Man for A' That", leading the head chef as he carried the silver platter bearing the steaming Haggis high above his head.
+
+The room erupted into rhythmic clapping. We circled the banquet tables twice before delivering the Haggis to the podium for the famous "Address to a Haggis", punctuated by the dramatic plunge of the dirk!
+
+Later in the evening, after the toasts to the lassies and laddies, I brought the pipes back for a high-energy medley of reels and strathspeys that had everyone on their feet. We finished with everyone joining hands in the circle for a spine-tingling "Auld Lang Syne". Slàinte mhath!`,
+    category: 'Burns Suppers & Hogmanay Celebrations',
+    isCustomCategory: false,
+    youtubeUrl: 'https://youtu.be/38zXOmwZVBA',
+    youtubeId: '38zXOmwZVBA',
+    featuredImageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&auto=format&fit=crop&q=80',
+    venueName: 'Hopetoun House Ballroom',
+    venueLocation: 'South Queensferry, Edinburgh',
+    tartanChoice: 'Royal Stewart Tartan (Traditional Red)',
+    tunesPlayed: ['A Man\'s a Man for A\' That', 'Auld Lang Syne', 'The Atholl Highlanders'],
+    author: 'Spud The Piper',
+    publishDate: '2026-09-28',
+    isPublished: true,
+    isFeatured: false,
+    readTimeMinutes: 4,
+    views: 820,
+    likes: 52,
+    tags: ['Burns Night', 'Address to the Haggis', 'Hopetoun House', 'Royal Stewart', 'Auld Lang Syne'],
+    createdAt: '2026-09-28T18:00:00.000Z'
+  }
+];
+
 
 
 

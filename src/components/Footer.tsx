@@ -276,6 +276,7 @@ export const Footer: React.FC = () => {
                 <li><Link href="/" className="hover:text-tartan-gold transition-colors">Home Page</Link></li>
                 <li><Link href="/about" className="hover:text-tartan-gold transition-colors">About Spud & Awards</Link></li>
                 <li><Link href="/services" className="hover:text-tartan-gold transition-colors">Services & Packages</Link></li>
+                <li><Link href="/blog" className="hover:text-tartan-gold transition-colors font-medium">Spud&apos;s Blog &amp; Videos</Link></li>
                 <li><Link href="/tunes" className="hover:text-tartan-gold transition-colors">Bagpipe Tune Jukebox</Link></li>
                 <li><Link href="/attire" className="hover:text-tartan-gold transition-colors">Tartan & Attire Studio</Link></li>
                 <li><Link href="/partners" className="text-tartan-gold font-bold hover:underline transition-colors flex items-center gap-1"><span>Our Partners &amp; Apps</span><Sparkles className="w-3 h-3 text-tartan-gold" /></Link></li>

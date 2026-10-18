@@ -461,5 +461,46 @@ export interface VideoItem {
   addedAt?: string;
 }
 
+export const BLOG_SERVICE_CATEGORIES = [
+  'Scottish Castle & Highland Weddings',
+  'The Ultimate Highland Bagpipe Experience',
+  'Highland Elopements & Intimate Vows',
+  'Burns Suppers & Hogmanay Celebrations',
+  'Corporate Banquets & Castle VIP Galas',
+  'Funerals, Memorials & Graveside Laments',
+  'Anniversaries, Birthdays & Surprise Gigs'
+] as const;
+
+export type BlogCategory = typeof BLOG_SERVICE_CATEGORIES[number] | (string & {});
+
+export interface BlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle?: string;
+  excerpt: string;
+  content: string;
+  category: BlogCategory;
+  isCustomCategory?: boolean;
+  youtubeUrl?: string;
+  youtubeId?: string;
+  featuredImageUrl?: string;
+  galleryImages?: string[];
+  venueName?: string;
+  venueLocation?: string;
+  tartanChoice?: string;
+  tunesPlayed?: string[];
+  author: string;
+  publishDate: string;
+  isPublished: boolean;
+  isFeatured?: boolean;
+  readTimeMinutes?: number;
+  views?: number;
+  likes?: number;
+  tags?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 
 
