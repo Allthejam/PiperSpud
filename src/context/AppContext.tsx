@@ -4811,27 +4811,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const auditRecipients: BroadcastRecipientAudit[] = recipients.map(r => {
           const resItem = (data.results || []).find((res: any) => (res.email || '').toLowerCase() === (r.email || '').toLowerCase());
           const isSent = resItem ? resItem.status === 201 : !data.warning;
-          return {
-            name: r.name,
+          const rec: BroadcastRecipientAudit = {
+            name: r.name || 'Valued Client',
             email: r.email,
             status: isSent ? 'sent' : (data.warning ? 'simulated' : 'failed'),
-            sentAt: new Date().toISOString(),
-            error: resItem?.error
+            sentAt: new Date().toISOString()
           };
+          if (resItem?.error) {
+            rec.error = String(resItem.error);
+          }
+          return rec;
         });
 
         const auditEntry: BroadcastAuditEntry = {
           id: `audit-${Date.now()}`,
-          campaignId: campaign.id,
-          campaignTitle: campaign.title,
-          subject: campaign.subject,
-          heading: campaign.heading,
-          bodyContent: campaign.bodyContent,
-          ctaText: campaign.ctaText,
-          ctaUrl: campaign.ctaUrl,
-          segment: campaign.segment,
+          campaignId: campaign.id || 'custom',
+          campaignTitle: campaign.title || 'Broadcast Campaign',
+          subject: campaign.subject || '',
+          heading: campaign.heading || '',
+          bodyContent: campaign.bodyContent || '',
+          ctaText: campaign.ctaText || '',
+          ctaUrl: campaign.ctaUrl || '',
+          segment: campaign.segment || 'all',
           sentAt: new Date().toISOString(),
-          sentBy: senderName,
+          sentBy: senderName || 'Spud (Admin)',
           recipientCount: auditRecipients.length,
           recipients: auditRecipients
         };
@@ -4847,7 +4850,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
 
         if (db) {
-          setDoc(doc(db, 'broadcast_audits', auditEntry.id), auditEntry).catch(e => console.warn('Audit save error:', e));
+          const sanitizeForFirestore = (obj: any): any => {
+            if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
+            if (obj !== null && typeof obj === 'object') {
+              const clean: Record<string, any> = {};
+              for (const [k, v] of Object.entries(obj)) {
+                if (v !== undefined) clean[k] = sanitizeForFirestore(v);
+              }
+              return clean;
+            }
+            return obj;
+          };
+          const cleanAudit = sanitizeForFirestore(auditEntry);
+          setDoc(doc(db, 'broadcast_audits', auditEntry.id), cleanAudit).catch(e => console.warn('Audit save error:', e));
         }
 
         addNotification({
