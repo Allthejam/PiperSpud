@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { HelpCircle, ChevronDown, Sparkles, Phone, MessageSquare } from 'lucide-react';
 import { EditableElement } from './EditableElement';
 import { useApp } from '@/context/AppContext';
+import { FormattedFaqAnswer } from '@/components/FormattedFaqAnswer';
 
 interface FaqSectionProps {
   showOnlyHome?: boolean;
@@ -95,8 +96,8 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ showOnlyHome = true }) =
 
                 {isOpen && (
                   <div className="px-5 sm:px-6 pb-6 pt-0 text-sm text-gray-300 leading-relaxed border-t border-slate-800/80 pt-4">
-                    <p>{faq.answer}</p>
-                    <div className="mt-3">
+                    <FormattedFaqAnswer text={faq.answer} />
+                    <div className="mt-4">
                       <span className="text-[11px] font-bold text-tartan-gold bg-tartan-navy px-2.5 py-1 rounded-md border border-tartan-accent/30">
                         Category: {faq.category}
                       </span>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import { 
   HelpCircle, 
@@ -20,9 +20,14 @@ import {
   Save,
   Home,
   RefreshCw,
-  AlertTriangle
+  AlertTriangle,
+  List,
+  ListOrdered,
+  Bold,
+  Pilcrow
 } from 'lucide-react';
 import { FaqItem } from '@/types/spud';
+import { FormattedFaqAnswer } from '@/components/FormattedFaqAnswer';
 
 const FAQ_CATEGORIES = [
   'Booking & Payments',
@@ -48,6 +53,121 @@ export const AdminFaqs: React.FC = () => {
   const [formAnswer, setFormAnswer] = useState('');
   const [formCategory, setFormCategory] = useState('Booking & Payments');
   const [formShowOnHome, setFormShowOnHome] = useState(true);
+  const [activeEditorTab, setActiveEditorTab] = useState<'write' | 'preview'>('write');
+  const answerTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Helper to insert formatting into the answer textarea
+  const insertFormatting = (prefix: string, suffix: string = '', defaultPlaceholder: string = '') => {
+    const textarea = answerTextareaRef.current;
+    if (!textarea) {
+      setFormAnswer((prev) => prev + prefix + defaultPlaceholder + suffix);
+      return;
+    }
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = formAnswer.substring(start, end);
+    const textToInsert = selectedText || defaultPlaceholder;
+
+    const newText = formAnswer.substring(0, start) + prefix + textToInsert + suffix + formAnswer.substring(end);
+    setFormAnswer(newText);
+
+    setTimeout(() => {
+      textarea.focus();
+      const cursorStart = start + prefix.length;
+      const cursorEnd = cursorStart + textToInsert.length;
+      textarea.setSelectionRange(cursorStart, cursorEnd);
+    }, 0);
+  };
+
+  const insertBullet = () => {
+    const textarea = answerTextareaRef.current;
+    if (!textarea) {
+      setFormAnswer((prev) => prev + (prev.endsWith('\n') || !prev ? '' : '\n') + '• ');
+      return;
+    }
+    const start = textarea.selectionStart;
+    const before = formAnswer.substring(0, start);
+    const needsNewline = before.length > 0 && !before.endsWith('\n');
+    insertFormatting(needsNewline ? '\n• ' : '• ', '', 'New bullet item');
+  };
+
+  const insertNumbered = () => {
+    const textarea = answerTextareaRef.current;
+    if (!textarea) {
+      setFormAnswer((prev) => prev + (prev.endsWith('\n') || !prev ? '' : '\n') + '1. ');
+      return;
+    }
+    const start = textarea.selectionStart;
+    const before = formAnswer.substring(0, start);
+    const needsNewline = before.length > 0 && !before.endsWith('\n');
+    insertFormatting(needsNewline ? '\n1. ' : '1. ', '', 'First numbered item');
+  };
+
+  const insertParagraph = () => {
+    insertFormatting('\n\n', '', 'New paragraph text');
+  };
+
+  const insertBold = () => {
+    insertFormatting('**', '**', 'bold text');
+  };
+
+  const handleAnswerKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter') {
+      const textarea = e.currentTarget;
+      const start = textarea.selectionStart;
+      const textBeforeCursor = formAnswer.substring(0, start);
+      const currentLine = textBeforeCursor.split('\n').pop() || '';
+
+      // Check if current line starts with bullet
+      const bulletMatch = currentLine.match(/^\s*([•\-\*·–]|\u2022)\s*(.*)$/);
+      if (bulletMatch) {
+        e.preventDefault();
+        // If bullet line is empty (just the bullet symbol), pressing enter clears the bullet line
+        if (!bulletMatch[2].trim()) {
+          const lineStart = start - currentLine.length;
+          const newText = formAnswer.substring(0, lineStart) + formAnswer.substring(start);
+          setFormAnswer(newText);
+          setTimeout(() => {
+            textarea.setSelectionRange(lineStart, lineStart);
+          }, 0);
+          return;
+        }
+        // Otherwise continue bullet on next line
+        const bulletSymbol = bulletMatch[1];
+        const newText = formAnswer.substring(0, start) + '\n' + bulletSymbol + ' ' + formAnswer.substring(start);
+        setFormAnswer(newText);
+        setTimeout(() => {
+          const newPos = start + 1 + bulletSymbol.length + 1;
+          textarea.setSelectionRange(newPos, newPos);
+        }, 0);
+        return;
+      }
+
+      // Check if current line starts with numbered list
+      const numMatch = currentLine.match(/^\s*(\d+)[\.\)]\s*(.*)$/);
+      if (numMatch) {
+        e.preventDefault();
+        if (!numMatch[2].trim()) {
+          const lineStart = start - currentLine.length;
+          const newText = formAnswer.substring(0, lineStart) + formAnswer.substring(start);
+          setFormAnswer(newText);
+          setTimeout(() => {
+            textarea.setSelectionRange(lineStart, lineStart);
+          }, 0);
+          return;
+        }
+        const nextNum = parseInt(numMatch[1], 10) + 1;
+        const newText = formAnswer.substring(0, start) + '\n' + nextNum + '. ' + formAnswer.substring(start);
+        setFormAnswer(newText);
+        setTimeout(() => {
+          const newPos = start + 1 + `${nextNum}. `.length;
+          textarea.setSelectionRange(newPos, newPos);
+        }, 0);
+        return;
+      }
+    }
+  };
 
   // Filtered FAQs
   const filteredFaqs = (faqs || []).filter(f => {
@@ -70,6 +190,7 @@ export const AdminFaqs: React.FC = () => {
     setFormAnswer('');
     setFormCategory('Booking & Payments');
     setFormShowOnHome(true);
+    setActiveEditorTab('write');
     setIsModalOpen(true);
   };
 
@@ -79,6 +200,7 @@ export const AdminFaqs: React.FC = () => {
     setFormAnswer(faq.answer);
     setFormCategory(faq.category || 'Booking & Payments');
     setFormShowOnHome(faq.showOnHome !== false);
+    setActiveEditorTab('write');
     setIsModalOpen(true);
   };
 
@@ -363,9 +485,9 @@ export const AdminFaqs: React.FC = () => {
                     <span className="text-tartan-gold">Q:</span>
                     <span>{faq.question}</span>
                   </h3>
-                  <p className="text-xs text-gray-300 leading-relaxed pl-6 border-l-2 border-tartan-gold/40">
-                    {faq.answer}
-                  </p>
+                  <div className="text-xs text-gray-300 leading-relaxed pl-6 border-l-2 border-tartan-gold/40">
+                    <FormattedFaqAnswer text={faq.answer} />
+                  </div>
                 </div>
               </div>
             );
@@ -375,8 +497,8 @@ export const AdminFaqs: React.FC = () => {
 
       {/* Add / Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-tartan-card border border-tartan-border rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in overflow-y-auto">
+          <div className="bg-tartan-card border border-tartan-border rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl space-y-6 my-8">
             
             <div className="flex items-center justify-between border-b border-tartan-border/60 pb-4">
               <div className="flex items-center gap-2.5">
@@ -430,18 +552,104 @@ export const AdminFaqs: React.FC = () => {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-tartan-gold mb-1.5">
-                  Detailed Answer *
-                </label>
-                <textarea
-                  rows={4}
-                  required
-                  value={formAnswer}
-                  onChange={(e) => setFormAnswer(e.target.value)}
-                  placeholder="Provide a clear, courteous, and informative answer for your clients..."
-                  className="w-full bg-tartan-dark border border-tartan-border rounded-xl p-4 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent leading-relaxed"
-                />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-tartan-gold">
+                    Detailed Answer *
+                  </label>
+                  {/* Write vs Preview Tabs */}
+                  <div className="flex items-center gap-1 bg-tartan-dark p-0.5 rounded-lg border border-tartan-border">
+                    <button
+                      type="button"
+                      onClick={() => setActiveEditorTab('write')}
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all ${
+                        activeEditorTab === 'write'
+                          ? 'bg-tartan-gold text-tartan-dark shadow-sm'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      Write
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveEditorTab('preview')}
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all flex items-center gap-1 ${
+                        activeEditorTab === 'preview'
+                          ? 'bg-tartan-gold text-tartan-dark shadow-sm'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      <Eye className="w-3 h-3" />
+                      <span>Preview</span>
+                    </button>
+                  </div>
+                </div>
+
+                {activeEditorTab === 'write' ? (
+                  <div className="space-y-2">
+                    {/* Formatting Toolbar */}
+                    <div className="flex items-center flex-wrap gap-1.5 p-2 bg-tartan-dark rounded-xl border border-tartan-border/70 text-xs text-gray-300">
+                      <button
+                        type="button"
+                        onClick={insertBullet}
+                        className="px-2.5 py-1 rounded-lg bg-tartan-navy hover:bg-slate-700 hover:text-white text-[11px] font-semibold border border-tartan-border flex items-center gap-1.5 transition-colors"
+                        title="Add bullet point (•)"
+                      >
+                        <List className="w-3.5 h-3.5 text-tartan-gold" />
+                        <span>• Bullet</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={insertNumbered}
+                        className="px-2.5 py-1 rounded-lg bg-tartan-navy hover:bg-slate-700 hover:text-white text-[11px] font-semibold border border-tartan-border flex items-center gap-1.5 transition-colors"
+                        title="Add numbered item (1.)"
+                      >
+                        <ListOrdered className="w-3.5 h-3.5 text-tartan-gold" />
+                        <span>1. Numbered</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={insertParagraph}
+                        className="px-2.5 py-1 rounded-lg bg-tartan-navy hover:bg-slate-700 hover:text-white text-[11px] font-semibold border border-tartan-border flex items-center gap-1.5 transition-colors"
+                        title="Add paragraph break"
+                      >
+                        <Pilcrow className="w-3.5 h-3.5 text-tartan-gold" />
+                        <span>Paragraph</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={insertBold}
+                        className="px-2.5 py-1 rounded-lg bg-tartan-navy hover:bg-slate-700 hover:text-white text-[11px] font-semibold border border-tartan-border flex items-center gap-1.5 transition-colors"
+                        title="Bold text (**text**)"
+                      >
+                        <Bold className="w-3.5 h-3.5 text-tartan-gold" />
+                        <span>Bold</span>
+                      </button>
+                      <span className="text-[10px] text-gray-400 ml-auto hidden sm:inline">
+                        Press Enter on bullet lines to continue list
+                      </span>
+                    </div>
+
+                    <textarea
+                      ref={answerTextareaRef}
+                      rows={6}
+                      required
+                      value={formAnswer}
+                      onChange={(e) => setFormAnswer(e.target.value)}
+                      onKeyDown={handleAnswerKeyDown}
+                      placeholder="Type or paste your answer here. Use the buttons above for bullets, numbered lists, and paragraphs..."
+                      className="w-full bg-tartan-dark border border-tartan-border rounded-xl p-4 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent leading-relaxed font-mono"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full bg-tartan-dark/60 border border-tartan-border rounded-xl p-4 min-h-[160px] max-h-[300px] overflow-y-auto">
+                    {formAnswer.trim() ? (
+                      <FormattedFaqAnswer text={formAnswer} className="text-xs text-gray-200" />
+                    ) : (
+                      <p className="text-xs text-gray-500 italic">No answer content entered yet. Switch back to Write to type your answer.</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between p-3.5 bg-tartan-dark rounded-xl border border-tartan-border">
