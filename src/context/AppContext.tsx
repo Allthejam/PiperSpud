@@ -30,7 +30,9 @@ import {
   PartnerItem,
   AttireItem,
   VideoItem,
-  BlogPost
+  BlogPost,
+  BroadcastAuditEntry,
+  BroadcastRecipientAudit
 } from '@/types/spud';
 import { 
   initialBookings, 
@@ -63,7 +65,7 @@ import {
 } from '@/lib/initialData';
 import { bagpipeSynth } from '@/lib/bagpipeSynth';
 import { db, auth } from '@/lib/firebase';
-import { collection, doc, onSnapshot, setDoc, deleteDoc, updateDoc, increment } from 'firebase/firestore';
+import { collection, doc, onSnapshot, setDoc, deleteDoc, updateDoc, increment, query, where, getDocs } from 'firebase/firestore';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -334,6 +336,10 @@ interface AppContextType {
   saveEmailCampaign: (campaign: EmailCampaign) => void;
   dispatchBroadcastCampaign: (campaign: EmailCampaign, recipients: MailingContact[]) => Promise<{ success: boolean; sentCount?: number; error?: string }>;
   syncCrmToMailingList: () => Promise<{ syncedCount: number; total: number }>;
+  broadcastAudits: BroadcastAuditEntry[];
+  clearBroadcastAudits: () => Promise<void>;
+  optOutContact: (email: string, reason?: string) => Promise<boolean>;
+  optInContact: (email: string) => Promise<boolean>;
   // Live Stream Visibility & Control
   showLiveStream: boolean;
   toggleLiveStream: () => void;
@@ -496,6 +502,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [pricingConfig, setPricingConfig] = useState<PricingConfig>(initialPricingConfig);
   const [mailingContacts, setMailingContacts] = useState<MailingContact[]>(initialMailingContacts);
   const [emailCampaigns, setEmailCampaigns] = useState<EmailCampaign[]>(initialCampaigns);
+  const [broadcastAudits, setBroadcastAudits] = useState<BroadcastAuditEntry[]>([]);
   const [faqs, setFaqs] = useState<FaqItem[]>(initialFaqs);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(initialGallery);
   const [partners, setPartners] = useState<PartnerItem[]>(initialPartners);
@@ -820,6 +827,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } catch (e) {}
       }
 
+      const savedAudits = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}broadcast_audits`);
+      if (savedAudits) {
+        try {
+          const parsedAudits: BroadcastAuditEntry[] = JSON.parse(savedAudits);
+          if (Array.isArray(parsedAudits)) setBroadcastAudits(parsedAudits);
+        } catch (e) {}
+      }
+
       const savedFaqs = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}faqs`);
       if (savedFaqs) {
         try {
@@ -982,6 +997,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubNotifications = () => {};
     let unsubMailing = () => {};
     let unsubCampaigns = () => {};
+    let unsubAudits = () => {};
     let unsubFaqs = () => {};
     let unsubGallery = () => {};
     let unsubPartners = () => {};
@@ -1298,6 +1314,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }, (err) => console.log('Firestore email_campaigns listener:', err.message));
 
+      // Real-time Firestore listener for broadcast_audits
+      unsubAudits = onSnapshot(collection(db, 'broadcast_audits'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteAudits: BroadcastAuditEntry[] = [];
+          snapshot.forEach((d) => {
+            const data = d.data() as BroadcastAuditEntry;
+            if (data) remoteAudits.push({ ...data, id: data.id || d.id });
+          });
+          remoteAudits.sort((a, b) => new Date(b.sentAt || 0).getTime() - new Date(a.sentAt || 0).getTime());
+          setBroadcastAudits(remoteAudits);
+        }
+      }, (err) => console.log('Firestore broadcast_audits listener:', err.message));
+
       // Real-time Firestore listener for faqs (merging with initialFaqs to protect defaults)
       unsubFaqs = onSnapshot(collection(db, 'faqs'), (snapshot) => {
         if (!snapshot.empty) {
@@ -1537,6 +1566,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubNotifications();
       unsubMailing();
       unsubCampaigns();
+      unsubAudits();
       unsubFaqs();
       unsubGallery();
       unsubPartners();
@@ -4472,6 +4502,134 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
+  const clearBroadcastAudits = async () => {
+    setBroadcastAudits([]);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem(`${LOCAL_STORAGE_PREFIX}broadcast_audits`);
+      } catch (e) {}
+    }
+  };
+
+  const optOutContact = async (email: string, reason?: string): Promise<boolean> => {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail) return false;
+
+    setMailingContacts(prev => {
+      const exists = prev.some(c => (c.email || '').toLowerCase().trim() === cleanEmail);
+      let updated: MailingContact[];
+      if (exists) {
+        updated = prev.map(c => {
+          if ((c.email || '').toLowerCase().trim() === cleanEmail) {
+            return {
+              ...c,
+              status: 'unsubscribed' as const,
+              unsubscribedAt: new Date().toISOString(),
+              unsubscribeReason: reason || 'Client opted out'
+            };
+          }
+          return c;
+        });
+      } else {
+        const newRecord: MailingContact = {
+          id: `optout-${Date.now()}`,
+          name: cleanEmail.split('@')[0],
+          email: cleanEmail,
+          source: 'manual',
+          status: 'unsubscribed',
+          tags: ['Opted Out'],
+          addedAt: new Date().toISOString(),
+          unsubscribedAt: new Date().toISOString(),
+          unsubscribeReason: reason || 'Client opted out',
+          brevoSynced: true
+        };
+        updated = [...prev, newRecord];
+      }
+
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_PREFIX}mailing_contacts`, JSON.stringify(updated));
+        } catch (e) {}
+      }
+      return updated;
+    });
+
+    if (db) {
+      try {
+        const q = query(collection(db, 'mailing_contacts'), where('email', '==', cleanEmail));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          snap.forEach((docSnap: any) => {
+            updateDoc(docSnap.ref, {
+              status: 'unsubscribed',
+              unsubscribedAt: new Date().toISOString(),
+              unsubscribeReason: reason || 'Client opted out'
+            }).catch(e => console.warn(e));
+          });
+        } else {
+          const newDocRef = doc(collection(db, 'mailing_contacts'));
+          setDoc(newDocRef, {
+            id: newDocRef.id,
+            email: cleanEmail,
+            name: cleanEmail.split('@')[0],
+            source: 'manual',
+            status: 'unsubscribed',
+            tags: ['Opted Out'],
+            addedAt: new Date().toISOString(),
+            unsubscribedAt: new Date().toISOString(),
+            unsubscribeReason: reason || 'Client opted out',
+            brevoSynced: true
+          }).catch(e => console.warn(e));
+        }
+      } catch (e) {
+        console.warn('Firestore optOutContact warning:', e);
+      }
+    }
+    return true;
+  };
+
+  const optInContact = async (email: string): Promise<boolean> => {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail) return false;
+
+    setMailingContacts(prev => {
+      const updated = prev.map(c => {
+        if ((c.email || '').toLowerCase().trim() === cleanEmail) {
+          return {
+            ...c,
+            status: 'subscribed' as const,
+            unsubscribedAt: undefined,
+            unsubscribeReason: undefined
+          };
+        }
+        return c;
+      });
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_PREFIX}mailing_contacts`, JSON.stringify(updated));
+        } catch (e) {}
+      }
+      return updated;
+    });
+
+    if (db) {
+      try {
+        const q = query(collection(db, 'mailing_contacts'), where('email', '==', cleanEmail));
+        const snap = await getDocs(q);
+        snap.forEach((docSnap: any) => {
+          updateDoc(docSnap.ref, {
+            status: 'subscribed',
+            unsubscribedAt: null,
+            unsubscribeReason: null
+          }).catch(e => console.warn(e));
+        });
+      } catch (e) {
+        console.warn('Firestore optInContact warning:', e);
+      }
+    }
+    return true;
+  };
+
   const dispatchBroadcastCampaign = async (campaign: EmailCampaign, recipients: MailingContact[]) => {
     try {
       const res = await fetch('/api/brevo/broadcast', {
@@ -4488,6 +4646,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           recipientCount: data.sentCount || recipients.length
         };
         saveEmailCampaign(updatedCamp);
+
+        // Record Broadcast Audit Log
+        const senderName = firebaseUser?.displayName || firebaseUser?.email || (isLegacyAdminLoggedIn ? 'Spud (Admin)' : 'Spud (Admin)');
+        const auditRecipients: BroadcastRecipientAudit[] = recipients.map(r => {
+          const resItem = (data.results || []).find((res: any) => (res.email || '').toLowerCase() === (r.email || '').toLowerCase());
+          const isSent = resItem ? resItem.status === 201 : !data.warning;
+          return {
+            name: r.name,
+            email: r.email,
+            status: isSent ? 'sent' : (data.warning ? 'simulated' : 'failed'),
+            sentAt: new Date().toISOString(),
+            error: resItem?.error
+          };
+        });
+
+        const auditEntry: BroadcastAuditEntry = {
+          id: `audit-${Date.now()}`,
+          campaignId: campaign.id,
+          campaignTitle: campaign.title,
+          subject: campaign.subject,
+          heading: campaign.heading,
+          bodyContent: campaign.bodyContent,
+          ctaText: campaign.ctaText,
+          ctaUrl: campaign.ctaUrl,
+          segment: campaign.segment,
+          sentAt: new Date().toISOString(),
+          sentBy: senderName,
+          recipientCount: auditRecipients.length,
+          recipients: auditRecipients
+        };
+
+        setBroadcastAudits(prev => {
+          const updated = [auditEntry, ...prev];
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem(`${LOCAL_STORAGE_PREFIX}broadcast_audits`, JSON.stringify(updated));
+            } catch (e) {}
+          }
+          return updated;
+        });
+
+        if (db) {
+          setDoc(doc(db, 'broadcast_audits', auditEntry.id), auditEntry).catch(e => console.warn('Audit save error:', e));
+        }
+
         addNotification({
           type: 'system',
           title: 'Seasonal Broadcast Dispatched via Brevo',
@@ -5269,6 +5472,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       saveEmailCampaign,
       dispatchBroadcastCampaign,
       syncCrmToMailingList,
+      broadcastAudits,
+      clearBroadcastAudits,
+      optOutContact,
+      optInContact,
       showLiveStream,
       toggleLiveStream,
       setShowLiveStream,

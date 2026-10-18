@@ -23,8 +23,12 @@ export async function POST(req: NextRequest) {
     const senderEmail = serverKeys.brevoSenderEmail || 'info@spudthepiper.com';
     const senderName = serverKeys.brevoSenderName || 'Spud the Piper';
 
+    const host = req.headers.get('host') || 'spudthepiper.com';
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    const origin = req.headers.get('origin') || `${protocol}://${host}`;
+
     // Build rich HTML email for the seasonal broadcast
-    const generateHtml = (contactName: string) => `
+    const generateHtml = (contactName: string, recipientEmail: string) => `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background-color: #0d1527; color: #f8fafc; padding: 32px 24px; border-radius: 16px; border: 1px solid #c5a059;">
         <div style="text-align: center; border-bottom: 1px solid #1e293b; padding-bottom: 20px; margin-bottom: 24px;">
           <h1 style="color: #c5a059; margin: 0; font-size: 26px; font-family: Georgia, serif; letter-spacing: 0.5px;">Spud The Piper</h1>
@@ -53,9 +57,15 @@ ${campaign.bodyContent}
           ` : ''}
         </div>
 
-        <div style="text-align: center; font-size: 11px; color: #64748b; line-height: 1.6;">
-          <p style="margin: 0 0 4px 0;">Spud The Piper • Aviemore, Highlands, Scotland • <a href="https://spudthepiper.com" style="color: #c5a059; text-decoration: none;">spudthepiper.com</a></p>
-          <p style="margin: 0;">You are receiving this update as a valued client, booking organiser, or subscriber of Spud the Piper.</p>
+        <div style="text-align: center; font-size: 11px; color: #64748b; line-height: 1.6; margin-top: 24px; padding-top: 16px; border-top: 1px solid #1e293b;">
+          <p style="margin: 0 0 4px 0;">Spud The Piper • Aviemore, Highlands, Scotland • <a href="${origin}" style="color: #c5a059; text-decoration: none;">spudthepiper.com</a></p>
+          <p style="margin: 0 0 8px 0;">You are receiving this update as a valued client, booking organiser, or subscriber of Spud the Piper.</p>
+          <p style="margin: 0;">
+            Prefer not to receive seasonal announcements? 
+            <a href="${origin}/unsubscribe?email=${encodeURIComponent(recipientEmail)}" style="color: #94a3b8; text-decoration: underline;">
+              Unsubscribe / Opt Out Here
+            </a> (Your wedding & event diary bookings remain safe).
+          </p>
         </div>
       </div>
     `;
@@ -84,7 +94,7 @@ ${campaign.bodyContent}
               }
             ],
             subject: campaign.subject,
-            htmlContent: generateHtml(recipient.name || 'Valued Client')
+            htmlContent: generateHtml(recipient.name || 'Valued Client', recipient.email)
           })
         });
         const resData = await brevoRes.json();

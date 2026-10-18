@@ -22,9 +22,14 @@ import {
   ExternalLink,
   RefreshCw,
   Eye,
-  Check
+  Check,
+  History,
+  X,
+  AlertCircle,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
-import { MailingContact, EmailCampaign } from '@/types/spud';
+import { MailingContact, EmailCampaign, BroadcastAuditEntry } from '@/types/spud';
 
 export const AdminMailingList: React.FC = () => {
   const { 
@@ -34,12 +39,18 @@ export const AdminMailingList: React.FC = () => {
     removeMailingContact,
     dispatchBroadcastCampaign,
     syncCrmToMailingList,
+    broadcastAudits,
+    clearBroadcastAudits,
+    optOutContact,
+    optInContact,
     bookings
   } = useApp();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTag, setFilterTag] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<'contacts' | 'composer' | 'history'>('composer');
+  const [excludedEmails, setExcludedEmails] = useState<string[]>([]);
+  const [expandedAuditId, setExpandedAuditId] = useState<string | null>(null);
 
   // Sync CRM state
   const [isSyncingCrm, setIsSyncingCrm] = useState(false);
@@ -162,6 +173,8 @@ export const AdminMailingList: React.FC = () => {
   const getTargetRecipients = (segment: EmailCampaign['segment']) => {
     return safeContacts.filter(c => {
       if (!c || c.status !== 'subscribed') return false;
+      const cleanEmail = (c.email || '').toLowerCase().trim();
+      if (excludedEmails.includes(cleanEmail)) return false;
       if (segment === 'all') return true;
       if (segment === 'bookings_only') return c.source === 'booking';
       if (segment === 'enquiries_only') return c.source === 'enquiry';
@@ -400,6 +413,18 @@ export const AdminMailingList: React.FC = () => {
           <Users className="w-4 h-4" />
           <span>Mailing Directory ({safeContacts.length})</span>
         </button>
+
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition-all ${
+            activeTab === 'history'
+              ? 'bg-tartan-gold text-tartan-dark shadow-md'
+              : 'text-gray-400 hover:text-white bg-tartan-dark/60'
+          }`}
+        >
+          <History className="w-4 h-4" />
+          <span>Broadcast Audit & History ({broadcastAudits?.length || 0})</span>
+        </button>
       </div>
 
       {/* TAB 1: SEASONAL BROADCAST COMPOSER */}
@@ -470,25 +495,53 @@ export const AdminMailingList: React.FC = () => {
               </div>
 
               {/* Target Audience Live Preview */}
-              <div className="p-3.5 bg-tartan-dark rounded-2xl border border-tartan-border text-xs space-y-2">
+              <div className="p-3.5 bg-tartan-dark rounded-2xl border border-tartan-border text-xs space-y-2.5">
                 <div className="flex items-center justify-between text-gray-300">
                   <span className="font-bold text-tartan-gold flex items-center gap-1.5">
                     <Users className="w-3.5 h-3.5" />
                     Target Recipients ({targetRecipients.length} clients selected)
                   </span>
                   <span className="text-[11px] text-gray-400">
-                    Personalized with "Dear [Client Name]"
+                    Click &times; on any client chip to exclude
                   </span>
                 </div>
+
+                {excludedEmails.length > 0 && (
+                  <div className="flex items-center justify-between bg-amber-950/40 border border-amber-600/40 rounded-xl px-3 py-1.5 text-xs text-amber-200">
+                    <span className="flex items-center gap-1.5 text-[11px]">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>{excludedEmails.length} recipient{excludedEmails.length > 1 ? 's' : ''} manually excluded from this broadcast</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setExcludedEmails([])}
+                      className="text-[11px] text-tartan-gold hover:underline font-bold"
+                    >
+                      Restore All
+                    </button>
+                  </div>
+                )}
+
                 {targetRecipients.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto no-scrollbar pt-1">
+                  <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto no-scrollbar pt-1">
                     {targetRecipients.map(r => (
-                      <span key={r.id || r.email} className="px-2.5 py-1 rounded-lg bg-tartan-card border border-tartan-border text-[11px] text-gray-200 flex items-center gap-1.5 shadow-sm">
+                      <span key={r.id || r.email} className="px-2.5 py-1 rounded-lg bg-tartan-card border border-tartan-border text-[11px] text-gray-200 flex items-center gap-1.5 shadow-sm group">
                         <span className="font-semibold text-white">{r.name}</span>
                         <span className="text-tartan-gold text-[10px]">({r.email})</span>
                         {r.venueName && (
                           <span className="text-gray-400 text-[10px] hidden sm:inline">• {r.venueName}</span>
                         )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const clean = (r.email || '').toLowerCase().trim();
+                            setExcludedEmails(prev => [...prev, clean]);
+                          }}
+                          title={`Exclude ${r.name} from this email broadcast`}
+                          className="w-4 h-4 rounded-full flex items-center justify-center text-gray-400 hover:text-red-400 hover:bg-red-950/80 transition-colors ml-0.5 font-bold text-xs"
+                        >
+                          &times;
+                        </button>
                       </span>
                     ))}
                   </div>
@@ -659,9 +712,14 @@ export const AdminMailingList: React.FC = () => {
               </div>
 
               {/* Email Footer */}
-              <div className="text-center text-[10px] text-gray-500 space-y-1">
-                <p>Spud The Piper • Aviemore, Highlands, Scotland • spudthepiper.com</p>
-                <p>Delivered via Brevo Transactional Email Network</p>
+              <div className="text-center text-[10px] text-gray-400 space-y-1.5 pt-3 border-t border-slate-800">
+                <p>Spud The Piper • Aviemore, Highlands, Scotland • <span className="text-tartan-gold">spudthepiper.com</span></p>
+                <p className="text-gray-500">Delivered via Brevo Transactional Email Network</p>
+                <p className="text-gray-400 text-[10px] pt-1">
+                  Prefer not to receive seasonal announcements?{' '}
+                  <span className="text-gray-300 underline font-semibold">Unsubscribe / Opt Out Here</span>{' '}
+                  <span className="text-gray-500 block sm:inline">(Your wedding & diary event bookings remain safe)</span>
+                </p>
               </div>
 
             </div>
@@ -807,27 +865,62 @@ export const AdminMailingList: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* Brevo Sync */}
+                      {/* Brevo Sync / Opt-Out Status */}
                       <td className="py-3.5 px-4">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Synced</span>
-                        </span>
+                        {contact.status === 'unsubscribed' ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-950/70 px-2 py-0.5 rounded-full border border-amber-800">
+                            <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Opted Out</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Subscribed</span>
+                          </span>
+                        )}
                       </td>
 
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
-                        <button
-                          onClick={() => {
-                            if (window.confirm(`Remove ${contact.name} from mailing list?`)) {
-                              removeMailingContact(contact.id);
-                            }
-                          }}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-950/40 transition-all"
-                          title="Remove from mailing list"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          {contact.status === 'subscribed' ? (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (window.confirm(`Opt out ${contact.name} (${contact.email}) from further broadcast emails? Their booking in CRM will remain completely safe.`)) {
+                                  await optOutContact(contact.email, 'Admin opted out manually');
+                                }
+                              }}
+                              className="px-2 py-1 rounded-lg text-[10px] font-bold text-amber-300 bg-amber-950/60 border border-amber-800 hover:bg-amber-900 transition-all"
+                              title="Opt out from marketing broadcasts but keep in CRM"
+                            >
+                              Opt Out
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                await optInContact(contact.email);
+                              }}
+                              className="px-2 py-1 rounded-lg text-[10px] font-bold text-emerald-300 bg-emerald-950/60 border border-emerald-800 hover:bg-emerald-900 transition-all"
+                              title="Resubscribe to marketing broadcasts"
+                            >
+                              Resubscribe
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`Remove ${contact.name} from mailing list?`)) {
+                                removeMailingContact(contact.id);
+                              }
+                            }}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-950/40 transition-all"
+                            title="Remove from mailing list"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
 
                     </tr>
@@ -837,6 +930,176 @@ export const AdminMailingList: React.FC = () => {
             </table>
           </div>
 
+        </div>
+      )}
+
+      {/* TAB 3: BROADCAST HISTORY & AUDIT LOG */}
+      {activeTab === 'history' && (
+        <div className="bg-tartan-card rounded-3xl p-6 sm:p-8 border border-tartan-border shadow-2xl space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-tartan-border/60 pb-5">
+            <div>
+              <h3 className="text-xl font-serif font-bold text-white flex items-center gap-2">
+                <History className="w-5 h-5 text-tartan-gold" />
+                <span>Broadcast Dispatch Audit & History</span>
+              </h3>
+              <p className="text-xs text-gray-400 mt-1">
+                Permanent audit log of every email sent, containing date & time, administrator, subject line, and the full recipient list with individual delivery status.
+              </p>
+            </div>
+            {broadcastAudits && broadcastAudits.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm('Clear your local broadcast audit history log?')) {
+                    clearBroadcastAudits();
+                  }
+                }}
+                className="px-3 py-1.5 rounded-xl text-xs text-gray-400 hover:text-red-400 hover:bg-red-950/40 border border-slate-700 transition-all"
+              >
+                Clear History Log
+              </button>
+            )}
+          </div>
+
+          {(!broadcastAudits || broadcastAudits.length === 0) ? (
+            <div className="py-16 text-center text-gray-400 space-y-3">
+              <History className="w-10 h-10 text-tartan-gold mx-auto opacity-40" />
+              <p className="font-bold text-white text-base">No Broadcasts Dispatched Yet</p>
+              <p className="text-xs text-gray-400 max-w-md mx-auto leading-relaxed">
+                When Spud dispatches a festive campaign or seasonal newsletter, a full audit record with timestamp, administrator info, and the list of individual recipients will automatically be recorded here.
+              </p>
+              <button
+                type="button"
+                onClick={() => setActiveTab('composer')}
+                className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 bg-gold-gradient text-tartan-dark rounded-xl font-bold text-xs shadow-lg hover:brightness-110 transition-all"
+              >
+                <Send className="w-4 h-4" />
+                <span>Compose Your First Broadcast</span>
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {broadcastAudits.map((audit) => {
+                const isExpanded = expandedAuditId === audit.id;
+                const formattedDate = new Date(audit.sentAt).toLocaleDateString('en-GB', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric'
+                });
+                const formattedTime = new Date(audit.sentAt).toLocaleTimeString('en-GB', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                });
+
+                return (
+                  <div
+                    key={audit.id}
+                    className="bg-tartan-dark/80 rounded-2xl border border-tartan-border p-5 space-y-4 shadow-lg transition-all"
+                  >
+                    {/* Header Row */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-tartan-border/40 pb-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="px-2.5 py-0.5 rounded-md bg-tartan-accent/20 border border-tartan-accent/40 text-tartan-gold text-[10px] font-bold uppercase tracking-wider">
+                            {audit.segment || 'All Contacts'}
+                          </span>
+                          <span className="text-xs text-gray-400 flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-gray-400" />
+                            <span>{formattedDate} at {formattedTime}</span>
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            • Sent By: <strong className="text-white">{audit.sentBy || 'Spud (Admin)'}</strong>
+                          </span>
+                        </div>
+                        <h4 className="text-base font-bold text-white font-serif">
+                          {audit.campaignTitle || audit.subject}
+                        </h4>
+                        <p className="text-xs text-gray-300">
+                          Subject: <span className="text-tartan-gold font-medium">&ldquo;{audit.subject}&rdquo;</span>
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-3 self-end md:self-center">
+                        <div className="text-right">
+                          <span className="text-xs text-gray-400 block">Recipients</span>
+                          <span className="text-lg font-extrabold text-white font-serif">{audit.recipientCount}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setExpandedAuditId(isExpanded ? null : audit.id)}
+                          className="px-3.5 py-2 rounded-xl bg-tartan-navy hover:bg-slate-700 text-xs font-semibold text-tartan-gold border border-tartan-gold/30 flex items-center gap-1.5 transition-all shadow"
+                        >
+                          <span>{isExpanded ? 'Hide Details' : 'View Message & Recipients'}</span>
+                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Expanded Drawer */}
+                    {isExpanded && (
+                      <div className="pt-2 space-y-5 animate-in fade-in">
+                        
+                        {/* Sent Email Message Preview */}
+                        <div className="bg-[#0b1320] rounded-xl p-4 border border-slate-800 space-y-2">
+                          <p className="text-[11px] font-bold uppercase tracking-wider text-tartan-gold">
+                            Dispatched Email Content:
+                          </p>
+                          <h5 className="font-serif font-bold text-white text-sm">
+                            {audit.heading}
+                          </h5>
+                          <p className="text-xs text-gray-300 whitespace-pre-line leading-relaxed bg-[#141e30] p-3 rounded-lg border border-slate-800">
+                            {audit.bodyContent}
+                          </p>
+                          {audit.ctaText && (
+                            <p className="text-xs text-gray-400">
+                              Button: <span className="text-white font-semibold">{audit.ctaText}</span> ({audit.ctaUrl})
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Recipient Roster */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-white flex items-center gap-1.5">
+                              <Users className="w-3.5 h-3.5 text-tartan-gold" />
+                              <span>Audit Roster ({audit.recipients.length} clients sent)</span>
+                            </span>
+                            <span className="text-gray-400 text-[11px]">
+                              Real-Time Brevo Status
+                            </span>
+                          </div>
+
+                          <div className="max-h-60 overflow-y-auto rounded-xl border border-tartan-border/60 divide-y divide-tartan-border/30 bg-[#090f1d]">
+                            {audit.recipients.map((r, i) => (
+                              <div key={i} className="px-4 py-2.5 flex items-center justify-between text-xs hover:bg-tartan-navy/20">
+                                <div>
+                                  <span className="font-bold text-white">{r.name}</span>
+                                  <span className="text-gray-400 ml-2 font-mono text-[11px]">({r.email})</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                    r.status === 'sent' 
+                                      ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                                      : r.status === 'simulated'
+                                      ? 'bg-blue-950 text-blue-300 border border-blue-800'
+                                      : 'bg-red-950 text-red-300 border border-red-800'
+                                  }`}>
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    <span>{r.status === 'simulated' ? 'Simulated Brevo' : 'Sent via Brevo'}</span>
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

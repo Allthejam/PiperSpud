@@ -353,6 +353,8 @@ export interface MailingContact {
   addedAt: string;
   brevoSynced: boolean;
   notes?: string;
+  unsubscribedAt?: string;
+  unsubscribeReason?: string;
 }
 
 export interface EmailCampaign {
@@ -369,6 +371,30 @@ export interface EmailCampaign {
   sentAt?: string;
   recipientCount?: number;
   templateType: 'christmas' | 'burns_night' | 'anniversary' | 'custom';
+}
+
+export interface BroadcastRecipientAudit {
+  name: string;
+  email: string;
+  status: 'sent' | 'simulated' | 'failed';
+  sentAt: string;
+  error?: string;
+}
+
+export interface BroadcastAuditEntry {
+  id: string;
+  campaignId: string;
+  campaignTitle: string;
+  subject: string;
+  heading: string;
+  bodyContent: string;
+  ctaText?: string;
+  ctaUrl?: string;
+  segment: string;
+  sentAt: string;
+  sentBy: string; // e.g. "Spud (Admin)" or admin user name/email
+  recipientCount: number;
+  recipients: BroadcastRecipientAudit[];
 }
 
 export interface UserPermissions {
