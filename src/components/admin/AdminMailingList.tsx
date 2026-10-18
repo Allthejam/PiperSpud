@@ -33,12 +33,17 @@ export const AdminMailingList: React.FC = () => {
     addMailingContact, 
     removeMailingContact,
     dispatchBroadcastCampaign,
+    syncCrmToMailingList,
     bookings
   } = useApp();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTag, setFilterTag] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<'contacts' | 'composer' | 'history'>('composer');
+
+  // Sync CRM state
+  const [isSyncingCrm, setIsSyncingCrm] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
 
   // New Contact Modal State
   const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
@@ -50,9 +55,55 @@ export const AdminMailingList: React.FC = () => {
   const [newTags, setNewTags] = useState('');
   const [newNotes, setNewNotes] = useState('');
 
+  // Automatically derive contacts from all CRM bookings if not already in mailingContacts
+  const derivedCrmContacts = React.useMemo(() => {
+    const existingEmails = new Set(
+      (mailingContacts || []).map(c => (c.email || '').toLowerCase().trim())
+    );
+    const result: MailingContact[] = [];
+
+    (bookings || []).forEach(b => {
+      if (!b || !b.clientEmail) return;
+      const cleanEmail = b.clientEmail.toLowerCase().trim();
+      if (!cleanEmail || existingEmails.has(cleanEmail)) return;
+      existingEmails.add(cleanEmail);
+
+      const isWedding = (b.eventType || '').toLowerCase().includes('wedding') || (b.eventType || '').toLowerCase().includes('handfasting');
+      const isCorporate = (b.eventType || '').toLowerCase().includes('corporate') || (b.eventType || '').toLowerCase().includes('gala') || (b.venueName || '').toLowerCase().includes('castle');
+
+      const tags = ['CRM Client'];
+      if (isWedding) tags.push('Wedding');
+      if (isCorporate) tags.push('Corporate & Castle');
+      if (b.status === 'deposit_paid') tags.push('Deposit Paid');
+
+      result.push({
+        id: `crm-${b.id}`,
+        name: b.clientName || 'Valued Client',
+        email: cleanEmail,
+        phone: b.clientPhone || undefined,
+        source: 'booking',
+        status: 'subscribed',
+        tags,
+        eventType: b.eventType || 'Event',
+        eventDate: b.date,
+        venueName: b.venueName,
+        notes: b.notes || undefined,
+        addedAt: b.createdAt || new Date().toISOString(),
+        brevoSynced: true
+      });
+    });
+
+    return result;
+  }, [mailingContacts, bookings]);
+
+  // Unified list of all audience contacts (Mailing DB + CRM Bookings)
+  const allAudienceContacts = React.useMemo(() => {
+    return [...(mailingContacts || []), ...derivedCrmContacts];
+  }, [mailingContacts, derivedCrmContacts]);
+
   // Campaign Composer State
   const safeCampaigns = emailCampaigns || [];
-  const safeContacts = mailingContacts || [];
+  const safeContacts = allAudienceContacts;
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>(safeCampaigns[0]?.id || 'camp-christmas-2026');
   const [activeCampaign, setActiveCampaign] = useState<EmailCampaign>(safeCampaigns[0] || {
     id: 'camp-custom',
@@ -69,6 +120,22 @@ export const AdminMailingList: React.FC = () => {
 
   const [isDispatching, setIsDispatching] = useState(false);
   const [dispatchResult, setDispatchResult] = useState<{ success: boolean; count: number; message: string } | null>(null);
+
+  // 1-Click Sync all CRM contacts into Firestore mailing list
+  const handleSyncCrm = async () => {
+    setIsSyncingCrm(true);
+    setSyncFeedback(null);
+    try {
+      const res = await syncCrmToMailingList();
+      setSyncFeedback(`Successfully synchronized ${res.syncedCount} client accounts from your CRM into your permanent mailing list! Total audience: ${res.total}`);
+      setTimeout(() => setSyncFeedback(null), 6000);
+    } catch (err: any) {
+      setSyncFeedback('Sync notification: ' + (err.message || 'Could not sync CRM contacts'));
+      setTimeout(() => setSyncFeedback(null), 6000);
+    } finally {
+      setIsSyncingCrm(false);
+    }
+  };
 
   // Filter contacts
   const filteredContacts = safeContacts.filter(contact => {
@@ -226,7 +293,16 @@ export const AdminMailingList: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            onClick={handleSyncCrm}
+            disabled={isSyncingCrm}
+            className="px-4 py-2.5 rounded-xl bg-tartan-navy hover:bg-slate-700 text-tartan-gold border border-tartan-gold/50 font-bold text-xs flex items-center gap-2 shadow-lg transition-all disabled:opacity-50"
+            title="Import and permanently save all client names & emails from your CRM bookings into the database"
+          >
+            <RefreshCw className={`w-4 h-4 ${isSyncingCrm ? 'animate-spin' : ''}`} />
+            <span>{isSyncingCrm ? 'Syncing CRM...' : 'Sync CRM Contacts'}</span>
+          </button>
           <button
             onClick={() => setIsAddContactModalOpen(true)}
             className="px-4 py-2.5 rounded-xl bg-gold-gradient text-tartan-dark font-bold text-xs flex items-center gap-2 shadow-lg hover:brightness-110 transition-all"
@@ -245,6 +321,14 @@ export const AdminMailingList: React.FC = () => {
         </div>
       </div>
 
+      {/* Sync Feedback Notification */}
+      {syncFeedback && (
+        <div className="p-4 bg-emerald-950/80 border border-emerald-500/60 rounded-2xl text-emerald-200 text-xs font-semibold flex items-center gap-2.5 shadow-xl animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+          <span>{syncFeedback}</span>
+        </div>
+      )}
+
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-tartan-card p-5 rounded-2xl border border-tartan-border space-y-1 shadow-lg">
@@ -252,7 +336,7 @@ export const AdminMailingList: React.FC = () => {
             <span className="text-xs text-gray-400 font-medium">Total Audience</span>
             <Users className="w-4 h-4 text-tartan-gold" />
           </div>
-          <p className="text-2xl font-extrabold text-white font-serif">{mailingContacts.length}</p>
+          <p className="text-2xl font-extrabold text-white font-serif">{safeContacts.length}</p>
           <p className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
             <CheckCircle2 className="w-3 h-3" />
             <span>100% Subscribed & Active</span>
@@ -261,24 +345,24 @@ export const AdminMailingList: React.FC = () => {
 
         <div className="bg-tartan-card p-5 rounded-2xl border border-tartan-border space-y-1 shadow-lg">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-400 font-medium">Booking Clients</span>
+            <span className="text-xs text-gray-400 font-medium">Booking Clients (CRM)</span>
             <Calendar className="w-4 h-4 text-blue-400" />
           </div>
           <p className="text-2xl font-extrabold text-white font-serif">
-            {mailingContacts.filter(c => c.source === 'booking').length}
+            {safeContacts.filter(c => c.source === 'booking').length}
           </p>
-          <p className="text-[11px] text-gray-400">Weddings, Galas & Celebrations</p>
+          <p className="text-[11px] text-gray-400">Weddings, Castles & Celebrations</p>
         </div>
 
         <div className="bg-tartan-card p-5 rounded-2xl border border-tartan-border space-y-1 shadow-lg">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-400 font-medium">VIP Newsletter Subscribers</span>
+            <span className="text-xs text-gray-400 font-medium">VIP Subscribers & Enquiries</span>
             <Sparkles className="w-4 h-4 text-amber-400" />
           </div>
           <p className="text-2xl font-extrabold text-white font-serif">
-            {mailingContacts.filter(c => c.source === 'newsletter').length}
+            {safeContacts.filter(c => c.source !== 'booking').length}
           </p>
-          <p className="text-[11px] text-gray-400">Highland Club & Fans</p>
+          <p className="text-[11px] text-gray-400">Highland Club & Inquiry Leads</p>
         </div>
 
         <div className="bg-tartan-card p-5 rounded-2xl border border-tartan-border space-y-1 shadow-lg">
@@ -314,7 +398,7 @@ export const AdminMailingList: React.FC = () => {
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>Mailing Directory ({mailingContacts.length})</span>
+          <span>Mailing Directory ({safeContacts.length})</span>
         </button>
       </div>
 
@@ -376,13 +460,41 @@ export const AdminMailingList: React.FC = () => {
                     onChange={(e) => setActiveCampaign({ ...activeCampaign, segment: e.target.value as any })}
                     className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-tartan-accent"
                   >
-                    <option value="all">All Contacts ({mailingContacts.length} recipients)</option>
-                    <option value="bookings_only">Confirmed Booking Clients Only ({mailingContacts.filter(c => c.source === 'booking').length})</option>
-                    <option value="weddings">Past Wedding Couples ({mailingContacts.filter(c => c.tags?.some(t => t.toLowerCase().includes('wedding')) || c.eventType?.toLowerCase().includes('wedding')).length})</option>
-                    <option value="corporate">Corporate & Castle Clients ({mailingContacts.filter(c => c.tags?.some(t => t.toLowerCase().includes('corporate') || t.toLowerCase().includes('castle'))).length})</option>
-                    <option value="subscribers">VIP Newsletter Subscribers ({mailingContacts.filter(c => c.source === 'newsletter').length})</option>
+                    <option value="all">All Contacts ({safeContacts.length} recipients)</option>
+                    <option value="bookings_only">Confirmed Booking Clients from CRM ({safeContacts.filter(c => c.source === 'booking').length})</option>
+                    <option value="weddings">Wedding & Handfasting Couples ({safeContacts.filter(c => c.tags?.some(t => t.toLowerCase().includes('wedding')) || c.eventType?.toLowerCase().includes('wedding')).length})</option>
+                    <option value="corporate">Corporate & Castle Clients ({safeContacts.filter(c => c.tags?.some(t => t.toLowerCase().includes('corporate') || t.toLowerCase().includes('castle'))).length})</option>
+                    <option value="subscribers">VIP Newsletter Subscribers ({safeContacts.filter(c => c.source === 'newsletter').length})</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Target Audience Live Preview */}
+              <div className="p-3.5 bg-tartan-dark rounded-2xl border border-tartan-border text-xs space-y-2">
+                <div className="flex items-center justify-between text-gray-300">
+                  <span className="font-bold text-tartan-gold flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5" />
+                    Target Recipients ({targetRecipients.length} clients selected)
+                  </span>
+                  <span className="text-[11px] text-gray-400">
+                    Personalized with "Dear [Client Name]"
+                  </span>
+                </div>
+                {targetRecipients.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto no-scrollbar pt-1">
+                    {targetRecipients.map(r => (
+                      <span key={r.id || r.email} className="px-2.5 py-1 rounded-lg bg-tartan-card border border-tartan-border text-[11px] text-gray-200 flex items-center gap-1.5 shadow-sm">
+                        <span className="font-semibold text-white">{r.name}</span>
+                        <span className="text-tartan-gold text-[10px]">({r.email})</span>
+                        {r.venueName && (
+                          <span className="text-gray-400 text-[10px] hidden sm:inline">• {r.venueName}</span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-amber-400 italic">No recipients found for this segment. Click &ldquo;Sync CRM Contacts&rdquo; above to import your booking clients.</p>
+                )}
               </div>
 
               <div>
@@ -580,8 +692,8 @@ export const AdminMailingList: React.FC = () => {
             {/* Filter Pills */}
             <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
               {[
-                { id: 'all', label: 'All Contacts' },
-                { id: 'booking', label: 'Bookings' },
+                { id: 'all', label: `All Contacts (${safeContacts.length})` },
+                { id: 'booking', label: `Bookings (${safeContacts.filter(c => c.source === 'booking').length})` },
                 { id: 'newsletter', label: 'VIP Newsletter' },
                 { id: 'weddings', label: 'Weddings' },
                 { id: 'corporate', label: 'Corporate' },
@@ -623,18 +735,29 @@ export const AdminMailingList: React.FC = () => {
                         <Users className="w-8 h-8 text-tartan-gold mx-auto opacity-70" />
                         <p className="font-bold text-white text-sm">No Mailing Contacts Found</p>
                         <p className="text-xs text-gray-400 leading-relaxed">
-                          {mailingContacts.length === 0 
-                            ? 'All demo mock contacts have been cleared. Real-time Firebase Firestore database sync is active. New subscribers and booking clients will appear here automatically across all devices.'
+                          {safeContacts.length === 0 
+                            ? 'No mailing contacts currently found. Click "Sync CRM Contacts" to instantly populate your list with all client bookings from the CRM.'
                             : 'No contacts match your active search or filter.'}
                         </p>
-                        <button
-                          type="button"
-                          onClick={() => setIsAddContactModalOpen(true)}
-                          className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-tartan-navy hover:bg-slate-700 text-tartan-gold rounded-xl border border-tartan-gold/40 text-xs font-bold transition-all shadow"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span>Add First Contact Manually</span>
-                        </button>
+                        <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+                          <button
+                            type="button"
+                            onClick={handleSyncCrm}
+                            disabled={isSyncingCrm}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold transition-all shadow disabled:opacity-50"
+                          >
+                            <RefreshCw className={`w-4 h-4 ${isSyncingCrm ? 'animate-spin' : ''}`} />
+                            <span>{isSyncingCrm ? 'Syncing CRM...' : 'Sync CRM Contacts'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsAddContactModalOpen(true)}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-tartan-navy hover:bg-slate-700 text-tartan-gold rounded-xl border border-tartan-gold/40 text-xs font-bold transition-all shadow"
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span>Add Contact Manually</span>
+                          </button>
+                        </div>
                       </div>
                     </td>
                   </tr>

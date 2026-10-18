@@ -333,6 +333,7 @@ interface AppContextType {
   updateMailingContact: (id: string, updated: Partial<MailingContact>) => void;
   saveEmailCampaign: (campaign: EmailCampaign) => void;
   dispatchBroadcastCampaign: (campaign: EmailCampaign, recipients: MailingContact[]) => Promise<{ success: boolean; sentCount?: number; error?: string }>;
+  syncCrmToMailingList: () => Promise<{ syncedCount: number; total: number }>;
   // Live Stream Visibility & Control
   showLiveStream: boolean;
   toggleLiveStream: () => void;
@@ -4394,6 +4395,83 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const syncCrmToMailingList = async (): Promise<{ syncedCount: number; total: number }> => {
+    const existingEmails = new Set((mailingContacts || []).map(c => (c.email || '').toLowerCase().trim()));
+    const newContacts: MailingContact[] = [];
+
+    (bookings || []).forEach(b => {
+      if (!b || !b.clientEmail) return;
+      const cleanEmail = b.clientEmail.toLowerCase().trim();
+      if (!cleanEmail || existingEmails.has(cleanEmail)) return;
+      existingEmails.add(cleanEmail);
+
+      const isWedding = (b.eventType || '').toLowerCase().includes('wedding') || (b.eventType || '').toLowerCase().includes('handfasting');
+      const isCorporate = (b.eventType || '').toLowerCase().includes('corporate') || (b.eventType || '').toLowerCase().includes('gala') || (b.venueName || '').toLowerCase().includes('castle');
+
+      const tags = ['CRM Client'];
+      if (isWedding) tags.push('Wedding');
+      if (isCorporate) tags.push('Corporate & Castle');
+      if (b.status === 'deposit_paid') tags.push('Deposit Paid');
+
+      const contact: MailingContact = {
+        id: `contact-crm-${b.id}`,
+        name: b.clientName || 'Valued Client',
+        email: cleanEmail,
+        phone: b.clientPhone || undefined,
+        source: 'booking',
+        status: 'subscribed',
+        tags,
+        eventType: b.eventType || 'Event',
+        eventDate: b.date,
+        venueName: b.venueName,
+        notes: b.notes || undefined,
+        addedAt: b.createdAt || new Date().toISOString(),
+        brevoSynced: true
+      };
+      newContacts.push(contact);
+    });
+
+    (chatSessions || []).forEach(s => {
+      if (!s || !s.visitorEmail) return;
+      const cleanEmail = s.visitorEmail.toLowerCase().trim();
+      if (!cleanEmail || existingEmails.has(cleanEmail)) return;
+      existingEmails.add(cleanEmail);
+
+      const contact: MailingContact = {
+        id: `contact-inquiry-${s.id}`,
+        name: s.visitorName || 'Inquiry Contact',
+        email: cleanEmail,
+        phone: s.visitorPhone || undefined,
+        source: 'enquiry',
+        status: 'subscribed',
+        tags: ['Inquiry Lead'],
+        addedAt: s.createdAt || new Date().toISOString(),
+        brevoSynced: true
+      };
+      newContacts.push(contact);
+    });
+
+    if (newContacts.length > 0) {
+      const updated = [...mailingContacts, ...newContacts];
+      setMailingContacts(updated);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_PREFIX}mailing_contacts`, JSON.stringify(updated));
+        } catch (e) {}
+      }
+      if (db) {
+        for (const contact of newContacts) {
+          await setDoc(doc(db, 'mailing_contacts', contact.id), contact, { merge: true }).catch(e => console.warn(e));
+        }
+      }
+    }
+
+    return {
+      syncedCount: newContacts.length,
+      total: (mailingContacts || []).length + newContacts.length
+    };
+  };
+
   const dispatchBroadcastCampaign = async (campaign: EmailCampaign, recipients: MailingContact[]) => {
     try {
       const res = await fetch('/api/brevo/broadcast', {
@@ -5190,6 +5268,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateMailingContact,
       saveEmailCampaign,
       dispatchBroadcastCampaign,
+      syncCrmToMailingList,
       showLiveStream,
       toggleLiveStream,
       setShowLiveStream,
