@@ -180,6 +180,7 @@ export interface SocialPost {
     createdAt: string;
   }[];
   timestamp: string;
+  createdAt?: string;
   isPinned?: boolean;
 }
 

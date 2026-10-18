@@ -18,7 +18,9 @@ import {
   X,
   Check,
   Save,
-  Home
+  Home,
+  RefreshCw,
+  AlertTriangle
 } from 'lucide-react';
 import { FaqItem } from '@/types/spud';
 
@@ -33,10 +35,11 @@ const FAQ_CATEGORIES = [
 ];
 
 export const AdminFaqs: React.FC = () => {
-  const { faqs, addFaq, updateFaq, deleteFaq, reorderFaqs } = useApp();
+  const { faqs, addFaq, updateFaq, deleteFaq, reorderFaqs, restoreDefaultFaqs } = useApp();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [isRestoring, setIsRestoring] = useState(false);
 
   // Add / Edit Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -130,6 +133,17 @@ export const AdminFaqs: React.FC = () => {
     }
   };
 
+  const handleRestoreDefaults = async () => {
+    if (window.confirm("Do you want to restore and synchronize all Scottish Piping Q&As to Firestore? Any custom questions you added will be preserved.")) {
+      setIsRestoring(true);
+      try {
+        await restoreDefaultFaqs();
+      } finally {
+        setIsRestoring(false);
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       
@@ -140,11 +154,20 @@ export const AdminFaqs: React.FC = () => {
           <p className="text-xs text-gray-400">Control questions displayed on the Home Page and dedicated FAQ Knowledgebase page</p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <span className="text-xs text-emerald-400 bg-emerald-950/70 px-3 py-1.5 rounded-xl border border-emerald-800/80 font-bold flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             Firestore Live Sync
           </span>
+          <button
+            onClick={handleRestoreDefaults}
+            disabled={isRestoring}
+            className="px-3.5 py-2 bg-tartan-navy hover:bg-slate-800 text-amber-300 font-bold text-xs uppercase tracking-wider rounded-xl border border-amber-500/40 shadow hover:border-amber-400 flex items-center gap-1.5 transition-all disabled:opacity-50"
+            title="Rebuild and synchronize full Scottish Piping Q&As to Cloud Firestore"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isRestoring ? 'animate-spin' : ''}`} />
+            <span>{isRestoring ? 'Restoring...' : 'Rebuild / Restore FAQs'}</span>
+          </button>
           <button
             onClick={handleOpenAddModal}
             className="px-4 py-2 bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:brightness-110 flex items-center gap-1.5 transition-all"
@@ -154,6 +177,29 @@ export const AdminFaqs: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Missing Q&A Recovery Banner */}
+      {faqs.length <= 1 && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-amber-950/60 border border-amber-500/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-bold text-amber-200 font-serif">Scottish Piping Q&As Need Rebuilding ({faqs.length} question active)</h4>
+              <p className="text-xs text-gray-300 mt-0.5">
+                Only {faqs.length} question is currently saved in Firestore. Click &quot;Rebuild &amp; Sync All FAQs&quot; to restore the full set of 7 authentic Scottish bagpipe questions (Booking &amp; Payments, Travel, Tartan &amp; Attire, Tune Repertoire, Castle Logistics) to Cloud Firestore and sync across all devices.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleRestoreDefaults}
+            disabled={isRestoring}
+            className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-tartan-dark font-black text-xs uppercase tracking-wider rounded-xl shadow-lg flex items-center gap-2 shrink-0 transition-all disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${isRestoring ? 'animate-spin' : ''}`} />
+            <span>{isRestoring ? 'Rebuilding...' : 'Rebuild & Sync All FAQs'}</span>
+          </button>
+        </div>
+      )}
 
       {/* Quick Summary KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

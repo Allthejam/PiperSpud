@@ -258,6 +258,11 @@ interface AppContextType {
   updateFaq: (id: string, updates: Partial<FaqItem>) => Promise<void>;
   deleteFaq: (id: string) => Promise<void>;
   reorderFaqs: (newOrderedList: FaqItem[]) => Promise<void>;
+  restoreDefaultFaqs: () => Promise<void>;
+
+  // Spud Official Profile Picture
+  spudProfileAvatar: string;
+  updateSpudProfileAvatar: (avatarUrl: string) => Promise<void>;
 
   // Public & Admin Photo Gallery
   galleryItems: GalleryItem[];
@@ -496,6 +501,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedAttireId, setSelectedAttireIdState] = useState<string>('no1');
   const [videos, setVideos] = useState<VideoItem[]>(initialVideos);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>(initialBlogPosts);
+  const [spudProfileAvatar, setSpudProfileAvatarState] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('spud_piper_app_v2_spud_avatar');
+        if (saved) return saved;
+      } catch (e) {}
+    }
+    return '/og-image.jpg';
+  });
   const [showLiveStream, setShowLiveStreamState] = useState<boolean>(true);
   const [isSyncingFirestore, setIsSyncingFirestore] = useState<boolean>(false);
 
@@ -809,7 +823,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try {
           const parsedFaqs: FaqItem[] = JSON.parse(savedFaqs);
           if (Array.isArray(parsedFaqs) && parsedFaqs.length > 0) {
-            setFaqs(parsedFaqs);
+            const merged = [...initialFaqs];
+            parsedFaqs.forEach(p => {
+              const idx = merged.findIndex(f => f.id === p.id);
+              if (idx >= 0) merged[idx] = { ...merged[idx], ...p };
+              else merged.push(p);
+            });
+            merged.sort((a, b) => (a.order || 0) - (b.order || 0));
+            setFaqs(merged);
           }
         } catch (e) {}
       }
@@ -956,6 +977,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubAttires = () => {};
     let unsubVideos = () => {};
     let unsubBlogPosts = () => {};
+    let unsubSpudProfile = () => {};
 
     try {
       // Real-time Firestore listener for 'users' collection
@@ -1021,6 +1043,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
       }, (err) => console.log('Firestore chat_status listener:', err.message));
+
+      // Real-time Firestore listener for Spud's profile avatar setting
+      unsubSpudProfile = onSnapshot(doc(db, 'settings', 'spud_profile'), (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data && data.avatarUrl) {
+            setSpudProfileAvatarState(data.avatarUrl);
+            if (typeof window !== 'undefined') {
+              try {
+                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}spud_avatar`, data.avatarUrl);
+              } catch (e) {}
+            }
+          }
+        }
+      }, (err) => console.log('Firestore spud_profile listener:', err.message));
 
       unsubServices = onSnapshot(collection(db, 'services'), (snapshot) => {
         if (!snapshot.empty) {
@@ -1250,16 +1287,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }, (err) => console.log('Firestore email_campaigns listener:', err.message));
 
-      // Real-time Firestore listener for faqs
+      // Real-time Firestore listener for faqs (merging with initialFaqs to protect defaults)
       unsubFaqs = onSnapshot(collection(db, 'faqs'), (snapshot) => {
         if (!snapshot.empty) {
           const remoteFaqs: FaqItem[] = [];
           snapshot.forEach((d) => remoteFaqs.push({ ...(d.data() as FaqItem), id: d.id }));
-          remoteFaqs.sort((a, b) => (a.order || 0) - (b.order || 0));
-          setFaqs(remoteFaqs);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem(`${LOCAL_STORAGE_PREFIX}faqs`, JSON.stringify(remoteFaqs));
-          }
+          setFaqs(prev => {
+            const baseList = prev && prev.length > 0 ? prev : initialFaqs;
+            const merged = [...baseList];
+            remoteFaqs.forEach(r => {
+              const idx = merged.findIndex(f => f.id === r.id);
+              if (idx >= 0) {
+                merged[idx] = { ...merged[idx], ...r };
+              } else {
+                merged.push(r);
+              }
+            });
+            initialFaqs.forEach(init => {
+              if (!merged.some(m => m.id === init.id)) merged.push(init);
+            });
+            merged.sort((a, b) => (a.order || 0) - (b.order || 0));
+            if (typeof window !== 'undefined') {
+              try {
+                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}faqs`, JSON.stringify(merged));
+              } catch (e) {}
+            }
+            return merged;
+          });
         }
       }, (err) => console.log('Firestore faqs listener:', err.message));
 
@@ -1475,6 +1529,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubAttires();
       unsubVideos();
       unsubBlogPosts();
+      unsubSpudProfile();
     };
   }, []);
 
@@ -3117,13 +3172,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     tags?: string[];
   }) => {
     const isSpud = isAdminLoggedIn || postData.authorRole === 'Spud the Piper';
+    const nowIso = new Date().toISOString();
     const newPost: SocialPost = {
       id: `post-${Date.now()}`,
       postType: postData.postType || 'feed',
       title: postData.title || (postData.content.length > 60 ? postData.content.slice(0, 60) + '...' : 'Piping Update'),
       authorName: postData.authorName || (isSpud ? 'Spud the Piper' : 'Highland Friend'),
       authorRole: isSpud ? 'Spud the Piper' : (postData.authorRole || 'Guest'),
-      authorAvatar: postData.authorAvatar || (isSpud ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&q=80' : undefined),
+      authorAvatar: postData.authorAvatar || (isSpud ? spudProfileAvatar : undefined),
       content: postData.content,
       imageUrl: postData.imageUrl,
       eventLocation: postData.eventLocation,
@@ -3134,7 +3190,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       tags: postData.tags || (postData.eventLocation ? [`#${postData.eventLocation.split(',')[0].replace(/[^a-zA-Z0-9]/g, '')}`, '#SpudThePiper'] : ['#SpudThePiper', '#HighlandPipes']),
       likes: 0,
       comments: [],
-      timestamp: 'Just now'
+      timestamp: nowIso,
+      createdAt: nowIso
     };
     setSocialPosts(prev => [newPost, ...prev]);
     await syncToFirestore('social_posts', newPost.id, newPost);
@@ -4424,6 +4481,98 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const restoreDefaultFaqs = async () => {
+    const currentList = faqs && faqs.length > 0 ? faqs : [];
+    const merged: FaqItem[] = [...initialFaqs];
+
+    currentList.forEach(existing => {
+      const idx = merged.findIndex(f => f.id === existing.id);
+      if (idx >= 0) {
+        merged[idx] = { ...merged[idx], ...existing };
+      } else {
+        merged.push(existing);
+      }
+    });
+
+    merged.sort((a, b) => (a.order || 0) - (b.order || 0));
+    setFaqs(merged);
+
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}faqs`, JSON.stringify(merged));
+      } catch (e) {}
+    }
+
+    if (db) {
+      for (const item of merged) {
+        await syncToFirestore('faqs', item.id, item);
+      }
+    }
+
+    addNotification({
+      type: 'system',
+      title: 'FAQs Restored & Synchronized',
+      message: `Successfully rebuilt and synchronized all ${merged.length} Scottish Piping Q&As to Cloud Firestore and local storage.`,
+      actionUrl: '/admin/faqs'
+    });
+  };
+
+  const updateSpudProfileAvatar = async (avatarUrl: string) => {
+    const cleanUrl = avatarUrl.trim();
+    if (!cleanUrl) return;
+
+    setSpudProfileAvatarState(cleanUrl);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}spud_avatar`, cleanUrl);
+      } catch (e) {}
+    }
+
+    if (db) {
+      try {
+        await setDoc(doc(db, 'settings', 'spud_profile'), {
+          avatarUrl: cleanUrl,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (err) {
+        console.warn('Firestore setDoc spud_profile error:', err);
+      }
+    }
+
+    setSocialPosts(prev => {
+      const updated = prev.map(p => {
+        if (p.authorRole === 'Spud the Piper') {
+          return { ...p, authorAvatar: cleanUrl };
+        }
+        return p;
+      });
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_PREFIX}social_posts`, JSON.stringify(updated));
+        } catch (e) {}
+      }
+      return updated;
+    });
+
+    if (db) {
+      try {
+        const spudPosts = socialPosts.filter(p => p.authorRole === 'Spud the Piper');
+        for (const post of spudPosts) {
+          await syncToFirestore('social_posts', post.id, { ...post, authorAvatar: cleanUrl });
+        }
+      } catch (err) {
+        console.warn('Syncing updated avatar to social_posts:', err);
+      }
+    }
+
+    addNotification({
+      type: 'system',
+      title: 'Profile Picture Updated',
+      message: "Spud's official profile avatar has been updated and synchronized across all pages and social posts.",
+      actionUrl: '/social'
+    });
+  };
+
   // Gallery item handlers
   const addGalleryItem = async (item: Omit<GalleryItem, 'id' | 'createdAt'>) => {
     const id = `gal-${Date.now()}`;
@@ -5077,6 +5226,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateFaq,
       deleteFaq,
       reorderFaqs,
+      restoreDefaultFaqs,
+      spudProfileAvatar,
+      updateSpudProfileAvatar,
       galleryItems,
       addGalleryItem,
       updateGalleryItem,

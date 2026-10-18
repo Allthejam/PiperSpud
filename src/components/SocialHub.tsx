@@ -46,7 +46,8 @@ import {
   ShieldCheck,
   Sparkle,
   Upload,
-  Copy
+  Copy,
+  Save
 } from 'lucide-react';
 import { SocialPost, ForumCategoryItem } from '@/types/spud';
 import { EmojiBar } from '@/components/EmojiBar';
@@ -101,7 +102,9 @@ export const SocialHub: React.FC = () => {
     playTune,
     stopTune,
     currentPlayingTune,
-    forumCategories
+    forumCategories,
+    spudProfileAvatar,
+    updateSpudProfileAvatar
   } = useApp();
 
   // Active View Tab: 'feed' (Timeline Stream) or 'forum' (Q&A Forum)
@@ -201,10 +204,35 @@ export const SocialHub: React.FC = () => {
     return socialPosts.find(p => p.id === activeThreadId) || null;
   }, [socialPosts, activeThreadId]);
 
+  // Spud Official Profile Picture State & Handlers
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [newAvatarUrl, setNewAvatarUrl] = useState('');
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarSaveSuccess, setAvatarSaveSuccess] = useState(false);
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Helper function to extract reliable numeric timestamp for ordering (newest first)
+  const getPostTimestamp = (post: SocialPost): number => {
+    if (post.createdAt) {
+      const t = new Date(post.createdAt).getTime();
+      if (!isNaN(t)) return t;
+    }
+    if (post.timestamp) {
+      const t = new Date(post.timestamp).getTime();
+      if (!isNaN(t)) return t;
+    }
+    const match = post.id.match(/\d{10,}/);
+    if (match) {
+      const parsed = parseInt(match[0], 10);
+      if (!isNaN(parsed)) return parsed;
+    }
+    return 0;
+  };
+
   // Feed & Forum Sorting (Recent vs Most Popular/Liked)
   const [feedSort, setFeedSort] = useState<'recent' | 'popular'>('recent');
 
-  // Feed Posts (Real-time Timeline Stream)
+  // Feed Posts (Real-time Timeline Stream - Newest at Top, Oldest at Bottom)
   const feedPosts = useMemo(() => {
     const list = socialPosts
       .filter(p => p.postType === 'feed' || (!p.postType && !p.forumTopic && !p.id.startsWith('forum-')))
@@ -223,10 +251,15 @@ export const SocialHub: React.FC = () => {
     if (feedSort === 'popular') {
       return [...list].sort((a, b) => (b.likes || 0) - (a.likes || 0));
     }
-    return list;
+    // Newest post at the top, oldest at the bottom (pinned posts stay on top)
+    return [...list].sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return getPostTimestamp(b) - getPostTimestamp(a);
+    });
   }, [socialPosts, searchQuery, feedSort]);
 
-  // Forum Posts (Highland Discussions & Q&A)
+  // Forum Posts (Highland Discussions & Q&A - Newest at Top, Oldest at Bottom)
   const forumPosts = useMemo(() => {
     const list = socialPosts
       .filter(p => p.postType === 'forum' || Boolean(p.forumTopic) || p.id.startsWith('forum-'))
@@ -243,7 +276,12 @@ export const SocialHub: React.FC = () => {
     if (feedSort === 'popular') {
       return [...list].sort((a, b) => (b.likes || 0) - (a.likes || 0));
     }
-    return list;
+    // Newest post at the top, oldest at the bottom
+    return [...list].sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return getPostTimestamp(b) - getPostTimestamp(a);
+    });
   }, [socialPosts, selectedForumTopic, searchQuery, feedSort]);
 
   // Handle Image File Selection with Firebase Storage & base64 fallback
@@ -271,6 +309,37 @@ export const SocialHub: React.FC = () => {
     }
   };
 
+  // Handle Avatar Image File Upload with Firebase Storage & FileReader fallback
+  const handleAvatarFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsUploadingAvatar(true);
+      try {
+        const cloudUrl = await uploadToStorage(file, 'profile_avatars');
+        setNewAvatarUrl(cloudUrl);
+      } catch (uploadErr) {
+        console.warn('Firebase Storage upload failed, using local FileReader data URL:', uploadErr);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setNewAvatarUrl(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        setIsUploadingAvatar(false);
+      }
+    }
+  };
+
+  const handleSaveAvatar = async () => {
+    const targetUrl = newAvatarUrl.trim() || spudProfileAvatar || '/og-image.jpg';
+    await updateSpudProfileAvatar(targetUrl);
+    setAvatarSaveSuccess(true);
+    setTimeout(() => {
+      setIsAvatarModalOpen(false);
+      setAvatarSaveSuccess(false);
+    }, 1200);
+  };
+
   // Handle Feed Post Submit
   const handlePublishFeedPost = (e: React.FormEvent) => {
     e.preventDefault();
@@ -292,6 +361,7 @@ export const SocialHub: React.FC = () => {
       content: composerText.trim(),
       authorName: finalAuthorName,
       authorRole: finalAuthorRole,
+      authorAvatar: finalAuthorRole === 'Spud the Piper' ? (spudProfileAvatar || '/og-image.jpg') : undefined,
       eventLocation: composerLocation.trim() || undefined,
       tunePlayed: composerTune.trim() || undefined,
       imageUrl: composerImage.trim() || undefined,
@@ -584,6 +654,22 @@ export const SocialHub: React.FC = () => {
                 <span>Start Discussion</span>
               </button>
             )}
+
+            {isAdminLoggedIn && (
+              <button
+                type="button"
+                onClick={() => {
+                  setNewAvatarUrl(spudProfileAvatar || '/og-image.jpg');
+                  setIsAvatarModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2.5 bg-tartan-navy hover:bg-slate-800 text-amber-300 font-bold text-xs uppercase tracking-wider rounded-2xl border border-amber-500/40 shadow hover:border-amber-400 transition-all shrink-0"
+                title="Update Spud's Official Profile Picture"
+              >
+                <Camera className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="hidden sm:inline">Update Profile Picture</span>
+                <span className="sm:hidden">Photo</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -599,9 +685,31 @@ export const SocialHub: React.FC = () => {
               {/* 1. TOP TIMELINE COMPOSER */}
               <div className="p-5 sm:p-7 bg-gradient-to-b from-tartan-navy/40 to-transparent space-y-4">
                 <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-tartan-accent via-amber-500 to-amber-700 flex items-center justify-center text-tartan-dark font-serif font-bold text-lg shrink-0 shadow-lg">
-                    {isAdminLoggedIn ? 'S' : 'H'}
-                  </div>
+                  {isAdminLoggedIn ? (
+                    <div
+                      onClick={() => {
+                        setNewAvatarUrl(spudProfileAvatar || '/og-image.jpg');
+                        setIsAvatarModalOpen(true);
+                      }}
+                      className="relative group cursor-pointer shrink-0"
+                      title="Click to update Spud's profile photo"
+                    >
+                      <div className="w-12 h-12 rounded-full overflow-hidden p-[2px] bg-gradient-to-tr from-tartan-accent via-amber-500 to-amber-700 shadow-lg ring-2 ring-tartan-gold/40">
+                        <img
+                          src={spudProfileAvatar || '/og-image.jpg'}
+                          alt="Spud the Piper"
+                          className="w-full h-full object-cover rounded-full group-hover:scale-105 transition-transform"
+                        />
+                      </div>
+                      <span className="absolute -bottom-1 -right-1 bg-amber-500 hover:bg-amber-400 text-tartan-dark p-1 rounded-full shadow-lg border border-white/20 transition-transform group-hover:scale-110">
+                        <Camera className="w-3 h-3" />
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-tartan-accent via-amber-500 to-amber-700 flex items-center justify-center text-tartan-dark font-serif font-bold text-lg shrink-0 shadow-lg">
+                      H
+                    </div>
+                  )}
                   <div
                     onClick={() => setIsComposerExpanded(true)}
                     className="flex-1 min-w-0 bg-tartan-navy hover:bg-slate-800 border border-tartan-border rounded-2xl px-4 sm:px-5 py-3.5 text-xs sm:text-sm text-gray-300 cursor-pointer transition-all flex items-center justify-between shadow-inner"
@@ -654,6 +762,20 @@ export const SocialHub: React.FC = () => {
                     <Music className="w-4 h-4 text-amber-400 shrink-0" />
                     <span>Tag Tune</span>
                   </button>
+
+                  {isAdminLoggedIn && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewAvatarUrl(spudProfileAvatar || '/og-image.jpg');
+                        setIsAvatarModalOpen(true);
+                      }}
+                      className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl hover:bg-tartan-navy transition-colors text-amber-300 text-xs sm:text-sm font-bold border border-amber-500/30 bg-amber-950/20"
+                    >
+                      <Camera className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>Update Profile Picture</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Expanded Form */}
@@ -826,13 +948,27 @@ export const SocialHub: React.FC = () => {
                       <div className="flex items-center gap-3.5">
                         {/* Avatar */}
                         <div className="relative">
-                          <div className="w-12 h-12 rounded-full p-[2px] bg-gradient-to-tr from-tartan-accent via-amber-500 to-amber-700 shadow">
-                            <img
-                              src={post.authorAvatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&q=80'}
-                              alt={post.authorName}
-                              className="w-full h-full rounded-full object-cover"
-                            />
-                          </div>
+                          {isSpud ? (
+                            <div className="w-12 h-12 rounded-full p-[2px] bg-gradient-to-tr from-tartan-accent via-amber-500 to-amber-700 shadow ring-2 ring-tartan-gold/30">
+                              <img
+                                src={spudProfileAvatar || '/og-image.jpg'}
+                                alt="Spud the Piper"
+                                className="w-full h-full rounded-full object-cover"
+                              />
+                            </div>
+                          ) : post.authorAvatar && !post.authorAvatar.includes('photo-1507003211169-0a1dd7228f2d') ? (
+                            <div className="w-12 h-12 rounded-full p-[2px] bg-slate-700 shadow">
+                              <img
+                                src={post.authorAvatar}
+                                alt={post.authorName}
+                                className="w-full h-full rounded-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-slate-800 border border-tartan-border flex items-center justify-center text-tartan-gold font-bold text-base shadow">
+                              {post.authorName ? post.authorName.slice(0, 1).toUpperCase() : 'G'}
+                            </div>
+                          )}
                           {isSpud && (
                             <div className="absolute -bottom-1 -right-1 bg-amber-400 text-tartan-dark rounded-full p-0.5 shadow">
                               <CheckCircle2 className="w-3.5 h-3.5 fill-amber-400 text-tartan-dark" />
@@ -1011,9 +1147,17 @@ export const SocialHub: React.FC = () => {
 
                             return (
                               <div key={comment.id} className="flex items-start gap-3 text-xs sm:text-sm">
-                                <div className="w-8 h-8 rounded-full bg-slate-800 border border-tartan-border flex items-center justify-center text-tartan-gold font-bold text-xs shrink-0 mt-0.5">
-                                  {comment.authorName.slice(0, 1)}
-                                </div>
+                                {isSpudComment ? (
+                                  <img
+                                    src={spudProfileAvatar || '/og-image.jpg'}
+                                    alt="Spud the Piper"
+                                    className="w-8 h-8 rounded-full object-cover border border-tartan-gold shrink-0 mt-0.5 shadow ring-1 ring-tartan-gold/40"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-slate-800 border border-tartan-border flex items-center justify-center text-tartan-gold font-bold text-xs shrink-0 mt-0.5">
+                                    {comment.authorName.slice(0, 1)}
+                                  </div>
+                                )}
                                 <div className={`p-3.5 rounded-2xl flex-1 ${
                                   isSpudComment 
                                     ? 'bg-tartan-navy border border-tartan-accent/50' 
@@ -1343,9 +1487,17 @@ export const SocialHub: React.FC = () => {
                   <div className="p-6 sm:p-8 flex flex-col md:flex-row gap-6">
                     {/* Author Box */}
                     <div className="md:w-56 shrink-0 flex md:flex-col items-center md:items-start gap-4 p-4 rounded-2xl bg-tartan-navy/50 border border-tartan-border/50">
-                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-tartan-accent via-amber-500 to-amber-700 flex items-center justify-center text-tartan-dark font-serif font-bold text-xl shrink-0 shadow-lg">
-                        {activeThread.authorRole === 'Spud the Piper' ? 'S' : activeThread.authorName.slice(0, 1)}
-                      </div>
+                      {activeThread.authorRole === 'Spud the Piper' ? (
+                        <img
+                          src={spudProfileAvatar || '/og-image.jpg'}
+                          alt="Spud the Piper"
+                          className="w-14 h-14 rounded-2xl object-cover border-2 border-tartan-gold shrink-0 shadow-lg"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-tartan-accent via-amber-500 to-amber-700 flex items-center justify-center text-tartan-dark font-serif font-bold text-xl shrink-0 shadow-lg">
+                          {activeThread.authorName.slice(0, 1)}
+                        </div>
+                      )}
                       <div className="space-y-1">
                         <div className="font-bold text-white text-base">{activeThread.authorName}</div>
                         <div className="text-[11px] font-semibold text-tartan-gold bg-tartan-dark px-2.5 py-0.5 rounded-md border border-tartan-border inline-block">
@@ -1456,11 +1608,17 @@ export const SocialHub: React.FC = () => {
                           <div className="p-6 sm:p-7 flex flex-col md:flex-row gap-6">
                             {/* Author Column */}
                             <div className="md:w-48 shrink-0 flex md:flex-col items-center md:items-start gap-3 p-3.5 rounded-2xl bg-tartan-navy/30 border border-tartan-border/40">
-                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 ${
-                                isSpud ? 'bg-gold-gradient text-tartan-dark' : 'bg-slate-800 text-tartan-gold'
-                              }`}>
-                                {isSpud ? 'S' : comment.authorName.slice(0, 1)}
-                              </div>
+                              {isSpud ? (
+                                <img
+                                  src={spudProfileAvatar || '/og-image.jpg'}
+                                  alt="Spud the Piper"
+                                  className="w-10 h-10 rounded-xl object-cover border border-tartan-gold shrink-0 shadow ring-1 ring-tartan-gold/40"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 bg-slate-800 text-tartan-gold">
+                                  {comment.authorName.slice(0, 1)}
+                                </div>
+                              )}
                               <div>
                                 <div className="font-bold text-white text-sm">{comment.authorName}</div>
                                 <div className="text-[10px] text-gray-300 bg-slate-800/80 px-2 py-0.5 rounded mt-0.5 inline-block">
@@ -2178,6 +2336,156 @@ export const SocialHub: React.FC = () => {
                 </button>
               </div>
 
+            </div>
+          </div>
+        )}
+
+        {/* ═════════════════════════════════════════════════════════════════ */}
+        {/* MODAL: UPDATE SPUD'S OFFICIAL PROFILE PICTURE                    */}
+        {/* ═════════════════════════════════════════════════════════════════ */}
+        {isAvatarModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-tartan-card w-full max-w-lg rounded-3xl border border-tartan-border shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              {/* Modal Header */}
+              <div className="p-5 sm:p-6 bg-gradient-to-r from-tartan-navy via-slate-900 to-tartan-navy border-b border-tartan-border flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gold-gradient text-tartan-dark flex items-center justify-center shadow">
+                    <Camera className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white font-serif">Update Spud&apos;s Profile Picture</h3>
+                    <p className="text-xs text-gray-400">Syncs across the social feed, forum answers, and public site</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsAvatarModalOpen(false);
+                    setAvatarSaveSuccess(false);
+                  }}
+                  className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Live Preview */}
+                <div className="flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="relative">
+                    <div className="w-28 h-28 rounded-full p-1 bg-gradient-to-tr from-tartan-accent via-amber-500 to-amber-700 shadow-2xl ring-4 ring-tartan-gold/30">
+                      <img
+                        src={newAvatarUrl || spudProfileAvatar || '/og-image.jpg'}
+                        alt="Spud the Piper Preview"
+                        className="w-full h-full rounded-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/og-image.jpg';
+                        }}
+                      />
+                    </div>
+                    <span className="absolute bottom-1 right-1 bg-tartan-gold text-tartan-dark p-1 rounded-full shadow ring-2 ring-tartan-dark" title="Verified Piper">
+                      <CheckCircle2 className="w-4 h-4 fill-tartan-dark text-tartan-gold" />
+                    </span>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white font-serif text-base">Spud the Piper</h4>
+                    <p className="text-xs text-amber-400 font-semibold">Official Profile Avatar</p>
+                  </div>
+                </div>
+
+                {/* Upload or Choose Presets */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-gray-300 text-xs font-semibold mb-2">Upload Photo from Device / Camera</label>
+                    <input
+                      ref={avatarFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarFileUpload}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => avatarFileInputRef.current?.click()}
+                      disabled={isUploadingAvatar}
+                      className="w-full py-3 px-4 bg-tartan-navy hover:bg-slate-800 border border-dashed border-tartan-border hover:border-tartan-gold/80 rounded-2xl flex items-center justify-center gap-2 text-xs sm:text-sm text-gray-200 transition-all disabled:opacity-50"
+                    >
+                      <Upload className="w-4 h-4 text-tartan-gold" />
+                      <span>{isUploadingAvatar ? 'Uploading Image to Cloud...' : 'Choose Photo or Take Selfie'}</span>
+                    </button>
+                  </div>
+
+                  {/* Or Direct Image URL */}
+                  <div>
+                    <label className="block text-gray-300 text-xs font-semibold mb-1.5">Or Paste Direct Image URL</label>
+                    <input
+                      type="url"
+                      value={newAvatarUrl}
+                      onChange={(e) => setNewAvatarUrl(e.target.value)}
+                      placeholder="https://... or /og-image.jpg"
+                      className="w-full bg-tartan-navy border border-tartan-border rounded-xl px-4 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent"
+                    />
+                  </div>
+
+                  {/* Instant 1-Click Scottish Presets */}
+                  <div>
+                    <label className="block text-gray-400 text-[11px] font-semibold mb-1.5 uppercase tracking-wider">Quick Presets</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setNewAvatarUrl('/og-image.jpg')}
+                        className="p-2.5 bg-tartan-navy/60 hover:bg-tartan-navy border border-tartan-border rounded-xl text-left flex items-center gap-2.5 transition-colors"
+                      >
+                        <img src="/og-image.jpg" alt="Highland Dress" className="w-8 h-8 rounded-full object-cover shrink-0" />
+                        <div>
+                          <div className="text-xs font-bold text-white">Highland Dress</div>
+                          <div className="text-[10px] text-gray-400">Authentic Kilt Photo</div>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNewAvatarUrl('/logo.png')}
+                        className="p-2.5 bg-tartan-navy/60 hover:bg-tartan-navy border border-tartan-border rounded-xl text-left flex items-center gap-2.5 transition-colors"
+                      >
+                        <img src="/logo.png" alt="Spud Crest" className="w-8 h-8 rounded-full object-contain shrink-0 bg-black/40 p-1" />
+                        <div>
+                          <div className="text-xs font-bold text-white">Spud Crest Logo</div>
+                          <div className="text-[10px] text-gray-400">Gold & Tartan Seal</div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {avatarSaveSuccess && (
+                  <div className="p-3 bg-emerald-950/60 border border-emerald-500/50 rounded-xl flex items-center gap-2 text-emerald-300 text-xs font-bold animate-in fade-in">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Profile picture saved and synced live across the site!</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-5 bg-tartan-navy/70 border-t border-tartan-border flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAvatarModalOpen(false);
+                    setAvatarSaveSuccess(false);
+                  }}
+                  className="px-4 py-2.5 text-xs text-gray-300 hover:text-white rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveAvatar}
+                  disabled={isUploadingAvatar || (!newAvatarUrl && !spudProfileAvatar)}
+                  className="px-6 py-2.5 bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:brightness-110 flex items-center gap-2 transition-all disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Profile Picture</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
