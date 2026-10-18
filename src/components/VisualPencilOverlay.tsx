@@ -206,9 +206,6 @@ export const VisualPencilOverlay: React.FC = () => {
       }
     }
   }, [activeSeoDrawerPageId, getSeoForPage]);
-
-  if (!isMounted || !isAdminLoggedIn) return null;
-
   const handleSaveElement = () => {
     if (!editingBlock) return;
     updateCmsBlock(

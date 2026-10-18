@@ -100,10 +100,11 @@ export const EditableElement: React.FC<EditableElementProps> = ({
     );
   }
 
-  const activeTag = (block?.tag && block.tag !== 'image' ? block.tag : tag) as keyof JSX.IntrinsicElements;
-  const Tag = activeTag || 'p';
-
   const isInline = tag === 'span' || tag === 'a';
+  const resolvedTag = isInline ? tag : (block?.tag && block.tag !== 'image' ? block.tag : tag);
+  const activeTag = resolvedTag as keyof JSX.IntrinsicElements;
+  const Tag = activeTag || (isInline ? 'span' : 'p');
+
   const colorClass = buttonColor ? buttonColor : '';
   const finalClassName = `${className} ${colorClass}`.trim();
 
@@ -115,6 +116,7 @@ export const EditableElement: React.FC<EditableElementProps> = ({
     return (
       <a 
         href={linkUrl || '#'} 
+        suppressHydrationWarning
         className={`relative group ${isInline ? 'inline-block' : 'block w-full'} ${finalClassName} ${canEdit ? 'ring-2 ring-tartan-gold/70 ring-dashed rounded-lg p-1 my-0.5 bg-tartan-navy/20' : ''}`}
         onClick={linkUrl?.startsWith('#') ? (e) => {
           e.preventDefault();
@@ -141,7 +143,7 @@ export const EditableElement: React.FC<EditableElementProps> = ({
   }
 
   return (
-    <Tag className={`relative group ${isInline ? 'inline-block' : 'block w-full'} ${finalClassName} ${canEdit ? 'ring-2 ring-tartan-gold/70 ring-dashed rounded-lg p-1 my-0.5 bg-tartan-navy/20' : ''}`}>
+    <Tag suppressHydrationWarning className={`relative group ${isInline ? 'inline-block' : 'block w-full'} ${finalClassName} ${canEdit ? 'ring-2 ring-tartan-gold/70 ring-dashed rounded-lg p-1 my-0.5 bg-tartan-navy/20' : ''}`}>
       {canEdit && (
         <span className="absolute -top-3 right-0 z-30 inline-flex items-center gap-1">
           <button

@@ -33,7 +33,7 @@ export const TrustBoxWidget: React.FC<TrustBoxWidgetProps> = ({
   }, []);
 
   return (
-    <div className={`trustpilot-widget-container ${className}`}>
+    <div className={`trustpilot-widget-container ${className}`} suppressHydrationWarning>
       <div
         ref={widgetRef}
         className="trustpilot-widget flex items-center justify-center min-h-[52px]"
@@ -44,6 +44,7 @@ export const TrustBoxWidget: React.FC<TrustBoxWidgetProps> = ({
         data-style-width="100%"
         data-theme={theme}
         data-token="94444060-bdba-4e66-a169-5f2bf999744a"
+        suppressHydrationWarning
       >
         <a
           href="https://www.trustpilot.com/review/spudthepiper.com"

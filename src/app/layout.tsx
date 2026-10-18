@@ -28,7 +28,7 @@ export default async function RootLayout({
   const ogImageUrl = liveSeo.ogImage || 'https://www.spudthepiper.com/og-image.jpg';
 
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <head>
         {/* Google tag (gtag.js) */}
         <script
@@ -81,7 +81,7 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className="antialiased selection:bg-tartan-gold selection:text-tartan-dark">
+      <body className="antialiased selection:bg-tartan-gold selection:text-tartan-dark" suppressHydrationWarning>
         <AppProvider>
           {children}
           <ScrollToTop />

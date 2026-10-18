@@ -35,8 +35,10 @@ export const LiveChatWidget: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [visitorSessionId, setVisitorSessionId] = useState<string>('');
+  const [mounted, setMounted] = useState<boolean>(false);
 
   useEffect(() => {
+    setMounted(true);
     if (typeof window !== 'undefined') {
       let storedId = localStorage.getItem('spud_the_piper_visitor_session_id');
       if (!storedId) {
@@ -156,7 +158,7 @@ export const LiveChatWidget: React.FC = () => {
                 }`} 
               />
             </div>
-            {visitorUnreadCount > 0 && (
+            {mounted && visitorUnreadCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center border-2 border-white animate-bounce shadow">
                 {visitorUnreadCount}
               </span>
