@@ -47,10 +47,12 @@ function extractYouTubeId(url?: string): string | null {
   return null;
 }
 
+const LIKED_STORAGE_KEY = 'spud_blog_liked_ids';
+
 function BlogContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { blogPosts, likeBlogPost } = useApp();
+  const { blogPosts, likeBlogPost, recordBlogPostView } = useApp();
 
   const currentPosts = (blogPosts && blogPosts.length > 0) ? blogPosts : initialBlogPosts;
   const publishedPosts = useMemo(() => {
@@ -70,6 +72,19 @@ function BlogContent() {
   const [copiedShareId, setCopiedShareId] = useState<string | null>(null);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
 
+  // Load visitor's liked posts from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(LIKED_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setLikedPosts(new Set(parsed));
+        }
+      }
+    } catch (e) {}
+  }, []);
+
   // Available categories: "All" + Core 7 + any extra categories present in posts
   const allCategories = useMemo(() => {
     const set = new Set<string>(['All', ...BLOG_SERVICE_CATEGORIES]);
@@ -85,9 +100,12 @@ function BlogContent() {
       const match = publishedPosts.find(p => p.slug === storyParam || p.id === storyParam);
       if (match) {
         setActiveStoryModal(match);
+        if (recordBlogPostView) {
+          recordBlogPostView(match.id);
+        }
       }
     }
-  }, [storyParam, publishedPosts]);
+  }, [storyParam, publishedPosts, recordBlogPostView]);
 
   // Featured Hero Post: either pinned featured or the most recent post
   const featuredPost = useMemo(() => {
@@ -119,6 +137,9 @@ function BlogContent() {
   // Open Story Modal and update URL smoothly
   const handleOpenStory = (post: BlogPost) => {
     setActiveStoryModal(post);
+    if (recordBlogPostView) {
+      recordBlogPostView(post.id);
+    }
     if (typeof window !== 'undefined') {
       window.history.pushState(null, '', `/blog?story=${post.slug}`);
     }
@@ -132,12 +153,26 @@ function BlogContent() {
     }
   };
 
-  // Like a post
+  // Like or unlike a post with localStorage persistence
   const handleLike = (e: React.MouseEvent, postId: string) => {
     e.stopPropagation();
-    if (likedPosts.has(postId)) return;
-    setLikedPosts(prev => new Set(prev).add(postId));
-    likeBlogPost(postId);
+    const isCurrentlyLiked = likedPosts.has(postId);
+    const updated = new Set(likedPosts);
+    if (isCurrentlyLiked) {
+      updated.delete(postId);
+      setLikedPosts(updated);
+      try {
+        localStorage.setItem(LIKED_STORAGE_KEY, JSON.stringify(Array.from(updated)));
+      } catch (err) {}
+      likeBlogPost(postId, -1);
+    } else {
+      updated.add(postId);
+      setLikedPosts(updated);
+      try {
+        localStorage.setItem(LIKED_STORAGE_KEY, JSON.stringify(Array.from(updated)));
+      } catch (err) {}
+      likeBlogPost(postId, 1);
+    }
   };
 
   // 1-Click Social Sharing
@@ -295,8 +330,27 @@ function BlogContent() {
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
 
-                  {/* Share buttons */}
-                  <div className="flex items-center gap-1.5">
+                  {/* Share & Like buttons */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {/* Like button on Featured Post */}
+                    {(() => {
+                      const isLiked = likedPosts.has(featuredPost.id);
+                      return (
+                        <button
+                          onClick={(e) => handleLike(e, featuredPost.id)}
+                          className={`px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            isLiked
+                              ? 'bg-rose-950/60 border-rose-500/50 text-rose-400'
+                              : 'bg-tartan-dark hover:bg-slate-700 text-gray-300 hover:text-rose-400 border-tartan-border'
+                          }`}
+                          title={isLiked ? 'Liked! Click to remove like' : 'Like this story'}
+                        >
+                          <Heart className={`w-4 h-4 ${isLiked ? 'fill-rose-400 text-rose-400' : ''}`} />
+                          <span>{featuredPost.likes || 0}</span>
+                        </button>
+                      );
+                    })()}
+
                     <button
                       onClick={(e) => handleShareFacebook(e, featuredPost)}
                       className="p-2.5 rounded-xl bg-[#1877F2]/15 hover:bg-[#1877F2] text-[#1877F2] hover:text-white border border-[#1877F2]/30 transition-all"
@@ -540,10 +594,10 @@ function BlogContent() {
                               ? 'bg-rose-950/60 border-rose-500/50 text-rose-400'
                               : 'bg-tartan-navy hover:bg-slate-700 text-gray-400 hover:text-rose-400 border-tartan-border'
                           }`}
-                          title="Like this story"
+                          title={isLiked ? 'Liked! Click to remove like' : 'Like this story'}
                         >
                           <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-rose-400 text-rose-400' : ''}`} />
-                          <span className="text-[10px]">{(post.likes || 0) + (isLiked ? 1 : 0)}</span>
+                          <span className="text-[10px]">{post.likes || 0}</span>
                         </button>
 
                         <button
@@ -654,12 +708,40 @@ function BlogContent() {
                   </p>
                 )}
 
-                <div className="flex items-center gap-3 text-xs text-gray-400 pt-1 border-b border-tartan-border/60 pb-4">
+                <div className="flex items-center gap-3 text-xs text-gray-400 pt-1 border-b border-tartan-border/60 pb-4 flex-wrap">
                   <span>By <strong>{activeStoryModal.author || 'Spud The Piper'}</strong></span>
                   <span>•</span>
                   <span>{activeStoryModal.publishDate}</span>
                   <span>•</span>
                   <span>{activeStoryModal.readTimeMinutes || 3} min read</span>
+                  {activeStoryModal.views ? (
+                    <>
+                      <span>•</span>
+                      <span className="flex items-center gap-1">
+                        <Eye className="w-3.5 h-3.5 text-gray-400" />
+                        <span>{activeStoryModal.views} views</span>
+                      </span>
+                    </>
+                  ) : null}
+                  <div className="ml-auto">
+                    {(() => {
+                      const isLiked = likedPosts.has(activeStoryModal.id);
+                      return (
+                        <button
+                          onClick={(e) => handleLike(e, activeStoryModal.id)}
+                          className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            isLiked
+                              ? 'bg-rose-950/60 border-rose-500/50 text-rose-400'
+                              : 'bg-tartan-dark hover:bg-slate-700 text-gray-300 hover:text-rose-400 border-tartan-border'
+                          }`}
+                          title={isLiked ? 'Liked! Click to remove like' : 'Like this story'}
+                        >
+                          <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-rose-400 text-rose-400' : ''}`} />
+                          <span>{activeStoryModal.likes || 0}</span>
+                        </button>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
 
@@ -759,6 +841,25 @@ function BlogContent() {
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
+                  {/* Like button in Story Modal Bottom */}
+                  {(() => {
+                    const isLiked = likedPosts.has(activeStoryModal.id);
+                    return (
+                      <button
+                        onClick={(e) => handleLike(e, activeStoryModal.id)}
+                        className={`px-3.5 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 shadow ${
+                          isLiked
+                            ? 'bg-rose-950/60 border-rose-500/50 text-rose-400'
+                            : 'bg-tartan-card hover:bg-slate-700 text-gray-200 hover:text-rose-400 border-tartan-border'
+                        }`}
+                        title={isLiked ? 'Liked! Click to remove like' : 'Like this story'}
+                      >
+                        <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-rose-400 text-rose-400' : ''}`} />
+                        <span>{activeStoryModal.likes || 0}</span>
+                      </button>
+                    );
+                  })()}
+
                   <button
                     onClick={(e) => handleShareFacebook(e, activeStoryModal)}
                     className="px-3.5 py-2 rounded-xl bg-[#1877F2] text-white text-xs font-bold flex items-center gap-1.5 shadow"

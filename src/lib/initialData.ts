@@ -1875,8 +1875,8 @@ Following the vows and a celebratory quaich toast, we launched straight into "Ma
     isPublished: true,
     isFeatured: true,
     readTimeMinutes: 4,
-    views: 1420,
-    likes: 88,
+    views: 0,
+    likes: 0,
     tags: ['Castle Wedding', 'Highland Bagpipe', 'Eilean Donan', 'Highland Cathedral', 'Full Number 1 Dress'],
     createdAt: '2026-10-15T11:00:00.000Z'
   },
@@ -1909,8 +1909,8 @@ If you are renting a holiday cottage or lodge in Scotland, there is no better wa
     isPublished: true,
     isFeatured: false,
     readTimeMinutes: 3,
-    views: 980,
-    likes: 64,
+    views: 0,
+    likes: 0,
     tags: ['Bagpipe Experience', 'Loch Lomond', 'Practice Chanter', 'Scottish Workshop', 'Holiday Lodge Entertainment'],
     createdAt: '2026-10-10T14:30:00.000Z'
   },
@@ -1943,8 +1943,8 @@ An unforgettable privilege to be the sole musical witness to such a private mile
     isPublished: true,
     isFeatured: false,
     readTimeMinutes: 3,
-    views: 1150,
-    likes: 79,
+    views: 0,
+    likes: 0,
     tags: ['Glencoe Elopement', 'Highland Elopement', 'Handfasting', 'Outlander Theme', 'Black Watch Tartan'],
     createdAt: '2026-10-04T09:15:00.000Z'
   },
@@ -1975,8 +1975,8 @@ Later in the evening, after the toasts to the lassies and laddies, I brought the
     isPublished: true,
     isFeatured: false,
     readTimeMinutes: 4,
-    views: 820,
-    likes: 52,
+    views: 0,
+    likes: 0,
     tags: ['Burns Night', 'Address to the Haggis', 'Hopetoun House', 'Royal Stewart', 'Auld Lang Syne'],
     createdAt: '2026-09-28T18:00:00.000Z'
   }

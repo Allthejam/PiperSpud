@@ -300,7 +300,8 @@ interface AppContextType {
   updateBlogPost: (id: string, updates: Partial<BlogPost>) => Promise<boolean>;
   deleteBlogPost: (id: string) => Promise<boolean>;
   togglePublishBlogPost: (id: string) => Promise<boolean>;
-  likeBlogPost: (id: string) => Promise<void>;
+  likeBlogPost: (id: string, delta?: number) => Promise<void>;
+  recordBlogPostView?: (id: string) => Promise<void>;
 
   // Cloud Database Sync
   isSyncingFirestore: boolean;
@@ -5037,12 +5038,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return newStatus;
   };
 
-  const likeBlogPost = async (id: string): Promise<void> => {
+  const likeBlogPost = async (id: string, delta: number = 1): Promise<void> => {
     setBlogPosts(prev => {
       const current = (prev && prev.length > 0) ? prev : initialBlogPosts;
       const updated = current.map(p => {
         if (p.id === id) {
-          return { ...p, likes: (p.likes ?? 0) + 1 };
+          const newLikes = Math.max(0, (p.likes ?? 0) + delta);
+          return { ...p, likes: newLikes };
         }
         return p;
       });
@@ -5053,12 +5055,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     try {
       if (db) {
-        await updateDoc(doc(db, 'blog_posts', id), {
-          likes: increment(1)
-        });
+        await setDoc(doc(db, 'blog_posts', id), {
+          likes: increment(delta)
+        }, { merge: true });
       }
     } catch (e) {
       console.warn('Could not update likes on Firestore:', e);
+    }
+  };
+
+  const recordBlogPostView = async (id: string): Promise<void> => {
+    setBlogPosts(prev => {
+      const current = (prev && prev.length > 0) ? prev : initialBlogPosts;
+      const updated = current.map(p => {
+        if (p.id === id) {
+          return { ...p, views: (p.views ?? 0) + 1 };
+        }
+        return p;
+      });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}blog_posts`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+    try {
+      if (db) {
+        await setDoc(doc(db, 'blog_posts', id), {
+          views: increment(1)
+        }, { merge: true });
+      }
+    } catch (e) {
+      console.warn('Could not update views on Firestore:', e);
     }
   };
 
@@ -5268,6 +5295,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteBlogPost,
       togglePublishBlogPost,
       likeBlogPost,
+      recordBlogPostView,
       isSyncingFirestore,
       syncAllToFirestore,
       activeBrevoEmail,
