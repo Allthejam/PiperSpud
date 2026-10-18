@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import { BlogPost, BLOG_SERVICE_CATEGORIES } from '@/types/spud';
 import { initialBlogPosts } from '@/lib/initialData';
+import { uploadToStorage } from '@/lib/firebase';
 import { 
   BookOpen, 
   Plus, 
@@ -30,7 +31,9 @@ import {
   CheckCircle,
   Clock,
   Heart,
-  Globe
+  Globe,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -108,6 +111,76 @@ export const AdminBlog: React.FC = () => {
   const [postToDelete, setPostToDelete] = useState<BlogPost | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Cover Photo Upload State & Handlers
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const coverFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCoverFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 25 * 1024 * 1024) {
+      alert('File size exceeds 25MB limit. Please choose a photo under 25MB.');
+      return;
+    }
+
+    setIsUploadingCover(true);
+    setErrorMessage(null);
+
+    try {
+      const cloudUrl = await uploadToStorage(file, 'blog_covers');
+      setFormFeaturedImageUrl(cloudUrl);
+    } catch (err: any) {
+      console.warn('Firebase Storage upload failed, falling back to local FileReader:', err);
+      try {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            setFormFeaturedImageUrl(reader.result);
+          }
+        };
+        reader.readAsDataURL(file);
+      } catch (readErr) {
+        setErrorMessage('Failed to read image file. Please try another photo.');
+      }
+    } finally {
+      setIsUploadingCover(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+
+    if (file.size > 25 * 1024 * 1024) {
+      alert('File size exceeds 25MB limit. Please choose a photo under 25MB.');
+      return;
+    }
+
+    setIsUploadingCover(true);
+    setErrorMessage(null);
+    try {
+      const cloudUrl = await uploadToStorage(file, 'blog_covers');
+      setFormFeaturedImageUrl(cloudUrl);
+    } catch (err: any) {
+      console.warn('Firebase Storage upload failed, falling back to local FileReader:', err);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setFormFeaturedImageUrl(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setIsUploadingCover(false);
+    }
+  };
+
   // Derived YouTube ID for live preview in modal
   const liveYoutubeId = useMemo(() => {
     return extractYouTubeId(formYoutubeUrl);
@@ -170,6 +243,8 @@ export const AdminBlog: React.FC = () => {
     setFormReadTimeMinutes(3);
     setFormTags(['Castle Wedding', 'Highland Bagpipe', 'Scotland']);
     setTagInput('');
+    setShowUrlInput(false);
+    setIsUploadingCover(false);
     setSuccessMessage(null);
     setErrorMessage(null);
     setIsModalOpen(true);
@@ -209,6 +284,8 @@ export const AdminBlog: React.FC = () => {
     setFormReadTimeMinutes(item.readTimeMinutes || 3);
     setFormTags(item.tags || []);
     setTagInput('');
+    setShowUrlInput(Boolean(item.featuredImageUrl && !item.featuredImageUrl.includes('firebasestorage')));
+    setIsUploadingCover(false);
     setSuccessMessage(null);
     setErrorMessage(null);
     setIsModalOpen(true);
@@ -902,40 +979,167 @@ export const AdminBlog: React.FC = () => {
                       Spud can paste any YouTube URL (watch, shorts, youtu.be, or video ID). The player will embed automatically!
                     </p>
 
-                    <div className="pt-1">
-                      <label className="block text-xs font-medium text-gray-300 mb-1">
-                        Cover Image URL (Optional)
-                      </label>
+                    {/* Cover Image Upload (Google Cloud Storage Bucket) */}
+                    <div className="pt-2 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-semibold text-gray-300">
+                          Story Cover Image
+                        </label>
+                        {formFeaturedImageUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setFormFeaturedImageUrl('')}
+                            className="text-[11px] text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Remove Cover</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Hidden File Input */}
                       <input
-                        type="text"
-                        value={formFeaturedImageUrl}
-                        onChange={(e) => setFormFeaturedImageUrl(e.target.value)}
-                        placeholder="Leave blank to use YouTube's high-res thumbnail automatically"
-                        className="w-full bg-tartan-card border border-tartan-border rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-tartan-accent font-mono"
+                        ref={coverFileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleCoverFileUpload}
                       />
+
+                      {/* Cover Photo Upload Card or Dropzone */}
+                      {formFeaturedImageUrl ? (
+                        <div className="relative rounded-2xl overflow-hidden border border-amber-500/50 bg-black/60 p-3 flex items-center gap-3.5 shadow-lg">
+                          <div className="relative w-20 h-16 rounded-xl overflow-hidden shrink-0 border border-tartan-border shadow bg-black/80">
+                            <img
+                              src={formFeaturedImageUrl}
+                              alt="Cover thumbnail"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
+                              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                              <span>Cover Photo Loaded</span>
+                            </div>
+                            <p className="text-[11px] text-gray-400 truncate">
+                              Stored in Google Cloud Bucket • Ready for publishing
+                            </p>
+                            <div className="flex items-center gap-3 pt-0.5">
+                              <button
+                                type="button"
+                                onClick={() => coverFileInputRef.current?.click()}
+                                disabled={isUploadingCover}
+                                className="text-xs font-bold text-amber-300 hover:text-amber-200 underline flex items-center gap-1 transition-colors disabled:opacity-50"
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>Change Photo</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+                          onDragLeave={() => setIsDraggingOver(false)}
+                          onDrop={handleDrop}
+                          onClick={() => coverFileInputRef.current?.click()}
+                          className={`cursor-pointer rounded-2xl border-2 border-dashed p-4 sm:p-5 text-center transition-all ${
+                            isDraggingOver
+                              ? 'border-tartan-gold bg-amber-500/15 scale-[1.01]'
+                              : 'border-tartan-border hover:border-amber-500/60 bg-tartan-card/70 hover:bg-tartan-card'
+                          }`}
+                        >
+                          {isUploadingCover ? (
+                            <div className="py-2 flex flex-col items-center justify-center gap-2">
+                              <Loader2 className="w-6 h-6 animate-spin text-tartan-gold" />
+                              <p className="text-xs font-bold text-amber-300">Uploading photo to Google Storage Bucket...</p>
+                              <p className="text-[10px] text-gray-400">Storing safely in cloud storage</p>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center gap-1.5">
+                              <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow">
+                                <Upload className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <p className="text-xs font-bold text-white">
+                                  Click to upload Cover Photo from phone or computer
+                                </p>
+                                <p className="text-[11px] text-gray-400 mt-0.5">
+                                  or drag &amp; drop your image file here (JPEG, PNG, WebP)
+                                </p>
+                              </div>
+                              {liveYoutubeId ? (
+                                <p className="text-[10px] text-amber-400/90 bg-amber-950/40 px-3 py-1 rounded-full border border-amber-800/40 mt-1">
+                                  ✨ Optional: If left blank, YouTube&apos;s HD video thumbnail will be used automatically
+                                </p>
+                              ) : (
+                                <p className="text-[10px] text-gray-500 mt-0.5">
+                                  (Optional: If left blank, a default Highland bagpipe banner will be used)
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Optional Expandable URL Input for Advanced Users */}
+                      <div className="pt-0.5">
+                        <button
+                          type="button"
+                          onClick={() => setShowUrlInput(!showUrlInput)}
+                          className="text-[10px] text-gray-400 hover:text-gray-300 transition-colors flex items-center gap-1"
+                        >
+                          <span>{showUrlInput ? '− Hide direct image URL' : '+ Need to paste an image URL instead?'}</span>
+                        </button>
+                        {showUrlInput && (
+                          <div className="mt-1.5 animate-in fade-in">
+                            <input
+                              type="text"
+                              value={formFeaturedImageUrl}
+                              onChange={(e) => setFormFeaturedImageUrl(e.target.value)}
+                              placeholder="https://... direct image web link"
+                              className="w-full bg-tartan-card border border-tartan-border rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-tartan-accent font-mono"
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Live Video Preview Box */}
-                  <div className="relative aspect-video rounded-xl overflow-hidden border border-tartan-border bg-black shadow-inner flex items-center justify-center">
+                  {/* Live Video / Cover Preview Box */}
+                  <div className="relative aspect-video rounded-2xl overflow-hidden border border-tartan-border bg-black shadow-inner flex items-center justify-center">
                     {liveYoutubeId ? (
-                      <iframe
-                        src={`https://www.youtube.com/embed/${liveYoutubeId}?rel=0`}
-                        title="YouTube video preview"
-                        className="w-full h-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
+                      <div className="relative w-full h-full">
+                        <iframe
+                          src={`https://www.youtube.com/embed/${liveYoutubeId}?rel=0`}
+                          title="YouTube video preview"
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                        {formFeaturedImageUrl && (
+                          <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur-md border border-white/10 text-[10px] font-bold text-amber-300 flex items-center gap-1.5 pointer-events-none">
+                            <ImageIcon className="w-3 h-3 text-amber-400" />
+                            <span>Custom Cover Photo Loaded</span>
+                          </div>
+                        )}
+                      </div>
                     ) : formFeaturedImageUrl ? (
-                      <img 
-                        src={formFeaturedImageUrl} 
-                        alt="Preview" 
-                        className="w-full h-full object-cover" 
-                      />
+                      <div className="relative w-full h-full">
+                        <img 
+                          src={formFeaturedImageUrl} 
+                          alt="Cover Preview" 
+                          className="w-full h-full object-cover" 
+                        />
+                        <div className="absolute top-2 left-2 px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur-md border border-white/10 text-[10px] font-bold text-amber-300 flex items-center gap-1.5">
+                          <ImageIcon className="w-3 h-3 text-amber-400" />
+                          <span>Cover Photo Preview</span>
+                        </div>
+                      </div>
                     ) : (
                       <div className="text-center p-4 space-y-1 text-gray-500">
                         <Play className="w-8 h-8 mx-auto text-gray-600" />
-                        <p className="text-[11px]">Paste a YouTube link to see video preview</p>
+                        <p className="text-[11px]">Upload a cover photo or paste YouTube video link</p>
                       </div>
                     )}
                   </div>

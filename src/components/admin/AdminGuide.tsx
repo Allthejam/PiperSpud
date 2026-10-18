@@ -468,7 +468,7 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
         {
           title: 'Step 3: Paste YouTube Link & Watch Instant Preview',
           description: 'Paste your YouTube link into the YouTube Video field. The Back Office automatically extracts the video ID and renders an instant live video preview so you can verify it immediately.',
-          tip: 'You can leave the Cover Image blank! The system will automatically fetch YouTube\'s high-resolution thumbnail for you.'
+          tip: 'You can upload your own photo directly from your phone or computer into the secure Google Cloud storage bucket, or leave it blank to automatically use YouTube\'s high-resolution thumbnail!'
         },
         {
           title: 'Step 4: Select Service Category & Event Details',
