@@ -1072,60 +1072,141 @@ export const SocialHub: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Post Text Content */}
-                    <div>
-                      <p className="text-base sm:text-lg text-gray-100 leading-relaxed whitespace-pre-line">
-                        {post.content}
-                      </p>
+                    {/* Post Content & Media Layout */}
+                    {post.imageUrl ? (
+                      /* 2-Column Responsive Layout for Posts with Photos:
+                         - On wider screens (md+): Photo on the LEFT (cols 1-5), Text + Tune on the RIGHT (cols 6-12)
+                         - On mobile (<md): Vertical stack with Text first, then the Full uncropped photo, then Tune player */
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-5 lg:gap-7 items-start">
+                        
+                        {/* LEFT (Desktop) / BELOW TEXT (Mobile): Full-Fit Uncropped Photo */}
+                        <div 
+                          onClick={() => setZoomedImageUrl(post.imageUrl || null)}
+                          className="order-2 md:order-1 md:col-start-1 md:col-span-5 lg:col-span-5 md:row-span-2 cursor-pointer rounded-2xl overflow-hidden bg-black/70 border border-tartan-border/80 hover:border-tartan-gold/70 relative group flex items-center justify-center min-h-[260px] sm:min-h-[300px] max-h-[520px] transition-all duration-300 shadow-xl"
+                          title="Click to view full photo"
+                        >
+                          {/* Ambient blurred backdrop for letterboxing */}
+                          <div 
+                            className="absolute inset-0 bg-cover bg-center blur-2xl opacity-35 scale-110 pointer-events-none"
+                            style={{ backgroundImage: `url(${post.imageUrl})` }}
+                          />
 
-                      {/* Attached Audio Player */}
-                      {post.tunePlayed && (
-                        <div className="mt-3.5 flex items-center justify-between p-3.5 rounded-2xl bg-amber-950/40 border border-amber-500/30 text-xs sm:text-sm">
-                          <div className="flex items-center gap-2 text-amber-300 font-medium">
-                            <Volume2 className="w-4 h-4 text-amber-400 animate-pulse" />
-                            <span className="font-mono font-bold">🎵 Featured Tune: {post.tunePlayed}</span>
+                          {/* Full Image: object-contain guarantees 100% of the image is shown without cropping */}
+                          <img
+                            src={post.imageUrl}
+                            alt={post.eventLocation || 'Spud the Piper Performance'}
+                            className="relative z-10 w-full h-auto max-h-[520px] object-contain rounded-xl group-hover:scale-[1.01] transition-transform duration-500"
+                          />
+
+                          {/* Hover Zoom pill badge */}
+                          <div className="absolute bottom-3 right-3 z-20 bg-black/85 px-3 py-1.5 rounded-xl text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 backdrop-blur-md border border-white/10 shadow-lg">
+                            <Camera className="w-3.5 h-3.5 text-tartan-gold" />
+                            <span>Click to Zoom</span>
                           </div>
-                          <button
-                            onClick={() => {
-                              if (isPlayingThisTune) {
-                                stopTune();
-                              } else {
-                                playTune(post.tunePlayed || 'Highland Cathedral');
-                              }
-                            }}
-                            className="px-4 py-2 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs flex items-center gap-1.5 shadow hover:scale-105 transition-all"
-                          >
-                            {isPlayingThisTune ? (
-                              <>
-                                <Square className="w-3.5 h-3.5 fill-current" />
-                                <span>Stop</span>
-                              </>
-                            ) : (
-                              <>
-                                <Play className="w-3.5 h-3.5 fill-current" />
-                                <span>Play Sample</span>
-                              </>
-                            )}
-                          </button>
                         </div>
-                      )}
-                    </div>
 
-                    {/* Full-Width Attached Photo */}
-                    {post.imageUrl && (
-                      <div 
-                        onClick={() => setZoomedImageUrl(post.imageUrl || null)}
-                        className="cursor-pointer rounded-2xl overflow-hidden bg-black/50 border border-tartan-border relative group max-h-[650px]"
-                      >
-                        <img
-                          src={post.imageUrl}
-                          alt={post.eventLocation || 'Spud the Piper Performance'}
-                          className="w-full h-full object-cover max-h-[650px] group-hover:scale-101 transition-transform duration-500"
-                        />
-                        <div className="absolute bottom-3 right-3 bg-black/80 px-3.5 py-1.5 rounded-xl text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 backdrop-blur-md">
-                          <Camera className="w-4 h-4 text-tartan-gold" />
-                          <span>View Full Screen</span>
+                        {/* RIGHT (Desktop) / TOP (Mobile): Text Content & Hashtags */}
+                        <div className="order-1 md:order-2 md:col-start-6 md:col-span-7 lg:col-span-7 space-y-3.5">
+                          <p className="text-base sm:text-lg text-gray-100 leading-relaxed whitespace-pre-line">
+                            {post.content}
+                          </p>
+
+                          {/* Tags if present */}
+                          {post.tags && post.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              {post.tags.map(t => (
+                                <span key={t} className="text-xs text-amber-400/90 bg-amber-950/40 px-2.5 py-1 rounded-lg border border-amber-500/25 font-medium">
+                                  #{t}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
+
+                        {/* RIGHT (Desktop) / BELOW PHOTO (Mobile): Attached Audio Player */}
+                        {post.tunePlayed && (
+                          <div className="order-3 md:order-3 md:col-start-6 md:col-span-7 lg:col-span-7">
+                            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-amber-950/40 border border-amber-500/30 text-xs sm:text-sm">
+                              <div className="flex items-center gap-2 text-amber-300 font-medium">
+                                <Volume2 className="w-4 h-4 text-amber-400 animate-pulse" />
+                                <span className="font-mono font-bold">🎵 Featured Tune: {post.tunePlayed}</span>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  if (isPlayingThisTune) {
+                                    stopTune();
+                                  } else {
+                                    playTune(post.tunePlayed || 'Highland Cathedral');
+                                  }
+                                }}
+                                className="px-4 py-2 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs flex items-center gap-1.5 shadow hover:scale-105 transition-all"
+                              >
+                                {isPlayingThisTune ? (
+                                  <>
+                                    <Square className="w-3.5 h-3.5 fill-current" />
+                                    <span>Stop</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Play className="w-3.5 h-3.5 fill-current" />
+                                    <span>Play Sample</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                      </div>
+                    ) : (
+                      /* Text-Only Post Layout */
+                      <div className="space-y-3.5">
+                        <p className="text-base sm:text-lg text-gray-100 leading-relaxed whitespace-pre-line">
+                          {post.content}
+                        </p>
+
+                        {/* Tags if present */}
+                        {post.tags && post.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {post.tags.map(t => (
+                              <span key={t} className="text-xs text-amber-400/90 bg-amber-950/40 px-2.5 py-1 rounded-lg border border-amber-500/25 font-medium">
+                                #{t}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Attached Audio Player */}
+                        {post.tunePlayed && (
+                          <div className="mt-3.5 flex items-center justify-between p-3.5 rounded-2xl bg-amber-950/40 border border-amber-500/30 text-xs sm:text-sm">
+                            <div className="flex items-center gap-2 text-amber-300 font-medium">
+                              <Volume2 className="w-4 h-4 text-amber-400 animate-pulse" />
+                              <span className="font-mono font-bold">🎵 Featured Tune: {post.tunePlayed}</span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                if (isPlayingThisTune) {
+                                  stopTune();
+                                } else {
+                                  playTune(post.tunePlayed || 'Highland Cathedral');
+                                }
+                              }}
+                              className="px-4 py-2 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs flex items-center gap-1.5 shadow hover:scale-105 transition-all"
+                            >
+                              {isPlayingThisTune ? (
+                                <>
+                                  <Square className="w-3.5 h-3.5 fill-current" />
+                                  <span>Stop</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="w-3.5 h-3.5 fill-current" />
+                                  <span>Play Sample</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -2303,8 +2384,8 @@ export const SocialHub: React.FC = () => {
                 )}
 
                 {sharingPost.imageUrl && (
-                  <div className="rounded-xl overflow-hidden max-h-40 border border-tartan-border/50">
-                    <img src={sharingPost.imageUrl} alt="Post preview" className="w-full h-full object-cover" />
+                  <div className="rounded-xl overflow-hidden max-h-48 border border-tartan-border/50 bg-black/60 flex items-center justify-center p-1">
+                    <img src={sharingPost.imageUrl} alt="Post preview" className="max-h-44 w-auto object-contain rounded-lg" />
                   </div>
                 )}
               </div>
