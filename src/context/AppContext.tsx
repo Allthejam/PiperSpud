@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   BookingEvent, 
   BookingAuditEntry,
@@ -32,7 +32,10 @@ import {
   VideoItem,
   BlogPost,
   BroadcastAuditEntry,
-  BroadcastRecipientAudit
+  BroadcastRecipientAudit,
+  UserRole,
+  ModuleAccessLevel,
+  ModulePermissions
 } from '@/types/spud';
 import { 
   initialBookings, 
@@ -84,13 +87,19 @@ interface AppContextType {
   isAdminLoggedIn: boolean;
   firebaseUser: User | null;
   users: UserRecord[];
+  currentUserRecord?: UserRecord | null;
+  currentUserRole?: UserRole;
+  isOwnerOrDev: boolean;
+  canViewModule: (moduleIdOrTab: string) => boolean;
+  canEditModule: (moduleIdOrTab: string) => boolean;
+  getUserModuleAccess: (moduleIdOrTab: string) => ModuleAccessLevel;
   adminWhitelist: AdminUserRecord[];
-  addUser: (email: string, name?: string, role?: 'owner' | 'admin' | 'editor', permissions?: Partial<UserPermissions>, avatarUrl?: string) => Promise<boolean>;
+  addUser: (email: string, name?: string, role?: UserRole, permissions?: Partial<UserPermissions>, avatarUrl?: string) => Promise<boolean>;
   updateUser: (id: string, updates: Partial<UserRecord>) => Promise<boolean>;
   updateUserPermissions: (id: string, permissions: Partial<UserPermissions>) => Promise<boolean>;
   toggleUserOnlineStatus: (id: string, isOnline: boolean) => Promise<void>;
   removeUser: (idOrEmail: string) => Promise<boolean>;
-  addAuthorizedAdmin: (email: string, name?: string, role?: 'owner' | 'admin' | 'editor') => Promise<boolean>;
+  addAuthorizedAdmin: (email: string, name?: string, role?: UserRole) => Promise<boolean>;
   removeAuthorizedAdmin: (idOrEmail: string) => Promise<boolean>;
   isEmailAuthorized: (email: string) => boolean;
   loginWithEmail: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
@@ -1373,9 +1382,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setEmailCampaigns(merged);
 
         // Ensure default seasonal templates exist in Firestore as well
-        initialCampaigns.forEach(camp => {
-          setDoc(doc(db, 'email_campaigns', camp.id), camp, { merge: true }).catch(e => console.warn(e));
-        });
+        const firestore = db;
+        if (firestore) {
+          initialCampaigns.forEach(camp => {
+            setDoc(doc(firestore, 'email_campaigns', camp.id), camp, { merge: true }).catch(e => console.warn(e));
+          });
+        }
       }, (err) => console.log('Firestore email_campaigns listener:', err.message));
 
       // Real-time Firestore listener for broadcast_audits
@@ -1855,7 +1867,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addUser = async (
     emailToAdd: string, 
     name?: string, 
-    role: 'owner' | 'admin' | 'editor' = 'admin',
+    role: UserRole = 'admin',
     permissions?: Partial<UserPermissions>,
     avatarUrl?: string
   ): Promise<boolean> => {
@@ -1863,9 +1875,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!cleanEmail || !cleanEmail.includes('@')) return false;
 
     const existing = (users || []).find(a => a && a.email && a.email.toLowerCase() === cleanEmail);
+    const roleBasePerms = defaultPermissions[role] || defaultPermissions.admin;
     const userPerms: UserPermissions = {
-      ...(defaultPermissions[role] || defaultPermissions.admin),
-      ...(permissions || {})
+      ...roleBasePerms,
+      ...(permissions || {}),
+      modules: {
+        ...(roleBasePerms.modules || {}),
+        ...(permissions?.modules || {})
+      }
     };
 
     const id = existing ? existing.id : `user-${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
@@ -1971,7 +1988,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateUserPermissions = async (id: string, permissions: Partial<UserPermissions>): Promise<boolean> => {
     const target = (users || []).find(u => u && u.id === id);
     if (!target) return false;
-    const newPerms: UserPermissions = { ...target.permissions, ...permissions };
+    const newPerms: UserPermissions = { 
+      ...target.permissions, 
+      ...permissions,
+      modules: {
+        ...(target.permissions?.modules || {}),
+        ...(permissions.modules || {})
+      }
+    };
     return await updateUser(id, { permissions: newPerms });
   };
 
@@ -2014,7 +2038,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addAuthorizedAdmin = async (
     emailToAdd: string, 
     name?: string, 
-    role: 'owner' | 'admin' | 'editor' = 'admin'
+    role: UserRole = 'admin'
   ): Promise<boolean> => {
     return await addUser(emailToAdd, name, role);
   };
@@ -2022,6 +2046,129 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const removeAuthorizedAdmin = async (idOrEmail: string): Promise<boolean> => {
     return await removeUser(idOrEmail);
   };
+
+  // User identity, role & permissions resolution
+  const currentUserRecord: UserRecord | null = useMemo(() => {
+    if (!firebaseUser?.email) return null;
+    const email = firebaseUser.email.trim().toLowerCase();
+    const found = (users || []).find(u => u && u.email && u.email.trim().toLowerCase() === email);
+    if (found) return found;
+    if (email === 'piperspud@gmail.com') {
+      return {
+        id: 'user-spud',
+        email: 'piperspud@gmail.com',
+        name: 'Spud The Piper',
+        displayName: 'Spud The Piper',
+        role: 'owner',
+        isOnline: true,
+        status: 'online',
+        addedAt: new Date().toISOString(),
+        permissions: defaultPermissions.owner
+      };
+    }
+    return null;
+  }, [firebaseUser, users]);
+
+  const currentUserRole: UserRole = useMemo(() => {
+    if (!firebaseUser?.email) {
+      return isLegacyAdminLoggedIn ? 'owner' : 'editor';
+    }
+    const email = firebaseUser.email.trim().toLowerCase();
+    if (email === 'piperspud@gmail.com') return 'owner';
+    return currentUserRecord?.role || 'editor';
+  }, [firebaseUser, isLegacyAdminLoggedIn, currentUserRecord]);
+
+  const isOwnerOrDev: boolean = useMemo(() => {
+    if (!firebaseUser?.email && isLegacyAdminLoggedIn) return true;
+    if (firebaseUser?.email?.trim().toLowerCase() === 'piperspud@gmail.com') return true;
+    return currentUserRole === 'owner' || currentUserRole === 'developer';
+  }, [firebaseUser, isLegacyAdminLoggedIn, currentUserRole]);
+
+  // Canonical key mapping for modules and tabs
+  const getModuleCanonicalKey = useCallback((moduleIdOrTab: string): keyof ModulePermissions => {
+    const map: Record<string, keyof ModulePermissions> = {
+      'dashboard': 'dashboard',
+      'bookings': 'bookings',
+      'diary': 'diary',
+      'crm': 'crm',
+      'mailing-list': 'mailingList',
+      'mailingList': 'mailingList',
+      'email-templates': 'emailTemplates',
+      'emailTemplates': 'emailTemplates',
+      'messages': 'messages',
+      'chat': 'messages',
+      'faqs': 'faqs',
+      'forum': 'forum',
+      'blog': 'blog',
+      'gallery': 'gallery',
+      'services': 'services',
+      'attire': 'attire',
+      'videos': 'videos',
+      'partners': 'partners',
+      'reviews': 'reviews',
+      'travel-expenses': 'travelExpenses',
+      'travelExpenses': 'travelExpenses',
+      'tunes': 'tunes',
+      'cms': 'cms',
+      'seo': 'seo',
+      'analytics': 'analytics',
+      'social-links': 'socialLinks',
+      'socialLinks': 'socialLinks',
+      'security': 'security',
+      'notifications': 'notifications',
+      'guide': 'guide'
+    };
+    return map[moduleIdOrTab] || (moduleIdOrTab as keyof ModulePermissions);
+  }, []);
+
+  const getUserModuleAccess = useCallback((moduleIdOrTab: string): ModuleAccessLevel => {
+    if (isOwnerOrDev) return 'edit';
+    const key = getModuleCanonicalKey(moduleIdOrTab);
+    
+    // Check user explicit module permissions
+    if (currentUserRecord?.permissions?.modules && currentUserRecord.permissions.modules[key] !== undefined) {
+      return currentUserRecord.permissions.modules[key] as ModuleAccessLevel;
+    }
+    
+    // Fallback to role defaults
+    const role = currentUserRole;
+    if (role === 'owner' || role === 'developer') return 'edit';
+    const roleDefaults = defaultPermissions[role]?.modules;
+    if (roleDefaults && roleDefaults[key] !== undefined) {
+      return roleDefaults[key] as ModuleAccessLevel;
+    }
+    
+    // Backwards compatibility with legacy boolean flags
+    if (key === 'bookings' || key === 'diary' || key === 'crm') {
+      return currentUserRecord?.permissions?.canManageBookings ? 'edit' : 'view';
+    }
+    if (key === 'tunes') {
+      return currentUserRecord?.permissions?.canEditTunes ? 'edit' : 'view';
+    }
+    if (key === 'cms') {
+      return currentUserRecord?.permissions?.canEditCms ? 'edit' : 'view';
+    }
+    if (key === 'messages') {
+      return currentUserRecord?.permissions?.canChat ? 'edit' : 'view';
+    }
+    if (key === 'security') {
+      return currentUserRecord?.permissions?.canManageSecurity ? 'edit' : 'none';
+    }
+    
+    return 'view'; // default safe fallback
+  }, [isOwnerOrDev, currentUserRecord, currentUserRole, getModuleCanonicalKey]);
+
+  const canViewModule = useCallback((moduleIdOrTab: string): boolean => {
+    if (isOwnerOrDev) return true;
+    const access = getUserModuleAccess(moduleIdOrTab);
+    return access === 'view' || access === 'edit';
+  }, [isOwnerOrDev, getUserModuleAccess]);
+
+  const canEditModule = useCallback((moduleIdOrTab: string): boolean => {
+    if (isOwnerOrDev) return true;
+    const access = getUserModuleAccess(moduleIdOrTab);
+    return access === 'edit';
+  }, [isOwnerOrDev, getUserModuleAccess]);
 
   // Auth functions (Live Firebase Auth + Google + Email/Password + Passcode fallback)
   const loginWithEmail = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
@@ -5630,6 +5777,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isAdminLoggedIn,
       firebaseUser,
       users,
+      currentUserRecord,
+      currentUserRole,
+      isOwnerOrDev,
+      canViewModule,
+      canEditModule,
+      getUserModuleAccess,
       adminWhitelist,
       addUser,
       updateUser,

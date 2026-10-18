@@ -46,6 +46,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
   const { 
     isAdminLoggedIn, 
     firebaseUser,
+    currentUserRole,
+    canViewModule,
     logoutAdmin, 
     unreadNotifCount, 
     unreadChatCount,
@@ -87,6 +89,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
     { id: 'notifications', label: 'Notification Center', icon: Bell, badgeCount: unreadNotifCount },
     { id: 'guide', label: "Spud's User Manual & Guide", icon: BookOpen, badge: 'Guide' }
   ];
+
+  const visibleNavItems = navItems.filter(item => canViewModule(item.id));
 
   return (
     <div className="min-h-screen bg-tartan-dark text-gray-100 flex flex-col font-sans">
@@ -163,6 +167,17 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
               <span className="text-gray-300 font-medium max-w-[140px] truncate text-[11px]">
                 {firebaseUser.displayName || firebaseUser.email}
               </span>
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                currentUserRole === 'developer'
+                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                  : currentUserRole === 'owner'
+                  ? 'bg-amber-500/20 text-yellow-300 border border-amber-500/40'
+                  : currentUserRole === 'editor'
+                  ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+              }`}>
+                {currentUserRole || 'Admin'}
+              </span>
             </div>
           ) : (
             <div className="hidden md:flex items-center gap-1.5 bg-tartan-navy/60 border border-tartan-border/60 px-2 py-1 rounded-xl text-[10px] text-tartan-gold font-bold">
@@ -209,7 +224,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
             {/* Drawer Header */}
             <div className="flex items-center justify-between px-3 mb-2">
               <p className="text-[10px] font-bold uppercase tracking-wider text-tartan-gold">
-                Management Modules ({navItems.length})
+                Management Modules ({visibleNavItems.length})
               </p>
               <button
                 onClick={() => setIsMobileNavOpen(false)}
@@ -220,7 +235,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
               </button>
             </div>
 
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
               const isProminent = (item as any).isProminent;

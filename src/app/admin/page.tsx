@@ -27,7 +27,7 @@ import { AdminVideos } from '@/components/admin/AdminVideos';
 import { AdminBlog } from '@/components/admin/AdminBlog';
 import { AdminAnalytics } from '@/components/admin/AdminAnalytics';
 import { AdminLoginModal } from '@/components/AdminLoginModal';
-import { ShieldAlert, ArrowLeft, RefreshCw, AlertTriangle, Loader2 } from 'lucide-react';
+import { ShieldAlert, ArrowLeft, RefreshCw, AlertTriangle, Loader2, Lock } from 'lucide-react';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -117,7 +117,7 @@ class AdminErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryStat
 }
 
 export default function AdminPage() {
-  const { isAdminLoggedIn, isMounted } = useApp();
+  const { isAdminLoggedIn, isMounted, canViewModule } = useApp();
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
@@ -172,32 +172,59 @@ export default function AdminPage() {
     );
   }
 
+  const isTabAllowed = canViewModule(activeTab);
+
   return (
     <AdminErrorBoundary onReset={() => setActiveTab('dashboard')}>
       <AdminLayout activeTab={activeTab} setActiveTab={setActiveTab}>
-        {activeTab === 'dashboard' && <AdminDashboard onNavigateTab={setActiveTab} />}
-        {activeTab === 'guide' && <AdminGuide onNavigateTab={setActiveTab} />}
-        {activeTab === 'gallery' && <AdminGallery />}
-        {activeTab === 'services' && <AdminServices />}
-        {activeTab === 'attire' && <AdminAttire />}
-        {activeTab === 'videos' && <AdminVideos />}
-        {activeTab === 'blog' && <AdminBlog />}
-        {activeTab === 'travel-expenses' && <AdminTravelExpenses />}
-        {activeTab === 'diary' && <AdminDiary />}
-        {activeTab === 'bookings' && <AdminBookings />}
-        {activeTab === 'crm' && <AdminCRM />}
-        {activeTab === 'mailing-list' && <AdminMailingList />}
-        {activeTab === 'email-templates' && <AdminEmailTemplates />}
-        {activeTab === 'messages' && <AdminMessageCenter />}
-        {activeTab === 'faqs' && <AdminFaqs />}
-        {activeTab === 'forum' && <AdminForumControl />}
-        {activeTab === 'partners' && <AdminPartners />}
-        {activeTab === 'social-links' && <AdminSocialLinks />}
-        {activeTab === 'reviews' && <AdminReviews />}
-        {activeTab === 'seo' && <AdminSeoStudio />}
-        {activeTab === 'analytics' && <AdminAnalytics />}
-        {activeTab === 'security' && <AdminSecurityControl />}
-        {activeTab === 'notifications' && <AdminNotifications onNavigateTab={setActiveTab} />}
+        {!isTabAllowed ? (
+          <div className="max-w-xl mx-auto my-12 bg-tartan-card border border-rose-900/60 rounded-3xl p-8 shadow-2xl text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-rose-950/80 text-rose-400 flex items-center justify-center mx-auto border border-rose-700/50 shadow-md">
+              <Lock className="w-7 h-7" />
+            </div>
+            <h3 className="text-xl font-bold text-white font-serif">Module Access Restricted</h3>
+            <p className="text-xs text-gray-300 leading-relaxed max-w-md mx-auto">
+              Your administrator account does not have permission to view or manage the <span className="text-tartan-gold font-semibold uppercase">{activeTab}</span> module.
+            </p>
+            <p className="text-[11px] text-gray-400">
+              Only the Owner or Developer can adjust your module permissions.
+            </p>
+            <div className="pt-2">
+              <button
+                onClick={() => setActiveTab('dashboard')}
+                className="py-2.5 px-6 bg-gold-gradient text-tartan-dark font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg hover:brightness-110 transition-all"
+              >
+                Return to Executive Dashboard
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {activeTab === 'dashboard' && <AdminDashboard onNavigateTab={setActiveTab} />}
+            {activeTab === 'guide' && <AdminGuide onNavigateTab={setActiveTab} />}
+            {activeTab === 'gallery' && <AdminGallery />}
+            {activeTab === 'services' && <AdminServices />}
+            {activeTab === 'attire' && <AdminAttire />}
+            {activeTab === 'videos' && <AdminVideos />}
+            {activeTab === 'blog' && <AdminBlog />}
+            {activeTab === 'travel-expenses' && <AdminTravelExpenses />}
+            {activeTab === 'diary' && <AdminDiary />}
+            {activeTab === 'bookings' && <AdminBookings />}
+            {activeTab === 'crm' && <AdminCRM />}
+            {activeTab === 'mailing-list' && <AdminMailingList />}
+            {activeTab === 'email-templates' && <AdminEmailTemplates />}
+            {activeTab === 'messages' && <AdminMessageCenter />}
+            {activeTab === 'faqs' && <AdminFaqs />}
+            {activeTab === 'forum' && <AdminForumControl />}
+            {activeTab === 'partners' && <AdminPartners />}
+            {activeTab === 'social-links' && <AdminSocialLinks />}
+            {activeTab === 'reviews' && <AdminReviews />}
+            {activeTab === 'seo' && <AdminSeoStudio />}
+            {activeTab === 'analytics' && <AdminAnalytics />}
+            {activeTab === 'security' && <AdminSecurityControl />}
+            {activeTab === 'notifications' && <AdminNotifications onNavigateTab={setActiveTab} />}
+          </>
+        )}
       </AdminLayout>
     </AdminErrorBoundary>
   );

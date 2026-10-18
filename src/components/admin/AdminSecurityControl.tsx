@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import { 
   ShieldCheck, 
@@ -25,9 +25,16 @@ import {
   Camera,
   Upload,
   Loader2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  SlidersHorizontal,
+  Code2,
+  Crown
 } from 'lucide-react';
-import { UserRecord, UserPermissions } from '@/types/spud';
+import { UserRecord, UserPermissions, UserRole, ModuleAccessLevel, ModulePermissions } from '@/types/spud';
+import { ALL_ADMIN_MODULES, defaultPermissions } from '@/lib/initialData';
 import { uploadToStorage } from '@/lib/firebase';
 
 export const AdminSecurityControl: React.FC = () => {
@@ -40,19 +47,15 @@ export const AdminSecurityControl: React.FC = () => {
     toggleUserOnlineStatus,
     removeUser,
     spudProfileAvatar,
-    updateSpudProfileAvatar
+    updateSpudProfileAvatar,
+    isOwnerOrDev,
+    currentUserRole
   } = useApp();
 
   const [newEmail, setNewEmail] = useState('');
   const [newName, setNewName] = useState('');
-  const [newRole, setNewRole] = useState<'owner' | 'admin' | 'editor'>('admin');
-  const [newPerms, setNewPerms] = useState<UserPermissions>({
-    canManageBookings: true,
-    canEditTunes: true,
-    canEditCms: true,
-    canManageSecurity: true,
-    canChat: true
-  });
+  const [newRole, setNewRole] = useState<UserRole>('admin');
+  const [newPerms, setNewPerms] = useState<UserPermissions>(defaultPermissions.admin);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -129,30 +132,97 @@ export const AdminSecurityControl: React.FC = () => {
     }
   };
 
-  const handleRoleChange = (role: 'owner' | 'admin' | 'editor') => {
+  const moduleGroups = useMemo(() => [
+    { groupName: 'Diary & Bookings' as const, modules: ALL_ADMIN_MODULES.filter(m => m.group === 'Diary & Bookings') },
+    { groupName: 'Communications & Clients' as const, modules: ALL_ADMIN_MODULES.filter(m => m.group === 'Communications & Clients') },
+    { groupName: 'Content & Media' as const, modules: ALL_ADMIN_MODULES.filter(m => m.group === 'Content & Media') },
+    { groupName: 'Highland Services' as const, modules: ALL_ADMIN_MODULES.filter(m => m.group === 'Highland Services') },
+    { groupName: 'System, SEO & Security' as const, modules: ALL_ADMIN_MODULES.filter(m => m.group === 'System, SEO & Security') },
+  ], []);
+
+  const handleRoleChange = (role: UserRole) => {
     setNewRole(role);
-    if (role === 'editor') {
-      setNewPerms({
-        canManageBookings: false,
-        canEditTunes: true,
-        canEditCms: true,
-        canManageSecurity: false,
-        canChat: false
-      });
-    } else {
-      setNewPerms({
-        canManageBookings: true,
-        canEditTunes: true,
-        canEditCms: true,
-        canManageSecurity: role === 'owner' || role === 'admin',
-        canChat: true
-      });
+    const defaults = defaultPermissions[role] || defaultPermissions.admin;
+    setNewPerms(defaults);
+  };
+
+  const handleSetModuleAccess = async (user: UserRecord, moduleId: keyof ModulePermissions, level: ModuleAccessLevel) => {
+    if (!isOwnerOrDev) {
+      setFeedback({ type: 'error', message: 'Only the Owner and Developer can change module permissions.' });
+      return;
     }
+    const currentModules = user.permissions?.modules || defaultPermissions[user.role]?.modules || {};
+    const updatedModules = { ...currentModules, [moduleId]: level };
+    await updateUserPermissions(user.id, { modules: updatedModules });
+    setFeedback({ 
+      type: 'success', 
+      message: `Updated ${String(moduleId)} permission to '${level.toUpperCase()}' for ${user.name || user.email}.` 
+    });
+  };
+
+  const handleSetAllModules = async (user: UserRecord, level: ModuleAccessLevel) => {
+    if (!isOwnerOrDev) {
+      setFeedback({ type: 'error', message: 'Only the Owner and Developer can change module permissions.' });
+      return;
+    }
+    const newModules = ALL_ADMIN_MODULES.reduce((acc, m) => {
+      acc[m.id] = level;
+      return acc;
+    }, {} as ModulePermissions);
+    await updateUserPermissions(user.id, { modules: newModules });
+    setFeedback({
+      type: 'success',
+      message: `Set all module permissions to '${level.toUpperCase()}' for ${user.name || user.email}.`
+    });
+  };
+
+  const handleResetToRoleDefaults = async (user: UserRecord) => {
+    if (!isOwnerOrDev) {
+      setFeedback({ type: 'error', message: 'Only the Owner and Developer can change module permissions.' });
+      return;
+    }
+    const roleDefaults = defaultPermissions[user.role] || defaultPermissions.admin;
+    await updateUserPermissions(user.id, { 
+      ...roleDefaults,
+      modules: { ...roleDefaults.modules }
+    });
+    setFeedback({
+      type: 'success',
+      message: `Reset permissions to defaults for role '${user.role}' for ${user.name || user.email}.`
+    });
+  };
+
+  const handleChangeUserRole = async (user: UserRecord, targetRole: UserRole) => {
+    if (!isOwnerOrDev) {
+      setFeedback({ type: 'error', message: 'Only the Owner and Developer can change user roles.' });
+      return;
+    }
+    if ((user.email || '').toLowerCase() === 'piperspud@gmail.com') {
+      alert('The primary owner role cannot be changed.');
+      return;
+    }
+    const roleDefaults = defaultPermissions[targetRole] || defaultPermissions.admin;
+    await updateUser(user.id, { 
+      role: targetRole,
+      permissions: {
+        ...roleDefaults,
+        modules: { ...roleDefaults.modules }
+      }
+    });
+    setFeedback({
+      type: 'success',
+      message: `Updated ${user.name || user.email} role to '${targetRole.toUpperCase()}' and applied default module permissions.`
+    });
   };
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setFeedback(null);
+
+    if (!isOwnerOrDev) {
+      setFeedback({ type: 'error', message: 'Only the Owner and Developer have authority to add new team members.' });
+      return;
+    }
 
     const cleanEmail = newEmail.trim().toLowerCase();
     if (!cleanEmail || !cleanEmail.includes('@')) {
@@ -173,13 +243,7 @@ export const AdminSecurityControl: React.FC = () => {
       setNewName('');
       setNewAvatarUrl('');
       setNewRole('admin');
-      setNewPerms({
-        canManageBookings: true,
-        canEditTunes: true,
-        canEditCms: true,
-        canManageSecurity: true,
-        canChat: true
-      });
+      setNewPerms(defaultPermissions.admin);
     } else {
       setFeedback({ type: 'error', message: 'Could not add administrator.' });
     }
@@ -194,11 +258,11 @@ export const AdminSecurityControl: React.FC = () => {
     });
   };
 
-  const handlePermissionToggle = async (userId: string, key: keyof UserPermissions, currentValue: boolean) => {
-    await updateUserPermissions(userId, { [key]: !currentValue });
-  };
-
   const handleRemove = async (user: UserRecord) => {
+    if (!isOwnerOrDev) {
+      setFeedback({ type: 'error', message: 'Only the Owner and Developer can remove team members.' });
+      return;
+    }
     const userEmail = (user.email || '').toLowerCase().trim();
     if (userEmail === 'piperspud@gmail.com') {
       alert('The primary owner email (piperspud@gmail.com) cannot be removed.');
@@ -346,11 +410,12 @@ export const AdminSecurityControl: React.FC = () => {
               </label>
               <select
                 value={newRole}
-                onChange={(e) => handleRoleChange(e.target.value as any)}
+                onChange={(e) => handleRoleChange(e.target.value as UserRole)}
                 className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-tartan-accent text-xs"
               >
-                <option value="admin">Administrator (Full Back Office Control)</option>
+                <option value="developer">Developer (Full Access - No Restrictions)</option>
                 <option value="owner">Owner (Primary Executive)</option>
+                <option value="admin">Administrator (Standard Admin)</option>
                 <option value="editor">Editor (Diary & Content Only)</option>
               </select>
             </div>
@@ -418,57 +483,25 @@ export const AdminSecurityControl: React.FC = () => {
               </div>
             </div>
 
-            {/* Granular Permissions Checkboxes */}
+            {/* Granular Permissions Overview */}
             <div className="bg-tartan-dark/70 p-3 rounded-2xl border border-tartan-border/70 space-y-2">
-              <span className="text-[11px] font-bold text-tartan-gold uppercase tracking-wider block">
-                Module Permissions
-              </span>
-              <div className="space-y-1.5 text-[11px]">
-                <label className="flex items-center gap-2 text-gray-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={newPerms.canManageBookings}
-                    onChange={(e) => setNewPerms({ ...newPerms, canManageBookings: e.target.checked })}
-                    className="rounded border-tartan-border text-yellow-500 focus:ring-0"
-                  />
-                  <span>Bookings, Diary & Payments</span>
-                </label>
-                <label className="flex items-center gap-2 text-gray-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={newPerms.canEditTunes}
-                    onChange={(e) => setNewPerms({ ...newPerms, canEditTunes: e.target.checked })}
-                    className="rounded border-tartan-border text-yellow-500 focus:ring-0"
-                  />
-                  <span>Bagpipe Tunes & Jukebox</span>
-                </label>
-                <label className="flex items-center gap-2 text-gray-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={newPerms.canEditCms}
-                    onChange={(e) => setNewPerms({ ...newPerms, canEditCms: e.target.checked })}
-                    className="rounded border-tartan-border text-yellow-500 focus:ring-0"
-                  />
-                  <span>In-Page Visual Pencil CMS</span>
-                </label>
-                <label className="flex items-center gap-2 text-gray-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={newPerms.canChat}
-                    onChange={(e) => setNewPerms({ ...newPerms, canChat: e.target.checked })}
-                    className="rounded border-tartan-border text-yellow-500 focus:ring-0"
-                  />
-                  <span>Live Chat & Quick Replies</span>
-                </label>
-                <label className="flex items-center gap-2 text-gray-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={newPerms.canManageSecurity}
-                    onChange={(e) => setNewPerms({ ...newPerms, canManageSecurity: e.target.checked })}
-                    className="rounded border-tartan-border text-yellow-500 focus:ring-0"
-                  />
-                  <span>Security & User Management</span>
-                </label>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-tartan-gold uppercase tracking-wider block">
+                  Module Permissions
+                </span>
+                <span className="text-[10px] text-gray-400 capitalize bg-tartan-navy px-2 py-0.5 rounded border border-tartan-border">
+                  {newRole} Defaults
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-300 leading-relaxed">
+                {newRole === 'developer' && 'Full "Edit" access across all 23 Back Office modules with zero restrictions.'}
+                {newRole === 'owner' && 'Full Executive control across all modules, payments, team access, and CMS.'}
+                {newRole === 'admin' && 'Full operational management with read-only restriction on security settings.'}
+                {newRole === 'editor' && 'Access to Diary, Blog, Gallery, Tunes, Attire & CMS with restricted financial & security access.'}
+              </p>
+              <div className="text-[10px] text-tartan-gold/80 flex items-center gap-1 pt-1 border-t border-tartan-border/40">
+                <Sliders className="w-3 h-3" />
+                <span>Granular None | View | Edit toggles can be tailored in the user list.</span>
               </div>
             </div>
 
@@ -547,9 +580,15 @@ export const AdminSecurityControl: React.FC = () => {
                               🟢 You (Current Session)
                             </span>
                           )}
-                          {user.role === 'owner' ? (
-                            <span className="bg-amber-500/20 text-yellow-300 border border-amber-500/40 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                              Owner
+                          {user.role === 'developer' ? (
+                            <span className="bg-purple-500/20 text-purple-300 border border-purple-500/40 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <Code2 className="w-3 h-3 text-purple-400" />
+                              <span>Developer (Full Access)</span>
+                            </span>
+                          ) : user.role === 'owner' ? (
+                            <span className="bg-amber-500/20 text-yellow-300 border border-amber-500/40 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <Crown className="w-3 h-3 text-yellow-400" />
+                              <span>Owner</span>
                             </span>
                           ) : user.role === 'editor' ? (
                             <span className="bg-blue-500/20 text-blue-300 border border-blue-500/40 text-[10px] font-bold px-2 py-0.5 rounded-full">
@@ -605,17 +644,23 @@ export const AdminSecurityControl: React.FC = () => {
 
                       <button
                         onClick={() => setEditingUserId(isEditing ? null : user.id)}
-                        className="p-2 rounded-xl bg-tartan-navy hover:bg-slate-700 text-gray-300 border border-tartan-border text-xs font-semibold flex items-center gap-1"
-                        title="Toggle permissions configuration"
+                        className={`p-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition border ${
+                          isEditing 
+                            ? 'bg-tartan-gold text-tartan-dark border-tartan-gold font-bold shadow-md' 
+                            : 'bg-tartan-navy hover:bg-slate-700 text-gray-300 border-tartan-border'
+                        }`}
+                        title="Expand module permissions drawer"
                       >
                         <Sliders className="w-3.5 h-3.5 text-tartan-gold" />
                         <span>{isEditing ? 'Close' : 'Permissions'}</span>
+                        {isEditing ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                       </button>
 
                       {!isSpudPrimary ? (
                         <button
                           onClick={() => handleRemove(user)}
-                          className="p-2 rounded-xl bg-red-950/40 hover:bg-red-900 text-red-300 border border-red-800/60 transition-colors flex items-center gap-1 text-xs font-semibold"
+                          disabled={!isOwnerOrDev}
+                          className="p-2 rounded-xl bg-red-950/40 hover:bg-red-900 text-red-300 border border-red-800/60 transition-colors flex items-center gap-1 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Revoke Admin Access"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -628,72 +673,150 @@ export const AdminSecurityControl: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Permissions Checklist Drawer */}
-                  <div className={`pt-2 border-t border-tartan-border/60 ${isEditing ? 'block' : 'hidden sm:block'}`}>
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[10px]">
+                  {/* Expanding Module Permissions Drawer */}
+                  {isEditing && (
+                    <div className="pt-4 border-t border-tartan-border/80 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
                       
-                      <button
-                        onClick={() => handlePermissionToggle(user.id, 'canManageBookings', !!user.permissions?.canManageBookings)}
-                        className={`p-1.5 rounded-lg border text-left font-medium flex items-center justify-between transition ${
-                          user.permissions?.canManageBookings
-                            ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
-                            : 'bg-slate-900/40 border-slate-700 text-gray-500'
-                        }`}
-                      >
-                        <span>Bookings</span>
-                        {user.permissions?.canManageBookings ? <Check className="w-3 h-3 text-emerald-400" /> : <X className="w-3 h-3 text-gray-600" />}
-                      </button>
+                      {/* Security Banner: If viewer is NOT Owner or Developer */}
+                      {!isOwnerOrDev ? (
+                        <div className="bg-amber-950/40 border border-amber-600/50 rounded-2xl p-3 flex items-center gap-3 text-amber-300 text-xs">
+                          <Lock className="w-4 h-4 shrink-0 text-amber-400" />
+                          <div>
+                            <p className="font-bold">Read-Only Permissions View</p>
+                            <p className="text-[11px] text-amber-200/80">Only the Owner and Developer have authority to modify roles and module permissions.</p>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Owner / Developer Toolbar */
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-tartan-dark/90 p-3.5 rounded-2xl border border-tartan-border">
+                          <div className="flex items-center gap-2">
+                            <Shield className="w-4 h-4 text-tartan-gold" />
+                            <span className="text-xs font-bold text-white">Assigned Role:</span>
+                            <select
+                              value={user.role}
+                              onChange={(e) => handleChangeUserRole(user, e.target.value as UserRole)}
+                              disabled={isSpudPrimary}
+                              className="bg-tartan-card border border-tartan-border rounded-xl px-2.5 py-1 text-xs text-white font-semibold focus:outline-none focus:border-tartan-accent disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                              <option value="developer">Developer (Full Access - No Restrictions)</option>
+                              <option value="owner">Owner (Primary Executive)</option>
+                              <option value="admin">Administrator (Standard Admin)</option>
+                              <option value="editor">Editor (Diary & Content Only)</option>
+                            </select>
+                          </div>
 
-                      <button
-                        onClick={() => handlePermissionToggle(user.id, 'canEditTunes', !!user.permissions?.canEditTunes)}
-                        className={`p-1.5 rounded-lg border text-left font-medium flex items-center justify-between transition ${
-                          user.permissions?.canEditTunes
-                            ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
-                            : 'bg-slate-900/40 border-slate-700 text-gray-500'
-                        }`}
-                      >
-                        <span>Tunes Jukebox</span>
-                        {user.permissions?.canEditTunes ? <Check className="w-3 h-3 text-emerald-400" /> : <X className="w-3 h-3 text-gray-600" />}
-                      </button>
+                          <div className="flex items-center gap-2 flex-wrap text-[11px]">
+                            <span className="text-gray-400 font-medium">Bulk Presets:</span>
+                            <button
+                              type="button"
+                              onClick={() => handleSetAllModules(user, 'edit')}
+                              className="px-2.5 py-1 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300 font-semibold transition"
+                            >
+                              All Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSetAllModules(user, 'view')}
+                              className="px-2.5 py-1 rounded-lg bg-blue-950/60 hover:bg-blue-900 border border-blue-500/50 text-blue-300 font-semibold transition"
+                            >
+                              All View Only
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleResetToRoleDefaults(user)}
+                              className="px-2.5 py-1 rounded-lg bg-tartan-navy hover:bg-slate-700 border border-tartan-border text-gray-300 font-semibold transition flex items-center gap-1"
+                            >
+                              <RefreshCw className="w-3 h-3 text-tartan-gold" />
+                              <span>Reset to Role Defaults</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
-                      <button
-                        onClick={() => handlePermissionToggle(user.id, 'canEditCms', !!user.permissions?.canEditCms)}
-                        className={`p-1.5 rounded-lg border text-left font-medium flex items-center justify-between transition ${
-                          user.permissions?.canEditCms
-                            ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
-                            : 'bg-slate-900/40 border-slate-700 text-gray-500'
-                        }`}
-                      >
-                        <span>Visual CMS</span>
-                        {user.permissions?.canEditCms ? <Check className="w-3 h-3 text-emerald-400" /> : <X className="w-3 h-3 text-gray-600" />}
-                      </button>
+                      {/* Grouped Modules Grid */}
+                      <div className="space-y-3.5">
+                        {moduleGroups.map((grp) => {
+                          const userModulePerms = user.permissions?.modules || defaultPermissions[user.role]?.modules || {};
+                          return (
+                            <div key={grp.groupName} className="bg-tartan-dark/60 border border-tartan-border/70 rounded-2xl p-3.5 space-y-2.5">
+                              <div className="flex items-center justify-between pb-1.5 border-b border-tartan-border/40">
+                                <h4 className="text-xs font-bold text-tartan-gold uppercase tracking-wider flex items-center gap-2">
+                                  <span>{grp.groupName}</span>
+                                  <span className="text-[10px] text-gray-400 normal-case font-normal">
+                                    ({grp.modules.length} modules)
+                                  </span>
+                                </h4>
+                              </div>
 
-                      <button
-                        onClick={() => handlePermissionToggle(user.id, 'canChat', !!user.permissions?.canChat)}
-                        className={`p-1.5 rounded-lg border text-left font-medium flex items-center justify-between transition ${
-                          user.permissions?.canChat
-                            ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
-                            : 'bg-slate-900/40 border-slate-700 text-gray-500'
-                        }`}
-                      >
-                        <span>Live Chat</span>
-                        {user.permissions?.canChat ? <Check className="w-3 h-3 text-emerald-400" /> : <X className="w-3 h-3 text-gray-600" />}
-                      </button>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {grp.modules.map((mod) => {
+                                  const modAccess: ModuleAccessLevel = userModulePerms[mod.id] || (user.role === 'developer' || user.role === 'owner' ? 'edit' : 'view');
 
-                      <button
-                        onClick={() => handlePermissionToggle(user.id, 'canManageSecurity', !!user.permissions?.canManageSecurity)}
-                        className={`p-1.5 rounded-lg border text-left font-medium flex items-center justify-between transition ${
-                          user.permissions?.canManageSecurity
-                            ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
-                            : 'bg-slate-900/40 border-slate-700 text-gray-500'
-                        }`}
-                      >
-                        <span>Security & Team</span>
-                        {user.permissions?.canManageSecurity ? <Check className="w-3 h-3 text-emerald-400" /> : <X className="w-3 h-3 text-gray-600" />}
-                      </button>
+                                  return (
+                                    <div 
+                                      key={mod.id}
+                                      className="bg-tartan-card/90 border border-tartan-border/60 rounded-xl p-2.5 flex items-center justify-between gap-3"
+                                    >
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-xs font-bold text-white truncate">{mod.label}</p>
+                                        <p className="text-[10px] text-gray-400 line-clamp-1">{mod.description}</p>
+                                      </div>
 
+                                      {/* Segmented 3-button control: None | View | Edit */}
+                                      <div className="inline-flex rounded-lg border border-slate-700/80 p-0.5 bg-slate-950/90 shrink-0 text-[10px]">
+                                        <button
+                                          type="button"
+                                          disabled={!isOwnerOrDev}
+                                          onClick={() => handleSetModuleAccess(user, mod.id, 'none')}
+                                          className={`px-2 py-1 rounded font-semibold transition flex items-center gap-1 ${
+                                            modAccess === 'none'
+                                              ? 'bg-rose-900/90 text-rose-200 border border-rose-500/80 shadow-sm'
+                                              : 'text-gray-400 hover:text-white disabled:hover:text-gray-400'
+                                          } ${!isOwnerOrDev ? 'cursor-not-allowed opacity-60' : ''}`}
+                                          title="Locked / No Access"
+                                        >
+                                          <Lock className="w-2.5 h-2.5" />
+                                          <span>None</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          disabled={!isOwnerOrDev}
+                                          onClick={() => handleSetModuleAccess(user, mod.id, 'view')}
+                                          className={`px-2 py-1 rounded font-semibold transition flex items-center gap-1 ${
+                                            modAccess === 'view'
+                                              ? 'bg-blue-900/90 text-blue-200 border border-blue-500/80 shadow-sm'
+                                              : 'text-gray-400 hover:text-white disabled:hover:text-gray-400'
+                                          } ${!isOwnerOrDev ? 'cursor-not-allowed opacity-60' : ''}`}
+                                          title="View Only (Read Only)"
+                                        >
+                                          <Eye className="w-2.5 h-2.5" />
+                                          <span>View</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          disabled={!isOwnerOrDev}
+                                          onClick={() => handleSetModuleAccess(user, mod.id, 'edit')}
+                                          className={`px-2 py-1 rounded font-semibold transition flex items-center gap-1 ${
+                                            modAccess === 'edit'
+                                              ? 'bg-emerald-900/90 text-emerald-200 border border-emerald-500/80 shadow-sm'
+                                              : 'text-gray-400 hover:text-white disabled:hover:text-gray-400'
+                                          } ${!isOwnerOrDev ? 'cursor-not-allowed opacity-60' : ''}`}
+                                          title="Full Edit Access"
+                                        >
+                                          <Check className="w-2.5 h-2.5" />
+                                          <span>Edit</span>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               );
             })}

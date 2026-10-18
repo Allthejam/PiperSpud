@@ -24,30 +24,105 @@ import {
   PartnerItem,
   AttireItem,
   VideoItem,
-  BlogPost
+  BlogPost,
+  UserRole,
+  ModuleAccessLevel,
+  ModulePermissions
 } from '@/types/spud';
 
-export const defaultPermissions: Record<'owner' | 'admin' | 'editor', UserPermissions> = {
+export interface AdminModuleMeta {
+  id: keyof ModulePermissions;
+  tabId: string;
+  label: string;
+  group: 'Diary & Bookings' | 'Communications & Clients' | 'Content & Media' | 'Highland Services' | 'System, SEO & Security';
+  description: string;
+}
+
+export const ALL_ADMIN_MODULES: AdminModuleMeta[] = [
+  // 1. Diary & Bookings
+  { id: 'dashboard', tabId: 'dashboard', label: 'Executive Dashboard', group: 'Diary & Bookings', description: 'Real-time booking revenue, KPI summaries & performance' },
+  { id: 'bookings', tabId: 'bookings', label: 'Booking Approvals & Deposits', group: 'Diary & Bookings', description: 'Approve, modify and manage wedding & event bookings and deposits' },
+  { id: 'diary', tabId: 'diary', label: 'Interactive Master Diary', group: 'Diary & Bookings', description: 'Live event calendar, date slots & travel scheduling' },
+  { id: 'crm', tabId: 'crm', label: 'Client CRM & Directory', group: 'Diary & Bookings', description: 'Client contact database, event history & booking sync' },
+  { id: 'travelExpenses', tabId: 'travel-expenses', label: 'Travel & Additional Expenses', group: 'Diary & Bookings', description: 'Mileage reimbursement rates, overnight stays & island surcharges' },
+
+  // 2. Communications & Clients
+  { id: 'mailingList', tabId: 'mailing-list', label: 'Mailing List & Newsletters', group: 'Communications & Clients', description: 'Broadcast studio, Brevo email campaigns & opt-outs' },
+  { id: 'emailTemplates', tabId: 'email-templates', label: 'Brevo Email Templates', group: 'Communications & Clients', description: 'Transactional emails, deposit confirmations & reminders' },
+  { id: 'messages', tabId: 'messages', label: 'Live Chat & Message Center', group: 'Communications & Clients', description: 'Client direct messages, quick responses & online status' },
+  { id: 'reviews', tabId: 'reviews', label: 'Client Review Moderation', group: 'Communications & Clients', description: 'Customer testimonials, 5-star ratings & Google reviews' },
+
+  // 3. Content & Media
+  { id: 'blog', tabId: 'blog', label: "Spud's Blog & Video Studio", group: 'Content & Media', description: 'Highland stories, castle performance recaps & YouTube videos' },
+  { id: 'gallery', tabId: 'gallery', label: 'Photo & Event Gallery', group: 'Content & Media', description: 'Upload, tag and organize high-res performance photos' },
+  { id: 'tunes', tabId: 'tunes', label: 'Bagpipe Tunes & Jukebox', group: 'Content & Media', description: 'Audio recordings, ceremony tunes & audio sampler' },
+  { id: 'videos', tabId: 'videos', label: 'Meet Spud Video Hub', group: 'Content & Media', description: 'Featured performance video playlists & speaking clips' },
+  { id: 'cms', tabId: 'cms', label: 'In-Page Visual Pencil CMS', group: 'Content & Media', description: 'Live visual text & image editor for public pages' },
+
+  // 4. Highland Services
+  { id: 'services', tabId: 'services', label: 'Services, Pricing & POA Studio', group: 'Highland Services', description: 'Wedding packages, gala performances & pricing models' },
+  { id: 'attire', tabId: 'attire', label: 'Tartan & Attire Studio', group: 'Highland Services', description: 'Full No. 1 Dress, Royal Stewart & kiltwear catalog' },
+  { id: 'partners', tabId: 'partners', label: 'Partners & Ecosystem', group: 'Highland Services', description: 'Castle venues, celebrants, kiltmakers & directory links' },
+  { id: 'faqs', tabId: 'faqs', label: 'FAQ Knowledgebase', group: 'Highland Services', description: 'Scottish bagpipe Q&As, rich text answers & home display' },
+  { id: 'forum', tabId: 'forum', label: 'Community Forum Control', group: 'Highland Services', description: 'Discussion moderation, categories & Highland topics' },
+
+  // 5. System, SEO & Security
+  { id: 'seo', tabId: 'seo', label: 'SEO & Meta Studio', group: 'System, SEO & Security', description: 'Meta titles, OpenGraph previews & Google search indexing' },
+  { id: 'analytics', tabId: 'analytics', label: 'Google Analytics & Traffic', group: 'System, SEO & Security', description: 'Real-time visitors, pageviews & audience acquisition' },
+  { id: 'socialLinks', tabId: 'social-links', label: 'Social Media Links', group: 'System, SEO & Security', description: 'Facebook, Instagram, YouTube & social integrations' },
+  { id: 'security', tabId: 'security', label: 'Admin Team & Security Control', group: 'System, SEO & Security', description: 'Firestore users, permissions & team access control' },
+  { id: 'notifications', tabId: 'notifications', label: 'Notification Center', group: 'System, SEO & Security', description: 'System alerts, new bookings & audit logs' },
+  { id: 'guide', tabId: 'guide', label: "Spud's User Manual & Guide", group: 'System, SEO & Security', description: 'Documentation, workflows & step-by-step instructions' }
+];
+
+const allModulesFullEdit: ModulePermissions = ALL_ADMIN_MODULES.reduce((acc, m) => {
+  acc[m.id] = 'edit';
+  return acc;
+}, {} as ModulePermissions);
+
+const editorDefaultModules: ModulePermissions = ALL_ADMIN_MODULES.reduce((acc, m) => {
+  if (['blog', 'gallery', 'tunes', 'videos', 'cms', 'attire', 'faqs', 'services'].includes(m.id)) {
+    acc[m.id] = 'edit';
+  } else if (['security', 'analytics'].includes(m.id)) {
+    acc[m.id] = 'none';
+  } else {
+    acc[m.id] = 'view';
+  }
+  return acc;
+}, {} as ModulePermissions);
+
+export const defaultPermissions: Record<UserRole, UserPermissions> = {
+  developer: {
+    canManageBookings: true,
+    canEditTunes: true,
+    canEditCms: true,
+    canManageSecurity: true,
+    canChat: true,
+    modules: { ...allModulesFullEdit }
+  },
   owner: {
     canManageBookings: true,
     canEditTunes: true,
     canEditCms: true,
     canManageSecurity: true,
-    canChat: true
+    canChat: true,
+    modules: { ...allModulesFullEdit }
   },
   admin: {
     canManageBookings: true,
     canEditTunes: true,
     canEditCms: true,
-    canManageSecurity: true,
-    canChat: true
+    canManageSecurity: false,
+    canChat: true,
+    modules: { ...allModulesFullEdit, security: 'view' }
   },
   editor: {
     canManageBookings: false,
     canEditTunes: true,
     canEditCms: true,
     canManageSecurity: false,
-    canChat: false
+    canChat: false,
+    modules: { ...editorDefaultModules }
   }
 };
 

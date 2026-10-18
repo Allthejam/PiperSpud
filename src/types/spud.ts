@@ -398,12 +398,45 @@ export interface BroadcastAuditEntry {
   recipients: BroadcastRecipientAudit[];
 }
 
+export type UserRole = 'owner' | 'developer' | 'admin' | 'editor';
+
+export type ModuleAccessLevel = 'none' | 'view' | 'edit';
+
+export interface ModulePermissions {
+  dashboard?: ModuleAccessLevel;
+  bookings?: ModuleAccessLevel;
+  diary?: ModuleAccessLevel;
+  crm?: ModuleAccessLevel;
+  mailingList?: ModuleAccessLevel;
+  emailTemplates?: ModuleAccessLevel;
+  messages?: ModuleAccessLevel;
+  faqs?: ModuleAccessLevel;
+  forum?: ModuleAccessLevel;
+  blog?: ModuleAccessLevel;
+  gallery?: ModuleAccessLevel;
+  services?: ModuleAccessLevel;
+  attire?: ModuleAccessLevel;
+  videos?: ModuleAccessLevel;
+  partners?: ModuleAccessLevel;
+  reviews?: ModuleAccessLevel;
+  travelExpenses?: ModuleAccessLevel;
+  tunes?: ModuleAccessLevel;
+  cms?: ModuleAccessLevel;
+  seo?: ModuleAccessLevel;
+  analytics?: ModuleAccessLevel;
+  socialLinks?: ModuleAccessLevel;
+  security?: ModuleAccessLevel;
+  notifications?: ModuleAccessLevel;
+  guide?: ModuleAccessLevel;
+}
+
 export interface UserPermissions {
-  canManageBookings: boolean;
-  canEditTunes: boolean;
-  canEditCms: boolean;
-  canManageSecurity: boolean;
-  canChat: boolean;
+  canManageBookings?: boolean;
+  canEditTunes?: boolean;
+  canEditCms?: boolean;
+  canManageSecurity?: boolean;
+  canChat?: boolean;
+  modules?: ModulePermissions;
 }
 
 export interface UserRecord {
@@ -412,7 +445,7 @@ export interface UserRecord {
   email: string;
   name?: string;
   displayName?: string;
-  role: 'owner' | 'admin' | 'editor';
+  role: UserRole;
   isOnline: boolean;
   status: 'online' | 'offline' | 'away';
   lastActive?: string;
