@@ -1,92 +1,190 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Spud the Piper - Firestore Security Rules
 
-    // Public read for website content (services, tunes, reviews, social posts, CMS blocks, SEO)
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner() {
+      return isAuthenticated() && (
+        request.auth.token.email.lower() == 'piperspud@gmail.com'
+      );
+    }
+
+    // ==========================================
+    // 1. PUBLIC READ-ONLY CONTENT
+    // Anyone visiting the website can read services, tunes, gallery, faqs, blog posts, etc.
+    // Only authenticated administrators can create, update, or delete content.
+    // ==========================================
     match /services/{serviceId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isAuthenticated();
     }
 
     match /cms_blocks/{blockId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isAuthenticated();
     }
 
     match /bagpipe_tunes/{tuneId} {
       allow read: if true;
-      allow write: if true;
-    }
-
-    match /reviews/{reviewId} {
-      allow read: if true;
-      allow write: if true;
-    }
-
-    match /social_posts/{postId} {
-      allow read: if true;
-      allow write: if true;
-    }
-
-    match /forum_categories/{catId} {
-      allow read: if true;
-      allow write: if true;
-    }
-
-    match /seo_pages/{pageId} {
-      allow read: if true;
-      allow write: if true;
-    }
-
-    match /settings/{settingId} {
-      allow read: if true;
-      allow write: if true;
-    }
-
-    match /bookings/{bookingId} {
-      allow read: if true;
-      allow write: if true;
-    }
-
-    match /users/{userId} {
-      allow read: if true;
-      allow write: if true;
-    }
-
-    match /quick_responses/{qrId} {
-      allow read: if true;
-      allow write: if true;
-    }
-
-    match /mailing_contacts/{contactId} {
-      allow read: if true;
-      allow write: if true;
-    }
-
-    match /notifications/{notifId} {
-      allow read: if true;
-      allow write: if true;
-    }
-
-    match /email_campaigns/{campaignId} {
-      allow read: if true;
-      allow write: if true;
+      allow write: if isAuthenticated();
     }
 
     match /faqs/{faqId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isAuthenticated();
     }
 
-    match /chat_sessions/{sessionId} {
+    match /gallery/{itemId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /partners/{partnerId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /attires/{attireId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /videos/{videoId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /blog_posts/{postId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /seo_pages/{pageId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /forum_categories/{catId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // ==========================================
+    // 2. REVIEWS & TESTIMONIALS
+    // Public visitors can read reviews and submit their own testimonials.
+    // Only authenticated administrators can approve, feature, edit, or delete reviews.
+    // ==========================================
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isAuthenticated();
+    }
+
+    // ==========================================
+    // 3. SOCIAL POSTS & LIKES
+    // Public visitors can read social posts and increment likes.
+    // Only authenticated administrators can create, edit, or delete posts.
+    // ==========================================
+    match /social_posts/{postId} {
+      allow read: if true;
+      allow create, delete: if isAuthenticated();
+      allow update: if isAuthenticated() || 
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']));
+    }
+
+    // ==========================================
+    // 4. BOOKINGS & INQUIRIES
+    // Public visitors can submit new event booking requests / quotes.
+    // Only authenticated administrators can read, update, or delete client bookings.
+    // ==========================================
+    match /bookings/{bookingId} {
+      allow create: if true;
+      allow read, update, delete: if isAuthenticated();
+    }
+
+    // ==========================================
+    // 5. LIVE CHAT & MESSAGING
+    // Public visitors can message Spud via the live chat widget.
+    // Visitors can read/create/update sessions and messages; only admins can delete.
+    // ==========================================
+    match /chat_sessions/{sessionId} {
+      allow read, create, update: if true;
+      allow delete: if isAuthenticated();
     }
 
     match /chat_messages/{messageId} {
+      allow read, create, update: if true;
+      allow delete: if isAuthenticated();
+    }
+
+    match /quick_responses/{qrId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // ==========================================
+    // 6. MAILING LIST & MARKETING
+    // Public visitors can subscribe (create) and opt out (update).
+    // Reading the subscriber list is strictly restricted to authenticated admins to prevent email harvesting.
+    // ==========================
+    match /mailing_contacts/{contactId} {
+      allow create, update: if true;
+      allow read, delete: if isAuthenticated();
+    }
+
+    match /opt_outs/{optOutId} {
+      allow read, create, update: if true;
+      allow delete: if isAuthenticated();
+    }
+
+    match /email_campaigns/{campaignId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /broadcast_audits/{auditId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // ==========================================
+    // 7. NOTIFICATIONS
+    // Public bookings or reviews can trigger notifications.
+    // Only authenticated administrators can read, mark read, or delete notifications.
+    // ==========================================
+    match /notifications/{notifId} {
+      allow create: if true;
+      allow read, update, delete: if isAuthenticated();
+    }
+
+    // ==========================================
+    // 8. USERS & PERMISSIONS
+    // Admin team accounts, roles, and granular 23-module permissions.
+    // Strictly restricted to authenticated administrators.
+    // ==========================================
+    match /users/{userId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // ==========================================
+    // 9. SETTINGS
+    // Sensitive settings (e.g. admin whitelist) are restricted to authenticated admins.
+    // Public settings (pricing, travel, chat status, spud profile, social links) are public read, admin write.
+    // ==========================================
+    match /settings/admin_whitelist {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /settings/{settingId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Default fallback: deny all other collections/documents
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

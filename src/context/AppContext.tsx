@@ -1007,7 +1007,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (!db) return;
 
-    let unsubBookings = () => {};
     let unsubReviews = () => {};
     let unsubServices = () => {};
     let unsubSocial = () => {};
@@ -1018,14 +1017,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubTunes = () => {};
     let unsubTravel = () => {};
     let unsubPricing = () => {};
-    let unsubUsers = () => {};
     let unsubChatStatus = () => {};
     let unsubChatSessions = () => {};
     let unsubChatMessages = () => {};
-    let unsubNotifications = () => {};
-    let unsubMailing = () => {};
-    let unsubCampaigns = () => {};
-    let unsubAudits = () => {};
     let unsubOptOuts = () => {};
     let unsubFaqs = () => {};
     let unsubGallery = () => {};
@@ -1036,109 +1030,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubSpudProfile = () => {};
 
     try {
-      // Real-time Firestore listener for 'users' collection
-      unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-        if (!snapshot.empty) {
-          const remoteUsers: UserRecord[] = [];
-          const usersToBackfill: UserRecord[] = [];
-
-          snapshot.forEach((d) => {
-            const data = d.data() as UserRecord;
-            // Only accept valid accounts with an email address (ignoring corrupt/empty mockups)
-            if (data && data.email && data.email.includes('@')) {
-              const role: UserRole = (data.email.toLowerCase() === 'piperspud@gmail.com' || data.role === 'owner') 
-                ? 'owner' 
-                : (data.role || 'admin');
-              const roleDefaults = defaultPermissions[role] || defaultPermissions.admin;
-
-              // Check if all 23 modules are present in permissions
-              const existingModules = (data.permissions?.modules || {}) as ModulePermissions;
-              const isMissingModules = !data.permissions?.modules || Object.keys(existingModules).length < ALL_ADMIN_MODULES.length;
-
-              const fullModules: ModulePermissions = ALL_ADMIN_MODULES.reduce((acc: ModulePermissions, m: AdminModuleMeta) => {
-                acc[m.id] = existingModules[m.id] || roleDefaults.modules?.[m.id] || (role === 'owner' || role === 'developer' ? 'edit' : 'view');
-                return acc;
-              }, {} as ModulePermissions);
-
-              const userRecord: UserRecord = {
-                ...data,
-                id: data.id || d.id,
-                role,
-                permissions: {
-                  ...roleDefaults,
-                  ...(data.permissions || {}),
-                  modules: fullModules
-                }
-              };
-
-              remoteUsers.push(userRecord);
-
-              if (isMissingModules) {
-                usersToBackfill.push(userRecord);
-              }
-            }
-          });
-
-          if (remoteUsers.length > 0) {
-            setUsers(remoteUsers);
-            if (typeof window !== 'undefined') {
-              try {
-                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}users`, JSON.stringify(remoteUsers));
-                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`, JSON.stringify(remoteUsers));
-              } catch (e) {}
-            }
-
-            // Immediately backfill any users missing module permissions directly in Firestore
-            if (usersToBackfill.length > 0 && db) {
-              const firestore = db;
-              usersToBackfill.forEach((u) => {
-                if (u && u.id) {
-                  setDoc(doc(firestore, 'users', u.id), JSON.parse(JSON.stringify(u)), { merge: true })
-                    .catch((err) => console.warn('Error backfilling user modules to Firestore:', err));
-                }
-              });
-            }
-
-            // Check if any admin or owner is currently online
-            const onlineAdmins = remoteUsers.filter(u => {
-              if (!u || !u.isOnline) return false;
-              // If lastActive timestamp exists, filter out stale sessions older than 60 minutes
-              if (u.lastActive) {
-                const diffMin = (Date.now() - new Date(u.lastActive).getTime()) / (1000 * 60);
-                if (diffMin > 60) return false;
-              }
-              return true;
-            });
-
-            if (onlineAdmins.length === 0) {
-              // Automatically switch chat to offline when everyone is logged out / offline
-              setIsSpudOnlineState(false);
-              if (typeof window !== 'undefined') {
-                try {
-                  localStorage.setItem(`${LOCAL_STORAGE_PREFIX}spud_online`, 'false');
-                } catch (e) {}
-              }
-            } else {
-              // Check if primary owner or spud has isOnline or avatarUrl set in users collection
-              const spudRemote = remoteUsers.find(u => u && (((u.email || '').toLowerCase() === 'piperspud@gmail.com') || u.role === 'owner'));
-              if (spudRemote) {
-                if (typeof spudRemote.isOnline === 'boolean') {
-                  setIsSpudOnlineState(spudRemote.isOnline);
-                }
-                if (spudRemote.avatarUrl) {
-                  setSpudProfileAvatarState(spudRemote.avatarUrl);
-                  if (typeof window !== 'undefined') {
-                    try {
-                      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}spud_avatar`, spudRemote.avatarUrl);
-                    } catch (e) {}
-                  }
-                }
-              }
-            }
-          }
-        }
-      }, (err) => console.log('Firestore users listener:', err.message));
-
       // Real-time Firestore listener for global chat_status setting
       unsubChatStatus = onSnapshot(doc(db, 'settings', 'chat_status'), (snap) => {
         if (snap.exists()) {
@@ -1176,19 +1067,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
       }, (err) => console.log('Firestore services listener:', err.message));
-
-      unsubBookings = onSnapshot(collection(db, 'bookings'), (snapshot) => {
-        if (!snapshot.empty) {
-          const remoteBookings: BookingEvent[] = [];
-          snapshot.forEach((d) => remoteBookings.push(d.data() as BookingEvent));
-          const mockIds = new Set(['spud-bk-101', 'spud-bk-102', 'spud-bk-103', 'spud-bk-104', 'spud-bk-105']);
-          const clean = remoteBookings.filter(b => !mockIds.has(b.id));
-          clean.sort((a, b) => new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime());
-          setBookings(clean);
-        } else {
-          setBookings([]);
-        }
-      }, (err) => console.log('Firestore bookings listener:', err.message));
 
       unsubReviews = onSnapshot(collection(db, 'reviews'), (snapshot) => {
         if (!snapshot.empty) {
@@ -1338,49 +1216,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }, (err) => console.log('Firestore pricing_config listener:', err.message));
 
-      // Real-time Firestore listener for live notifications
-      unsubNotifications = onSnapshot(collection(db, 'notifications'), (snapshot) => {
-        if (!snapshot.empty) {
-          const remoteNotifs: NotificationItem[] = [];
-          snapshot.forEach((d) => {
-            const data = d.data() as NotificationItem;
-            if (data) remoteNotifs.push({ ...data, id: data.id || d.id });
-          });
-          if (remoteNotifs.length > 0) {
-            const mockIds = new Set(['notif-1', 'notif-2', 'notif-3']);
-            const cleanNotifs = remoteNotifs.filter(n => 
-              n && n.id && !mockIds.has(n.id) && 
-              !(n.title && (n.title.includes('Spud is Now ONLINE') || n.title.includes('Spud is Now OFFLINE') || n.title.includes('Live Chat Status') || n.title.includes('ONLINE') || n.title.includes('OFFLINE')))
-            );
-            cleanNotifs.sort((a, b) => {
-              const timeA = a.id?.startsWith('notif-') ? parseInt(a.id.split('-')[1]) || 0 : 0;
-              const timeB = b.id?.startsWith('notif-') ? parseInt(b.id.split('-')[1]) || 0 : 0;
-              return timeB - timeA;
-            });
-            setNotifications(cleanNotifs);
-          }
-        } else {
-          setNotifications([]);
-        }
-      }, (err) => console.log('Firestore notifications listener:', err.message));
-
-      // Real-time Firestore listener for mailing_contacts with automatic deduplication
-      unsubMailing = onSnapshot(collection(db, 'mailing_contacts'), (snapshot) => {
-        if (!snapshot.empty) {
-          const remoteContacts: MailingContact[] = [];
-          snapshot.forEach((d) => {
-            const data = d.data() as MailingContact;
-            if (data) remoteContacts.push({ ...data, id: data.id || d.id });
-          });
-          const mockIds = new Set(['mc-1', 'mc-2', 'mc-3', 'mc-4', 'mc-5', 'mc-6']);
-          const rawClean = remoteContacts.filter(m => m && m.id && !mockIds.has(m.id));
-          const { cleanContacts } = deduplicateAndMergeContacts(rawClean, optOutEmailsRef.current);
-          cleanContacts.sort((a, b) => new Date(b.addedAt || 0).getTime() - new Date(a.addedAt || 0).getTime());
-          setMailingContacts(cleanContacts);
-        } else {
-          setMailingContacts([]);
-        }
-      }, (err) => console.log('Firestore mailing_contacts listener:', err.message));
 
       // Real-time Firestore listener for opt_outs collection
       unsubOptOuts = onSnapshot(collection(db, 'opt_outs'), (snapshot) => {
@@ -1406,47 +1241,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }, (err) => console.log('Firestore opt_outs listener:', err.message));
 
-      // Real-time Firestore listener for email_campaigns
-      unsubCampaigns = onSnapshot(collection(db, 'email_campaigns'), (snapshot) => {
-        const merged = [...initialCampaigns];
-        if (!snapshot.empty) {
-          const remoteCampaigns: EmailCampaign[] = [];
-          snapshot.forEach((d) => {
-            const data = d.data() as EmailCampaign;
-            if (data) remoteCampaigns.push({ ...data, id: data.id || d.id });
-          });
-          remoteCampaigns.forEach(remote => {
-            const idx = merged.findIndex(c => c.id === remote.id);
-            if (idx >= 0) {
-              merged[idx] = { ...merged[idx], ...remote };
-            } else {
-              merged.push(remote);
-            }
-          });
-        }
-        setEmailCampaigns(merged);
-
-        // Ensure default seasonal templates exist in Firestore as well
-        const firestore = db;
-        if (firestore) {
-          initialCampaigns.forEach(camp => {
-            setDoc(doc(firestore, 'email_campaigns', camp.id), camp, { merge: true }).catch(e => console.warn(e));
-          });
-        }
-      }, (err) => console.log('Firestore email_campaigns listener:', err.message));
-
-      // Real-time Firestore listener for broadcast_audits
-      unsubAudits = onSnapshot(collection(db, 'broadcast_audits'), (snapshot) => {
-        if (!snapshot.empty) {
-          const remoteAudits: BroadcastAuditEntry[] = [];
-          snapshot.forEach((d) => {
-            const data = d.data() as BroadcastAuditEntry;
-            if (data) remoteAudits.push({ ...data, id: data.id || d.id });
-          });
-          remoteAudits.sort((a, b) => new Date(b.sentAt || 0).getTime() - new Date(a.sentAt || 0).getTime());
-          setBroadcastAudits(remoteAudits);
-        }
-      }, (err) => console.log('Firestore broadcast_audits listener:', err.message));
 
       // Real-time Firestore listener for faqs (merging with initialFaqs to protect defaults)
       unsubFaqs = onSnapshot(collection(db, 'faqs'), (snapshot) => {
@@ -1669,7 +1463,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     return () => {
-      unsubBookings();
       unsubReviews();
       unsubServices();
       unsubSocial();
@@ -1680,14 +1473,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubTunes();
       unsubTravel();
       unsubPricing();
-      unsubUsers();
       unsubChatStatus();
       unsubChatSessions();
       unsubChatMessages();
-      unsubNotifications();
-      unsubMailing();
-      unsubCampaigns();
-      unsubAudits();
       unsubOptOuts();
       unsubFaqs();
       unsubGallery();
@@ -1698,6 +1486,232 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubSpudProfile();
     };
   }, []);
+
+  // Authenticated-only Cloud Firestore sync listeners (Users, Bookings, Notifications, Mailing, Campaigns, Audits)
+  useEffect(() => {
+    if (!db || !firebaseUser) return;
+
+    let unsubUsers = () => {};
+    let unsubBookings = () => {};
+    let unsubNotifications = () => {};
+    let unsubMailing = () => {};
+    let unsubCampaigns = () => {};
+    let unsubAudits = () => {};
+
+    try {
+      // Real-time Firestore listener for 'users' collection
+      unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteUsers: UserRecord[] = [];
+          const usersToBackfill: UserRecord[] = [];
+
+          snapshot.forEach((d) => {
+            const data = d.data() as UserRecord;
+            // Only accept valid accounts with an email address (ignoring corrupt/empty mockups)
+            if (data && data.email && data.email.includes('@')) {
+              const role: UserRole = (data.email.toLowerCase() === 'piperspud@gmail.com' || data.role === 'owner') 
+                ? 'owner' 
+                : (data.role || 'admin');
+              const roleDefaults = defaultPermissions[role] || defaultPermissions.admin;
+
+              // Check if all 23 modules are present in permissions
+              const existingModules = (data.permissions?.modules || {}) as ModulePermissions;
+              const isMissingModules = !data.permissions?.modules || Object.keys(existingModules).length < ALL_ADMIN_MODULES.length;
+
+              const fullModules: ModulePermissions = ALL_ADMIN_MODULES.reduce((acc: ModulePermissions, m: AdminModuleMeta) => {
+                acc[m.id] = existingModules[m.id] || roleDefaults.modules?.[m.id] || (role === 'owner' || role === 'developer' ? 'edit' : 'view');
+                return acc;
+              }, {} as ModulePermissions);
+
+              const userRecord: UserRecord = {
+                ...data,
+                id: data.id || d.id,
+                role,
+                permissions: {
+                  ...roleDefaults,
+                  ...(data.permissions || {}),
+                  modules: fullModules
+                }
+              };
+
+              remoteUsers.push(userRecord);
+
+              if (isMissingModules) {
+                usersToBackfill.push(userRecord);
+              }
+            }
+          });
+
+          if (remoteUsers.length > 0) {
+            setUsers(remoteUsers);
+            if (typeof window !== 'undefined') {
+              try {
+                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}users`, JSON.stringify(remoteUsers));
+                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin_whitelist`, JSON.stringify(remoteUsers));
+              } catch (e) {}
+            }
+
+            // Immediately backfill any users missing module permissions directly in Firestore
+            if (usersToBackfill.length > 0 && db) {
+              const firestore = db;
+              usersToBackfill.forEach((u) => {
+                if (u && u.id) {
+                  setDoc(doc(firestore, 'users', u.id), JSON.parse(JSON.stringify(u)), { merge: true })
+                    .catch((err) => console.warn('Error backfilling user modules to Firestore:', err));
+                }
+              });
+            }
+
+            // Check if any admin or owner is currently online
+            const onlineAdmins = remoteUsers.filter(u => {
+              if (!u || !u.isOnline) return false;
+              if (u.lastActive) {
+                const diffMin = (Date.now() - new Date(u.lastActive).getTime()) / (1000 * 60);
+                if (diffMin > 60) return false;
+              }
+              return true;
+            });
+
+            if (onlineAdmins.length === 0) {
+              setIsSpudOnlineState(false);
+              if (typeof window !== 'undefined') {
+                try {
+                  localStorage.setItem(`${LOCAL_STORAGE_PREFIX}spud_online`, 'false');
+                } catch (e) {}
+              }
+            } else {
+              const spudRemote = remoteUsers.find(u => u && (((u.email || '').toLowerCase() === 'piperspud@gmail.com') || u.role === 'owner'));
+              if (spudRemote) {
+                if (typeof spudRemote.isOnline === 'boolean') {
+                  setIsSpudOnlineState(spudRemote.isOnline);
+                }
+                if (spudRemote.avatarUrl) {
+                  setSpudProfileAvatarState(spudRemote.avatarUrl);
+                  if (typeof window !== 'undefined') {
+                    try {
+                      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}spud_avatar`, spudRemote.avatarUrl);
+                    } catch (e) {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }, (err) => console.log('Firestore users listener:', err.message));
+
+      // Real-time Firestore listener for bookings
+      unsubBookings = onSnapshot(collection(db, 'bookings'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteBookings: BookingEvent[] = [];
+          snapshot.forEach((d) => remoteBookings.push(d.data() as BookingEvent));
+          const mockIds = new Set(['spud-bk-101', 'spud-bk-102', 'spud-bk-103', 'spud-bk-104', 'spud-bk-105']);
+          const clean = remoteBookings.filter(b => !mockIds.has(b.id));
+          clean.sort((a, b) => new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime());
+          setBookings(clean);
+        } else {
+          setBookings([]);
+        }
+      }, (err) => console.log('Firestore bookings listener:', err.message));
+
+      // Real-time Firestore listener for live notifications
+      unsubNotifications = onSnapshot(collection(db, 'notifications'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteNotifs: NotificationItem[] = [];
+          snapshot.forEach((d) => {
+            const data = d.data() as NotificationItem;
+            if (data) remoteNotifs.push({ ...data, id: data.id || d.id });
+          });
+          if (remoteNotifs.length > 0) {
+            const mockIds = new Set(['notif-1', 'notif-2', 'notif-3']);
+            const cleanNotifs = remoteNotifs.filter(n => 
+              n && n.id && !mockIds.has(n.id) && 
+              !(n.title && (n.title.includes('Spud is Now ONLINE') || n.title.includes('Spud is Now OFFLINE') || n.title.includes('Live Chat Status') || n.title.includes('ONLINE') || n.title.includes('OFFLINE')))
+            );
+            cleanNotifs.sort((a, b) => {
+              const timeA = a.id?.startsWith('notif-') ? parseInt(a.id.split('-')[1]) || 0 : 0;
+              const timeB = b.id?.startsWith('notif-') ? parseInt(b.id.split('-')[1]) || 0 : 0;
+              return timeB - timeA;
+            });
+            setNotifications(cleanNotifs);
+          }
+        } else {
+          setNotifications([]);
+        }
+      }, (err) => console.log('Firestore notifications listener:', err.message));
+
+      // Real-time Firestore listener for mailing_contacts with automatic deduplication
+      unsubMailing = onSnapshot(collection(db, 'mailing_contacts'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteContacts: MailingContact[] = [];
+          snapshot.forEach((d) => {
+            const data = d.data() as MailingContact;
+            if (data) remoteContacts.push({ ...data, id: data.id || d.id });
+          });
+          const mockIds = new Set(['mc-1', 'mc-2', 'mc-3', 'mc-4', 'mc-5', 'mc-6']);
+          const rawClean = remoteContacts.filter(m => m && m.id && !mockIds.has(m.id));
+          const { cleanContacts } = deduplicateAndMergeContacts(rawClean, optOutEmailsRef.current);
+          cleanContacts.sort((a, b) => new Date(b.addedAt || 0).getTime() - new Date(a.addedAt || 0).getTime());
+          setMailingContacts(cleanContacts);
+        } else {
+          setMailingContacts([]);
+        }
+      }, (err) => console.log('Firestore mailing_contacts listener:', err.message));
+
+      // Real-time Firestore listener for email_campaigns
+      unsubCampaigns = onSnapshot(collection(db, 'email_campaigns'), (snapshot) => {
+        const merged = [...initialCampaigns];
+        if (!snapshot.empty) {
+          const remoteCampaigns: EmailCampaign[] = [];
+          snapshot.forEach((d) => {
+            const data = d.data() as EmailCampaign;
+            if (data) remoteCampaigns.push({ ...data, id: data.id || d.id });
+          });
+          remoteCampaigns.forEach(remote => {
+            const idx = merged.findIndex(c => c.id === remote.id);
+            if (idx >= 0) {
+              merged[idx] = { ...merged[idx], ...remote };
+            } else {
+              merged.push(remote);
+            }
+          });
+        }
+        setEmailCampaigns(merged);
+
+        const firestore = db;
+        if (firestore) {
+          initialCampaigns.forEach(camp => {
+            setDoc(doc(firestore, 'email_campaigns', camp.id), camp, { merge: true }).catch(e => console.warn(e));
+          });
+        }
+      }, (err) => console.log('Firestore email_campaigns listener:', err.message));
+
+      // Real-time Firestore listener for broadcast_audits
+      unsubAudits = onSnapshot(collection(db, 'broadcast_audits'), (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteAudits: BroadcastAuditEntry[] = [];
+          snapshot.forEach((d) => {
+            const data = d.data() as BroadcastAuditEntry;
+            if (data) remoteAudits.push({ ...data, id: data.id || d.id });
+          });
+          remoteAudits.sort((a, b) => new Date(b.sentAt || 0).getTime() - new Date(a.sentAt || 0).getTime());
+          setBroadcastAudits(remoteAudits);
+        } else {
+          setBroadcastAudits([]);
+        }
+      }, (err) => console.log('Firestore broadcast_audits listener:', err.message));
+    } catch (e) {
+      console.warn('Authenticated Firestore listeners initialization:', e);
+    }
+
+    return () => {
+      unsubUsers();
+      unsubBookings();
+      unsubNotifications();
+      unsubMailing();
+      unsubCampaigns();
+      unsubAudits();
+    };
+  }, [firebaseUser]);
 
   // Helper function to sync a document to Cloud Firestore
   const syncToFirestore = async (colName: string, docId: string, data: any) => {
