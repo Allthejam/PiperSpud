@@ -176,6 +176,7 @@ export interface SocialPost {
     id: string;
     authorName: string;
     authorRole?: string;
+    authorAvatar?: string;
     content: string;
     createdAt: string;
   }[];

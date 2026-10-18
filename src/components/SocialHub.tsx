@@ -104,8 +104,17 @@ export const SocialHub: React.FC = () => {
     currentPlayingTune,
     forumCategories,
     spudProfileAvatar,
-    updateSpudProfileAvatar
+    updateSpudProfileAvatar,
+    users,
+    firebaseUser
   } = useApp();
+
+  // Current authenticated user (team member / Spud) from Firestore users collection
+  const currentAuthUser = React.useMemo(() => {
+    if (!firebaseUser?.email) return null;
+    const cleanEmail = firebaseUser.email.toLowerCase().trim();
+    return (users || []).find(u => u && u.email && u.email.toLowerCase().trim() === cleanEmail) || null;
+  }, [firebaseUser, users]);
 
   // Active View Tab: 'feed' (Timeline Stream) or 'forum' (Q&A Forum)
   const [activeTab, setActiveTab] = useState<'feed' | 'forum'>('feed');
@@ -351,17 +360,19 @@ export const SocialHub: React.FC = () => {
       extractedTags.push(`#${composerLocation.split(',')[0].replace(/[^a-zA-Z0-9]/g, '')}`);
     }
 
-    const finalAuthorName = composerAuthorName.trim() || (isAdminLoggedIn ? 'Spud the Piper' : 'Anonymous');
-    const finalAuthorRole = isAdminLoggedIn 
+    const isOwnerOrSpud = currentAuthUser?.role === 'owner' || (currentAuthUser?.email?.toLowerCase() === 'piperspud@gmail.com') || (!currentAuthUser && isAdminLoggedIn);
+    const finalAuthorName = composerAuthorName.trim() || currentAuthUser?.name || currentAuthUser?.displayName || (isOwnerOrSpud ? 'Spud the Piper' : 'Admin');
+    const finalAuthorRole = isOwnerOrSpud 
       ? 'Spud the Piper' 
-      : (composerAuthorRole === 'Other' ? (customRoleText.trim() || 'Guest') : (composerAuthorRole as any));
+      : (currentAuthUser?.role === 'admin' ? 'Spud Admin Team' : (currentAuthUser?.role === 'editor' ? 'Editor' : (composerAuthorRole === 'Other' ? (customRoleText.trim() || 'Guest') : (composerAuthorRole as any))));
+    const resolvedAvatar = currentAuthUser?.avatarUrl || (isOwnerOrSpud ? (spudProfileAvatar || '/og-image.jpg') : undefined);
 
     createSocialPost({
       postType: 'feed',
       content: composerText.trim(),
       authorName: finalAuthorName,
       authorRole: finalAuthorRole,
-      authorAvatar: finalAuthorRole === 'Spud the Piper' ? (spudProfileAvatar || '/og-image.jpg') : undefined,
+      authorAvatar: resolvedAvatar,
       eventLocation: composerLocation.trim() || undefined,
       tunePlayed: composerTune.trim() || undefined,
       imageUrl: composerImage.trim() || undefined,
@@ -398,10 +409,12 @@ export const SocialHub: React.FC = () => {
       return;
     }
 
-    const finalForumAuthorName = isAdminLoggedIn ? 'Spud the Piper' : forumAuthorName.trim();
-    const finalForumAuthorRole = isAdminLoggedIn 
+    const isOwnerOrSpud = currentAuthUser?.role === 'owner' || (currentAuthUser?.email?.toLowerCase() === 'piperspud@gmail.com') || (!currentAuthUser && isAdminLoggedIn);
+    const finalForumAuthorName = forumAuthorName.trim() || currentAuthUser?.name || currentAuthUser?.displayName || (isOwnerOrSpud ? 'Spud the Piper' : 'Highland Friend');
+    const finalForumAuthorRole = isOwnerOrSpud 
       ? 'Spud the Piper' 
-      : (forumAuthorRole === 'Other' ? (customForumRoleText.trim() || 'Guest') : (forumAuthorRole as any));
+      : (currentAuthUser?.role === 'admin' ? 'Spud Admin Team' : (currentAuthUser?.role === 'editor' ? 'Editor' : (forumAuthorRole === 'Other' ? (customForumRoleText.trim() || 'Guest') : (forumAuthorRole as any))));
+    const resolvedForumAvatar = currentAuthUser?.avatarUrl || (isOwnerOrSpud ? (spudProfileAvatar || '/og-image.jpg') : undefined);
 
     createSocialPost({
       postType: 'forum',
@@ -409,7 +422,8 @@ export const SocialHub: React.FC = () => {
       forumTopic,
       content: forumContent.trim(),
       authorName: finalForumAuthorName,
-      authorRole: finalForumAuthorRole
+      authorRole: finalForumAuthorRole,
+      authorAvatar: resolvedForumAvatar
     });
 
     setForumTitle('');
@@ -442,12 +456,14 @@ export const SocialHub: React.FC = () => {
       return;
     }
 
-    const finalAuthor = isAdminLoggedIn ? 'Spud the Piper' : threadReplyAuthor.trim();
-    const finalRole = isAdminLoggedIn
+    const isOwnerOrSpud = currentAuthUser?.role === 'owner' || (currentAuthUser?.email?.toLowerCase() === 'piperspud@gmail.com') || (!currentAuthUser && isAdminLoggedIn);
+    const finalAuthor = threadReplyAuthor.trim() || currentAuthUser?.name || currentAuthUser?.displayName || (isOwnerOrSpud ? 'Spud the Piper' : 'Admin');
+    const finalRole = isOwnerOrSpud
       ? 'Spud the Piper'
-      : (threadReplyRole === 'Other' ? (threadReplyCustomRole.trim() || 'Guest') : threadReplyRole);
+      : (currentAuthUser?.role === 'admin' ? 'Spud Admin Team' : (currentAuthUser?.role === 'editor' ? 'Editor' : (threadReplyRole === 'Other' ? (threadReplyCustomRole.trim() || 'Guest') : threadReplyRole)));
+    const finalAvatar = currentAuthUser?.avatarUrl || (isOwnerOrSpud ? (spudProfileAvatar || '/og-image.jpg') : undefined);
 
-    addCommentToPost(activeThreadId, threadReplyText.trim(), finalAuthor, finalRole);
+    addCommentToPost(activeThreadId, threadReplyText.trim(), finalAuthor, finalRole, finalAvatar);
     setThreadReplyText('');
     setThreadReplyAuthor('');
     setThreadReplyCustomRole('');
@@ -458,9 +474,12 @@ export const SocialHub: React.FC = () => {
   const handleCommentSubmit = (postId: string) => {
     const text = commentInputs[postId];
     if (!text || !text.trim()) return;
-    const author = commentAuthorNames[postId]?.trim() || (isAdminLoggedIn ? 'Spud the Piper' : 'Anonymous');
+    const isOwnerOrSpud = currentAuthUser?.role === 'owner' || (currentAuthUser?.email?.toLowerCase() === 'piperspud@gmail.com') || (!currentAuthUser && isAdminLoggedIn);
+    const author = commentAuthorNames[postId]?.trim() || currentAuthUser?.name || currentAuthUser?.displayName || (isOwnerOrSpud ? 'Spud the Piper' : 'Highland Friend');
+    const role = isOwnerOrSpud ? 'Spud the Piper' : (currentAuthUser?.role === 'admin' ? 'Spud Admin Team' : 'Guest');
+    const avatar = currentAuthUser?.avatarUrl || (isOwnerOrSpud ? (spudProfileAvatar || '/og-image.jpg') : undefined);
 
-    addCommentToPost(postId, text.trim(), author, isAdminLoggedIn ? 'Spud the Piper' : 'Guest');
+    addCommentToPost(postId, text.trim(), author, role, avatar);
     setCommentInputs(prev => ({ ...prev, [postId]: '' }));
   };
 
@@ -948,27 +967,47 @@ export const SocialHub: React.FC = () => {
                       <div className="flex items-center gap-3.5">
                         {/* Avatar */}
                         <div className="relative">
-                          {isSpud ? (
-                            <div className="w-12 h-12 rounded-full p-[2px] bg-gradient-to-tr from-tartan-accent via-amber-500 to-amber-700 shadow ring-2 ring-tartan-gold/30">
-                              <img
-                                src={spudProfileAvatar || '/og-image.jpg'}
-                                alt="Spud the Piper"
-                                className="w-full h-full rounded-full object-cover"
-                              />
-                            </div>
-                          ) : post.authorAvatar && !post.authorAvatar.includes('photo-1507003211169-0a1dd7228f2d') ? (
-                            <div className="w-12 h-12 rounded-full p-[2px] bg-slate-700 shadow">
-                              <img
-                                src={post.authorAvatar}
-                                alt={post.authorName}
-                                className="w-full h-full rounded-full object-cover"
-                              />
-                            </div>
-                          ) : (
-                            <div className="w-12 h-12 rounded-full bg-slate-800 border border-tartan-border flex items-center justify-center text-tartan-gold font-bold text-base shadow">
-                              {post.authorName ? post.authorName.slice(0, 1).toUpperCase() : 'G'}
-                            </div>
-                          )}
+                          {(() => {
+                            const authorUser = (users || []).find(u => 
+                              (post.authorName && (u.name?.toLowerCase() === post.authorName.toLowerCase() || u.displayName?.toLowerCase() === post.authorName.toLowerCase())) ||
+                              (isSpud && (u.email?.toLowerCase() === 'piperspud@gmail.com' || u.role === 'owner'))
+                            );
+                            const resolvedAvatar = isSpud 
+                              ? (spudProfileAvatar || authorUser?.avatarUrl || '/og-image.jpg')
+                              : (post.authorAvatar && !post.authorAvatar.includes('photo-1507003211169-0a1dd7228f2d')
+                                  ? post.authorAvatar
+                                  : (authorUser?.avatarUrl || undefined));
+
+                            if (isSpud) {
+                              return (
+                                <div className="w-12 h-12 rounded-full p-[2px] bg-gradient-to-tr from-tartan-accent via-amber-500 to-amber-700 shadow ring-2 ring-tartan-gold/30">
+                                  <img
+                                    src={resolvedAvatar || '/og-image.jpg'}
+                                    alt="Spud the Piper"
+                                    className="w-full h-full rounded-full object-cover"
+                                  />
+                                </div>
+                              );
+                            }
+
+                            if (resolvedAvatar) {
+                              return (
+                                <div className="w-12 h-12 rounded-full p-[2px] bg-slate-700 shadow overflow-hidden">
+                                  <img
+                                    src={resolvedAvatar}
+                                    alt={post.authorName}
+                                    className="w-full h-full rounded-full object-cover"
+                                  />
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div className="w-12 h-12 rounded-full bg-slate-800 border border-tartan-border flex items-center justify-center text-tartan-gold font-bold text-base shadow">
+                                {post.authorName ? post.authorName.slice(0, 1).toUpperCase() : 'G'}
+                              </div>
+                            );
+                          })()}
                           {isSpud && (
                             <div className="absolute -bottom-1 -right-1 bg-amber-400 text-tartan-dark rounded-full p-0.5 shadow">
                               <CheckCircle2 className="w-3.5 h-3.5 fill-amber-400 text-tartan-dark" />
@@ -1144,14 +1183,25 @@ export const SocialHub: React.FC = () => {
                         <div className="space-y-3">
                           {post.comments.map((comment) => {
                             const isSpudComment = comment.authorName === 'Spud the Piper' || comment.authorRole === 'Spud the Piper';
+                            const commentAuthorUser = (users || []).find(u => 
+                              (comment.authorName && (u.name?.toLowerCase() === comment.authorName.toLowerCase() || u.displayName?.toLowerCase() === comment.authorName.toLowerCase())) ||
+                              (isSpudComment && (u.email?.toLowerCase() === 'piperspud@gmail.com' || u.role === 'owner'))
+                            );
+                            const resolvedCommentAvatar = isSpudComment 
+                              ? (spudProfileAvatar || commentAuthorUser?.avatarUrl || '/og-image.jpg')
+                              : (comment.authorAvatar && !comment.authorAvatar.includes('photo-1507003211169-0a1dd7228f2d')
+                                  ? comment.authorAvatar
+                                  : (commentAuthorUser?.avatarUrl || undefined));
 
                             return (
                               <div key={comment.id} className="flex items-start gap-3 text-xs sm:text-sm">
-                                {isSpudComment ? (
+                                {resolvedCommentAvatar ? (
                                   <img
-                                    src={spudProfileAvatar || '/og-image.jpg'}
-                                    alt="Spud the Piper"
-                                    className="w-8 h-8 rounded-full object-cover border border-tartan-gold shrink-0 mt-0.5 shadow ring-1 ring-tartan-gold/40"
+                                    src={resolvedCommentAvatar}
+                                    alt={comment.authorName}
+                                    className={`w-8 h-8 rounded-full object-cover shrink-0 mt-0.5 shadow ${
+                                      isSpudComment ? 'border border-tartan-gold ring-1 ring-tartan-gold/40' : 'border border-slate-700'
+                                    }`}
                                   />
                                 ) : (
                                   <div className="w-8 h-8 rounded-full bg-slate-800 border border-tartan-border flex items-center justify-center text-tartan-gold font-bold text-xs shrink-0 mt-0.5">
@@ -1608,17 +1658,35 @@ export const SocialHub: React.FC = () => {
                           <div className="p-6 sm:p-7 flex flex-col md:flex-row gap-6">
                             {/* Author Column */}
                             <div className="md:w-48 shrink-0 flex md:flex-col items-center md:items-start gap-3 p-3.5 rounded-2xl bg-tartan-navy/30 border border-tartan-border/40">
-                              {isSpud ? (
-                                <img
-                                  src={spudProfileAvatar || '/og-image.jpg'}
-                                  alt="Spud the Piper"
-                                  className="w-10 h-10 rounded-xl object-cover border border-tartan-gold shrink-0 shadow ring-1 ring-tartan-gold/40"
-                                />
-                              ) : (
-                                <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 bg-slate-800 text-tartan-gold">
-                                  {comment.authorName.slice(0, 1)}
-                                </div>
-                              )}
+                              {(() => {
+                                const commentAuthorUser = (users || []).find(u => 
+                                  (comment.authorName && (u.name?.toLowerCase() === comment.authorName.toLowerCase() || u.displayName?.toLowerCase() === comment.authorName.toLowerCase())) ||
+                                  (isSpud && (u.email?.toLowerCase() === 'piperspud@gmail.com' || u.role === 'owner'))
+                                );
+                                const resolvedCommentAvatar = isSpud 
+                                  ? (spudProfileAvatar || commentAuthorUser?.avatarUrl || '/og-image.jpg')
+                                  : (comment.authorAvatar && !comment.authorAvatar.includes('photo-1507003211169-0a1dd7228f2d')
+                                      ? comment.authorAvatar
+                                      : (commentAuthorUser?.avatarUrl || undefined));
+
+                                if (resolvedCommentAvatar) {
+                                  return (
+                                    <img
+                                      src={resolvedCommentAvatar}
+                                      alt={comment.authorName}
+                                      className={`w-10 h-10 rounded-xl object-cover shrink-0 shadow ${
+                                        isSpud ? 'border border-tartan-gold ring-1 ring-tartan-gold/40' : 'border border-slate-700'
+                                      }`}
+                                    />
+                                  );
+                                }
+
+                                return (
+                                  <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 bg-slate-800 text-tartan-gold">
+                                    {comment.authorName.slice(0, 1)}
+                                  </div>
+                                );
+                              })()}
                               <div>
                                 <div className="font-bold text-white text-sm">{comment.authorName}</div>
                                 <div className="text-[10px] text-gray-300 bg-slate-800/80 px-2 py-0.5 rounded mt-0.5 inline-block">

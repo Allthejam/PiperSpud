@@ -85,7 +85,7 @@ interface AppContextType {
   firebaseUser: User | null;
   users: UserRecord[];
   adminWhitelist: AdminUserRecord[];
-  addUser: (email: string, name?: string, role?: 'owner' | 'admin' | 'editor', permissions?: Partial<UserPermissions>) => Promise<boolean>;
+  addUser: (email: string, name?: string, role?: 'owner' | 'admin' | 'editor', permissions?: Partial<UserPermissions>, avatarUrl?: string) => Promise<boolean>;
   updateUser: (id: string, updates: Partial<UserRecord>) => Promise<boolean>;
   updateUserPermissions: (id: string, permissions: Partial<UserPermissions>) => Promise<boolean>;
   toggleUserOnlineStatus: (id: string, isOnline: boolean) => Promise<void>;
@@ -180,7 +180,7 @@ interface AppContextType {
     tags?: string[];
   }) => void;
   likeSocialPost: (id: string) => void;
-  addCommentToPost: (postId: string, commentText: string, authorName?: string, authorRole?: string) => void;
+  addCommentToPost: (postId: string, commentText: string, authorName?: string, authorRole?: string, authorAvatar?: string) => void;
   togglePinPost?: (id: string) => void;
   deleteSocialPost?: (id: string) => void;
   forumCategories: ForumCategoryItem[];
@@ -1065,10 +1065,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 } catch (e) {}
               }
             } else {
-              // Check if primary owner or spud has isOnline set in users collection
+              // Check if primary owner or spud has isOnline or avatarUrl set in users collection
               const spudRemote = remoteUsers.find(u => u && (((u.email || '').toLowerCase() === 'piperspud@gmail.com') || u.role === 'owner'));
-              if (spudRemote && typeof spudRemote.isOnline === 'boolean') {
-                setIsSpudOnlineState(spudRemote.isOnline);
+              if (spudRemote) {
+                if (typeof spudRemote.isOnline === 'boolean') {
+                  setIsSpudOnlineState(spudRemote.isOnline);
+                }
+                if (spudRemote.avatarUrl) {
+                  setSpudProfileAvatarState(spudRemote.avatarUrl);
+                  if (typeof window !== 'undefined') {
+                    try {
+                      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}spud_avatar`, spudRemote.avatarUrl);
+                    } catch (e) {}
+                  }
+                }
               }
             }
           }
@@ -1846,7 +1856,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     emailToAdd: string, 
     name?: string, 
     role: 'owner' | 'admin' | 'editor' = 'admin',
-    permissions?: Partial<UserPermissions>
+    permissions?: Partial<UserPermissions>,
+    avatarUrl?: string
   ): Promise<boolean> => {
     const cleanEmail = (emailToAdd || '').trim().toLowerCase();
     if (!cleanEmail || !cleanEmail.includes('@')) return false;
@@ -1864,6 +1875,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       name: name || cleanEmail.split('@')[0],
       displayName: name || cleanEmail.split('@')[0],
       role,
+      avatarUrl: avatarUrl?.trim() || existing?.avatarUrl || undefined,
       isOnline: existing ? existing.isOnline : false,
       status: existing ? existing.status : 'offline',
       addedAt: existing ? existing.addedAt : new Date().toISOString(),
@@ -1912,8 +1924,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         await setDoc(doc(db, 'users', id), targetUser, { merge: true });
         await setDoc(doc(db, 'settings', 'admin_whitelist'), { admins: updated }, { merge: true });
-        
-        // If updating online status, check whether any admin remains online
+
+        const isOwnerOrSpud = (targetUser as UserRecord).role === 'owner' || (targetUser as UserRecord).email?.toLowerCase() === 'piperspud@gmail.com';
+        if (updates.avatarUrl && isOwnerOrSpud) {
+          setSpudProfileAvatarState(updates.avatarUrl);
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem(`${LOCAL_STORAGE_PREFIX}spud_avatar`, updates.avatarUrl);
+            } catch (e) {}
+          }
+          await setDoc(doc(db, 'settings', 'spud_profile'), {
+            avatarUrl: updates.avatarUrl,
+            updatedAt: new Date().toISOString()
+          }, { merge: true }).catch(e => console.warn(e));
+        }
         if (updates.isOnline !== undefined) {
           const anyOnlineRemaining = updated.some(u => u && u.isOnline);
           if (!anyOnlineRemaining) {
@@ -3372,9 +3396,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     postId: string, 
     content: string, 
     authorName: string = 'Highland Friend', 
-    authorRole: string = 'Guest'
+    authorRole: string = 'Guest',
+    authorAvatar?: string
   ) => {
     let updatedPost: SocialPost | null = null;
+    const isSpud = isAdminLoggedIn || authorRole === 'Spud the Piper';
+    const finalAvatar = authorAvatar || (isSpud ? (spudProfileAvatar || '/og-image.jpg') : undefined);
+
     setSocialPosts(prev => prev.map(post => {
       if (post.id === postId) {
         updatedPost = {
@@ -3383,8 +3411,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ...post.comments,
             {
               id: `c-${Date.now()}`,
-              authorName: isAdminLoggedIn ? 'Spud the Piper' : authorName,
-              authorRole: isAdminLoggedIn ? 'Spud the Piper' : authorRole,
+              authorName: isSpud ? 'Spud the Piper' : authorName,
+              authorRole: isSpud ? 'Spud the Piper' : authorRole,
+              authorAvatar: finalAvatar,
               content,
               createdAt: new Date().toISOString()
             }
@@ -5004,6 +5033,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (err) {
         console.warn('Firestore setDoc spud_profile error:', err);
       }
+    }
+
+    // Sync with users collection in Firestore and local state
+    const currentUsers = usersRef.current || users || [];
+    const spudUser = currentUsers.find(u => u && (((u.email || '').toLowerCase() === 'piperspud@gmail.com') || u.role === 'owner'));
+    if (spudUser && spudUser.avatarUrl !== cleanUrl) {
+      updateUser(spudUser.id, { avatarUrl: cleanUrl }).catch(() => {});
     }
 
     setSocialPosts(prev => {

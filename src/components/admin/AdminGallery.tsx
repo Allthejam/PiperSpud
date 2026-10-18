@@ -57,7 +57,7 @@ const COMMON_EVENT_TYPES = [
 type ViewMode = 'cards' | 'thumbnails' | 'table' | 'list';
 
 export const AdminGallery: React.FC = () => {
-  const { galleryItems, addGalleryItem, updateGalleryItem, deleteGalleryItem, createSocialPost } = useApp();
+  const { galleryItems, addGalleryItem, updateGalleryItem, deleteGalleryItem, createSocialPost, spudProfileAvatar } = useApp();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -205,7 +205,7 @@ export const AdminGallery: React.FC = () => {
         title: shareTitle.trim() || sharingItem.title,
         authorName: 'Spud the Piper',
         authorRole: 'Spud the Piper',
-        authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&q=80',
+        authorAvatar: spudProfileAvatar || '/og-image.jpg',
         content: shareContent.trim(),
         imageUrl: sharingItem.imageUrl,
         eventLocation: shareLocation.trim() || undefined,

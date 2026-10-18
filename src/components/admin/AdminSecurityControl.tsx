@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import { 
   ShieldCheck, 
@@ -21,9 +21,14 @@ import {
   Check,
   X,
   RefreshCw,
-  Edit2
+  Edit2,
+  Camera,
+  Upload,
+  Loader2,
+  Image as ImageIcon
 } from 'lucide-react';
 import { UserRecord, UserPermissions } from '@/types/spud';
+import { uploadToStorage } from '@/lib/firebase';
 
 export const AdminSecurityControl: React.FC = () => {
   const { 
@@ -33,7 +38,9 @@ export const AdminSecurityControl: React.FC = () => {
     updateUser,
     updateUserPermissions,
     toggleUserOnlineStatus,
-    removeUser
+    removeUser,
+    spudProfileAvatar,
+    updateSpudProfileAvatar
   } = useApp();
 
   const [newEmail, setNewEmail] = useState('');
@@ -49,6 +56,78 @@ export const AdminSecurityControl: React.FC = () => {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Avatar Modal State for existing users
+  const [avatarModalUser, setAvatarModalUser] = useState<UserRecord | null>(null);
+  const [editAvatarUrl, setEditAvatarUrl] = useState('');
+  const [isUploadingEditAvatar, setIsUploadingEditAvatar] = useState(false);
+  const editAvatarFileInputRef = useRef<HTMLInputElement>(null);
+
+  // New User Avatar State
+  const [newAvatarUrl, setNewAvatarUrl] = useState('');
+  const [isUploadingNewAvatar, setIsUploadingNewAvatar] = useState(false);
+  const newAvatarFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleOpenAvatarModal = (user: UserRecord) => {
+    const isSpud = user.role === 'owner' || (user.email || '').toLowerCase() === 'piperspud@gmail.com';
+    setAvatarModalUser(user);
+    setEditAvatarUrl(user.avatarUrl || (isSpud ? spudProfileAvatar : '') || '');
+  };
+
+  const handleEditAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingEditAvatar(true);
+    try {
+      const cloudUrl = await uploadToStorage(file, 'user_avatars');
+      setEditAvatarUrl(cloudUrl);
+    } catch (err) {
+      console.warn('Storage upload error, falling back to FileReader:', err);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditAvatarUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setIsUploadingEditAvatar(false);
+    }
+  };
+
+  const handleSaveAvatar = async () => {
+    if (!avatarModalUser) return;
+    const cleanUrl = editAvatarUrl.trim();
+    const isSpud = avatarModalUser.role === 'owner' || (avatarModalUser.email || '').toLowerCase() === 'piperspud@gmail.com';
+
+    await updateUser(avatarModalUser.id, { avatarUrl: cleanUrl || undefined });
+    if (isSpud && cleanUrl) {
+      await updateSpudProfileAvatar(cleanUrl);
+    }
+
+    setFeedback({
+      type: 'success',
+      message: `Updated profile avatar image for ${avatarModalUser.name || avatarModalUser.email} in Firestore.`
+    });
+    setAvatarModalUser(null);
+  };
+
+  const handleNewAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingNewAvatar(true);
+    try {
+      const cloudUrl = await uploadToStorage(file, 'user_avatars');
+      setNewAvatarUrl(cloudUrl);
+    } catch (err) {
+      console.warn('Storage upload error, falling back to FileReader:', err);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewAvatarUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setIsUploadingNewAvatar(false);
+    }
+  };
 
   const handleRoleChange = (role: 'owner' | 'admin' | 'editor') => {
     setNewRole(role);
@@ -82,7 +161,7 @@ export const AdminSecurityControl: React.FC = () => {
     }
 
     setIsSubmitting(true);
-    const success = await addUser(cleanEmail, newName.trim(), newRole, newPerms);
+    const success = await addUser(cleanEmail, newName.trim(), newRole, newPerms, newAvatarUrl.trim() || undefined);
     setIsSubmitting(false);
 
     if (success) {
@@ -92,6 +171,7 @@ export const AdminSecurityControl: React.FC = () => {
       });
       setNewEmail('');
       setNewName('');
+      setNewAvatarUrl('');
       setNewRole('admin');
       setNewPerms({
         canManageBookings: true,
@@ -275,6 +355,69 @@ export const AdminSecurityControl: React.FC = () => {
               </select>
             </div>
 
+            {/* Avatar / Profile Photo */}
+            <div>
+              <label className="block text-gray-300 font-semibold mb-1.5 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Camera className="w-3.5 h-3.5 text-tartan-gold" />
+                  <span>Avatar / Profile Photo</span>
+                </span>
+                {newAvatarUrl && (
+                  <button 
+                    type="button" 
+                    onClick={() => setNewAvatarUrl('')}
+                    className="text-[10px] text-red-400 hover:underline"
+                  >
+                    Clear
+                  </button>
+                )}
+              </label>
+
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-tartan-dark border border-tartan-border flex items-center justify-center overflow-hidden shrink-0">
+                  {newAvatarUrl ? (
+                    <img src={newAvatarUrl} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-5 h-5 text-gray-500" />
+                  )}
+                </div>
+                <div className="flex-1 space-y-1.5">
+                  <input
+                    type="file"
+                    ref={newAvatarFileInputRef}
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleNewAvatarUpload}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => newAvatarFileInputRef.current?.click()}
+                    disabled={isUploadingNewAvatar}
+                    className="w-full py-1.5 px-3 rounded-lg bg-tartan-navy hover:bg-slate-700 text-gray-200 border border-tartan-border text-[11px] font-semibold flex items-center justify-center gap-1.5 transition"
+                  >
+                    {isUploadingNewAvatar ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin text-tartan-gold" />
+                        <span>Uploading Image...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-3 h-3 text-tartan-gold" />
+                        <span>Choose Photo or Selfie</span>
+                      </>
+                    )}
+                  </button>
+                  <input
+                    type="url"
+                    value={newAvatarUrl}
+                    onChange={(e) => setNewAvatarUrl(e.target.value)}
+                    placeholder="Or paste image URL"
+                    className="w-full bg-tartan-dark border border-tartan-border rounded-lg px-2.5 py-1 text-white placeholder-gray-500 text-[11px] focus:outline-none focus:border-tartan-accent"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Granular Permissions Checkboxes */}
             <div className="bg-tartan-dark/70 p-3 rounded-2xl border border-tartan-border/70 space-y-2">
               <span className="text-[11px] font-bold text-tartan-gold uppercase tracking-wider block">
@@ -372,13 +515,21 @@ export const AdminSecurityControl: React.FC = () => {
                 >
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <div className="w-11 h-11 rounded-xl bg-tartan-accent/20 border border-tartan-accent/40 text-tartan-gold flex items-center justify-center font-bold text-base shrink-0 overflow-hidden">
-                          {user.avatarUrl ? (
-                            <img src={user.avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+                      <div 
+                        className="relative group cursor-pointer"
+                        onClick={() => handleOpenAvatarModal(user)}
+                        title="Click to change or upload avatar"
+                      >
+                        <div className="w-11 h-11 rounded-xl bg-tartan-accent/20 border border-tartan-accent/40 text-tartan-gold flex items-center justify-center font-bold text-base shrink-0 overflow-hidden relative">
+                          {user.avatarUrl || (isSpudPrimary && spudProfileAvatar) ? (
+                            <img src={user.avatarUrl || (isSpudPrimary ? spudProfileAvatar : '')} alt={displayName} className="w-full h-full object-cover" />
                           ) : (
                             initialLetter
                           )}
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[9px] font-semibold transition-opacity">
+                            <Camera className="w-3.5 h-3.5 mb-0.5 text-tartan-gold" />
+                            <span>Edit</span>
+                          </div>
                         </div>
                         <span 
                           className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-tartan-navy shadow ${
@@ -441,6 +592,15 @@ export const AdminSecurityControl: React.FC = () => {
                       >
                         <Radio className="w-3 h-3" />
                         <span>{user.isOnline ? 'Online (Live)' : 'Offline (Away)'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleOpenAvatarModal(user)}
+                        className="p-2 rounded-xl bg-tartan-navy hover:bg-slate-700 text-gray-300 border border-tartan-border text-xs font-semibold flex items-center gap-1.5 transition"
+                        title="Upload photo or set avatar image"
+                      >
+                        <Camera className="w-3.5 h-3.5 text-tartan-gold" />
+                        <span>Avatar</span>
                       </button>
 
                       <button
@@ -549,6 +709,144 @@ export const AdminSecurityControl: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Edit Avatar Modal */}
+      {avatarModalUser && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-tartan-card border border-tartan-border rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-tartan-border">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-tartan-accent/20 border border-tartan-accent/40 text-tartan-gold flex items-center justify-center">
+                  <Camera className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Update Profile Avatar</h3>
+                  <p className="text-[11px] text-gray-400">
+                    {avatarModalUser.name || avatarModalUser.displayName || avatarModalUser.email}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAvatarModalUser(null)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Live Preview */}
+            <div className="flex flex-col items-center justify-center py-2 space-y-2">
+              <div className="w-24 h-24 rounded-2xl bg-tartan-dark border-2 border-tartan-gold/60 p-1 shadow-xl relative overflow-hidden flex items-center justify-center">
+                {editAvatarUrl ? (
+                  <img src={editAvatarUrl} alt="Avatar Preview" className="w-full h-full object-cover rounded-xl" />
+                ) : (
+                  <div className="text-2xl font-bold text-tartan-gold">
+                    {(avatarModalUser.name || avatarModalUser.displayName || avatarModalUser.email || 'A')[0].toUpperCase()}
+                  </div>
+                )}
+                {avatarModalUser.isOnline && (
+                  <span className="absolute bottom-2 right-2 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-tartan-card shadow" />
+                )}
+              </div>
+              <p className="text-[11px] text-gray-400 font-medium">
+                {editAvatarUrl ? 'Live Cloud Avatar Preview' : 'Initials fallback displayed if no photo'}
+              </p>
+            </div>
+
+            {/* Controls */}
+            <div className="space-y-3.5">
+              <input
+                type="file"
+                ref={editAvatarFileInputRef}
+                accept="image/*"
+                className="hidden"
+                onChange={handleEditAvatarUpload}
+              />
+              <button
+                type="button"
+                onClick={() => editAvatarFileInputRef.current?.click()}
+                disabled={isUploadingEditAvatar}
+                className="w-full py-2.5 px-4 rounded-xl bg-tartan-navy hover:bg-slate-700 text-white border border-tartan-border text-xs font-bold flex items-center justify-center gap-2 transition"
+              >
+                {isUploadingEditAvatar ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-tartan-gold" />
+                    <span>Uploading Photo to Cloud...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 text-tartan-gold" />
+                    <span>Upload Photo from Device / Take Selfie</span>
+                  </>
+                )}
+              </button>
+
+              <div className="space-y-1">
+                <label className="block text-[11px] font-semibold text-gray-400">
+                  Or Direct Image URL:
+                </label>
+                <input
+                  type="url"
+                  value={editAvatarUrl}
+                  onChange={(e) => setEditAvatarUrl(e.target.value)}
+                  placeholder="https://... or /og-image.jpg"
+                  className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white placeholder-gray-500 text-xs focus:outline-none focus:border-tartan-accent"
+                />
+              </div>
+
+              {/* Quick Tartan Presets */}
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[10px] font-bold text-tartan-gold uppercase tracking-wider block">
+                  Quick Tartan Presets
+                </span>
+                <div className="grid grid-cols-3 gap-2 text-[10px]">
+                  <button
+                    type="button"
+                    onClick={() => setEditAvatarUrl('/og-image.jpg')}
+                    className="p-1.5 rounded-lg bg-tartan-dark/80 hover:bg-tartan-navy border border-tartan-border text-gray-300 font-medium truncate"
+                  >
+                    🏴󠁧󠁢󠁳󠁣󠁴󠁿 Spud Tartan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditAvatarUrl('/logo.png')}
+                    className="p-1.5 rounded-lg bg-tartan-dark/80 hover:bg-tartan-navy border border-tartan-border text-gray-300 font-medium truncate"
+                  >
+                    🎵 Spud Logo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditAvatarUrl('')}
+                    className="p-1.5 rounded-lg bg-tartan-dark/80 hover:bg-red-950/40 border border-tartan-border text-red-300 font-medium truncate"
+                  >
+                    ❌ Clear (Initials)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-tartan-border">
+              <button
+                type="button"
+                onClick={() => setAvatarModalUser(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-400 hover:text-white transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveAvatar}
+                disabled={isUploadingEditAvatar}
+                className="px-4 py-2 rounded-xl bg-gold-gradient text-tartan-dark text-xs font-extrabold shadow-lg hover:shadow-yellow-500/20 transition active:scale-95 disabled:opacity-50"
+              >
+                Save Avatar to Firestore
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
