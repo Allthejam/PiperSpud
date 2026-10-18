@@ -12,7 +12,7 @@ interface FaqSectionProps {
 
 export const FaqSection: React.FC<FaqSectionProps> = ({ showOnlyHome = true }) => {
   const { faqs } = useApp();
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const displayFaqs = showOnlyHome 

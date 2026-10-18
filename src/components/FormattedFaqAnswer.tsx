@@ -37,7 +37,16 @@ export function renderInlineText(text: string): React.ReactNode {
  */
 export function parseFaqBlocks(rawText: string): Block[] {
   if (!rawText) return [];
-  const lines = rawText.split(/\r?\n/);
+  
+  // Normalize literal escaped newlines (e.g. from JSON/Firestore stringification) and HTML breaks
+  const normalizedText = rawText
+    .replace(/\\r\\n/g, '\n')
+    .replace(/\\n/g, '\n')
+    .replace(/<br\s*[\/]?>/gi, '\n')
+    .replace(/<\/p>\s*<p>/gi, '\n\n')
+    .replace(/<\/?p>/gi, '');
+
+  const lines = normalizedText.split(/\r?\n/);
   const blocks: Block[] = [];
   let currentParagraph: string[] = [];
   let currentBullets: string[] = [];
@@ -76,8 +85,8 @@ export function parseFaqBlocks(rawText: string): Block[] {
       continue;
     }
 
-    // Check bullet indicators: "• ", "- ", "* ", "· ", "– "
-    const bulletMatch = rawLine.match(/^\s*([•\-\*·–]|\u2022|\u25E6)\s+(.+)$/);
+    // Check bullet indicators: "• ", "- ", "* ", "· ", "– ", "— ", "+ ", "‣ "
+    const bulletMatch = rawLine.match(/^\s*([•\-\*·–—\+‣⁃]|\u2022|\u25E6|\u2043)\s+(.+)$/);
     if (bulletMatch) {
       flushParagraph();
       flushNumbered();
@@ -86,7 +95,7 @@ export function parseFaqBlocks(rawText: string): Block[] {
     }
 
     // Check numbered indicators: "1. ", "2) "
-    const numMatch = rawLine.match(/^\s*(\d+)[\.\)]\s+(.+)$/);
+    const numMatch = rawLine.match(/^\s*(\d+)[\.\)]\s*(.+)$/);
     if (numMatch) {
       flushParagraph();
       flushBullets();

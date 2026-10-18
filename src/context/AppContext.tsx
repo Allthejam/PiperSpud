@@ -826,8 +826,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const merged = [...initialFaqs];
             parsedFaqs.forEach(p => {
               const idx = merged.findIndex(f => f.id === p.id);
-              if (idx >= 0) merged[idx] = { ...merged[idx], ...p };
-              else merged.push(p);
+              if (idx >= 0) {
+                const defaultFaq = initialFaqs[idx];
+                const hasFormatting = p.answer && (p.answer.includes('\n') || p.answer.includes('•') || p.answer.includes('- '));
+                merged[idx] = {
+                  ...defaultFaq,
+                  ...p,
+                  answer: hasFormatting ? p.answer : defaultFaq.answer
+                };
+              } else {
+                merged.push(p);
+              }
             });
             merged.sort((a, b) => (a.order || 0) - (b.order || 0));
             setFaqs(merged);
@@ -1297,10 +1306,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const merged = [...baseList];
             remoteFaqs.forEach(r => {
               const idx = merged.findIndex(f => f.id === r.id);
+              const defaultFaq = initialFaqs.find(f => f.id === r.id);
+              const hasFormatting = r.answer && (r.answer.includes('\n') || r.answer.includes('•') || r.answer.includes('- '));
+              const enriched = defaultFaq && !hasFormatting ? { ...r, answer: defaultFaq.answer } : r;
               if (idx >= 0) {
-                merged[idx] = { ...merged[idx], ...r };
+                merged[idx] = { ...merged[idx], ...enriched };
               } else {
-                merged.push(r);
+                merged.push(enriched);
               }
             });
             initialFaqs.forEach(init => {
@@ -4483,13 +4495,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const restoreDefaultFaqs = async () => {
     const currentList = faqs && faqs.length > 0 ? faqs : [];
-    const merged: FaqItem[] = [...initialFaqs];
+    const initialIds = new Set(initialFaqs.map(f => f.id));
+    const merged: FaqItem[] = initialFaqs.map(f => ({ ...f }));
 
+    // Keep any custom FAQs that were added by the user
     currentList.forEach(existing => {
-      const idx = merged.findIndex(f => f.id === existing.id);
-      if (idx >= 0) {
-        merged[idx] = { ...merged[idx], ...existing };
-      } else {
+      if (!initialIds.has(existing.id)) {
         merged.push(existing);
       }
     });

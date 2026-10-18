@@ -1562,7 +1562,12 @@ export const initialFaqs: FaqItem[] = [
   {
     id: 'faq-1',
     question: 'How do bookings and deposits work with Spud?',
-    answer: 'You can check open dates and submit a provisional booking request on our interactive calendar. Spud will review the details in his diary and approve it. Once approved, you will receive an official Brevo email containing your invoice and a secure PayPal link to pay the deposit (£50 - £150 depending on event). As soon as the deposit is received via PayPal, your date is 100% locked in.',
+    answer: `You can check open dates and submit a provisional booking request on our interactive calendar. Spud will review the details in his diary and approve it promptly.
+
+Once approved, here is how the booking is completed:
+• You will receive an official Brevo confirmation email containing your itemised invoice.
+• A secure PayPal link will be provided to settle your initial deposit (£50 – £150 depending on event scale).
+• As soon as the deposit is processed via PayPal, your event date is 100% locked in Spud's live master diary.`,
     category: 'Booking & Payments',
     showOnHome: true,
     order: 1
@@ -1570,7 +1575,12 @@ export const initialFaqs: FaqItem[] = [
   {
     id: 'faq-2',
     question: 'How far does Spud travel?',
-    answer: 'Spud is based in Scotland and regularly performs in Edinburgh, Glasgow, Inverness, Stirling, Aberdeen, Perth, the Scottish Borders, and the Western Isles (Skye, Mull, Harris). Spud also frequently travels across the wider UK, Europe, the United States, and worldwide for destination weddings and corporate galas.',
+    answer: `Spud is based in Scotland and regularly performs across the entire country:
+• Edinburgh, Glasgow, Stirling, and Perthshire
+• Inverness, Aberdeen, Loch Ness, and the Scottish Highlands
+• The Scottish Borders and the Western Isles (Skye, Mull, Harris, and Lewis)
+
+Spud also frequently travels across the wider UK, Europe, the United States, and worldwide for destination weddings, VIP banquets, and corporate galas.`,
     category: 'Travel & Locations',
     showOnHome: true,
     order: 2
@@ -1578,7 +1588,13 @@ export const initialFaqs: FaqItem[] = [
   {
     id: 'faq-3',
     question: 'Can I choose what tartan or uniform Spud wears?',
-    answer: 'Yes, absolutely! Spud offers several authentic Scottish Highland dress styles: Full Ceremonial Number 1 Military Dress with Feather Bonnet and Plaid, Royal Stewart Tartan (Crimson Red), Black Watch Government Tartan (Navy/Forest Green), and Modern Highland Day Tweed. You can select your preference in the booking form.',
+    answer: `Yes, absolutely! Spud offers several authentic Scottish Highland dress styles to match your event theme:
+• Full Ceremonial Number 1 Military Dress: Feather bonnet, ceremonial military jacket, cross-belt, and full plaid
+• Royal Stewart Tartan: Classic vibrant crimson red tartan
+• Black Watch Government Tartan: Traditional navy and forest green regimental tartan
+• Modern Highland Day Tweed: Relaxed tweed jacket with coordinated muted kilt tones
+
+You can select your preferred dress code directly on the booking form or discuss custom accessories during consultation.`,
     category: 'Attire & Dress Code',
     showOnHome: true,
     order: 3
@@ -1586,7 +1602,12 @@ export const initialFaqs: FaqItem[] = [
   {
     id: 'faq-4',
     question: 'Can I request specific bagpipe tunes for my wedding or event?',
-    answer: 'Yes! Spud has an extensive repertoire ranging from traditional wedding processional anthems (Highland Cathedral, Scotland the Brave, Mairi\'s Wedding) to solemn laments (Amazing Grace, Flowers of the Forest, Going Home) and modern popular melodies. If you have a custom song request, let Spud know during booking!',
+    answer: `Yes! Spud has an extensive musical repertoire suited for ceremonies, marches, and upbeat celebrations:
+• Traditional Wedding Processionals: Highland Cathedral, Scotland the Brave, Mairi's Wedding
+• Solemn Laments & Hymns: Amazing Grace, Flowers of the Forest, Going Home, Hector the Hero
+• Upbeat Marches & Jigs: The Black Bear, Cock of the North, Campbeltown Loch, Steam Train to Mallaig
+
+If you have a special or contemporary song request, let Spud know during your booking enquiry and he will gladly arrange it for your performance.`,
     category: 'Music & Repertoire',
     showOnHome: true,
     order: 4
@@ -1594,7 +1615,12 @@ export const initialFaqs: FaqItem[] = [
   {
     id: 'faq-5',
     question: 'What happens if it rains or there is bad Scottish weather?',
-    answer: 'Highland bagpipes and professional Scottish pipers are well-accustomed to Scottish weather! Spud can perform outdoors in light rain or seamlessly adapt to indoor ceremony halls, church foyers, castle archways, and covered marquee entrances.',
+    answer: `Highland bagpipes and professional Scottish pipers are well-accustomed to Scottish weather!
+
+Spud can comfortably perform outdoors in light rain or misty Highland conditions. Should severe weather or heavy downpours occur, he will seamlessly transition to sheltered positions such as:
+• Covered castle porticos and grand archways
+• Indoor ceremony halls and church foyers
+• Drinks reception marquees and banquet entrances`,
     category: 'Event Logistics',
     showOnHome: true,
     order: 5
@@ -1602,7 +1628,15 @@ export const initialFaqs: FaqItem[] = [
   {
     id: 'faq-6',
     question: 'What is the "Highland Bagpipe Experience" and where can it take place?',
-    answer: 'The Highland Bagpipe Experience is an interactive, hands-on workshop led by Spud the Piper. Perfect for tour groups, holidaymakers, families, stag/hen parties, and Airbnb/holiday home guests. Spud brings practice chanters so everyone learns to finger the Scottish scale, gives each guest a shot at playing the Great Highland Bagpipe, plays a close-up private concert, and poses for photos in full ceremonial kilt regalia. Spud can travel to your rental cottage, lodge, Airbnb, hotel, castle, or outdoor venue anywhere in Scotland.',
+    answer: `The Highland Bagpipe Experience is an interactive, hands-on workshop led personally by Spud the Piper.
+
+What the experience includes:
+• Practice chanters for every guest to learn the Scottish scale and basic bagpipe fingering
+• A hands-on opportunity for each participant to play the Great Highland Bagpipe
+• An intimate private concert featuring traditional Highland airs and Scottish storytelling
+• Memorable photo opportunities alongside Spud in full ceremonial kilt regalia
+
+Ideal for overseas tour groups, corporate incentive days, family gatherings, and holidaymakers staying at lodges or castles across Scotland.`,
     category: 'Highland Experience',
     showOnHome: true,
     order: 6
@@ -1610,7 +1644,12 @@ export const initialFaqs: FaqItem[] = [
   {
     id: 'faq-7',
     question: 'When is the remaining balance due after the deposit?',
-    answer: 'The remaining balance after the deposit can be settled prior to the event date or on the day of the performance via bank transfer, card, or cash as preferred.',
+    answer: `The remaining balance after the initial deposit is due prior to the event date or can be settled on the day of the performance.
+
+Available settlement methods:
+• Direct bank transfer (BACS)
+• Credit or Debit card
+• Cash on the day of the event`,
     category: 'Booking & Payments',
     showOnHome: true,
     order: 7
