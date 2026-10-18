@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { MailingContact, EmailCampaign, BroadcastAuditEntry } from '@/types/spud';
 import { deduplicateAndMergeContacts, normalizeEmail } from '@/lib/mailingDeduplicator';
+import { initialCampaigns } from '@/lib/initialData';
 
 export const AdminMailingList: React.FC = () => {
   const { 
@@ -123,22 +124,23 @@ export const AdminMailingList: React.FC = () => {
     }
   }, [deduplicateAndCleanMailingList]);
 
-  // Campaign Composer State
-  const safeCampaigns = emailCampaigns || [];
+  // Campaign Composer State - Ensure foundational seasonal templates (Christmas, Burns Night, Anniversary) are ALWAYS present
+  const availableCampaigns = React.useMemo(() => {
+    const list = [...initialCampaigns];
+    (emailCampaigns || []).forEach(custom => {
+      const idx = list.findIndex(c => c.id === custom.id);
+      if (idx >= 0) {
+        list[idx] = { ...list[idx], ...custom };
+      } else {
+        list.push(custom);
+      }
+    });
+    return list;
+  }, [emailCampaigns]);
+
   const safeContacts = allAudienceContacts;
-  const [selectedCampaignId, setSelectedCampaignId] = useState<string>(safeCampaigns[0]?.id || 'camp-christmas-2026');
-  const [activeCampaign, setActiveCampaign] = useState<EmailCampaign>(safeCampaigns[0] || {
-    id: 'camp-custom',
-    title: 'Custom Broadcast',
-    subject: 'Greetings from Spud the Piper 🏴󠁧󠁢󠁳󠁣󠁴󠁿',
-    heading: 'Highland Bagpipe News & Celebrations',
-    bodyContent: 'Dear friends and clients,\n\nSharing warm greetings from Aviemore in the Scottish Highlands!\n\nHere are the latest updates, upcoming public performances, and availability for next season.',
-    ctaText: 'View Diary & Dates',
-    ctaUrl: 'https://spudthepiper.com/booking',
-    segment: 'all',
-    status: 'draft',
-    templateType: 'custom'
-  });
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>(availableCampaigns[0]?.id || 'camp-christmas-2026');
+  const [activeCampaign, setActiveCampaign] = useState<EmailCampaign>(availableCampaigns[0] || initialCampaigns[0]);
 
   const [isDispatching, setIsDispatching] = useState(false);
   const [dispatchResult, setDispatchResult] = useState<{ success: boolean; count: number; message: string } | null>(null);
@@ -476,7 +478,7 @@ export const AdminMailingList: React.FC = () => {
                 Select Broadcast Template:
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {emailCampaigns.map(camp => (
+                {availableCampaigns.map(camp => (
                   <button
                     key={camp.id}
                     type="button"

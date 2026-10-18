@@ -827,8 +827,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedCampaigns = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}campaigns`);
       if (savedCampaigns) {
         try {
-          const parsedCamp = JSON.parse(savedCampaigns);
-          if (Array.isArray(parsedCamp)) setEmailCampaigns(parsedCamp);
+          const parsedCamp: EmailCampaign[] = JSON.parse(savedCampaigns);
+          if (Array.isArray(parsedCamp)) {
+            const merged = [...initialCampaigns];
+            parsedCamp.forEach(p => {
+              const idx = merged.findIndex(c => c.id === p.id);
+              if (idx >= 0) {
+                merged[idx] = { ...merged[idx], ...p };
+              } else {
+                merged.push(p);
+              }
+            });
+            setEmailCampaigns(merged);
+          }
         } catch (e) {}
       }
 
@@ -1333,16 +1344,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Real-time Firestore listener for email_campaigns
       unsubCampaigns = onSnapshot(collection(db, 'email_campaigns'), (snapshot) => {
+        const merged = [...initialCampaigns];
         if (!snapshot.empty) {
           const remoteCampaigns: EmailCampaign[] = [];
           snapshot.forEach((d) => {
             const data = d.data() as EmailCampaign;
             if (data) remoteCampaigns.push({ ...data, id: data.id || d.id });
           });
-          if (remoteCampaigns.length > 0) {
-            setEmailCampaigns(remoteCampaigns);
-          }
+          remoteCampaigns.forEach(remote => {
+            const idx = merged.findIndex(c => c.id === remote.id);
+            if (idx >= 0) {
+              merged[idx] = { ...merged[idx], ...remote };
+            } else {
+              merged.push(remote);
+            }
+          });
         }
+        setEmailCampaigns(merged);
+
+        // Ensure default seasonal templates exist in Firestore as well
+        initialCampaigns.forEach(camp => {
+          setDoc(doc(db, 'email_campaigns', camp.id), camp, { merge: true }).catch(e => console.warn(e));
+        });
       }, (err) => console.log('Firestore email_campaigns listener:', err.message));
 
       // Real-time Firestore listener for broadcast_audits
