@@ -96,7 +96,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
     <div className="min-h-screen bg-tartan-dark text-gray-100 flex flex-col font-sans">
       
       {/* Top Navbar */}
-      <header className="bg-tartan-card border-b border-tartan-border/80 sticky top-0 z-40 px-4 sm:px-6 py-3 flex items-center justify-between shadow-xl">
+      <header className="bg-tartan-card border-b border-tartan-border/80 sticky top-0 z-40 h-16 px-4 sm:px-6 flex items-center justify-between shadow-xl">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
@@ -201,7 +201,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
       </header>
 
       {/* Admin Layout Main Body */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex min-w-0">
         
         {/* Mobile Navigation Backdrop Overlay */}
         {isMobileNavOpen && (
@@ -212,11 +212,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
           />
         )}
 
-        {/* Sidebar Navigation (Desktop + Mobile Drawer) */}
-        <aside className={`w-72 sm:w-80 lg:w-64 bg-tartan-card border-r border-tartan-border/80 flex flex-col shrink-0 transition-all z-40 ${
+        {/* Sidebar Navigation (Desktop Fixed + Mobile Drawer) */}
+        <aside className={`fixed inset-y-0 left-0 top-16 bottom-0 h-[calc(100dvh-4rem)] w-72 sm:w-80 lg:w-64 bg-tartan-card border-r border-tartan-border/80 flex flex-col shrink-0 z-30 transition-all ${
           isMobileNavOpen 
-            ? 'fixed inset-y-0 left-0 top-16 bottom-0 h-[calc(100dvh-4rem)] shadow-2xl animate-in slide-in-from-left duration-200' 
-            : 'hidden lg:flex lg:h-[calc(100vh-4rem)]'
+            ? 'flex shadow-2xl animate-in slide-in-from-left duration-200 z-40' 
+            : 'hidden lg:flex'
         }`}>
           {/* Scrollable Navigation Area */}
           <div className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-1 scrollbar-thin scrollbar-thumb-tartan-gold/20 pb-28 lg:pb-6 touch-pan-y">
@@ -296,8 +296,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
           </div>
         </aside>
 
+        {/* Desktop Fixed Sidebar Spacer (offsets the fixed sidebar on PC) */}
+        <div className="hidden lg:block lg:w-64 lg:shrink-0" aria-hidden="true" />
+
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-tartan-dark/70">
+        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 bg-tartan-dark/70">
           {children}
         </main>
       </div>
