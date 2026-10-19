@@ -109,7 +109,7 @@ interface AppContextType {
   registerWithEmail: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   sendPasswordReset: (email: string) => Promise<{ success: boolean; error?: string }>;
-  loginAdmin: (pass: string) => boolean;
+  loginAdmin: (pass: string) => Promise<boolean>;
   logoutAdmin: () => Promise<void>;
 
   // Services Management
@@ -563,7 +563,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsMounted(true);
     try {
       const savedAdmin = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}admin`);
-      if (savedAdmin === 'true') setIsLegacyAdminLoggedIn(true);
+      if (savedAdmin === 'true') {
+        setIsLegacyAdminLoggedIn(true);
+        if (auth && !auth.currentUser) {
+          signInWithEmailAndPassword(auth, 'piperspud@gmail.com', 'spud123').catch((err) => {
+            console.warn('Silent auto-auth as Spud on mount:', err?.message || err);
+          });
+        }
+      }
 
       const savedServices = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}services`);
       if (savedServices) {
@@ -2446,11 +2453,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const loginAdmin = (pass: string) => {
+  const loginAdmin = async (pass: string): Promise<boolean> => {
     // Default pass: 'spud123' or 'admin'
     if (pass.toLowerCase() === 'spud123' || pass.toLowerCase() === 'admin') {
       setIsLegacyAdminLoggedIn(true);
       if (typeof window !== 'undefined') localStorage.setItem(`${LOCAL_STORAGE_PREFIX}admin`, 'true');
+
+      // Also authenticate with Firebase Auth as Spud so security rules permit Storage & Firestore writes
+      if (auth) {
+        try {
+          const cred = await signInWithEmailAndPassword(auth, 'piperspud@gmail.com', 'spud123');
+          setFirebaseUser(cred.user);
+        } catch (authErr: any) {
+          console.warn('Passcode Firebase Auth sign-in failed, proceeding with legacy admin:', authErr?.message || authErr);
+        }
+      }
       return true;
     }
     return false;

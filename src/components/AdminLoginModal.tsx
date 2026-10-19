@@ -103,11 +103,13 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
     }
   };
 
-  const handlePasscodeSubmit = (e: React.FormEvent) => {
+  const handlePasscodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     resetMessages();
+    setIsLoading(true);
 
-    const success = loginAdmin(passcode);
+    const success = await loginAdmin(passcode);
+    setIsLoading(false);
     if (success) {
       onClose();
       window.location.href = '/admin';
@@ -394,10 +396,17 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs flex items-center gap-2 shadow-lg hover:shadow-yellow-500/20 transition-transform active:scale-95"
+                  disabled={isLoading}
+                  className="px-5 py-2.5 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs flex items-center gap-2 shadow-lg hover:shadow-yellow-500/20 transition-transform active:scale-95 disabled:opacity-50"
                 >
-                  <span>Unlock Back Office</span>
-                  <ArrowRight className="w-4 h-4" />
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <span>Unlock Back Office</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
               </div>
             </form>
