@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { 
   Users, 
@@ -118,6 +118,11 @@ export const SocialHub: React.FC = () => {
 
   // Active View Tab: 'feed' (Timeline Stream) or 'forum' (Q&A Forum)
   const [activeTab, setActiveTab] = useState<'feed' | 'forum'>('feed');
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Search & Topic Filter
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -241,6 +246,11 @@ export const SocialHub: React.FC = () => {
   // Helper function to dynamically format relative post age (e.g. "Just now", "45 mins ago", "1 week ago")
   const formatPostTime = (post?: { timestamp?: string; createdAt?: string; id?: string } | null): string => {
     if (!post) return 'Recently';
+
+    // Before mounting on client, return deterministic static string to eliminate hydration mismatch
+    if (!isMounted) {
+      return post.timestamp || 'Recently';
+    }
 
     let dateMs: number | null = null;
 
@@ -1097,7 +1107,7 @@ export const SocialHub: React.FC = () => {
                           </div>
 
                           <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5 flex-wrap">
-                            <span className="text-gray-300 font-medium">{formatPostTime(post)}</span>
+                            <span suppressHydrationWarning className="text-gray-300 font-medium">{formatPostTime(post)}</span>
                             <span>•</span>
                             <Globe className="w-3.5 h-3.5 text-gray-500" />
                             {post.eventLocation && (
@@ -1370,7 +1380,7 @@ export const SocialHub: React.FC = () => {
                                       )}
                                     </div>
                                     {comment.createdAt && (
-                                      <span className="text-[11px] text-gray-400 font-medium">
+                                      <span suppressHydrationWarning className="text-[11px] text-gray-400 font-medium">
                                         {formatPostTime({ createdAt: comment.createdAt, id: comment.id })}
                                       </span>
                                     )}
@@ -1673,7 +1683,7 @@ export const SocialHub: React.FC = () => {
                   <div className="flex items-center gap-4 text-xs text-gray-400 pt-1 flex-wrap">
                     <span>Started by <strong className="text-white">{activeThread.authorName}</strong></span>
                     <span>•</span>
-                    <span>{formatPostTime(activeThread)}</span>
+                    <span suppressHydrationWarning>{formatPostTime(activeThread)}</span>
                     <span>•</span>
                     <span className="text-tartan-gold font-semibold">{activeThread.comments?.length || 0} Replies</span>
                     <span>•</span>
@@ -1685,7 +1695,7 @@ export const SocialHub: React.FC = () => {
                 <div className="bg-tartan-dark/95 rounded-3xl border border-tartan-border shadow-2xl overflow-hidden">
                   <div className="bg-gradient-to-r from-tartan-navy/60 to-transparent px-6 py-3.5 border-b border-tartan-border/70 flex items-center justify-between text-xs text-gray-400 font-semibold">
                     <span className="text-tartan-gold font-bold uppercase tracking-wider">Original Post #1 (Topic Starter)</span>
-                    <span>{formatPostTime(activeThread)}</span>
+                    <span suppressHydrationWarning>{formatPostTime(activeThread)}</span>
                   </div>
 
                   <div className="p-6 sm:p-8 flex flex-col md:flex-row gap-6">
@@ -2072,7 +2082,7 @@ export const SocialHub: React.FC = () => {
 
                             {/* Column 4: Last Activity */}
                             <div className="col-span-2 text-left md:text-right w-full md:w-auto text-xs text-gray-400 flex md:flex-col justify-between md:justify-center">
-                              <span className="font-medium text-gray-300">{formatPostTime(post)}</span>
+                              <span suppressHydrationWarning className="font-medium text-gray-300">{formatPostTime(post)}</span>
                               <span className="text-[11px] text-tartan-gold group-hover:underline">Open Discussion →</span>
                             </div>
                           </div>
@@ -2206,7 +2216,7 @@ export const SocialHub: React.FC = () => {
                             <div className="text-[11px] text-gray-400 flex items-center gap-2 flex-wrap pt-0.5">
                               <span>by <strong className="text-white">{post.authorName}</strong> ({post.authorRole})</span>
                               <span>•</span>
-                              <span>{formatPostTime(post)}</span>
+                              <span suppressHydrationWarning>{formatPostTime(post)}</span>
                               {post.eventLocation && (
                                 <>
                                   <span>•</span>

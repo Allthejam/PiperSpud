@@ -44,6 +44,7 @@ interface AdminLayoutProps {
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTab, children }) => {
   const { 
+    isMounted,
     isAdminLoggedIn, 
     firebaseUser,
     currentUserRole,
@@ -62,7 +63,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
 
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
-  const pendingBookingsCount = (bookings || []).filter(b => b && b.status === 'pending').length;
+  const pendingBookingsCount = isMounted ? (bookings || []).filter(b => b && b.status === 'pending').length : 0;
 
   const navItems = [
     { id: 'dashboard', label: 'Executive Dashboard', icon: LayoutDashboard },
@@ -143,7 +144,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
             title="Notifications"
           >
             <Bell className="w-4 h-4 text-tartan-gold" />
-            {unreadNotifCount > 0 && (
+            {isMounted && unreadNotifCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
                 {unreadNotifCount}
               </span>
@@ -151,39 +152,41 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
           </button>
 
           {/* Authenticated User / Spud Profile Pill */}
-          {firebaseUser ? (
-            <div className="hidden md:flex items-center gap-2 bg-tartan-navy/80 border border-tartan-border px-2.5 py-1 rounded-xl text-xs">
-              {firebaseUser.photoURL ? (
-                <img 
-                  src={firebaseUser.photoURL} 
-                  alt={firebaseUser.displayName || 'Spud Admin'} 
-                  className="w-5 h-5 rounded-full object-cover border border-tartan-gold/50" 
-                />
-              ) : (
-                <div className="w-5 h-5 rounded-full bg-tartan-accent/30 text-tartan-gold flex items-center justify-center font-bold text-[10px]">
-                  {(firebaseUser.displayName || firebaseUser.email || 'A')[0].toUpperCase()}
-                </div>
-              )}
-              <span className="text-gray-300 font-medium max-w-[140px] truncate text-[11px]">
-                {firebaseUser.displayName || firebaseUser.email}
-              </span>
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
-                currentUserRole === 'developer'
-                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
-                  : currentUserRole === 'owner'
-                  ? 'bg-amber-500/20 text-yellow-300 border border-amber-500/40'
-                  : currentUserRole === 'editor'
-                  ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
-                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-              }`}>
-                {currentUserRole || 'Admin'}
-              </span>
-            </div>
-          ) : (
-            <div className="hidden md:flex items-center gap-1.5 bg-tartan-navy/60 border border-tartan-border/60 px-2 py-1 rounded-xl text-[10px] text-tartan-gold font-bold">
-              <span>Passcode Admin</span>
-            </div>
-          )}
+          <div suppressHydrationWarning className="hidden md:flex items-center">
+            {isMounted && firebaseUser ? (
+              <div className="flex items-center gap-2 bg-tartan-navy/80 border border-tartan-border px-2.5 py-1 rounded-xl text-xs">
+                {firebaseUser.photoURL ? (
+                  <img 
+                    src={firebaseUser.photoURL} 
+                    alt={firebaseUser.displayName || 'Spud Admin'} 
+                    className="w-5 h-5 rounded-full object-cover border border-tartan-gold/50" 
+                  />
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-tartan-accent/30 text-tartan-gold flex items-center justify-center font-bold text-[10px]">
+                    {(firebaseUser.displayName || firebaseUser.email || 'A')[0].toUpperCase()}
+                  </div>
+                )}
+                <span className="text-gray-300 font-medium max-w-[140px] truncate text-[11px]">
+                  {firebaseUser.displayName || firebaseUser.email}
+                </span>
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                  currentUserRole === 'developer'
+                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                    : currentUserRole === 'owner'
+                    ? 'bg-amber-500/20 text-yellow-300 border border-amber-500/40'
+                    : currentUserRole === 'editor'
+                    ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                }`}>
+                  {currentUserRole || 'Admin'}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 bg-tartan-navy/60 border border-tartan-border/60 px-2 py-1 rounded-xl text-[10px] text-tartan-gold font-bold">
+                <span>Passcode Admin</span>
+              </div>
+            )}
+          </div>
 
           {/* Logout button */}
           <button
@@ -259,8 +262,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ activeTab, setActiveTa
                     <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-tartan-dark' : isProminent ? 'text-tartan-gold font-bold' : 'text-tartan-gold'}`} />
                     <span className={isProminent && !isActive ? 'font-extrabold tracking-wide text-white' : ''}>{item.label}</span>
                   </div>
-                  {item.badgeCount && item.badgeCount > 0 ? (
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                  {isMounted && item.badgeCount && item.badgeCount > 0 ? (
+                    <span suppressHydrationWarning className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                       isActive ? 'bg-tartan-dark text-tartan-gold' : 'bg-red-600 text-white animate-pulse'
                     }`}>
                       {item.badgeCount}

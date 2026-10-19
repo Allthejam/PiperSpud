@@ -527,15 +527,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedAttireId, setSelectedAttireIdState] = useState<string>('no1');
   const [videos, setVideos] = useState<VideoItem[]>(initialVideos);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>(initialBlogPosts);
-  const [spudProfileAvatar, setSpudProfileAvatarState] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('spud_piper_app_v2_spud_avatar');
-        if (saved) return saved;
-      } catch (e) {}
-    }
-    return '/og-image.jpg';
-  });
+  const [spudProfileAvatar, setSpudProfileAvatarState] = useState<string>('/og-image.jpg');
   const [showLiveStream, setShowLiveStreamState] = useState<boolean>(true);
   const [isSyncingFirestore, setIsSyncingFirestore] = useState<boolean>(false);
 
@@ -571,6 +563,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
         }
       }
+
+      const savedAvatar = localStorage.getItem('spud_piper_app_v2_spud_avatar');
+      if (savedAvatar) setSpudProfileAvatarState(savedAvatar);
 
       const savedServices = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}services`);
       if (savedServices) {
