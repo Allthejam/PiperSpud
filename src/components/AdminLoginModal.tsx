@@ -13,7 +13,9 @@ import {
   CheckCircle2, 
   Loader2, 
   LogIn,
-  Shield
+  Shield,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 interface AdminLoginModalProps {
@@ -35,6 +37,8 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passcode, setPasscode] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasscode, setShowPasscode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -277,14 +281,25 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
                       Forgot password?
                     </button>
                   </div>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent text-sm"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="w-full bg-tartan-dark border border-tartan-border rounded-xl pl-4 pr-10 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-3 text-gray-400 hover:text-tartan-gold transition-colors focus:outline-none"
+                      title={showPassword ? 'Hide password' : 'Show password'}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="pt-2 flex items-center justify-end gap-3">
@@ -374,15 +389,23 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
                 </label>
                 <div className="relative">
                   <input
-                    type="password"
+                    type={showPasscode ? 'text' : 'password'}
                     value={passcode}
                     onChange={(e) => setPasscode(e.target.value)}
                     placeholder="Enter passcode..."
                     required
                     autoFocus
-                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent text-sm"
+                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl pl-4 pr-10 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent text-sm"
                   />
-                  <KeyRound className="w-4 h-4 text-gray-500 absolute right-3.5 top-3" />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasscode(!showPasscode)}
+                    className="absolute right-3.5 top-3 text-gray-400 hover:text-tartan-gold transition-colors focus:outline-none"
+                    title={showPasscode ? 'Hide passcode' : 'Show passcode'}
+                    aria-label={showPasscode ? 'Hide passcode' : 'Show passcode'}
+                  >
+                    {showPasscode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
