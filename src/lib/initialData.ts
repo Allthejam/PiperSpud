@@ -43,6 +43,7 @@ export const ALL_ADMIN_MODULES: AdminModuleMeta[] = [
   { id: 'dashboard', tabId: 'dashboard', label: 'Executive Dashboard', group: 'Diary & Bookings', description: 'Real-time booking revenue, KPI summaries & performance' },
   { id: 'bookings', tabId: 'bookings', label: 'Booking Approvals & Deposits', group: 'Diary & Bookings', description: 'Approve, modify and manage wedding & event bookings and deposits' },
   { id: 'diary', tabId: 'diary', label: 'Interactive Master Diary', group: 'Diary & Bookings', description: 'Live event calendar, date slots & travel scheduling' },
+  { id: 'till', tabId: 'till', label: 'Highland Event Till & POS', group: 'Diary & Bookings', description: 'Point-of-Sale mobile till, instant QR charges & PayPal sync' },
   { id: 'crm', tabId: 'crm', label: 'Client CRM & Directory', group: 'Diary & Bookings', description: 'Client contact database, event history & booking sync' },
   { id: 'travelExpenses', tabId: 'travel-expenses', label: 'Travel & Additional Expenses', group: 'Diary & Bookings', description: 'Mileage reimbursement rates, overnight stays & island surcharges' },
 
@@ -2055,6 +2056,16 @@ Later in the evening, after the toasts to the lassies and laddies, I brought the
     tags: ['Burns Night', 'Address to the Haggis', 'Hopetoun House', 'Royal Stewart', 'Auld Lang Syne'],
     createdAt: '2026-09-28T18:00:00.000Z'
   }
+];
+
+export const initialTillPresets = [
+  { name: 'Wedding Balance Settlement', price: 250.00, category: 'Weddings' },
+  { name: 'Ceilidh Piping Extension (1 Hour)', price: 150.00, category: 'Performances' },
+  { name: 'Drinks Reception Performance', price: 200.00, category: 'Performances' },
+  { name: 'Highland Castle Performance Fee', price: 350.00, category: 'Performances' },
+  { name: 'Direct Piper Tip & Gratuity', price: 20.00, category: 'Gratuity' },
+  { name: 'Generous Piper Tip & Gratuity', price: 50.00, category: 'Gratuity' },
+  { name: 'Spud the Piper CD / Keepsake', price: 15.00, category: 'Merchandise' },
 ];
 
 

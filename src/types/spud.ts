@@ -428,6 +428,7 @@ export interface ModulePermissions {
   security?: ModuleAccessLevel;
   notifications?: ModuleAccessLevel;
   guide?: ModuleAccessLevel;
+  till?: ModuleAccessLevel;
 }
 
 export interface UserPermissions {
@@ -561,6 +562,36 @@ export interface BlogPost {
   tags?: string[];
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface TillPresetItem {
+  id?: string;
+  name: string;
+  price: number;
+  category?: string;
+}
+
+export interface TillCharge {
+  id: string;
+  amount: number;
+  currency: string;
+  description: string;
+  customerName?: string | null;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
+  eventLocation?: string | null;
+  bookingId?: string | null;
+  status: 'pending' | 'paid' | 'cancelled';
+  archived?: boolean;
+  archivedAt?: string | null;
+  cancelledAt?: string | null;
+  paypalOrderId?: string | null;
+  paypalCaptureId?: string | null;
+  payerName?: string | null;
+  payerEmail?: string | null;
+  paymentMethod?: 'paypal' | 'card' | 'cash' | 'manual';
+  createdAt: string;
+  paidAt?: string | null;
 }
 
 

@@ -7,7 +7,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { 
       type, 
-      booking, 
+      booking,
+      tillCharge, 
       paypalLink,
       to,
       name,
@@ -33,8 +34,10 @@ export async function POST(req: NextRequest) {
         | 'admin_event_reminder_1day'
         | 'client_balance_reminder_1day'
         | 'balance_paid_receipt'
+        | 'till_receipt'
         | 'custom';
       booking?: BookingEvent;
+      tillCharge?: any;
       paypalLink?: string;
       to?: string;
       name?: string;
@@ -705,6 +708,68 @@ export async function POST(req: NextRequest) {
         </div>
       `;
     }
+    // ================= 10b. Event Till Point of Sale Receipt =================
+    else if (type === 'till_receipt' && tillCharge) {
+      recipientEmail = tillCharge.customerEmail || customRecipientEmail;
+      recipientName = tillCharge.customerName || customRecipientName || 'Valued Client';
+      const formattedAmount = Number(tillCharge.amount || 0).toFixed(2);
+      subject = `🧾 Official Payment Receipt: £${formattedAmount} - Spud the Piper`;
+      htmlContent = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background-color: #0b1120; color: #f8fafc; padding: 32px 24px; border-radius: 16px; border: 1px solid #d97706;">
+          <div style="text-align: center; border-bottom: 1px solid #1e293b; padding-bottom: 20px; margin-bottom: 24px;">
+            <div style="display: inline-block; background-color: #d97706; color: #0b1120; font-size: 11px; font-weight: bold; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+              Highland Event Terminal Receipt
+            </div>
+            <h1 style="color: #fbbf24; margin: 0; font-size: 26px; font-family: Georgia, serif;">Payment Received</h1>
+            <p style="color: #94a3b8; margin: 6px 0 0 0; font-size: 13px;">Official Digital Till Receipt • Ref #${(tillCharge.id || 'CHARGED').slice(-8).toUpperCase()}</p>
+          </div>
+
+          <div style="background-color: #131d33; padding: 22px; border-radius: 12px; border: 1px solid #1e293b; margin-bottom: 24px;">
+            <p style="font-size: 15px; line-height: 1.6; margin-top: 0;">
+              Dear <strong style="color: #fbbf24;">${recipientName}</strong>,
+            </p>
+            <p style="font-size: 14px; line-height: 1.6; color: #e2e8f0;">
+              Thank you for your payment to Spud the Piper. Your transaction has been securely processed and confirmed.
+            </p>
+
+            <div style="background-color: #080d1a; border-radius: 10px; padding: 18px; margin: 18px 0; border: 1px solid #334155;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: #e2e8f0;">
+                <tr>
+                  <td style="padding: 6px 0; color: #94a3b8;">Item / Service:</td>
+                  <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #ffffff;">${tillCharge.description || 'Highland Bagpipe Performance'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #94a3b8;">Event Location:</td>
+                  <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #ffffff;">${tillCharge.eventLocation || 'Live Highland Event'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #94a3b8;">Date & Time:</td>
+                  <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #ffffff;">${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                </tr>
+                ${tillCharge.paypalOrderId ? `
+                <tr>
+                  <td style="padding: 6px 0; color: #94a3b8;">PayPal Order Ref:</td>
+                  <td style="padding: 6px 0; text-align: right; font-family: monospace; font-size: 11px; color: #cbd5e1;">${tillCharge.paypalOrderId}</td>
+                </tr>` : ''}
+                <tr style="border-top: 1px solid #334155;">
+                  <td style="padding: 10px 0 0 0; color: #fbbf24; font-weight: bold; font-size: 15px;">Total Paid:</td>
+                  <td style="padding: 10px 0 0 0; text-align: right; font-weight: bold; font-size: 20px; color: #22c55e;">£${formattedAmount}</td>
+                </tr>
+              </table>
+            </div>
+
+            <p style="font-size: 13px; line-height: 1.5; color: #cbd5e1; margin-bottom: 0;">
+              Slàinte mhath! Thank you for supporting traditional Scottish bagpipe music.
+            </p>
+          </div>
+
+          <div style="text-align: center; font-size: 11px; color: #64748b; line-height: 1.5;">
+            <p style="margin: 0 0 4px 0;">Spud The Piper • Aviemore, Highlands, Scotland • <a href="https://spudthepiper.com" style="color: #fbbf24; text-decoration: none;">spudthepiper.com</a></p>
+            <p style="margin: 0;">Telephone: <a href="tel:07793491367" style="color: #94a3b8; text-decoration: none;">07793 491367</a> • Email: <a href="mailto:info@spudthepiper.com" style="color: #94a3b8; text-decoration: none;">info@spudthepiper.com</a></p>
+          </div>
+        </div>
+      `;
+    }
     // ================= 11. New Booking Enquiry Alert to Spud =================
     else if (booking) {
       recipientEmail = adminAlertEmail;
@@ -743,6 +808,7 @@ export async function POST(req: NextRequest) {
       (
         type === 'deposit_received' ||
         type === 'balance_paid_receipt' ||
+        type === 'till_receipt' ||
         type === 'booking_approved' ||
         type === 'booking_created' ||
         type === 'client_balance_reminder_7day' ||

@@ -4,7 +4,7 @@ import { getPayPalAccessToken, getPayPalBaseUrl } from '@/lib/paypal';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { orderId, bookingId } = body;
+    const { orderId, bookingId, chargeId } = body;
 
     if (!orderId) {
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
@@ -41,7 +41,8 @@ export async function POST(req: NextRequest) {
       status: data.status,
       payerEmail,
       amountPaid,
-      bookingId
+      bookingId,
+      chargeId
     });
   } catch (error: any) {
     console.error('[PayPal capture-order exception]:', error);

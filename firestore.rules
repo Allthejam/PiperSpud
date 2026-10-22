@@ -177,6 +177,20 @@ service cloud.firestore {
       allow write: if isAuthenticated();
     }
 
+    // ==========================================
+    // 10. EVENT TILL & MOBILE POINT OF SALE (POS)
+    // In-person event charges, live QR scanning, and customer payments
+    // ==========================================
+    match /till_charges/{chargeId} {
+      allow read, create, update: if true;
+      allow delete: if isAuthenticated();
+    }
+
+    match /till_presets/{presetId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
     // Default fallback: deny all other collections/documents
     match /{document=**} {
       allow read, write: if false;

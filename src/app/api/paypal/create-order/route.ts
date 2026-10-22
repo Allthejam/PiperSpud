@@ -4,7 +4,7 @@ import { getPayPalAccessToken, getPayPalBaseUrl } from '@/lib/paypal';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { bookingId, amount, description } = body;
+    const { bookingId, chargeId, amount, description } = body;
 
     const numericAmount = Number(amount);
     if (!numericAmount || numericAmount <= 0) {
@@ -18,9 +18,9 @@ export async function POST(req: NextRequest) {
       intent: 'CAPTURE',
       purchase_units: [
         {
-          reference_id: bookingId || `spud-${Date.now()}`,
-          description: description || `Spud the Piper - Performance Deposit`,
-          custom_id: bookingId || '',
+          reference_id: chargeId || bookingId || `spud-${Date.now()}`,
+          description: description || `Spud the Piper - Performance Payment`,
+          custom_id: chargeId || bookingId || '',
           amount: {
             currency_code: 'GBP',
             value: numericAmount.toFixed(2)

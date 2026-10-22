@@ -26,6 +26,7 @@ import { AdminAttire } from '@/components/admin/AdminAttire';
 import { AdminVideos } from '@/components/admin/AdminVideos';
 import { AdminBlog } from '@/components/admin/AdminBlog';
 import { AdminAnalytics } from '@/components/admin/AdminAnalytics';
+import { AdminTill } from '@/components/admin/AdminTill';
 import { AdminLoginModal } from '@/components/AdminLoginModal';
 import { ShieldAlert, ArrowLeft, RefreshCw, AlertTriangle, Loader2, Lock } from 'lucide-react';
 
@@ -201,6 +202,7 @@ export default function AdminPage() {
         ) : (
           <>
             {activeTab === 'dashboard' && <AdminDashboard onNavigateTab={setActiveTab} />}
+            {activeTab === 'till' && <AdminTill />}
             {activeTab === 'guide' && <AdminGuide onNavigateTab={setActiveTab} />}
             {activeTab === 'gallery' && <AdminGallery />}
             {activeTab === 'services' && <AdminServices />}

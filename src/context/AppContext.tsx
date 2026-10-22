@@ -2403,6 +2403,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       'dashboard': 'dashboard',
       'bookings': 'bookings',
       'diary': 'diary',
+      'till': 'till',
       'crm': 'crm',
       'mailing-list': 'mailingList',
       'mailingList': 'mailingList',
