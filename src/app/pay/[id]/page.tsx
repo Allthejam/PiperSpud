@@ -113,6 +113,21 @@ function CustomerTillPaymentContent() {
       throw new Error('Invalid payment amount');
     }
 
+    const trimmedName = customerName.trim();
+    if (trimmedName.length < 2) {
+      const err = 'Please enter your Full Name above before completing payment.';
+      setErrorMessage(err);
+      throw new Error(err);
+    }
+
+    const trimmedEmail = customerEmail.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      const err = 'Please enter a valid Email Address above to receive your official payment receipt.';
+      setErrorMessage(err);
+      throw new Error(err);
+    }
+
     try {
       const res = await fetch('/api/paypal/create-order', {
         method: 'POST',
@@ -186,6 +201,21 @@ function CustomerTillPaymentContent() {
             },
             { merge: true }
           );
+
+          // Permanently save client details into mailing_contacts / CRM database
+          const contactId = `contact_${finalPayerEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          await setDoc(doc(db, 'mailing_contacts', contactId), {
+            id: contactId,
+            name: finalPayerName,
+            email: finalPayerEmail,
+            source: 'manual',
+            status: 'subscribed',
+            tags: ['Event Till', 'Live Performance'],
+            location: charge?.eventLocation || urlLoc || 'Live Highland Performance',
+            addedAt: new Date().toISOString(),
+            notes: `Customer paid at Highland Event Till for: ${charge?.description || urlDesc || 'Performance'} (£${finalAmount.toFixed(2)}) • Ref #${data.orderID}`,
+            brevoSynced: false
+          }, { merge: true });
         } catch (dbErr) {
           console.error('[Till Pay] Firestore save notice:', dbErr);
         }
@@ -373,21 +403,31 @@ function CustomerTillPaymentContent() {
               </p>
             </div>
 
-            {/* Customer Contact Details (for receipt) */}
+            {/* Customer Contact Details (Mandatory) */}
             <div className="space-y-3 bg-tartan-dark/50 p-4 rounded-2xl border border-tartan-border/60">
-              <label className="text-[11px] font-bold text-gray-300 uppercase tracking-wider block">
-                Digital Receipt Delivery Details
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold text-gray-200 uppercase tracking-wider block">
+                  Customer Details
+                </label>
+                <span className="text-[10px] text-amber-400 font-extrabold uppercase tracking-wider bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/30">
+                  * Mandatory for Receipt
+                </span>
+              </div>
 
               <div className="space-y-2">
                 <div className="relative">
                   <User className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
                   <input
                     type="text"
+                    required
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Your Name (e.g. John MacLeod)"
-                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-tartan-gold transition-colors"
+                    placeholder="Your Full Name (e.g. John MacLeod)"
+                    className={`w-full bg-tartan-dark border rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none transition-colors ${
+                      customerName.trim().length >= 2 
+                        ? 'border-emerald-500/60 focus:border-emerald-400' 
+                        : 'border-amber-500/70 focus:border-amber-400'
+                    }`}
                   />
                 </div>
 
@@ -395,10 +435,15 @@ function CustomerTillPaymentContent() {
                   <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
                   <input
                     type="email"
+                    required
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
-                    placeholder="Your Email for Receipt (e.g. john@example.com)"
-                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-tartan-gold transition-colors"
+                    placeholder="Your Email for Official Receipt (e.g. john@example.com)"
+                    className={`w-full bg-tartan-dark border rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none transition-colors ${
+                      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())
+                        ? 'border-emerald-500/60 focus:border-emerald-400' 
+                        : 'border-amber-500/70 focus:border-amber-400'
+                    }`}
                   />
                 </div>
               </div>
@@ -409,6 +454,14 @@ function CustomerTillPaymentContent() {
               <div className="p-3.5 rounded-xl bg-rose-950/80 border border-rose-700 text-rose-300 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
                 <span>{errorMessage}</span>
+              </div>
+            )}
+
+            {/* Mandatory Fields Reminder Banner */}
+            {(!customerName.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) && (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-300 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Please enter your Name and Email above to activate checkout and receive your digital receipt.</span>
               </div>
             )}
 

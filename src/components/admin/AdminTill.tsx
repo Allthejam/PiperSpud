@@ -289,6 +289,19 @@ export const AdminTill: React.FC = () => {
       return;
     }
 
+    const trimmedName = customerName.trim();
+    if (trimmedName.length < 2) {
+      addToast('Customer Name is mandatory so we can save their details', 'error');
+      return;
+    }
+
+    const trimmedEmail = customerEmail.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      addToast('A valid Customer Email is mandatory so we can save their details and dispatch their receipt', 'error');
+      return;
+    }
+
     setIsGenerating(true);
     setHasPaidAlertShown(false);
 
@@ -298,8 +311,8 @@ export const AdminTill: React.FC = () => {
       amount: parseFloat(num.toFixed(2)),
       currency: 'GBP',
       description: description.trim() || 'Highland Bagpipe Performance',
-      customerName: customerName.trim() || null,
-      customerEmail: customerEmail.trim().toLowerCase() || null,
+      customerName: trimmedName,
+      customerEmail: trimmedEmail,
       eventLocation: eventLocation.trim() || 'Live Highland Performance',
       bookingId: selectedBookingId || null,
       status: 'pending',
@@ -312,13 +325,28 @@ export const AdminTill: React.FC = () => {
       try {
         const docRef = doc(db, 'till_charges', chargeId);
         await setDoc(docRef, newCharge);
+
+        // Auto-save customer details to mailing_contacts / CRM so they are permanently preserved
+        const contactId = `contact_${trimmedEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        await setDoc(doc(db, 'mailing_contacts', contactId), {
+          id: contactId,
+          name: trimmedName,
+          email: trimmedEmail,
+          source: 'manual',
+          status: 'subscribed',
+          tags: ['Event Till', 'Live Performance'],
+          location: eventLocation.trim() || 'Live Highland Performance',
+          addedAt: new Date().toISOString(),
+          notes: `Captured at Event Till for: ${description.trim() || 'Highland Performance'} (£${num.toFixed(2)})`,
+          brevoSynced: false
+        }, { merge: true });
       } catch (err: any) {
         console.warn('[Till] Offline/persistence notice:', err);
       }
     }
 
     setIsGenerating(false);
-    addToast(`QR Payment Code for £${newCharge.amount.toFixed(2)} generated!`, 'success');
+    addToast(`QR Payment Code for £${newCharge.amount.toFixed(2)} generated for ${trimmedName}!`, 'success');
   };
 
   const getPaymentUrl = (chargeId: string, itemCharge?: TillCharge) => {
@@ -677,30 +705,46 @@ export const AdminTill: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[11px] text-gray-300 font-semibold flex items-center gap-1">
-                    <User className="w-3 h-3 text-tartan-gold" />
-                    <span>Customer Name (Optional)</span>
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] text-gray-200 font-bold flex items-center gap-1">
+                      <User className="w-3 h-3 text-tartan-gold" />
+                      <span>Customer Name</span>
+                    </label>
+                    <span className="text-[10px] text-amber-400 font-extrabold uppercase tracking-wider bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30">* Mandatory</span>
+                  </div>
                   <input
                     type="text"
+                    required
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     placeholder="e.g. Fiona & Alasdair"
-                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-tartan-gold"
+                    className={`w-full bg-tartan-dark border rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none transition-colors ${
+                      customerName.trim().length >= 2 
+                        ? 'border-emerald-500/60 focus:border-emerald-400' 
+                        : 'border-amber-500/70 focus:border-amber-400'
+                    }`}
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[11px] text-gray-300 font-semibold flex items-center gap-1">
-                    <Mail className="w-3 h-3 text-tartan-gold" />
-                    <span>Receipt Email (Optional)</span>
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] text-gray-200 font-bold flex items-center gap-1">
+                      <Mail className="w-3 h-3 text-tartan-gold" />
+                      <span>Customer Email</span>
+                    </label>
+                    <span className="text-[10px] text-amber-400 font-extrabold uppercase tracking-wider bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30">* Mandatory</span>
+                  </div>
                   <input
                     type="email"
+                    required
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
                     placeholder="e.g. client@example.com"
-                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-tartan-gold"
+                    className={`w-full bg-tartan-dark border rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none transition-colors ${
+                      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())
+                        ? 'border-emerald-500/60 focus:border-emerald-400' 
+                        : 'border-amber-500/70 focus:border-amber-400'
+                    }`}
                   />
                 </div>
               </div>
@@ -709,7 +753,7 @@ export const AdminTill: React.FC = () => {
               <div className="space-y-1">
                 <label className="text-[11px] text-gray-300 font-semibold flex items-center gap-1">
                   <Calendar className="w-3 h-3 text-tartan-gold" />
-                  <span>Link to Diary Booking (Optional - Auto-Fills Client)</span>
+                  <span>Link to Diary Booking (Auto-Fills Client &amp; Balance)</span>
                 </label>
                 <select
                   value={selectedBookingId}
@@ -725,10 +769,18 @@ export const AdminTill: React.FC = () => {
                 </select>
               </div>
 
+              {/* Validation helper reminder */}
+              {(!customerName.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim()) || parseFloat(amountStr) <= 0) && (
+                <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-300 flex items-center gap-2">
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span>Please provide Customer Name, valid Email, and an amount to generate the QR code.</span>
+                </div>
+              )}
+
               {/* Generate QR Button */}
               <button
                 onClick={handleGenerateCharge}
-                disabled={isGenerating || parseFloat(amountStr) <= 0}
+                disabled={isGenerating || parseFloat(amountStr) <= 0 || customerName.trim().length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())}
                 className="w-full py-4 bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 hover:brightness-110 disabled:opacity-50 text-tartan-dark font-black rounded-2xl text-sm uppercase tracking-wider shadow-xl flex items-center justify-center gap-2 transition-all mt-4"
               >
                 {isGenerating ? (
