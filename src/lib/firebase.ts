@@ -1,6 +1,12 @@
 // Spud the Piper - Firebase Client SDK Integration
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { 
+  getFirestore, 
+  initializeFirestore, 
+  persistentLocalCache, 
+  persistentMultipleTabManager,
+  Firestore 
+} from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
 import { getStorage, FirebaseStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getAnalytics, Analytics, isSupported } from 'firebase/analytics';
@@ -24,7 +30,22 @@ let analytics: Analytics | null = null;
 
 try {
   app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-  db = getFirestore(app);
+  
+  // Enable persistent local cache in browser environments for offline showcase
+  if (typeof window !== 'undefined') {
+    try {
+      db = initializeFirestore(app, {
+        localCache: persistentLocalCache({
+          tabManager: persistentMultipleTabManager()
+        })
+      });
+    } catch (cacheErr) {
+      db = getFirestore(app);
+    }
+  } else {
+    db = getFirestore(app);
+  }
+
   auth = getAuth(app);
   storage = getStorage(app);
 

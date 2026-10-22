@@ -28,7 +28,8 @@ import {
   Volume2,
   VolumeX,
   Play,
-  Square
+  Square,
+  WifiOff
 } from 'lucide-react';
 import { EventType, HighlandDressOption } from '@/types/spud';
 import { calculateTravelCosts } from '@/lib/travelCalculator';
@@ -47,7 +48,9 @@ export const BookingCalendar: React.FC = () => {
     attires,
     selectedAttireId,
     setSelectedAttireId,
-    cmsBlocks
+    cmsBlocks,
+    isOffline,
+    isOfflineShowcaseMode
   } = useApp();
 
   // Dynamic Real-time Date references
@@ -298,6 +301,18 @@ export const BookingCalendar: React.FC = () => {
                 Thank you, <strong className="text-tartan-gold">{bookingSuccess.clientName}</strong>. Your request for <strong className="text-white">{bookingSuccess.eventType}</strong> on <strong className="text-tartan-gold">{bookingSuccess.date}</strong> at <strong className="text-white">{bookingSuccess.venueName}</strong> has been sent directly to Spud the Piper.
               </p>
             </div>
+
+            {(isOffline || isOfflineShowcaseMode) && (
+              <div className="bg-amber-500/20 border border-amber-500/50 rounded-2xl p-4 text-xs text-amber-200 text-left space-y-1">
+                <div className="flex items-center gap-2 font-bold text-amber-300">
+                  <WifiOff className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>Highland Offline Showcase Queue Secured</span>
+                </div>
+                <p className="text-[11px] text-amber-200/90 leading-relaxed">
+                  You are currently in Offline Showcase Mode. Your booking has been safely encrypted and saved on this device. The moment this device reconnects to Wi-Fi or mobile data, your inquiry will automatically synchronize to Spud&apos;s live diary!
+                </p>
+              </div>
+            )}
 
             {/* Travel & Pricing Breakdown Pill */}
             <div className="bg-tartan-dark/90 rounded-2xl p-4 border border-tartan-border text-left space-y-2 text-xs">

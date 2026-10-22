@@ -359,6 +359,14 @@ interface AppContextType {
   showLiveStream: boolean;
   toggleLiveStream: () => void;
   setShowLiveStream: (show: boolean) => void;
+  // Offline Showcase Mode & Sync Queue
+  isOffline: boolean;
+  isOfflineShowcaseMode: boolean;
+  toggleOfflineShowcaseMode: (force?: boolean) => void;
+  offlineQueueCount: number;
+  syncOfflineQueue: () => Promise<{ synced: number; failed: number }>;
+  isSyncingOfflineQueue: boolean;
+  offlineLastSyncedAt: string | null;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -531,6 +539,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [showLiveStream, setShowLiveStreamState] = useState<boolean>(true);
   const [isSyncingFirestore, setIsSyncingFirestore] = useState<boolean>(false);
 
+  // Offline Showcase Mode & Sync Queue State
+  const [isOffline, setIsOffline] = useState<boolean>(false);
+  const [isOfflineShowcaseMode, setIsOfflineShowcaseMode] = useState<boolean>(false);
+  const [offlineQueueCount, setOfflineQueueCount] = useState<number>(0);
+  const [isSyncingOfflineQueue, setIsSyncingOfflineQueue] = useState<boolean>(false);
+  const [offlineLastSyncedAt, setOfflineLastSyncedAt] = useState<string | null>(null);
+
   // Audio player state & Tunes
   const [tunesList, setTunesList] = useState<BagpipeTune[]>(initialTunes);
   const [currentPlayingTune, setCurrentPlayingTune] = useState<string | null>(null);
@@ -550,9 +565,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     booking: BookingEvent | null;
   } | null>(null);
 
-  // Load persisted state from localStorage on client mount
+  // Load persisted state from localStorage on client mount & listen for online/offline
   useEffect(() => {
     setIsMounted(true);
+
+    const handleOnline = () => {
+      setIsOffline(false);
+      // Auto-flush pending offline queue
+      setTimeout(() => {
+        syncOfflineQueue().catch(() => {});
+      }, 1000);
+    };
+
+    const handleOffline = () => {
+      setIsOffline(true);
+    };
+
+    if (typeof window !== 'undefined') {
+      setIsOffline(!window.navigator.onLine);
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+
+      try {
+        const savedOverride = localStorage.getItem('spud_offline_showcase_override');
+        if (savedOverride === 'true') {
+          setIsOfflineShowcaseMode(true);
+        }
+        const pendingRaw = localStorage.getItem('spud_the_piper_offline_pending_queue');
+        if (pendingRaw) {
+          const queue = JSON.parse(pendingRaw);
+          setOfflineQueueCount(Array.isArray(queue) ? queue.length : 0);
+        }
+      } catch (e) {}
+    }
+
     try {
       const savedAdmin = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}admin`);
       if (savedAdmin === 'true') {
@@ -1016,6 +1062,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (err) {
       console.warn('Could not load saved state from localStorage:', err);
     }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      }
+    };
   }, []);
 
   // Realtime Cloud Firestore sync listeners with automatic fallback
@@ -1740,28 +1793,138 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [firebaseUser]);
 
-  // Helper function to sync a document to Cloud Firestore
+  // Offline Action Queue Manager
+  const queueOfflineAction = (colName: string, docId: string, data: any, action: 'set' | 'delete' = 'set') => {
+    if (typeof window === 'undefined') return;
+    try {
+      const existingRaw = localStorage.getItem('spud_the_piper_offline_pending_queue');
+      const queue = existingRaw ? JSON.parse(existingRaw) : [];
+      const existingIdx = queue.findIndex((item: any) => item.colName === colName && item.docId === docId);
+      const queueEntry = {
+        colName,
+        docId,
+        data,
+        action,
+        queuedAt: new Date().toISOString()
+      };
+
+      if (existingIdx >= 0) {
+        queue[existingIdx] = queueEntry;
+      } else {
+        queue.push(queueEntry);
+      }
+      localStorage.setItem('spud_the_piper_offline_pending_queue', JSON.stringify(queue));
+      setOfflineQueueCount(queue.length);
+    } catch (e) {
+      console.warn('Could not queue offline action:', e);
+    }
+  };
+
+  const toggleOfflineShowcaseMode = (force?: boolean) => {
+    setIsOfflineShowcaseMode(prev => {
+      const next = force !== undefined ? force : !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('spud_offline_showcase_override', next ? 'true' : 'false');
+      }
+      return next;
+    });
+  };
+
+  const syncOfflineQueue = async (): Promise<{ synced: number; failed: number }> => {
+    if (typeof window === 'undefined' || !db || isSyncingOfflineQueue) {
+      return { synced: 0, failed: 0 };
+    }
+
+    const existingRaw = localStorage.getItem('spud_the_piper_offline_pending_queue');
+    if (!existingRaw) return { synced: 0, failed: 0 };
+
+    let queue: any[] = [];
+    try {
+      queue = JSON.parse(existingRaw);
+    } catch (e) {
+      return { synced: 0, failed: 0 };
+    }
+
+    if (!Array.isArray(queue) || queue.length === 0) {
+      setOfflineQueueCount(0);
+      return { synced: 0, failed: 0 };
+    }
+
+    setIsSyncingOfflineQueue(true);
+    let synced = 0;
+    let failed = 0;
+    const remaining: any[] = [];
+
+    for (const item of queue) {
+      try {
+        if (item.action === 'delete') {
+          await deleteDoc(doc(db, item.colName, item.docId));
+        } else {
+          await setDoc(doc(db, item.colName, item.docId), item.data, { merge: true });
+        }
+        synced++;
+      } catch (err) {
+        failed++;
+        remaining.push(item);
+      }
+    }
+
+    localStorage.setItem('spud_the_piper_offline_pending_queue', JSON.stringify(remaining));
+    setOfflineQueueCount(remaining.length);
+    setIsSyncingOfflineQueue(false);
+    setOfflineLastSyncedAt(new Date().toISOString());
+
+    if (synced > 0) {
+      addNotification({
+        type: 'system',
+        title: 'Offline Sync Complete',
+        message: `Successfully synchronized ${synced} queued item${synced > 1 ? 's' : ''} to Highland Cloud.`
+      });
+    }
+
+    return { synced, failed };
+  };
+
+  // Helper function to sync a document to Cloud Firestore with automatic offline queueing
   const syncToFirestore = async (colName: string, docId: string, data: any) => {
+    const cleanData = JSON.parse(JSON.stringify(data));
+
+    if (typeof window !== 'undefined' && (!window.navigator.onLine || isOffline)) {
+      console.log(`[Offline Showcase] Queued ${colName}/${docId} for cloud sync`);
+      queueOfflineAction(colName, docId, cleanData, 'set');
+      return;
+    }
+
     if (!db) {
       console.warn(`[Firestore] Sync skipped (database instance not ready) for ${colName}/${docId}`);
+      queueOfflineAction(colName, docId, cleanData, 'set');
       return;
     }
     try {
-      const cleanData = JSON.parse(JSON.stringify(data));
       await setDoc(doc(db, colName, docId), cleanData, { merge: true });
       console.log(`[Firestore SUCCESS] Synced ${colName}/${docId}`);
     } catch (err: any) {
-      console.error(`[Firestore ERROR] Write failed for ${colName}/${docId}:`, err?.message || err);
+      console.error(`[Firestore ERROR] Write failed for ${colName}/${docId}, queueing offline:`, err?.message || err);
+      queueOfflineAction(colName, docId, cleanData, 'set');
     }
   };
 
   const deleteFromFirestore = async (colName: string, docId: string) => {
-    if (!db) return;
+    if (typeof window !== 'undefined' && (!window.navigator.onLine || isOffline)) {
+      queueOfflineAction(colName, docId, null, 'delete');
+      return;
+    }
+
+    if (!db) {
+      queueOfflineAction(colName, docId, null, 'delete');
+      return;
+    }
     try {
       await deleteDoc(doc(db, colName, docId));
       console.log(`[Firestore SUCCESS] Deleted ${colName}/${docId}`);
     } catch (err: any) {
-      console.error(`[Firestore ERROR] Delete failed for ${colName}/${docId}:`, err?.message || err);
+      console.error(`[Firestore ERROR] Delete failed for ${colName}/${docId}, queueing offline:`, err?.message || err);
+      queueOfflineAction(colName, docId, null, 'delete');
     }
   };
 
@@ -6115,7 +6278,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       closeBrevoPreview,
       activePayPalModal,
       openPayPalModal,
-      closePayPalModal
+      closePayPalModal,
+      isOffline,
+      isOfflineShowcaseMode,
+      toggleOfflineShowcaseMode,
+      offlineQueueCount,
+      syncOfflineQueue,
+      isSyncingOfflineQueue,
+      offlineLastSyncedAt
     }}>
       {children}
     </AppContext.Provider>
