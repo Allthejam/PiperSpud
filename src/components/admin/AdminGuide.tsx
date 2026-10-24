@@ -31,7 +31,8 @@ import {
   AlertTriangle,
   Receipt,
   BarChart3,
-  Newspaper
+  Newspaper,
+  QrCode
 } from 'lucide-react';
 
 interface AdminGuideProps {
@@ -498,6 +499,71 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
           a: 'Yes! You can toggle any story between "Published" and "Draft" with one click. Drafts stay safely stored in your Back Office and will not appear on the public website until you are ready.'
         }
       ]
+    },
+    {
+      id: 'till-pos',
+      title: '💰 13. Highland Event Till & Mobile POS (In-Person & Phone Payments)',
+      shortDesc: 'How to take instant card payments over the phone, generate contactless QR codes when on tour, collect remaining gig balances, and record cash with automatic receipts.',
+      icon: QrCode,
+      badge: 'Live Event POS & Phone Terminal',
+      badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+      targetTab: 'till',
+      steps: [
+        {
+          title: 'Step 1: Open the Handheld Till on Your Mobile Phone or Laptop',
+          description: 'Whenever you are out on tour, performing at a castle wedding, or speaking with a client on the phone, tap "Event Till & Mobile POS" in the Back Office menu. Your device immediately converts into a full Highland Point-of-Sale terminal.',
+          tip: 'You can use the Till on your iPhone, iPad, or laptop from anywhere—even backstage between sets!'
+        },
+        {
+          title: 'Step 2: Key In Amount or Select Quick Presets',
+          description: 'Tap any quick preset button (e.g. £50 Highland Pipin\' Experience, £150 Booking Deposit, £25 CD / Album, £10 Tartan Tip) or type in any bespoke amount (e.g. £350 for a remaining wedding balance). You can also link the payment to any existing client booking from the dropdown.',
+        },
+        {
+          title: 'Step 3: Enter Customer Name & Email (Instant CRM Sync & Receipts)',
+          description: 'Type in the customer\'s name and email address. This ensures an official, branded Spud the Piper digital receipt is sent straight to their inbox the moment payment clears, while automatically saving their contact into your Client CRM for future gigs and Christmas piping tours.',
+        },
+        {
+          title: 'Step 4: In-Person Contactless QR Code Payment',
+          description: 'Tap "Generate QR / Payment Link". A high-contrast QR code appears on your screen with a live "Awaiting Customer Payment..." badge. Turn your screen to the customer; they simply aim their iPhone or Android camera at your screen to open their personal checkout page and pay via Apple Pay, Google Pay, PayPal, or Debit/Credit Card.',
+          tip: 'No card reader hardware or Bluetooth dongles required! It works with any modern smartphone camera.'
+        },
+        {
+          title: 'Step 5: Taking Payments Over the Phone ("Open Checkout Page")',
+          description: 'If a client is on the phone wanting to pay right now: generate their payment code with their name and email, then click "Open Checkout Page (Take Phone / Card Payment)". This opens the checkout page in a new tab right on your screen. Ask the customer for their 16-digit card number, expiry date, and CVV over the phone, type them into the secure PayPal card terminal, and hit Pay Now!',
+          tip: 'The transaction processes directly into your PayPal merchant account. You can also click "Copy Payment Link" to text or WhatsApp the link to the caller so they can tap and pay on their own phone while you stay on the line.'
+        },
+        {
+          title: 'Step 6: Real-Time Audio Chime & Digital Receipts',
+          description: 'The instant the customer\'s card or PayPal clears, your device plays a celebratory Scottish bagpipe audio chime, the screen updates with a green "Payment Confirmed" badge, and the transaction is permanently archived in your Till Order History with full PayPal reference IDs.',
+        },
+        {
+          title: 'Step 7: Cash on the Night Option ("Customer Handed Cash")',
+          description: 'If a guest hands you cash notes at a gig, tap "Customer Handed Cash / External Terminal". The till instantly archives the order as Paid (Cash), updates your till revenue, and dispatches a digital Brevo proof-of-payment receipt to the client\'s email.',
+          tip: 'Keeping cash orders in the Till gives you a complete, accurate record of all tour earnings at tax time.'
+        }
+      ],
+      faq: [
+        {
+          q: 'Can I use the Till to take payments over the phone for clients?',
+          a: 'Yes! That is one of its best features. Fill in the client\'s name, email, and amount, generate the code, and click "Open Checkout Page (Take Phone / Card Payment)". This opens the live checkout page in a new tab where you can type in their card details securely while talking with them on the phone.'
+        },
+        {
+          q: 'What if a caller prefers to type their own card details on their own phone?',
+          a: 'Click "Copy Payment Link (SMS / WhatsApp)" on the till screen and paste the URL into a text message or WhatsApp to the customer. They can tap the link on their phone and pay instantly while you stay on the call.'
+        },
+        {
+          q: 'Where does the money go when someone pays through the Till?',
+          a: 'All card payments, Apple Pay, Google Pay, and PayPal transactions go directly and immediately into your own live PayPal merchant account (piperspud@gmail.com).'
+        },
+        {
+          q: 'Does the customer receive an official receipt?',
+          a: 'Yes! Because customer name and email are mandatory on every charge, Brevo automatically emails an official, branded Spud the Piper confirmation receipt with the event description, amount paid, and transaction reference.'
+        },
+        {
+          q: 'What happens if a customer wants to pay the remaining balance of an existing booking?',
+          a: 'Select their booking from the "Link to Client Booking (Optional)" dropdown. The till pre-fills their remaining balance, customer name, and email automatically. Once paid, the till marks the order settled and updates the diary.'
+        }
+      ]
     }
   ];
 
@@ -547,7 +613,7 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search guide (e.g. 'paypal', 'deposit', 'reminders', 'travel', 'pinterest', 'phone app')..."
+              placeholder="Search guide (e.g. 'till', 'phone payments', 'qr code', 'paypal', 'deposit', 'reminders', 'travel')..."
               className="w-full bg-tartan-dark/95 border border-tartan-accent/50 rounded-2xl pl-11 pr-4 py-3 text-xs sm:text-sm text-white placeholder-gray-400 focus:outline-none focus:border-tartan-gold shadow-inner"
             />
             <Search className="w-4 h-4 text-tartan-gold absolute left-4 top-1/2 -translate-y-1/2" />

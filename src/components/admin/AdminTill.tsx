@@ -887,7 +887,7 @@ export const AdminTill: React.FC = () => {
                     className="w-full py-2.5 bg-tartan-dark/60 hover:bg-tartan-dark border border-tartan-border/60 rounded-xl text-xs font-bold text-gray-300 hover:text-white flex items-center justify-center gap-2 transition-all"
                   >
                     <ExternalLink className="w-4 h-4 text-tartan-gold" />
-                    <span>Open Checkout Page in New Tab (Test)</span>
+                    <span>Open Checkout Page (Take Phone / Card Payment)</span>
                   </a>
 
                   {activeCharge.status !== 'paid' && (
