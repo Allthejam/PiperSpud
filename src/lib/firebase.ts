@@ -68,22 +68,29 @@ export { app, db, auth, storage, analytics };
  * @param folder Folder prefix e.g. "social_uploads" or "reviews"
  * @returns Public download URL string
  */
-export async function uploadToStorage(file: File, folder: string = 'uploads'): Promise<string> {
+export async function uploadToStorage(file: File, folder: string = 'uploads', timeoutMs: number = 15000): Promise<string> {
   if (!storage) {
     throw new Error('Firebase Storage is not initialized.');
   }
 
   const rawName = file.name.substring(0, file.name.lastIndexOf('.')) || 'file';
   const cleanName = rawName.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
-  const fileExt = file.name.split('.').pop() || 'mp3';
+  const fileExt = file.name.split('.').pop() || 'jpg';
   const cleanFileName = `${cleanName}_${Date.now()}.${fileExt}`;
   const storageRef = ref(storage, `${folder}/${cleanFileName}`);
 
   const metadata = {
-    contentType: file.type || (fileExt === 'mp3' ? 'audio/mpeg' : fileExt === 'wav' ? 'audio/wav' : 'application/octet-stream')
+    contentType: file.type || (fileExt === 'mp3' ? 'audio/mpeg' : fileExt === 'wav' ? 'audio/wav' : 'image/jpeg')
   };
 
-  const snapshot = await uploadBytes(storageRef, file, metadata);
-  const downloadUrl = await getDownloadURL(snapshot.ref);
-  return downloadUrl;
+  const uploadPromise = (async () => {
+    const snapshot = await uploadBytes(storageRef, file, metadata);
+    return await getDownloadURL(snapshot.ref);
+  })();
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error(`Upload timed out after ${Math.round(timeoutMs / 1000)}s`)), timeoutMs);
+  });
+
+  return await Promise.race([uploadPromise, timeoutPromise]);
 }

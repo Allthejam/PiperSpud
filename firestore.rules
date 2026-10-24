@@ -34,8 +34,7 @@ service cloud.firestore {
     }
 
     match /gallery/{itemId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
+      allow read, write: if true;
     }
 
     match /partners/{partnerId} {
@@ -49,13 +48,11 @@ service cloud.firestore {
     }
 
     match /videos/{videoId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
+      allow read, write: if true;
     }
 
     match /blog_posts/{postId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
+      allow read, write: if true;
     }
 
     match /seo_pages/{pageId} {

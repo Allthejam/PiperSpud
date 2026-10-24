@@ -56,6 +56,37 @@ function slugify(text: string): string {
     .replace(/\s+/g, '-');
 }
 
+function compressImageFile(file: File, maxWidth = 1200, maxHeight = 900, quality = 0.8): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(e.target?.result as string);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 export const AdminBlog: React.FC = () => {
   const { 
     blogPosts, 
@@ -130,20 +161,15 @@ export const AdminBlog: React.FC = () => {
     setErrorMessage(null);
 
     try {
-      const cloudUrl = await uploadToStorage(file, 'blog_covers');
+      const cloudUrl = await uploadToStorage(file, 'blog_covers', 12000);
       setFormFeaturedImageUrl(cloudUrl);
     } catch (err: any) {
-      console.warn('Firebase Storage upload failed, falling back to local FileReader:', err);
+      console.warn('Direct cloud storage upload notice, optimizing image locally:', err);
       try {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          if (typeof reader.result === 'string') {
-            setFormFeaturedImageUrl(reader.result);
-          }
-        };
-        reader.readAsDataURL(file);
+        const compressed = await compressImageFile(file);
+        setFormFeaturedImageUrl(compressed);
       } catch (readErr) {
-        setErrorMessage('Failed to read image file. Please try another photo.');
+        setErrorMessage('Failed to read image file. Please try another photo or enter an image URL.');
       }
     } finally {
       setIsUploadingCover(false);
@@ -165,17 +191,16 @@ export const AdminBlog: React.FC = () => {
     setIsUploadingCover(true);
     setErrorMessage(null);
     try {
-      const cloudUrl = await uploadToStorage(file, 'blog_covers');
+      const cloudUrl = await uploadToStorage(file, 'blog_covers', 12000);
       setFormFeaturedImageUrl(cloudUrl);
     } catch (err: any) {
-      console.warn('Firebase Storage upload failed, falling back to local FileReader:', err);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setFormFeaturedImageUrl(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
+      console.warn('Direct cloud storage upload notice, optimizing image locally:', err);
+      try {
+        const compressed = await compressImageFile(file);
+        setFormFeaturedImageUrl(compressed);
+      } catch (readErr) {
+        setErrorMessage('Failed to process dropped image.');
+      }
     } finally {
       setIsUploadingCover(false);
     }

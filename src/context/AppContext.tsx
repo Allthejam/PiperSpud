@@ -5890,7 +5890,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addBlogPost = async (postData: Omit<BlogPost, 'id' | 'createdAt'> | BlogPost): Promise<string> => {
     const id = ('id' in postData && postData.id) ? postData.id : `post-${Date.now()}`;
     const now = new Date().toISOString();
-    const baseList = (blogPosts && blogPosts.length > 0) ? blogPosts : initialBlogPosts;
     const newPost: BlogPost = {
       ...postData,
       id,
@@ -5902,14 +5901,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: ('createdAt' in postData && postData.createdAt) ? postData.createdAt : now,
       updatedAt: now
     };
-
-    if (db) {
-      for (const initItem of initialBlogPosts) {
-        if (!baseList.some(b => b.id === initItem.id)) {
-          await syncToFirestore('blog_posts', initItem.id, initItem);
-        }
-      }
-    }
 
     setBlogPosts(prev => {
       const current = (prev && prev.length > 0) ? prev : initialBlogPosts;
@@ -5932,28 +5923,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateBlogPost = async (id: string, updates: Partial<BlogPost>): Promise<boolean> => {
-    let targetPost: BlogPost | null = null;
     const now = new Date().toISOString();
+    const current = (blogPosts && blogPosts.length > 0) ? blogPosts : initialBlogPosts;
+    const existing = current.find(p => p.id === id);
+    const targetPost: BlogPost = existing 
+      ? { ...existing, ...updates, updatedAt: now } 
+      : { ...updates, id, updatedAt: now } as BlogPost;
+
     setBlogPosts(prev => {
-      const current = (prev && prev.length > 0) ? prev : initialBlogPosts;
-      const updated = current.map(p => {
-        if (p.id === id) {
-          targetPost = { ...p, ...updates, updatedAt: now };
-          return targetPost;
-        }
-        return p;
-      });
+      const list = (prev && prev.length > 0) ? prev : initialBlogPosts;
+      const exists = list.some(p => p.id === id);
+      const updated = exists ? list.map(p => p.id === id ? targetPost : p) : [targetPost, ...list];
       if (typeof window !== 'undefined') {
         localStorage.setItem(`${LOCAL_STORAGE_PREFIX}blog_posts`, JSON.stringify(updated));
       }
       return updated;
     });
 
-    if (targetPost) {
-      await syncToFirestore('blog_posts', id, targetPost);
-      return true;
-    }
-    return false;
+    await syncToFirestore('blog_posts', id, targetPost);
+    return true;
   };
 
   const deleteBlogPost = async (id: string): Promise<boolean> => {
