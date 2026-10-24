@@ -1,5 +1,5 @@
 // Spud the Piper - Advanced PWA Service Worker (Offline Showcase Mode)
-const CACHE_NAME = 'spud-piper-v3-showcase';
+const CACHE_NAME = 'spud-piper-v4-showcase';
 
 const STATIC_ASSETS = [
   '/',

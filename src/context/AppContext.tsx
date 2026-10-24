@@ -71,7 +71,7 @@ import {
 import { bagpipeSynth } from '@/lib/bagpipeSynth';
 import { db, auth } from '@/lib/firebase';
 import { deduplicateAndMergeContacts, normalizeEmail } from '@/lib/mailingDeduplicator';
-import { collection, doc, onSnapshot, setDoc, deleteDoc, updateDoc, increment, query, where, getDocs } from 'firebase/firestore';
+import { collection, doc, onSnapshot, setDoc, deleteDoc, updateDoc, increment, query, where, getDocs, arrayUnion } from 'firebase/firestore';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -647,30 +647,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } catch (e) {}
       }
 
+      let deletedReviewIds = new Set<string>();
+      if (typeof window !== 'undefined') {
+        try {
+          const storedDeleted = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}deleted_reviews`);
+          if (storedDeleted) {
+            deletedReviewIds = new Set(JSON.parse(storedDeleted));
+          }
+        } catch (e) {}
+      }
+
       const savedReviews = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}reviews`);
-      if (savedReviews) {
+      if (savedReviews !== null) {
         try {
           const parsedReviews: Review[] = JSON.parse(savedReviews);
-          if (Array.isArray(parsedReviews) && parsedReviews.length > 0) {
-            const initialMap = new Map(initialReviews.map(r => [r.id, r]));
-            const merged = parsedReviews.map(r => {
-              const init = initialMap.get(r.id);
-              if (init && !r.photoUrl && init.photoUrl) {
-                return { ...r, photoUrl: init.photoUrl };
-              }
-              return r;
-            });
-            const existingIds = new Set(merged.map(r => r.id));
-            const missingInitials = initialReviews.filter(r => !existingIds.has(r.id));
-            setReviews([...merged, ...missingInitials]);
+          if (Array.isArray(parsedReviews)) {
+            // Keep existing reviews, strictly filtering out any deleted IDs (no resurrection)
+            const clean = parsedReviews.filter(r => r && r.id && !deletedReviewIds.has(r.id));
+            setReviews(clean);
           } else {
-            setReviews(initialReviews);
+            setReviews([]);
           }
         } catch (e) {
-          setReviews(initialReviews);
+          setReviews([]);
         }
       } else {
-        setReviews(initialReviews);
+        // First visit on a fresh browser: initialize once with starter reviews, minus any deleted IDs
+        const initialClean = initialReviews.filter(r => !deletedReviewIds.has(r.id));
+        setReviews(initialClean);
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(`${LOCAL_STORAGE_PREFIX}reviews`, JSON.stringify(initialClean));
+          } catch (e) {}
+        }
       }
 
       const savedPosts = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}social`);
@@ -1096,8 +1105,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubVideos = () => {};
     let unsubBlogPosts = () => {};
     let unsubSpudProfile = () => {};
+    let unsubDeletedRecords = () => {};
 
     try {
+      // Real-time Firestore listener for global deleted records tombstones (e.g. deleted reviews)
+      unsubDeletedRecords = onSnapshot(doc(db, 'settings', 'deleted_records'), (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          const remoteDeleted: string[] = data?.deletedReviewIds || [];
+          if (Array.isArray(remoteDeleted) && remoteDeleted.length > 0) {
+            let localDeleted = new Set<string>();
+            if (typeof window !== 'undefined') {
+              try {
+                const stored = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}deleted_reviews`);
+                if (stored) localDeleted = new Set(JSON.parse(stored));
+                remoteDeleted.forEach(id => localDeleted.add(id));
+                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}deleted_reviews`, JSON.stringify(Array.from(localDeleted)));
+              } catch (e) {}
+            }
+            const delSet = new Set(remoteDeleted);
+            setReviews(prev => {
+              const filtered = prev.filter(r => r && r.id && !delSet.has(r.id));
+              if (filtered.length !== prev.length && typeof window !== 'undefined') {
+                try {
+                  localStorage.setItem(`${LOCAL_STORAGE_PREFIX}reviews`, JSON.stringify(filtered));
+                } catch (e) {}
+              }
+              return filtered;
+            });
+          }
+        }
+      }, (err) => console.log('Firestore deleted_records listener:', err.message));
+
       // Real-time Firestore listener for global chat_status setting
       unsubChatStatus = onSnapshot(doc(db, 'settings', 'chat_status'), (snap) => {
         if (snap.exists()) {
@@ -1137,11 +1176,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }, (err) => console.log('Firestore services listener:', err.message));
 
       unsubReviews = onSnapshot(collection(db, 'reviews'), (snapshot) => {
-        if (!snapshot.empty) {
-          const remoteReviews: Review[] = [];
-          snapshot.forEach((d) => remoteReviews.push(d.data() as Review));
-          if (remoteReviews.length > 0) {
-            setReviews(remoteReviews);
+        let currentDeleted = new Set<string>();
+        if (typeof window !== 'undefined') {
+          try {
+            const stored = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}deleted_reviews`);
+            if (stored) currentDeleted = new Set(JSON.parse(stored));
+          } catch (e) {}
+        }
+
+        const remoteReviews: Review[] = [];
+        snapshot.forEach((d) => {
+          const data = d.data() as Review;
+          if (data && (data.id || d.id) && !currentDeleted.has(data.id || d.id)) {
+            remoteReviews.push({ ...data, id: data.id || d.id });
+          }
+        });
+
+        if (remoteReviews.length > 0) {
+          setReviews(remoteReviews);
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem(`${LOCAL_STORAGE_PREFIX}reviews`, JSON.stringify(remoteReviews));
+            } catch (e) {}
+          }
+        } else if (snapshot.empty && !snapshot.metadata.hasPendingWrites) {
+          setReviews([]);
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem(`${LOCAL_STORAGE_PREFIX}reviews`, JSON.stringify([]));
+            } catch (e) {}
           }
         }
       }, (err) => console.log('Firestore reviews listener:', err.message));
@@ -1564,6 +1627,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubVideos();
       unsubBlogPosts();
       unsubSpudProfile();
+      unsubDeletedRecords();
     };
   }, []);
 
@@ -3737,6 +3801,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteReview = async (id: string) => {
+    // 1. Record ID in local deleted tombstone set so initialReviews never resurrects it
+    let deletedSet = new Set<string>();
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}deleted_reviews`);
+        if (stored) deletedSet = new Set(JSON.parse(stored));
+        deletedSet.add(id);
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}deleted_reviews`, JSON.stringify(Array.from(deletedSet)));
+      } catch (e) {}
+    }
+
+    // 2. Remove from active state and persist to localStorage
     setReviews(prev => {
       const updated = prev.filter(r => r.id !== id);
       if (typeof window !== 'undefined') {
@@ -3746,7 +3822,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return updated;
     });
+
+    // 3. Delete document from Firestore
     await deleteFromFirestore('reviews', id);
+
+    // 4. Save tombstone to Firestore settings/deleted_records so ALL devices sync
+    if (db) {
+      try {
+        await setDoc(doc(db, 'settings', 'deleted_records'), {
+          deletedReviewIds: arrayUnion(id),
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (e) {
+        console.warn('Firestore deleted_records sync note:', e);
+      }
+    }
   };
 
   // Social handlers
