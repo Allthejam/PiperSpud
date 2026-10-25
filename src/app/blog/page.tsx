@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -54,7 +54,7 @@ function BlogContent() {
   const router = useRouter();
   const { blogPosts, likeBlogPost, recordBlogPostView } = useApp();
 
-  const currentPosts = (blogPosts && blogPosts.length > 0) ? blogPosts : initialBlogPosts;
+  const currentPosts = blogPosts || [];
   const publishedPosts = useMemo(() => {
     return currentPosts
       .filter(p => p.isPublished)
@@ -71,6 +71,7 @@ function BlogContent() {
   const [activeStoryModal, setActiveStoryModal] = useState<BlogPost | null>(null);
   const [copiedShareId, setCopiedShareId] = useState<string | null>(null);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const recordedStoryRef = useRef<string | null>(null);
 
   // Load visitor's liked posts from localStorage
   useEffect(() => {
@@ -94,14 +95,17 @@ function BlogContent() {
     return Array.from(set);
   }, [publishedPosts]);
 
-  // Auto-open story modal if ?story=slug matches
+  // Auto-open story modal if ?story=slug matches (with ref guard to prevent view runaway loop)
   useEffect(() => {
     if (storyParam && publishedPosts.length > 0) {
       const match = publishedPosts.find(p => p.slug === storyParam || p.id === storyParam);
       if (match) {
         setActiveStoryModal(match);
-        if (recordBlogPostView) {
-          recordBlogPostView(match.id);
+        if (recordedStoryRef.current !== match.id) {
+          recordedStoryRef.current = match.id;
+          if (recordBlogPostView) {
+            recordBlogPostView(match.id);
+          }
         }
       }
     }

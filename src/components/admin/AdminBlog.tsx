@@ -33,7 +33,8 @@ import {
   Heart,
   Globe,
   Upload,
-  Image as ImageIcon
+  Image as ImageIcon,
+  BarChart3
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -97,7 +98,7 @@ export const AdminBlog: React.FC = () => {
     tunesList
   } = useApp();
 
-  const currentPosts = (blogPosts && blogPosts.length > 0) ? blogPosts : initialBlogPosts;
+  const currentPosts = blogPosts || [];
 
   // Filter & Search states
   const [searchTerm, setSearchTerm] = useState('');
@@ -131,6 +132,8 @@ export const AdminBlog: React.FC = () => {
   const [formReadTimeMinutes, setFormReadTimeMinutes] = useState(3);
   const [formTags, setFormTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
+  const [formViews, setFormViews] = useState<number>(0);
+  const [formLikes, setFormLikes] = useState<number>(0);
 
   // UI state
   const [isSaving, setIsSaving] = useState(false);
@@ -268,6 +271,8 @@ export const AdminBlog: React.FC = () => {
     setFormReadTimeMinutes(3);
     setFormTags(['Castle Wedding', 'Highland Bagpipe', 'Scotland']);
     setTagInput('');
+    setFormViews(0);
+    setFormLikes(0);
     setShowUrlInput(false);
     setIsUploadingCover(false);
     setSuccessMessage(null);
@@ -309,6 +314,8 @@ export const AdminBlog: React.FC = () => {
     setFormReadTimeMinutes(item.readTimeMinutes || 3);
     setFormTags(item.tags || []);
     setTagInput('');
+    setFormViews(item.views || 0);
+    setFormLikes(item.likes || 0);
     setShowUrlInput(Boolean(item.featuredImageUrl && !item.featuredImageUrl.includes('firebasestorage')));
     setIsUploadingCover(false);
     setSuccessMessage(null);
@@ -399,7 +406,9 @@ export const AdminBlog: React.FC = () => {
           isPublished: formIsPublished,
           isFeatured: formIsFeatured,
           readTimeMinutes: calculatedReadTime,
-          tags: formTags
+          tags: formTags,
+          views: Math.max(0, Number(formViews) || 0),
+          likes: Math.max(0, Number(formLikes) || 0)
         });
         setSuccessMessage('Story updated successfully!');
       } else {
@@ -424,8 +433,8 @@ export const AdminBlog: React.FC = () => {
           isFeatured: formIsFeatured,
           readTimeMinutes: calculatedReadTime,
           tags: formTags,
-          views: 0,
-          likes: 0
+          views: Math.max(0, Number(formViews) || 0),
+          likes: Math.max(0, Number(formLikes) || 0)
         });
         setSuccessMessage('Story published successfully!');
       }
@@ -1365,6 +1374,52 @@ export const AdminBlog: React.FC = () => {
                   </label>
                 </div>
 
+              </div>
+
+              {/* Engagement Stats Calibration (Views & Likes Reset) */}
+              <div className="p-3.5 rounded-2xl bg-tartan-dark/70 border border-tartan-border/70 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-tartan-gold">
+                    <BarChart3 className="w-3.5 h-3.5" />
+                    <span>Story Engagement Stats (Views &amp; Likes)</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setFormViews(0); setFormLikes(0); }}
+                    className="text-[10px] text-gray-400 hover:text-amber-400 font-bold underline transition-colors"
+                  >
+                    Reset Stats to 0
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-semibold text-gray-300">
+                      Views Count
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formViews}
+                      onChange={(e) => setFormViews(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                      className="w-full bg-tartan-card border border-tartan-border rounded-xl px-3 py-1.5 text-white text-xs focus:outline-none focus:border-tartan-accent font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-semibold text-gray-300">
+                      Likes Count
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formLikes}
+                      onChange={(e) => setFormLikes(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                      className="w-full bg-tartan-card border border-tartan-border rounded-xl px-3 py-1.5 text-white text-xs focus:outline-none focus:border-tartan-accent font-mono"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-gray-400 leading-tight">
+                  Manually adjust or reset views and likes. (Views are tracked on spudthepiper.com and are not connected to YouTube).
+                </p>
               </div>
 
               {/* Modal Actions */}

@@ -1014,22 +1014,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } catch (e) {}
       }
 
-      const savedBlogPosts = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}blog_posts`);
-      if (savedBlogPosts) {
+      let deletedBlogIds = new Set<string>();
+      if (typeof window !== 'undefined') {
         try {
-          const parsedBlog: BlogPost[] = JSON.parse(savedBlogPosts);
-          if (Array.isArray(parsedBlog) && parsedBlog.length > 0) {
-            const initialMap = new Map<string, BlogPost>(initialBlogPosts.map(p => [p.id, p]));
-            const merged = parsedBlog.map(p => {
-              const init = initialMap.get(p.id);
-              return init ? { ...init, ...p } : p;
-            });
-            initialBlogPosts.forEach(init => {
-              if (!merged.some(m => m.id === init.id)) merged.push(init);
-            });
-            setBlogPosts(merged);
+          const storedDeleted = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}deleted_blog_posts`);
+          if (storedDeleted) {
+            deletedBlogIds = new Set(JSON.parse(storedDeleted));
           }
         } catch (e) {}
+      }
+
+      const savedBlogPosts = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}blog_posts`);
+      if (savedBlogPosts !== null) {
+        try {
+          const parsedBlog: BlogPost[] = JSON.parse(savedBlogPosts);
+          if (Array.isArray(parsedBlog)) {
+            // Keep existing posts, strictly filtering out any deleted IDs (NO auto-resurrection)
+            const clean = parsedBlog.filter(p => p && p.id && !deletedBlogIds.has(p.id));
+            setBlogPosts(clean);
+          } else {
+            setBlogPosts([]);
+          }
+        } catch (e) {
+          setBlogPosts([]);
+        }
+      } else {
+        // First visit on a fresh browser: initialize once with starter blog posts minus any deleted IDs
+        const initialClean = initialBlogPosts.filter(p => !deletedBlogIds.has(p.id));
+        setBlogPosts(initialClean);
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(`${LOCAL_STORAGE_PREFIX}blog_posts`, JSON.stringify(initialClean));
+          } catch (e) {}
+        }
       }
 
       const savedStream = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}show_livestream`);
@@ -1108,27 +1125,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubDeletedRecords = () => {};
 
     try {
-      // Real-time Firestore listener for global deleted records tombstones (e.g. deleted reviews)
+      // Real-time Firestore listener for global deleted records tombstones (e.g. deleted reviews, deleted blog posts)
       unsubDeletedRecords = onSnapshot(doc(db, 'settings', 'deleted_records'), (snap) => {
         if (snap.exists()) {
           const data = snap.data();
-          const remoteDeleted: string[] = data?.deletedReviewIds || [];
-          if (Array.isArray(remoteDeleted) && remoteDeleted.length > 0) {
+
+          // 1. Synchronize Deleted Reviews
+          const remoteDeletedReviews: string[] = data?.deletedReviewIds || [];
+          if (Array.isArray(remoteDeletedReviews) && remoteDeletedReviews.length > 0) {
             let localDeleted = new Set<string>();
             if (typeof window !== 'undefined') {
               try {
                 const stored = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}deleted_reviews`);
                 if (stored) localDeleted = new Set(JSON.parse(stored));
-                remoteDeleted.forEach(id => localDeleted.add(id));
+                remoteDeletedReviews.forEach(id => localDeleted.add(id));
                 localStorage.setItem(`${LOCAL_STORAGE_PREFIX}deleted_reviews`, JSON.stringify(Array.from(localDeleted)));
               } catch (e) {}
             }
-            const delSet = new Set(remoteDeleted);
+            const delSet = new Set(remoteDeletedReviews);
             setReviews(prev => {
               const filtered = prev.filter(r => r && r.id && !delSet.has(r.id));
               if (filtered.length !== prev.length && typeof window !== 'undefined') {
                 try {
                   localStorage.setItem(`${LOCAL_STORAGE_PREFIX}reviews`, JSON.stringify(filtered));
+                } catch (e) {}
+              }
+              return filtered;
+            });
+          }
+
+          // 2. Synchronize Deleted Blog Posts
+          const remoteDeletedBlog: string[] = data?.deletedBlogPostIds || [];
+          if (Array.isArray(remoteDeletedBlog) && remoteDeletedBlog.length > 0) {
+            let localDeletedBlog = new Set<string>();
+            if (typeof window !== 'undefined') {
+              try {
+                const stored = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}deleted_blog_posts`);
+                if (stored) localDeletedBlog = new Set(JSON.parse(stored));
+                remoteDeletedBlog.forEach(id => localDeletedBlog.add(id));
+                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}deleted_blog_posts`, JSON.stringify(Array.from(localDeletedBlog)));
+              } catch (e) {}
+            }
+            const delBlogSet = new Set(remoteDeletedBlog);
+            setBlogPosts(prev => {
+              const filtered = prev.filter(p => p && p.id && !delBlogSet.has(p.id));
+              if (filtered.length !== prev.length && typeof window !== 'undefined') {
+                try {
+                  localStorage.setItem(`${LOCAL_STORAGE_PREFIX}blog_posts`, JSON.stringify(filtered));
                 } catch (e) {}
               }
               return filtered;
@@ -1515,34 +1558,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Real-time Firestore listener for blog_posts (Spud's Highland Blog & Video Stories)
       unsubBlogPosts = onSnapshot(collection(db, 'blog_posts'), (snapshot) => {
-        if (!snapshot.empty) {
-          const remotePosts: BlogPost[] = [];
-          snapshot.forEach((d) => {
-            const data = d.data() as BlogPost;
-            if (data && (data.id || d.id)) {
-              remotePosts.push({ ...data, id: data.id || d.id });
+        let currentDeleted = new Set<string>();
+        if (typeof window !== 'undefined') {
+          try {
+            const stored = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}deleted_blog_posts`);
+            if (stored) currentDeleted = new Set(JSON.parse(stored));
+          } catch (e) {}
+        }
+
+        const remotePosts: BlogPost[] = [];
+        snapshot.forEach((d) => {
+          const data = d.data() as BlogPost;
+          const id = data?.id || d.id;
+          if (data && id && !currentDeleted.has(id)) {
+            remotePosts.push({ ...data, id });
+          }
+        });
+
+        remotePosts.sort((a, b) => new Date(b.publishDate || b.createdAt || 0).getTime() - new Date(a.publishDate || a.createdAt || 0).getTime());
+
+        if (remotePosts.length > 0) {
+          setBlogPosts(() => {
+            // Include non-deleted starter posts only if they haven't been seeded to Firestore and weren't deleted
+            const startersRemaining = initialBlogPosts.filter(init => 
+              !currentDeleted.has(init.id) && !remotePosts.some(r => r.id === init.id)
+            );
+            const combined = [...remotePosts, ...startersRemaining];
+            combined.sort((a, b) => new Date(b.publishDate || b.createdAt || 0).getTime() - new Date(a.publishDate || a.createdAt || 0).getTime());
+            if (typeof window !== 'undefined') {
+              try {
+                localStorage.setItem(`${LOCAL_STORAGE_PREFIX}blog_posts`, JSON.stringify(combined));
+              } catch (e) {}
             }
+            return combined;
           });
-          if (remotePosts.length > 0) {
-            setBlogPosts(prev => {
-              const currentList = prev && prev.length > 0 ? prev : initialBlogPosts;
-              const merged = [...currentList];
-              remotePosts.forEach(r => {
-                const idx = merged.findIndex(v => v.id === r.id);
-                if (idx >= 0) {
-                  merged[idx] = { ...merged[idx], ...r };
-                } else {
-                  merged.push(r);
-                }
-              });
-              merged.sort((a, b) => new Date(b.publishDate || b.createdAt || 0).getTime() - new Date(a.publishDate || a.createdAt || 0).getTime());
-              if (typeof window !== 'undefined') {
-                try {
-                  localStorage.setItem(`${LOCAL_STORAGE_PREFIX}blog_posts`, JSON.stringify(merged));
-                } catch (e) {}
-              }
-              return merged;
-            });
+        } else if (snapshot.empty && !snapshot.metadata.hasPendingWrites) {
+          const startersRemaining = initialBlogPosts.filter(init => !currentDeleted.has(init.id));
+          setBlogPosts(startersRemaining);
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem(`${LOCAL_STORAGE_PREFIX}blog_posts`, JSON.stringify(startersRemaining));
+            } catch (e) {}
           }
         }
       }, (err) => console.log('Firestore blog_posts listener:', err.message));
@@ -6035,6 +6091,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteBlogPost = async (id: string): Promise<boolean> => {
+    // 1. Add ID to local deleted tombstone set so initialBlogPosts never resurrects it
+    let deletedSet = new Set<string>();
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}deleted_blog_posts`);
+        if (stored) deletedSet = new Set(JSON.parse(stored));
+        deletedSet.add(id);
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}deleted_blog_posts`, JSON.stringify(Array.from(deletedSet)));
+      } catch (e) {}
+    }
+
+    // 2. Remove from active state and persist to localStorage
     setBlogPosts(prev => {
       const current = (prev && prev.length > 0) ? prev : initialBlogPosts;
       const updated = current.filter(p => p.id !== id);
@@ -6043,7 +6111,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return updated;
     });
+
+    // 3. Delete document from Firestore
     await deleteFromFirestore('blog_posts', id);
+
+    // 4. Save tombstone to Firestore settings/deleted_records so ALL devices sync
+    if (db) {
+      try {
+        await setDoc(doc(db, 'settings', 'deleted_records'), {
+          deletedBlogPostIds: arrayUnion(id),
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (e) {
+        console.warn('Firestore deleted_records sync note for blog:', e);
+      }
+    }
+
     addNotification({
       type: 'system',
       title: 'Blog Story Removed',
@@ -6105,6 +6188,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const recordBlogPostView = async (id: string): Promise<void> => {
+    // Session-level deduplication: Only count 1 view per story per browser session to prevent infinite runaway loops
+    if (typeof window !== 'undefined') {
+      try {
+        const sessionKey = `spud_viewed_story_${id}`;
+        if (sessionStorage.getItem(sessionKey)) {
+          return; // Already recorded for this session, ignore
+        }
+        sessionStorage.setItem(sessionKey, '1');
+      } catch (e) {}
+    }
+
     setBlogPosts(prev => {
       const current = (prev && prev.length > 0) ? prev : initialBlogPosts;
       const updated = current.map(p => {
