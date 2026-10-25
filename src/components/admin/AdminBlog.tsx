@@ -34,7 +34,19 @@ import {
   Globe,
   Upload,
   Image as ImageIcon,
-  BarChart3
+  BarChart3,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpLeft,
+  ArrowUpRight,
+  ArrowDownLeft,
+  ArrowDownRight,
+  Maximize2,
+  Minimize2,
+  Crosshair,
+  Move
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -134,6 +146,9 @@ export const AdminBlog: React.FC = () => {
   const [tagInput, setTagInput] = useState('');
   const [formViews, setFormViews] = useState<number>(0);
   const [formLikes, setFormLikes] = useState<number>(0);
+  const [formImageFit, setFormImageFit] = useState<'cover' | 'contain'>('cover');
+  const [formImagePosition, setFormImagePosition] = useState<string>('center');
+  const [previewTab, setPreviewTab] = useState<'cover' | 'video'>('cover');
 
   // UI state
   const [isSaving, setIsSaving] = useState(false);
@@ -273,6 +288,9 @@ export const AdminBlog: React.FC = () => {
     setTagInput('');
     setFormViews(0);
     setFormLikes(0);
+    setFormImageFit('cover');
+    setFormImagePosition('center');
+    setPreviewTab('cover');
     setShowUrlInput(false);
     setIsUploadingCover(false);
     setSuccessMessage(null);
@@ -316,6 +334,9 @@ export const AdminBlog: React.FC = () => {
     setTagInput('');
     setFormViews(item.views || 0);
     setFormLikes(item.likes || 0);
+    setFormImageFit(item.imageFit || 'cover');
+    setFormImagePosition(item.imagePosition || 'center');
+    setPreviewTab(item.featuredImageUrl ? 'cover' : (item.youtubeId ? 'video' : 'cover'));
     setShowUrlInput(Boolean(item.featuredImageUrl && !item.featuredImageUrl.includes('firebasestorage')));
     setIsUploadingCover(false);
     setSuccessMessage(null);
@@ -408,7 +429,9 @@ export const AdminBlog: React.FC = () => {
           readTimeMinutes: calculatedReadTime,
           tags: formTags,
           views: Math.max(0, Number(formViews) || 0),
-          likes: Math.max(0, Number(formLikes) || 0)
+          likes: Math.max(0, Number(formLikes) || 0),
+          imageFit: formImageFit,
+          imagePosition: formImagePosition
         });
         setSuccessMessage('Story updated successfully!');
       } else {
@@ -434,7 +457,9 @@ export const AdminBlog: React.FC = () => {
           readTimeMinutes: calculatedReadTime,
           tags: formTags,
           views: Math.max(0, Number(formViews) || 0),
-          likes: Math.max(0, Number(formLikes) || 0)
+          likes: Math.max(0, Number(formLikes) || 0),
+          imageFit: formImageFit,
+          imagePosition: formImagePosition
         });
         setSuccessMessage('Story published successfully!');
       }
@@ -661,7 +686,8 @@ export const AdminBlog: React.FC = () => {
                     <img 
                       src={thumbUrl} 
                       alt={post.title} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className={`w-full h-full group-hover:scale-105 transition-transform duration-500 ${post.imageFit === 'contain' ? 'object-contain bg-black' : 'object-cover'}`}
+                      style={{ objectPosition: post.imagePosition || 'center' }}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-tartan-navy text-gray-500">
@@ -1140,9 +1166,39 @@ export const AdminBlog: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Preview Tab Switcher when both YouTube and Custom Cover exist */}
+                  {liveYoutubeId && formFeaturedImageUrl && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewTab('cover')}
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                          previewTab === 'cover'
+                            ? 'bg-tartan-gold text-tartan-dark shadow'
+                            : 'bg-tartan-card text-gray-400 hover:text-white border border-tartan-border'
+                        }`}
+                      >
+                        <ImageIcon className="w-3.5 h-3.5" />
+                        <span>Cover Photo Framing (Card View)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewTab('video')}
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                          previewTab === 'video'
+                            ? 'bg-red-600 text-white shadow'
+                            : 'bg-tartan-card text-gray-400 hover:text-white border border-tartan-border'
+                        }`}
+                      >
+                        <Play className="w-3.5 h-3.5" />
+                        <span>YouTube Video Player</span>
+                      </button>
+                    </div>
+                  )}
+
                   {/* Live Video / Cover Preview Box */}
                   <div className="relative aspect-video rounded-2xl overflow-hidden border border-tartan-border bg-black shadow-inner flex items-center justify-center">
-                    {liveYoutubeId ? (
+                    {liveYoutubeId && (!formFeaturedImageUrl || previewTab === 'video') ? (
                       <div className="relative w-full h-full">
                         <iframe
                           src={`https://www.youtube.com/embed/${liveYoutubeId}?rel=0`}
@@ -1152,22 +1208,27 @@ export const AdminBlog: React.FC = () => {
                           allowFullScreen
                         />
                         {formFeaturedImageUrl && (
-                          <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur-md border border-white/10 text-[10px] font-bold text-amber-300 flex items-center gap-1.5 pointer-events-none">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewTab('cover')}
+                            className="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-black/85 backdrop-blur-md border border-white/10 text-[10px] font-bold text-amber-300 hover:text-white flex items-center gap-1.5 transition-colors"
+                          >
                             <ImageIcon className="w-3 h-3 text-amber-400" />
-                            <span>Custom Cover Photo Loaded</span>
-                          </div>
+                            <span>Switch to Cover Card Preview</span>
+                          </button>
                         )}
                       </div>
-                    ) : formFeaturedImageUrl ? (
+                    ) : (formFeaturedImageUrl || (liveYoutubeId && previewTab === 'cover')) ? (
                       <div className="relative w-full h-full">
                         <img 
-                          src={formFeaturedImageUrl} 
+                          src={formFeaturedImageUrl || (liveYoutubeId ? `https://img.youtube.com/vi/${liveYoutubeId}/hqdefault.jpg` : '')} 
                           alt="Cover Preview" 
-                          className="w-full h-full object-cover" 
+                          className={`w-full h-full ${formImageFit === 'contain' ? 'object-contain bg-black' : 'object-cover'}`}
+                          style={{ objectPosition: formImagePosition }}
                         />
-                        <div className="absolute top-2 left-2 px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur-md border border-white/10 text-[10px] font-bold text-amber-300 flex items-center gap-1.5">
+                        <div className="absolute top-2 left-2 px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur-md border border-white/10 text-[10px] font-bold text-amber-300 flex items-center gap-1.5">
                           <ImageIcon className="w-3 h-3 text-amber-400" />
-                          <span>Cover Photo Preview</span>
+                          <span>Card View: {formImageFit === 'contain' ? 'Shrink to Fit' : `Fill Card (${formImagePosition})`}</span>
                         </div>
                       </div>
                     ) : (
@@ -1177,6 +1238,227 @@ export const AdminBlog: React.FC = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Cover Image Framing & Head Alignment Controls */}
+                  {(formFeaturedImageUrl || liveYoutubeId) && (
+                    <div className="p-4 rounded-2xl bg-tartan-dark/90 border border-tartan-accent/40 shadow-xl space-y-3.5">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-tartan-gold">
+                          <Move className="w-4 h-4 text-tartan-gold" />
+                          <span>Cover Image Fit &amp; Head Positioning</span>
+                        </div>
+                        <span className="text-[10px] text-gray-400">Fix cut-off heads &amp; adjust card framing</span>
+                      </div>
+
+                      {/* 1. Fit Mode: Fill Card vs Shrink to Fit */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setFormImageFit('cover')}
+                          className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+                            formImageFit === 'cover'
+                              ? 'bg-tartan-gold text-tartan-dark border-tartan-gold shadow-md'
+                              : 'bg-tartan-card border-tartan-border text-gray-400 hover:text-white'
+                          }`}
+                        >
+                          <Maximize2 className="w-3.5 h-3.5" />
+                          <span>Fill Card (Crop)</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setFormImageFit('contain')}
+                          className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+                            formImageFit === 'contain'
+                              ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md font-extrabold'
+                              : 'bg-tartan-card border-tartan-border text-gray-400 hover:text-white'
+                          }`}
+                        >
+                          <Minimize2 className="w-3.5 h-3.5" />
+                          <span>Shrink to Fit (Full Photo / No Crop)</span>
+                        </button>
+                      </div>
+
+                      {/* 2. Directional Alignment Pad & Presets */}
+                      <div className="space-y-2 pt-1 border-t border-tartan-border/60">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-gray-300 font-semibold">Directional Alignment:</span>
+                          <span className="text-tartan-gold font-mono text-[11px] font-bold">
+                            Active: {formImagePosition}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-4 flex-wrap sm:flex-nowrap">
+                          {/* 3x3 Directional Arrow Keypad */}
+                          <div className="grid grid-cols-3 gap-1.5 p-2 rounded-2xl bg-tartan-card border border-tartan-border w-36 shrink-0 shadow-inner">
+                            {/* Top-Left */}
+                            <button
+                              type="button"
+                              onClick={() => setFormImagePosition('top left')}
+                              title="Top-Left"
+                              className={`p-2 rounded-lg border text-xs flex items-center justify-center transition-all ${
+                                formImagePosition === 'top left' ? 'bg-tartan-gold text-tartan-dark border-tartan-gold shadow' : 'border-tartan-border/60 hover:bg-white/10 text-gray-400'
+                              }`}
+                            >
+                              <ArrowUpLeft className="w-4 h-4" />
+                            </button>
+
+                            {/* Top (Focus on Heads) */}
+                            <button
+                              type="button"
+                              onClick={() => setFormImagePosition('top')}
+                              title="Top (Focus on Heads & Faces)"
+                              className={`p-2 rounded-lg border text-xs flex items-center justify-center transition-all ${
+                                formImagePosition === 'top' || formImagePosition === 'center top' || formImagePosition === 'top center'
+                                  ? 'bg-tartan-gold text-tartan-dark border-tartan-gold font-bold shadow-md ring-2 ring-tartan-gold/40'
+                                  : 'border-tartan-border/60 hover:bg-white/10 text-gray-200'
+                              }`}
+                            >
+                              <ArrowUp className="w-4 h-4" />
+                            </button>
+
+                            {/* Top-Right */}
+                            <button
+                              type="button"
+                              onClick={() => setFormImagePosition('top right')}
+                              title="Top-Right"
+                              className={`p-2 rounded-lg border text-xs flex items-center justify-center transition-all ${
+                                formImagePosition === 'top right' ? 'bg-tartan-gold text-tartan-dark border-tartan-gold shadow' : 'border-tartan-border/60 hover:bg-white/10 text-gray-400'
+                              }`}
+                            >
+                              <ArrowUpRight className="w-4 h-4" />
+                            </button>
+
+                            {/* Left */}
+                            <button
+                              type="button"
+                              onClick={() => setFormImagePosition('left')}
+                              title="Left"
+                              className={`p-2 rounded-lg border text-xs flex items-center justify-center transition-all ${
+                                formImagePosition === 'left' || formImagePosition === 'center left' ? 'bg-tartan-gold text-tartan-dark border-tartan-gold shadow' : 'border-tartan-border/60 hover:bg-white/10 text-gray-400'
+                              }`}
+                            >
+                              <ArrowLeft className="w-4 h-4" />
+                            </button>
+
+                            {/* Center */}
+                            <button
+                              type="button"
+                              onClick={() => setFormImagePosition('center')}
+                              title="Center (Default)"
+                              className={`p-2 rounded-lg border text-xs flex items-center justify-center transition-all ${
+                                formImagePosition === 'center' || formImagePosition === 'center center' ? 'bg-tartan-gold text-tartan-dark border-tartan-gold font-bold shadow' : 'border-tartan-border/60 hover:bg-white/10 text-gray-400'
+                              }`}
+                            >
+                              <Crosshair className="w-4 h-4" />
+                            </button>
+
+                            {/* Right */}
+                            <button
+                              type="button"
+                              onClick={() => setFormImagePosition('right')}
+                              title="Right"
+                              className={`p-2 rounded-lg border text-xs flex items-center justify-center transition-all ${
+                                formImagePosition === 'right' || formImagePosition === 'center right' ? 'bg-tartan-gold text-tartan-dark border-tartan-gold shadow' : 'border-tartan-border/60 hover:bg-white/10 text-gray-400'
+                              }`}
+                            >
+                              <ArrowRight className="w-4 h-4" />
+                            </button>
+
+                            {/* Bottom-Left */}
+                            <button
+                              type="button"
+                              onClick={() => setFormImagePosition('bottom left')}
+                              title="Bottom-Left"
+                              className={`p-2 rounded-lg border text-xs flex items-center justify-center transition-all ${
+                                formImagePosition === 'bottom left' ? 'bg-tartan-gold text-tartan-dark border-tartan-gold shadow' : 'border-tartan-border/60 hover:bg-white/10 text-gray-400'
+                              }`}
+                            >
+                              <ArrowDownLeft className="w-4 h-4" />
+                            </button>
+
+                            {/* Bottom */}
+                            <button
+                              type="button"
+                              onClick={() => setFormImagePosition('bottom')}
+                              title="Bottom"
+                              className={`p-2 rounded-lg border text-xs flex items-center justify-center transition-all ${
+                                formImagePosition === 'bottom' || formImagePosition === 'center bottom' ? 'bg-tartan-gold text-tartan-dark border-tartan-gold shadow' : 'border-tartan-border/60 hover:bg-white/10 text-gray-400'
+                              }`}
+                            >
+                              <ArrowDown className="w-4 h-4" />
+                            </button>
+
+                            {/* Bottom-Right */}
+                            <button
+                              type="button"
+                              onClick={() => setFormImagePosition('bottom right')}
+                              title="Bottom-Right"
+                              className={`p-2 rounded-lg border text-xs flex items-center justify-center transition-all ${
+                                formImagePosition === 'bottom right' ? 'bg-tartan-gold text-tartan-dark border-tartan-gold shadow' : 'border-tartan-border/60 hover:bg-white/10 text-gray-400'
+                              }`}
+                            >
+                              <ArrowDownRight className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {/* Quick 1-Click Framing Presets */}
+                          <div className="space-y-2 flex-1">
+                            <span className="text-[11px] text-gray-400 block font-semibold">1-Click Framing Presets:</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setFormImagePosition('top')}
+                                className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+                                  formImagePosition === 'top' || formImagePosition === 'center top'
+                                    ? 'bg-tartan-gold text-tartan-dark border-tartan-gold shadow'
+                                    : 'bg-tartan-card border-tartan-border text-gray-300 hover:text-white hover:border-gray-500'
+                                }`}
+                              >
+                                ⬆️ Top (Fix Cut-Off Heads)
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setFormImagePosition('center 25%')}
+                                className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+                                  formImagePosition === 'center 25%'
+                                    ? 'bg-tartan-gold text-tartan-dark border-tartan-gold shadow'
+                                    : 'bg-tartan-card border-tartan-border text-gray-300 hover:text-white hover:border-gray-500'
+                                }`}
+                              >
+                                Upper Body (25%)
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setFormImagePosition('center')}
+                                className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+                                  formImagePosition === 'center'
+                                    ? 'bg-tartan-gold text-tartan-dark border-tartan-gold shadow'
+                                    : 'bg-tartan-card border-tartan-border text-gray-300 hover:text-white hover:border-gray-500'
+                                }`}
+                              >
+                                🎯 Center (50%)
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setFormImagePosition('bottom')}
+                                className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+                                  formImagePosition === 'bottom'
+                                    ? 'bg-tartan-gold text-tartan-dark border-tartan-gold shadow'
+                                    : 'bg-tartan-card border-tartan-border text-gray-300 hover:text-white hover:border-gray-500'
+                                }`}
+                              >
+                                ⬇️ Bottom (Ground)
+                              </button>
+                            </div>
+                            <p className="text-[10px] text-gray-400 pt-1 leading-relaxed">
+                              Tip: Click <strong>⬆️ Top</strong> whenever a piper&apos;s feather bonnet or head is cropped by the card. Click <strong>Shrink to Fit</strong> if you want the full photo without any cropping.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

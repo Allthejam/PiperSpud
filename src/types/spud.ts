@@ -547,6 +547,8 @@ export interface BlogPost {
   youtubeUrl?: string;
   youtubeId?: string;
   featuredImageUrl?: string;
+  imageFit?: 'cover' | 'contain';
+  imagePosition?: string;
   galleryImages?: string[];
   venueName?: string;
   venueLocation?: string;

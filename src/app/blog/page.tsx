@@ -274,7 +274,8 @@ function BlogContent() {
                     <img
                       src={featuredPost.featuredImageUrl || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&auto=format&fit=crop&q=80'}
                       alt={featuredPost.title}
-                      className="w-full h-full object-cover"
+                      className={`w-full h-full ${featuredPost.imageFit === 'contain' ? 'object-contain bg-black' : 'object-cover'}`}
+                      style={{ objectPosition: featuredPost.imagePosition || 'center' }}
                     />
                   )}
                 </div>
@@ -501,7 +502,8 @@ function BlogContent() {
                       <img
                         src={thumbUrl}
                         alt={post.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className={`w-full h-full group-hover:scale-105 transition-transform duration-500 ${post.imageFit === 'contain' ? 'object-contain bg-black' : 'object-cover'}`}
+                        style={{ objectPosition: post.imagePosition || 'center' }}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-tartan-navy text-gray-500">
@@ -687,8 +689,8 @@ function BlogContent() {
             {/* Modal Body (Scrollable) */}
             <div className="p-6 sm:p-8 overflow-y-auto space-y-8 flex-1">
               
-              {/* Media Player on Top (if YouTube present) */}
-              {activeStoryModal.youtubeId && (
+              {/* Media Player on Top (YouTube present or Featured Cover Image) */}
+              {activeStoryModal.youtubeId ? (
                 <div className="relative aspect-video rounded-2xl overflow-hidden border border-tartan-border bg-black shadow-2xl">
                   <iframe
                     src={`https://www.youtube.com/embed/${activeStoryModal.youtubeId}?autoplay=1&rel=0`}
@@ -698,7 +700,16 @@ function BlogContent() {
                     allowFullScreen
                   />
                 </div>
-              )}
+              ) : activeStoryModal.featuredImageUrl ? (
+                <div className="relative aspect-video rounded-2xl overflow-hidden border border-tartan-border bg-black shadow-2xl">
+                  <img
+                    src={activeStoryModal.featuredImageUrl}
+                    alt={activeStoryModal.title}
+                    className={`w-full h-full ${activeStoryModal.imageFit === 'contain' ? 'object-contain bg-black' : 'object-cover'}`}
+                    style={{ objectPosition: activeStoryModal.imagePosition || 'center' }}
+                  />
+                </div>
+              ) : null}
 
               {/* Title, Subtitle, Author meta */}
               <div className="space-y-3">
