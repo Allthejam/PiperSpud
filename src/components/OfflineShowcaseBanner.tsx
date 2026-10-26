@@ -213,7 +213,7 @@ export const OfflineShowcaseBanner: React.FC = () => {
                     <ShieldCheck className="w-4 h-4 text-tartan-gold shrink-0 mt-0.5" />
                     <div>
                       <p className="font-bold text-white text-[11px]">Highland Attire Guide</p>
-                      <p className="text-[10px] text-gray-400">No. 1 Dress, Royal Stewart &amp; Modern Tweeds</p>
+                      <p className="text-[10px] text-gray-400">No. 1 Dress, Fraser Tartan &amp; Modern Tweeds</p>
                     </div>
                   </div>
 

@@ -514,7 +514,7 @@ export const AdminAttire: React.FC = () => {
                         required
                         value={formName}
                         onChange={(e) => setFormName(e.target.value)}
-                        placeholder="e.g. Royal Stewart Tartan (Traditional Red)"
+                        placeholder="e.g. Fraser Tartan (Traditional Clan Red)"
                         className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-tartan-accent font-medium"
                       />
                       <p className="text-[10px] text-gray-400 mt-1">
@@ -531,7 +531,7 @@ export const AdminAttire: React.FC = () => {
                         required
                         value={formTitle}
                         onChange={(e) => setFormTitle(e.target.value)}
-                        placeholder="e.g. Royal Stewart Highland Dress"
+                        placeholder="e.g. Fraser Highland Dress"
                         className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-tartan-accent font-medium"
                       />
                       <p className="text-[10px] text-gray-400 mt-1">

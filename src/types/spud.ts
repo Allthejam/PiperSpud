@@ -4,6 +4,7 @@ export type EventType = string;
 
 export type HighlandDressOption = 
   | 'Full No. 1 Dress (Feather Bonnet & Plaid)'
+  | 'Fraser Tartan (Traditional Clan Red)'
   | 'Royal Stewart Tartan (Traditional Red)'
   | 'Black Watch Tartan (Military Green/Blue)'
   | 'Modern Day Highland Tweed Jacket'

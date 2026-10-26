@@ -164,10 +164,10 @@ export async function generateRssFeedXml(): Promise<string> {
       author: 'Spud the Piper'
     },
     {
-      id: 'attire-royal-stewart',
-      title: 'Royal Stewart Red Tartan Highland Wedding Dress',
+      id: 'attire-fraser-tartan',
+      title: 'Fraser Red Clan Tartan Highland Wedding Dress',
       link: `${SITE_URL}/attire`,
-      description: 'The iconic vibrant Royal Stewart tartan paired with tailored Argyll tweed jacket and silver highland dress accessories.',
+      description: 'The iconic vibrant Fraser clan tartan paired with tailored Argyll tweed jacket and silver highland dress accessories.',
       pubDate: new Date('2026-09-26T14:00:00Z').toUTCString(),
       imageUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&auto=format&fit=crop&q=85',
       category: 'Highland Attire & Tartans',

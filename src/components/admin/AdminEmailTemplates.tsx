@@ -263,7 +263,7 @@ const SAMPLE_SCENARIOS: Record<string, Partial<BookingEvent>> = {
     venueName: 'Eilean Donan Castle',
     venueAddress: 'Dornie, Kyle of Lochalsh',
     venuePostcode: 'IV40 8DX',
-    tartanChoice: 'Royal Stewart Tartan (Traditional Red)',
+    tartanChoice: 'Fraser Tartan (Traditional Clan Red)',
     estimatedPrice: 650,
     depositAmount: 150,
     specialTunes: ['Skye Boat Song', 'Flower of Scotland', 'Black Bear'],

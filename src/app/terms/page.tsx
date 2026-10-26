@@ -122,7 +122,7 @@ export default function TermsPage() {
             label="Section 3 Paragraph 3"
             section="terms"
             tag="p"
-            defaultContent="Spud performs in authentic Highland dress as chosen during the booking process (Full No. 1 Dress with Feather Bonnet, Royal Stewart, Black Watch, or Highland Tweed)."
+            defaultContent="Spud performs in authentic Highland dress as chosen during the booking process (Full No. 1 Dress with Feather Bonnet, Fraser Tartan, Black Watch, or Highland Tweed)."
           />
         </section>
 

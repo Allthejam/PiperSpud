@@ -40,7 +40,7 @@ export default function AttirePage() {
           <EditableElement
             id="attire-page-desc"
             tag="p"
-            defaultContent="Choose from Full Ceremonial Military No. 1 Dress with Feather Bonnet, Royal Stewart, Black Watch, or Modern Highland Tweed."
+            defaultContent="Choose from Full Ceremonial Military No. 1 Dress with Feather Bonnet, Fraser Tartan, Black Watch, or Modern Highland Tweed."
             className="text-base text-gray-300 max-w-2xl mx-auto"
             label="Attire Page Description"
             section="attire"

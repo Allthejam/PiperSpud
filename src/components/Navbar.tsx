@@ -108,7 +108,7 @@ export const Navbar: React.FC = () => {
       children: [
         { label: 'All Services & Packages', href: '/services', desc: 'Weddings, Castles, Funerals & Corporate', icon: Sparkles },
         { label: 'Tour & Coach Groups', href: '/tour-groups', desc: 'Scottish Welcome & Experiences for Visitors', icon: Globe },
-        { label: 'Highland Attire & Tartans', href: '/attire', desc: 'No. 1 Feather Bonnet, Royal Stewart & Modern', icon: Shirt },
+        { label: 'Highland Attire & Tartans', href: '/attire', desc: 'No. 1 Feather Bonnet, Fraser Tartan & Modern', icon: Shirt },
       ]
     },
     {

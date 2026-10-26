@@ -62,7 +62,7 @@ export const ALL_ADMIN_MODULES: AdminModuleMeta[] = [
 
   // 4. Highland Services
   { id: 'services', tabId: 'services', label: 'Services, Pricing & POA Studio', group: 'Highland Services', description: 'Wedding packages, gala performances & pricing models' },
-  { id: 'attire', tabId: 'attire', label: 'Tartan & Attire Studio', group: 'Highland Services', description: 'Full No. 1 Dress, Royal Stewart & kiltwear catalog' },
+  { id: 'attire', tabId: 'attire', label: 'Tartan & Attire Studio', group: 'Highland Services', description: 'Full No. 1 Dress, Fraser Tartan & kiltwear catalog' },
   { id: 'partners', tabId: 'partners', label: 'Partners & Ecosystem', group: 'Highland Services', description: 'Castle venues, celebrants, kiltmakers & directory links' },
   { id: 'faqs', tabId: 'faqs', label: 'FAQ Knowledgebase', group: 'Highland Services', description: 'Scottish bagpipe Q&As, rich text answers & home display' },
   { id: 'forum', tabId: 'forum', label: 'Community Forum Control', group: 'Highland Services', description: 'Discussion moderation, categories & Highland topics' },
@@ -234,7 +234,7 @@ export const initialQuickResponses: QuickResponse[] = [
     id: 'qr-4',
     category: 'Attire',
     title: 'Highland Dress & Tartan Options',
-    text: "I can perform in Full No. 1 Feather Bonnet dress with ceremonial plaid, Royal Stewart red tartan, Black Watch military green/blue, or Modern Highland Tweed. You can preview all tartans in our Attire Selector on site!"
+    text: "I can perform in Full No. 1 Feather Bonnet dress with ceremonial plaid, Fraser red clan tartan, Black Watch military green/blue, or Modern Highland Tweed. You can preview all tartans in our Attire Selector on site!"
   },
   {
     id: 'qr-5',
@@ -1001,8 +1001,8 @@ export const initialSeoPages: SeoPageConfig[] = [
     pageName: 'Tartan & Attire Studio',
     path: '/attire',
     title: 'Highland Dress & Tartan Studio | Authentic Scottish Bagpiper Attire',
-    metaDescription: 'Preview Spud in Full No. 1 Feather Bonnet dress, Royal Stewart, Black Watch Military, or Modern Day Highland Tweed to match your wedding or gala color scheme.',
-    keywords: ['Highland Dress Bagpiper', 'Royal Stewart Tartan Kilt', 'Feather Bonnet Piper', 'Black Watch Bagpiper', 'Highland Tweed Jacket'],
+    metaDescription: 'Preview Spud in Full No. 1 Feather Bonnet dress, Fraser Clan Tartan, Black Watch Military, or Modern Day Highland Tweed to match your wedding or gala color scheme.',
+    keywords: ['Highland Dress Bagpiper', 'Fraser Tartan Kilt', 'Feather Bonnet Piper', 'Black Watch Bagpiper', 'Highland Tweed Jacket'],
     canonicalUrl: 'https://www.spudthepiper.com/attire',
     ogImage: 'https://www.spudthepiper.com/og-image.png',
     h1: 'Highland Dress & Tartan Studio',
@@ -1666,7 +1666,7 @@ Spud also frequently travels across the wider UK, Europe, the United States, and
     question: 'Can I choose what tartan or uniform Spud wears?',
     answer: `Yes, absolutely! Spud offers several authentic Scottish Highland dress styles to match your event theme:
 • Full Ceremonial Number 1 Military Dress: Feather bonnet, ceremonial military jacket, cross-belt, and full plaid
-• Royal Stewart Tartan: Classic vibrant crimson red tartan
+• Fraser Tartan: Classic vibrant red clan tartan worn by Calum Fraser
 • Black Watch Government Tartan: Traditional navy and forest green regimental tartan
 • Modern Highland Day Tweed: Relaxed tweed jacket with coordinated muted kilt tones
 
@@ -1862,11 +1862,11 @@ export const initialAttires: AttireItem[] = [
     order: 1
   },
   {
-    id: 'royal-stewart',
-    name: 'Royal Stewart Tartan (Traditional Red)',
-    title: 'Royal Stewart Highland Dress',
-    tagline: 'The iconic traditional Scottish monarch tartan',
-    description: 'Bright, bold crimson red tartan paired with Prince Charlie black formal jacket, silver thistle buttons, and dress sporran.',
+    id: 'fraser-tartan',
+    name: 'Fraser Tartan (Traditional Clan Red)',
+    title: 'Fraser Highland Dress',
+    tagline: 'The iconic traditional Fraser clan red tartan',
+    description: 'Bright, bold red clan tartan worn by Calum Fraser, paired with Prince Charlie black formal jacket, silver thistle buttons, and dress sporran.',
     colorScheme: ['#DC2626', '#1D4ED8', '#F59E0B', '#15803D'],
     bestFor: 'Traditional Weddings, Burns Suppers & Hogmanay',
     imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&q=80',
@@ -2032,7 +2032,7 @@ An unforgettable privilege to be the sole musical witness to such a private mile
     excerpt: 'Leading the ceremonial chef and Haggis into the grand ballroom at Hopetoun House, followed by rousing reels and Auld Lang Syne.',
     content: `There is no Scottish tradition quite as raucous, theatrical, and heartwarming as a proper Burns Supper.
 
-At Hopetoun House just outside Edinburgh, 180 guests had gathered under the chandeliers. When the double doors swung open, I stepped forward in the Royal Stewart Tartan playing "A Man's a Man for A' That", leading the head chef as he carried the silver platter bearing the steaming Haggis high above his head.
+At Hopetoun House just outside Edinburgh, 180 guests had gathered under the chandeliers. When the double doors swung open, I stepped forward in the Fraser Tartan playing "A Man's a Man for A' That", leading the head chef as he carried the silver platter bearing the steaming Haggis high above his head.
 
 The room erupted into rhythmic clapping. We circled the banquet tables twice before delivering the Haggis to the podium for the famous "Address to a Haggis", punctuated by the dramatic plunge of the dirk!
 
@@ -2044,7 +2044,7 @@ Later in the evening, after the toasts to the lassies and laddies, I brought the
     featuredImageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&auto=format&fit=crop&q=80',
     venueName: 'Hopetoun House Ballroom',
     venueLocation: 'South Queensferry, Edinburgh',
-    tartanChoice: 'Royal Stewart Tartan (Traditional Red)',
+    tartanChoice: 'Fraser Tartan (Traditional Clan Red)',
     tunesPlayed: ['A Man\'s a Man for A\' That', 'Auld Lang Syne', 'The Atholl Highlanders'],
     author: 'Spud The Piper',
     publishDate: '2026-09-28',
@@ -2053,7 +2053,7 @@ Later in the evening, after the toasts to the lassies and laddies, I brought the
     readTimeMinutes: 4,
     views: 0,
     likes: 0,
-    tags: ['Burns Night', 'Address to the Haggis', 'Hopetoun House', 'Royal Stewart', 'Auld Lang Syne'],
+    tags: ['Burns Night', 'Address to the Haggis', 'Hopetoun House', 'Fraser Tartan', 'Auld Lang Syne'],
     createdAt: '2026-09-28T18:00:00.000Z'
   }
 ];

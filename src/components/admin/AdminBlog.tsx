@@ -1500,7 +1500,7 @@ export const AdminBlog: React.FC = () => {
                     className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-tartan-accent"
                   >
                     <option value="Full No. 1 Dress (Feather Bonnet & Plaid)">Full No. 1 Dress (Feather Bonnet & Plaid)</option>
-                    <option value="Royal Stewart Tartan (Traditional Red)">Royal Stewart Tartan (Traditional Red)</option>
+                    <option value="Fraser Tartan (Traditional Clan Red)">Fraser Tartan (Traditional Clan Red)</option>
                     <option value="Black Watch Tartan (Military Green/Blue)">Black Watch Tartan (Military Green/Blue)</option>
                     <option value="Modern Day Highland Tweed Jacket">Modern Day Highland Tweed Jacket</option>
                     <option value="Isle of Skye Tartan (Purple/Heather/Green)">Isle of Skye Tartan (Purple/Heather/Green)</option>

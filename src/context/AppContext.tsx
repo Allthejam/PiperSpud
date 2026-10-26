@@ -4396,7 +4396,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const autoReplies: { [key: string]: string } = {
             wedding: 'Aye! Spud specializes in wedding ceremonies, greeting guests at castle gates, and piping the top table into the reception. Check our Booking Diary to view available dates!',
             price: 'Typical rates range from £220 for memorial laments to £450 - £650 for full wedding and castle events, depending on location and duration. You can use our instant quote calculator on the booking page!',
-            tartan: 'Spud can perform in Full No. 1 Dress with Feather Bonnet, Royal Stewart Tartan, Black Watch Military, or Modern Highland Tweed. You can preview all tartans in our Attire Selector!',
+            tartan: 'Spud can perform in Full No. 1 Dress with Feather Bonnet, Fraser Tartan (Calum Fraser\'s Clan Tartan), Black Watch Military, or Modern Highland Tweed. You can preview all tartans in our Attire Selector!',
             tune: 'Spud plays all classic Highland bagpipe tunes including Highland Cathedral, Scotland the Brave, Flower of Scotland, and Amazing Grace. Feel free to use the audio jukebox on our site to preview them!'
           };
 

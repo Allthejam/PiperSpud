@@ -599,7 +599,7 @@ export const TartanSelector: React.FC = () => {
                         required
                         value={formTitle}
                         onChange={(e) => setFormTitle(e.target.value)}
-                        placeholder="e.g. Royal Stewart Highland Dress"
+                        placeholder="e.g. Fraser Highland Dress"
                         className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-tartan-accent font-medium"
                       />
                       <p className="text-[10px] text-gray-400 mt-1">
@@ -616,7 +616,7 @@ export const TartanSelector: React.FC = () => {
                       type="text"
                       value={formTagline}
                       onChange={(e) => setFormTagline(e.target.value)}
-                      placeholder="e.g. The iconic traditional Scottish monarch tartan"
+                      placeholder="e.g. The iconic traditional Fraser clan red tartan"
                       className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-tartan-accent"
                     />
                   </div>

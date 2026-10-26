@@ -153,7 +153,7 @@ export const PiperToTheStars: React.FC = () => {
               <EditableElement
                 id="stars-regalia-desc"
                 tag="p"
-                defaultContent="Choose from Full Ceremonial Number 1 Military Dress with Feather Bonnet, Royal Stewart Tartan, Black Watch, or Modern Highland Tweed to complement your wedding color scheme."
+                defaultContent="Choose from Full Ceremonial Number 1 Military Dress with Feather Bonnet, Fraser Tartan, Black Watch, or Modern Highland Tweed to complement your wedding color scheme."
                 className="text-sm text-gray-300 leading-relaxed"
                 label="Regalia Description"
                 section="stars"
