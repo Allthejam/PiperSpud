@@ -33,6 +33,7 @@ import {
   BlogPost,
   BroadcastAuditEntry,
   BroadcastRecipientAudit,
+  GoogleCalendarEvent,
   UserRole,
   ModuleAccessLevel,
   ModulePermissions
@@ -154,6 +155,17 @@ interface AppContextType {
   sendSevenDayReminder: (id: string) => Promise<{ success: boolean; error?: string }>;
   sendOneDayReminder: (id: string) => Promise<{ success: boolean; error?: string }>;
   deleteBooking: (id: string) => void;
+
+  // Google Calendar Live Sync & Automation
+  googleCalendarEvents: GoogleCalendarEvent[];
+  isGoogleCalendarLoading: boolean;
+  lastGoogleCalendarSync: string | null;
+  googleCalendarError: string | null;
+  syncGoogleCalendar: (force?: boolean) => Promise<void>;
+  isGoogleCalendarBlockEnabled: boolean;
+  setIsGoogleCalendarBlockEnabled: (enabled: boolean) => void;
+  googleCalendarUrl: string;
+  setGoogleCalendarUrl: (url: string) => void;
 
   // Travel Radius & Expenses Configuration
   travelConfig: TravelExpensesConfig;
@@ -546,6 +558,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isSyncingOfflineQueue, setIsSyncingOfflineQueue] = useState<boolean>(false);
   const [offlineLastSyncedAt, setOfflineLastSyncedAt] = useState<string | null>(null);
 
+  // Google Calendar Live Sync & Automation State
+  const [googleCalendarEvents, setGoogleCalendarEvents] = useState<GoogleCalendarEvent[]>([]);
+  const [isGoogleCalendarLoading, setIsGoogleCalendarLoading] = useState<boolean>(false);
+  const [lastGoogleCalendarSync, setLastGoogleCalendarSync] = useState<string | null>(null);
+  const [googleCalendarError, setGoogleCalendarError] = useState<string | null>(null);
+  const [isGoogleCalendarBlockEnabled, setIsGoogleCalendarBlockEnabledState] = useState<boolean>(true);
+  const [googleCalendarUrl, setGoogleCalendarUrlState] = useState<string>(
+    'https://calendar.google.com/calendar/ical/spudthepiper%40gmail.com/private-d12902d26d5cf53b5af20caad08f7f2d/basic.ics'
+  );
+
   // Audio player state & Tunes
   const [tunesList, setTunesList] = useState<BagpipeTune[]>(initialTunes);
   const [currentPlayingTune, setCurrentPlayingTune] = useState<string | null>(null);
@@ -646,6 +668,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         } catch (e) {}
       }
+
+      const savedGCalEvents = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}gcal_events`);
+      if (savedGCalEvents) {
+        try {
+          const parsed = JSON.parse(savedGCalEvents);
+          if (Array.isArray(parsed)) setGoogleCalendarEvents(parsed);
+        } catch (e) {}
+      }
+      const savedGCalSync = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}gcal_last_sync`);
+      if (savedGCalSync) setLastGoogleCalendarSync(savedGCalSync);
+      const savedGCalBlock = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}gcal_block_enabled`);
+      if (savedGCalBlock !== null) setIsGoogleCalendarBlockEnabledState(savedGCalBlock === 'true');
+      const savedGCalUrl = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}gcal_url`);
+      if (savedGCalUrl) setGoogleCalendarUrlState(savedGCalUrl);
 
       let deletedReviewIds = new Set<string>();
       if (typeof window !== 'undefined') {
@@ -3740,6 +3776,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await deleteFromFirestore('bookings', id);
   };
 
+  // Google Calendar Live Sync handlers
+  const syncGoogleCalendar = useCallback(async (force = false) => {
+    setIsGoogleCalendarLoading(true);
+    setGoogleCalendarError(null);
+    try {
+      const queryParam = force ? '?refresh=true' : '';
+      const res = await fetch(`/api/calendar/google-events${queryParam}`);
+      if (!res.ok) {
+        throw new Error(`Google Calendar sync returned status ${res.status}`);
+      }
+      const data = await res.json();
+      if (data.success && Array.isArray(data.events)) {
+        setGoogleCalendarEvents(data.events);
+        const syncTime = data.syncedAt || new Date().toISOString();
+        setLastGoogleCalendarSync(syncTime);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(`${LOCAL_STORAGE_PREFIX}gcal_events`, JSON.stringify(data.events));
+          localStorage.setItem(`${LOCAL_STORAGE_PREFIX}gcal_last_sync`, syncTime);
+        }
+      } else {
+        throw new Error(data.error || 'Failed to parse Google Calendar data');
+      }
+    } catch (err: any) {
+      console.warn('[Google Calendar Sync Error]:', err.message);
+      setGoogleCalendarError(err.message || 'Error connecting to Google Calendar');
+    } finally {
+      setIsGoogleCalendarLoading(false);
+    }
+  }, []);
+
+  const setIsGoogleCalendarBlockEnabled = useCallback((enabled: boolean) => {
+    setIsGoogleCalendarBlockEnabledState(enabled);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}gcal_block_enabled`, String(enabled));
+    }
+  }, []);
+
+  const setGoogleCalendarUrl = useCallback((newUrl: string) => {
+    setGoogleCalendarUrlState(newUrl);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}gcal_url`, newUrl);
+    }
+  }, []);
+
+  // Auto-sync Google Calendar once upon mount if online
+  useEffect(() => {
+    if (typeof window !== 'undefined' && navigator.onLine) {
+      syncGoogleCalendar(false).catch(() => {});
+    }
+  }, [syncGoogleCalendar]);
+
   // Review handlers
   const submitReview = async (reviewData: Omit<Review, 'id' | 'date' | 'status' | 'isFeatured'>) => {
     const newRev: Review = {
@@ -6320,6 +6407,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       sendSevenDayReminder,
       sendOneDayReminder,
       deleteBooking,
+      googleCalendarEvents,
+      isGoogleCalendarLoading,
+      lastGoogleCalendarSync,
+      googleCalendarError,
+      syncGoogleCalendar,
+      isGoogleCalendarBlockEnabled,
+      setIsGoogleCalendarBlockEnabled,
+      googleCalendarUrl,
+      setGoogleCalendarUrl,
       travelConfig,
       updateTravelConfig,
       pricingConfig,

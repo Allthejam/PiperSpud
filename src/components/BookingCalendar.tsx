@@ -34,6 +34,7 @@ import {
 import { EventType, HighlandDressOption } from '@/types/spud';
 import { calculateTravelCosts } from '@/lib/travelCalculator';
 import { initialTravelConfig } from '@/lib/initialData';
+import { isEventOnDate } from '@/lib/icalParser';
 
 export const BookingCalendar: React.FC = () => {
   const { 
@@ -50,7 +51,9 @@ export const BookingCalendar: React.FC = () => {
     setSelectedAttireId,
     cmsBlocks,
     isOffline,
-    isOfflineShowcaseMode
+    isOfflineShowcaseMode,
+    googleCalendarEvents,
+    isGoogleCalendarBlockEnabled
   } = useApp();
 
   // Dynamic Real-time Date references
@@ -447,10 +450,15 @@ export const BookingCalendar: React.FC = () => {
                   const isToday = dateString === todayFormatted;
                   const isSelectableFuture = dateString > todayFormatted;
                   const isSelected = selectedDate === dateString;
+                  const isGCalBooked = isGoogleCalendarBlockEnabled && (googleCalendarEvents || []).some(evt => isEventOnDate(evt, dateString));
+
+                  const isAvailable = isSelectableFuture && !isGCalBooked;
 
                   let btnStyle = '';
                   if (isSelected) {
                     btnStyle = 'bg-gold-gradient text-tartan-dark font-extrabold ring-2 ring-yellow-400 shadow-xl scale-105 z-10';
+                  } else if (isGCalBooked) {
+                    btnStyle = 'bg-rose-950/40 text-rose-300 border border-rose-800/60 cursor-not-allowed opacity-50 line-through';
                   } else if (isToday) {
                     btnStyle = 'bg-tartan-dark/80 text-gray-400 border border-tartan-gold/50 cursor-not-allowed opacity-60';
                   } else if (isPast) {
@@ -463,16 +471,20 @@ export const BookingCalendar: React.FC = () => {
                     <button
                       key={dayNum}
                       type="button"
-                      disabled={!isSelectableFuture}
+                      disabled={!isAvailable}
                       onClick={() => {
-                        if (isSelectableFuture) {
+                        if (isAvailable) {
                           setSelectedDate(dateString);
                           setDateError('');
+                        } else if (isGCalBooked) {
+                          setDateError(`The date ${dayNum} ${monthNames[currentMonth]} ${currentYear} is already reserved in Spud's diary. Please choose an alternate date.`);
                         }
                       }}
                       className={`h-11 rounded-xl text-xs font-semibold flex flex-col items-center justify-center transition-all relative ${btnStyle}`}
                       title={
-                        isToday
+                        isGCalBooked
+                          ? `Date reserved in Spud's Diary (${dayNum} ${monthNames[currentMonth]}) - Unavailable`
+                          : isToday
                           ? `Today (${dayNum} ${monthNames[currentMonth]}) - Events must be booked for future dates`
                           : isPast
                           ? `Past date (${dayNum} ${monthNames[currentMonth]}) - Unavailable`
@@ -480,7 +492,10 @@ export const BookingCalendar: React.FC = () => {
                       }
                     >
                       <span>{dayNum}</span>
-                      {isToday && (
+                      {isGCalBooked && (
+                        <span className="text-[7px] font-bold text-rose-400 uppercase leading-none tracking-tighter mt-0.5">Booked</span>
+                      )}
+                      {isToday && !isGCalBooked && (
                         <span className="text-[8px] font-bold text-tartan-gold uppercase leading-none tracking-tighter mt-0.5">Today</span>
                       )}
                       {isSelected && (

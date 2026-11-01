@@ -31,6 +31,19 @@ export interface BookingMessage {
   status?: 'queued' | 'sent' | 'delivered' | 'read';
 }
 
+export interface GoogleCalendarEvent {
+  id: string;
+  summary: string;
+  description?: string;
+  location?: string;
+  startDate: string; // YYYY-MM-DD
+  startTime?: string; // HH:mm
+  endDate: string; // YYYY-MM-DD
+  endTime?: string; // HH:mm
+  isAllDay: boolean;
+  status?: string;
+}
+
 export interface BookingEvent {
   id: string;
   clientName: string;

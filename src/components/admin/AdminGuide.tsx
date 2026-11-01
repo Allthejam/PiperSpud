@@ -189,12 +189,25 @@ export const AdminGuide: React.FC<AdminGuideProps> = ({ onNavigateTab }) => {
         {
           title: 'Step 3: Adding Manual Bookings (Phone / WhatsApp / In Person)',
           description: 'When you take a booking over the phone, click the golden "+ Add Manual Booking" button at the top of the diary. Enter the client\'s name, date, venue, package, and agreed price to block out the date immediately.',
+        },
+        {
+          title: 'Step 4: Live Google Calendar & Android Phone Synchronization',
+          description: 'Your Back Office diary is linked live with your Google Calendar (spudthepiper@gmail.com). Personal events and holds on your Google Calendar appear right in your diary grid with a blue 🗓️ badge. Plus, you can copy your Android Feed URL into Google Calendar once, and all confirmed website bookings, venue locations, client contact info, and tartan choices will automatically appear on your Android phone!',
+          tip: 'Leave "Block Public Bookings on GCal Events" checked to ensure customers cannot book any dates you have marked as busy on your phone calendar.'
         }
       ],
       faq: [
         {
           q: 'Can customers still pick dates on the booking form?',
-          a: 'Yes! The booking form lets customers select their desired event date starting from tomorrow onwards. If a date is already booked, the system alerts them.'
+          a: 'Yes! The booking form lets customers select their desired event date starting from tomorrow onwards. If a date is already booked on the website or busy on your Google Calendar, the system marks it as unavailable.'
+        },
+        {
+          q: 'How do website bookings appear on my Android phone?',
+          a: 'In the Diary, click "Copy Android Feed URL". Open calendar.google.com on any computer or mobile browser, click the "+" next to Other calendars, choose "From URL", and paste the link. All website gigs will now sync permanently into your Android phone calendar with one-tap Google Maps directions!'
+        },
+        {
+          q: 'Can I send an individual booking straight to my Google Calendar?',
+          a: 'Yes! When viewing any booking details, click the "Add to Google Calendar" button. It will open Google Calendar with the client name, venue, timings, tartan, and notes pre-filled and ready to save in one tap.'
         }
       ]
     },

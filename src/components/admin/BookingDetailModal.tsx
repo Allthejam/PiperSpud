@@ -123,6 +123,28 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
     setTimeout(() => setIsDepositLinkCopied(false), 3000);
   };
 
+  const getGoogleCalendarUrl = (b: BookingEvent) => {
+    const title = encodeURIComponent(`Piper Gig: ${b.clientName} (${b.eventType})`);
+    let startHour = 13, startMin = 0, endHour = 16, endMin = 0;
+    if (b.timeSlot) {
+      const parts = b.timeSlot.split('-');
+      if (parts.length >= 2) {
+        const sm = parts[0].trim().match(/(\d{1,2}):(\d{2})/);
+        const em = parts[1].trim().match(/(\d{1,2}):(\d{2})/);
+        if (sm) { startHour = parseInt(sm[1], 10); startMin = parseInt(sm[2], 10); }
+        if (em) { endHour = parseInt(em[1], 10); endMin = parseInt(em[2], 10); }
+      }
+    }
+    const cleanDate = (b.date || '').replace(/-/g, '');
+    const dtStart = `${cleanDate}T${String(startHour).padStart(2, '0')}${String(startMin).padStart(2, '0')}00`;
+    const dtEnd = `${cleanDate}T${String(endHour).padStart(2, '0')}${String(endMin).padStart(2, '0')}00`;
+    const location = encodeURIComponent([b.venueName, b.venueAddress, b.venuePostcode].filter(Boolean).join(', '));
+    const details = encodeURIComponent(
+      `Client: ${b.clientName}\nPhone: ${b.clientPhone}\nEmail: ${b.clientEmail}\nTartan Worn: ${b.tartanChoice}\nTotal Fee: £${b.estimatedPrice}\nDeposit: £${b.depositAmount} (${b.status})\nSpecial Tunes: ${(b.specialTunes || []).join(', ')}\nNotes: ${b.notes || 'None'}\n\nSpud the Piper Booking #${b.id}`
+    );
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dtStart}/${dtEnd}&details=${details}&location=${location}`;
+  };
+
   // Synchronize state when booking changes
   React.useEffect(() => {
     if (booking) {
@@ -1276,6 +1298,18 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                 <span>View Official Confirmed Receipt</span>
               </button>
             )}
+
+            {/* 1-Click Add to Google Calendar / Android */}
+            <a
+              href={getGoogleCalendarUrl(booking)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2.5 rounded-xl bg-sky-950 hover:bg-sky-900 text-sky-200 border border-sky-700/60 text-xs font-semibold flex items-center gap-1.5 transition"
+              title="Add this booking directly to Google Calendar on Android / Web"
+            >
+              <ExternalLink className="w-3.5 h-3.5 text-sky-400" />
+              <span>Add to Google Calendar</span>
+            </a>
 
             <button
               type="button"
