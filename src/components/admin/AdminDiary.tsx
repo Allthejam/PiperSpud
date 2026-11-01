@@ -59,8 +59,6 @@ export const AdminDiary: React.FC = () => {
   const [selectedCustomEntry, setSelectedCustomEntry] = useState<BookingEvent | null>(null);
 
   const [isAddEventModalOpen, setIsAddEventModalOpen] = useState(false);
-  const [isFeedCopied, setIsFeedCopied] = useState(false);
-  const [showAndroidInstructions, setShowAndroidInstructions] = useState(false);
 
   // Active Category Filter for calendar grid
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<'all' | DiaryEntryType>('all');
@@ -131,16 +129,6 @@ export const AdminDiary: React.FC = () => {
       setCurrentYear(currentYear + 1);
     } else {
       setCurrentMonth(currentMonth + 1);
-    }
-  };
-
-  const handleCopyAndroidFeedLink = () => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.spudthepiper.com';
-    const feedUrl = `${origin}/api/calendar/spud-diary.ics`;
-    if (typeof navigator !== 'undefined') {
-      navigator.clipboard.writeText(feedUrl);
-      setIsFeedCopied(true);
-      setTimeout(() => setIsFeedCopied(false), 3000);
     }
   };
 
@@ -239,20 +227,10 @@ export const AdminDiary: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white font-serif">Spud&apos;s Interactive Diary</h2>
-          <p className="text-xs text-gray-400">Manage Bookings, Holidays, Family Events, and Google Calendar Sync</p>
+          <p className="text-xs text-gray-400">Manage Bookings, Holidays, Family Events &amp; Schedule</p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => syncGoogleCalendar(true)}
-            disabled={isGoogleCalendarLoading}
-            className="px-3.5 py-2.5 rounded-xl bg-tartan-navy hover:bg-slate-700 text-sky-300 font-bold text-xs flex items-center gap-1.5 border border-sky-800/80 transition shadow"
-            title="Refresh feed from Spud's Google Calendar"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isGoogleCalendarLoading ? 'animate-spin text-sky-400' : ''}`} />
-            <span>{isGoogleCalendarLoading ? 'Syncing...' : 'Sync GCal'}</span>
-          </button>
-
+        <div className="flex items-center gap-2">
           <button
             onClick={() => handleOpenAddModal(undefined, 'booking')}
             className="px-4 py-2.5 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs flex items-center gap-2 shadow-lg hover:brightness-110"
@@ -261,98 +239,6 @@ export const AdminDiary: React.FC = () => {
             <span>Add Event to Diary</span>
           </button>
         </div>
-      </div>
-
-      {/* Google Calendar & Android Live Sync Bar */}
-      <div className="bg-gradient-to-r from-sky-950/40 via-tartan-card to-tartan-dark/90 p-4 sm:p-5 rounded-3xl border border-sky-800/40 shadow-xl space-y-3">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-sky-900/60 border border-sky-600/50 flex items-center justify-center shrink-0 shadow-inner">
-              <CalendarCheck className="w-5 h-5 text-sky-300" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <p className="text-sm font-bold text-white">
-                  Google Calendar Active <span className="text-sky-300 font-medium text-xs">(spudthepiper@gmail.com)</span>
-                </p>
-              </div>
-              <p className="text-xs text-gray-400">
-                {googleCalendarEvents.length > 0 
-                  ? `${googleCalendarEvents.length} calendar events synchronized in schedule window.` 
-                  : 'Syncing with Google Calendar...'}
-                {lastGoogleCalendarSync && (
-                  <span className="text-[11px] text-gray-500 ml-1.5">
-                    • Last updated: {new Date(lastGoogleCalendarSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                )}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Auto-block toggle */}
-            <label className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-tartan-dark/80 border border-tartan-border cursor-pointer hover:border-sky-500/50 transition">
-              <input
-                type="checkbox"
-                checked={isGoogleCalendarBlockEnabled}
-                onChange={(e) => setIsGoogleCalendarBlockEnabled(e.target.checked)}
-                className="w-3.5 h-3.5 accent-sky-400 rounded cursor-pointer"
-              />
-              <span className="text-[11px] font-semibold text-gray-300">
-                Block Public Bookings on GCal Events
-              </span>
-            </label>
-
-            {/* Android Feed URL */}
-            <button
-              onClick={handleCopyAndroidFeedLink}
-              className="px-3 py-1.5 rounded-xl bg-sky-900/50 hover:bg-sky-800/60 text-sky-200 border border-sky-700/60 text-xs font-semibold flex items-center gap-1.5 transition"
-              title="Copy iCal feed link to paste into Google Calendar"
-            >
-              {isFeedCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-sky-300" />}
-              <span>{isFeedCopied ? 'Link Copied!' : 'Copy Android Feed URL'}</span>
-            </button>
-
-            <button
-              onClick={() => setShowAndroidInstructions(!showAndroidInstructions)}
-              className="p-1.5 rounded-xl bg-tartan-dark hover:bg-tartan-navy text-gray-400 hover:text-white border border-tartan-border text-xs"
-              title="How to sync with Android"
-            >
-              <Smartphone className="w-4 h-4 text-sky-400" />
-            </button>
-          </div>
-        </div>
-
-        {/* Android instructions dropdown */}
-        {showAndroidInstructions && (
-          <div className="p-3.5 rounded-2xl bg-tartan-dark/95 border border-sky-800/60 text-xs space-y-2 text-gray-300 animate-in fade-in-50">
-            <div className="flex items-center justify-between text-sky-300 font-bold">
-              <div className="flex items-center gap-1.5">
-                <Smartphone className="w-4 h-4 text-sky-400" />
-                <span>How to auto-sync Website Bookings to Spud&apos;s Android Phone</span>
-              </div>
-              <button onClick={() => setShowAndroidInstructions(false)} className="text-gray-400 hover:text-white">✕</button>
-            </div>
-            <p className="text-[11px] leading-relaxed">
-              Because Spud is on Android, adding the website subscription link into his Google Calendar will sync every confirmed gig, client phone number, venue location, and tartan choice directly to his phone with Google Maps directions!
-            </p>
-            <ol className="list-decimal list-inside space-y-1 text-[11px] text-gray-300">
-              <li>Open <strong className="text-sky-300">calendar.google.com</strong> on any computer or browser signed into <code className="text-tartan-gold">spudthepiper@gmail.com</code>.</li>
-              <li>In the left sidebar, look for <strong>Other calendars</strong> and click the <strong>+ (Add other calendars)</strong> button.</li>
-              <li>Select <strong>From URL</strong>.</li>
-              <li>Paste the feed link: <code className="text-yellow-300 bg-slate-900 px-1.5 py-0.5 rounded text-[10px]">https://www.spudthepiper.com/api/calendar/spud-diary.ics</code> (or tap &apos;Copy Android Feed URL&apos; above).</li>
-              <li>Click <strong>Add calendar</strong>. That&apos;s it! Every gig and wedding is now permanently linked to his Android phone!</li>
-            </ol>
-          </div>
-        )}
-
-        {googleCalendarError && (
-          <div className="p-2.5 rounded-xl bg-rose-950/60 border border-rose-800 text-rose-300 text-xs flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
-            <span>Google Calendar Sync Notice: {googleCalendarError}</span>
-          </div>
-        )}
       </div>
 
       {/* Main Calendar Grid Card */}
