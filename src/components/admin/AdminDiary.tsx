@@ -24,18 +24,22 @@ import {
   ShieldAlert,
   Smartphone,
   Info,
-  CalendarCheck
+  CalendarCheck,
+  Palmtree,
+  Users,
+  Briefcase,
+  Bookmark,
+  Trash2
 } from 'lucide-react';
-import { BookingEvent, BookingStatus, GoogleCalendarEvent } from '@/types/spud';
+import { BookingEvent, BookingStatus, GoogleCalendarEvent, DiaryEntryType } from '@/types/spud';
 import { BookingDetailModal } from '@/components/admin/BookingDetailModal';
 import { isEventOnDate } from '@/lib/icalParser';
 
 export const AdminDiary: React.FC = () => {
   const { 
     bookings, 
-    openBrevoPreview, 
-    openPayPalModal, 
     createBooking,
+    deleteBooking,
     googleCalendarEvents,
     isGoogleCalendarLoading,
     lastGoogleCalendarSync,
@@ -48,21 +52,33 @@ export const AdminDiary: React.FC = () => {
   const today = new Date();
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
+  
+  // Selection modals
   const [selectedEvent, setSelectedEvent] = useState<BookingEvent | null>(null);
   const [selectedGCalEvent, setSelectedGCalEvent] = useState<GoogleCalendarEvent | null>(null);
+  const [selectedCustomEntry, setSelectedCustomEntry] = useState<BookingEvent | null>(null);
+
   const [isAddEventModalOpen, setIsAddEventModalOpen] = useState(false);
   const [isFeedCopied, setIsFeedCopied] = useState(false);
   const [showAndroidInstructions, setShowAndroidInstructions] = useState(false);
 
-  // New manual diary event form
+  // Active Category Filter for calendar grid
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState<'all' | DiaryEntryType>('all');
+
+  // Entry Modal State
+  const [entryType, setEntryType] = useState<DiaryEntryType>('booking');
+  const [manualTitle, setManualTitle] = useState('');
   const [manualClient, setManualClient] = useState('');
   const [manualEmail, setManualEmail] = useState('');
   const [manualPhone, setManualPhone] = useState('');
   const [manualDate, setManualDate] = useState(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`);
+  const [manualEndDate, setManualEndDate] = useState('');
+  const [isAllDay, setIsAllDay] = useState(false);
   const [manualTime, setManualTime] = useState('14:00 - 17:00');
   const [manualVenue, setManualVenue] = useState('');
   const [manualPrice, setManualPrice] = useState(480);
   const [manualDeposit, setManualDeposit] = useState(100);
+  const [manualNotes, setManualNotes] = useState('');
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -74,16 +90,31 @@ export const AdminDiary: React.FC = () => {
 
   // Calculate confirmed vs pending breakdown for the displayed month
   const currentMonthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
-  const monthEvents = (bookings || []).filter(b => b && b.date && b.date.startsWith(currentMonthPrefix));
-  const confirmedCount = monthEvents.filter(b => b.status === 'deposit_paid').length;
-  const pendingCount = monthEvents.filter(b => b.status === 'pending' || b.status === 'approved').length;
-  const totalMonthEvents = monthEvents.length;
+  
+  // Helper to test if a booking falls within a date (handling single day and multi-day end date)
+  const isBookingOnDate = (b: BookingEvent, targetDate: string) => {
+    if (!b || !b.date || b.status === 'cancelled') return false;
+    const end = (b as any).endDate || b.date;
+    return targetDate >= b.date && targetDate <= end;
+  };
 
-  // Google Calendar events in this month
+  const monthWebsiteEvents = (bookings || []).filter(b => {
+    if (!b || !b.date || b.status === 'cancelled') return false;
+    const end = (b as any).endDate || b.date;
+    return b.date.startsWith(currentMonthPrefix) || end.startsWith(currentMonthPrefix);
+  });
+
   const monthGCalEvents = (googleCalendarEvents || []).filter(evt => {
     if (!evt || !evt.startDate) return false;
     return evt.startDate.startsWith(currentMonthPrefix) || (evt.endDate && evt.endDate.startsWith(currentMonthPrefix));
   });
+
+  // Breakdown metrics for the current month
+  const bookingCount = monthWebsiteEvents.filter(b => !b.entryType || b.entryType === 'booking').length;
+  const holidayCount = monthWebsiteEvents.filter(b => b.entryType === 'holiday').length + monthGCalEvents.filter(g => g.category === 'holiday').length;
+  const familyCount = monthWebsiteEvents.filter(b => b.entryType === 'family').length + monthGCalEvents.filter(g => g.category === 'family').length;
+  const otherCount = monthWebsiteEvents.filter(b => b.entryType === 'other').length + monthGCalEvents.filter(g => g.category === 'other').length;
+  const totalEntriesCount = monthWebsiteEvents.length + monthGCalEvents.length;
 
   const handlePrev = () => {
     if (currentMonth === 0) {
@@ -113,39 +144,92 @@ export const AdminDiary: React.FC = () => {
     }
   };
 
-  const handleCreateManualEvent = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!manualClient || !manualVenue) return;
+  const handleOpenAddModal = (dateStr?: string, defaultType: DiaryEntryType = 'booking') => {
+    setEntryType(defaultType);
+    if (dateStr) {
+      setManualDate(dateStr);
+      setManualEndDate('');
+    }
+    setManualTitle('');
+    setManualClient('');
+    setManualVenue('');
+    setManualNotes('');
+    setIsAllDay(defaultType !== 'booking');
+    setIsAddEventModalOpen(true);
+  };
 
-    createBooking({
-      clientName: manualClient,
-      clientEmail: manualEmail || 'client@example.scot',
-      clientPhone: manualPhone || '07700 900000',
-      eventType: 'Wedding Ceremony & Reception',
-      date: manualDate,
-      timeSlot: manualTime,
-      venueName: manualVenue,
-      venueAddress: manualVenue,
-      venuePostcode: 'EH1 1AA',
-      tartanChoice: 'Fraser Tartan (Traditional Clan Red)',
-      estimatedPrice: Number(manualPrice),
-      depositAmount: Number(manualDeposit),
-      specialTunes: ['Highland Cathedral'],
-      notes: 'Direct diary booking added by Spud'
-    });
+  const handleSaveDiaryEntry = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (entryType === 'booking') {
+      if (!manualClient || !manualVenue) return;
+      createBooking({
+        entryType: 'booking',
+        clientName: manualClient,
+        clientEmail: manualEmail || 'client@example.scot',
+        clientPhone: manualPhone || '07700 900000',
+        eventType: 'Wedding Ceremony & Reception',
+        date: manualDate,
+        timeSlot: isAllDay ? 'All Day' : manualTime,
+        venueName: manualVenue,
+        venueAddress: manualVenue,
+        venuePostcode: 'EH1 1AA',
+        tartanChoice: 'Fraser Tartan (Traditional Clan Red)',
+        estimatedPrice: Number(manualPrice),
+        depositAmount: Number(manualDeposit),
+        specialTunes: ['Highland Cathedral'],
+        notes: manualNotes || 'Direct diary booking added by Spud'
+      });
+    } else {
+      // Holiday, Family, or Other
+      const title = manualTitle || (
+        entryType === 'holiday' ? 'Holiday / Time Off' :
+        entryType === 'family' ? 'Family Event' : 'Personal Entry'
+      );
+
+      createBooking({
+        entryType,
+        clientName: title,
+        clientEmail: 'spudthepiper@gmail.com',
+        clientPhone: '07793 491367',
+        eventType: entryType === 'holiday' ? 'Holiday / Vacation' : entryType === 'family' ? 'Family Commitment' : 'Personal Diary Entry',
+        date: manualDate,
+        ...(manualEndDate && manualEndDate >= manualDate ? { endDate: manualEndDate } : {}),
+        timeSlot: isAllDay ? 'All Day' : manualTime,
+        venueName: manualVenue || 'Private Location',
+        venueAddress: manualVenue || 'Highlands',
+        venuePostcode: 'PH22 1UJ',
+        tartanChoice: 'Fraser Tartan (Traditional Clan Red)',
+        estimatedPrice: 0,
+        depositAmount: 0,
+        specialTunes: [],
+        notes: manualNotes || `${entryType.toUpperCase()} entry created in Back Office Diary.`
+      } as any);
+    }
 
     setIsAddEventModalOpen(false);
     setManualClient('');
+    setManualTitle('');
     setManualVenue('');
+    setManualNotes('');
   };
 
   const handleConvertGCalToBooking = (gEvt: GoogleCalendarEvent) => {
+    setEntryType('booking');
     setManualClient(gEvt.summary || 'Google Calendar Event');
     setManualDate(gEvt.startDate);
     setManualTime(gEvt.startTime ? `${gEvt.startTime} - ${gEvt.endTime || 'End'}` : '13:00 - 16:00');
     setManualVenue(gEvt.location || 'Highland Location');
+    setManualNotes(gEvt.description || '');
     setSelectedGCalEvent(null);
     setIsAddEventModalOpen(true);
+  };
+
+  const handleDeleteCustomEntry = (id: string) => {
+    if (confirm('Are you sure you want to remove this entry from your diary?')) {
+      deleteBooking(id);
+      setSelectedCustomEntry(null);
+    }
   };
 
   return (
@@ -155,7 +239,7 @@ export const AdminDiary: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white font-serif">Spud&apos;s Interactive Diary</h2>
-          <p className="text-xs text-gray-400">View and manage gigs, locked dates, and provisional holds</p>
+          <p className="text-xs text-gray-400">Manage Bookings, Holidays, Family Events, and Google Calendar Sync</p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
@@ -166,11 +250,11 @@ export const AdminDiary: React.FC = () => {
             title="Refresh feed from Spud's Google Calendar"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isGoogleCalendarLoading ? 'animate-spin text-sky-400' : ''}`} />
-            <span>{isGoogleCalendarLoading ? 'Syncing...' : 'Sync Google Calendar'}</span>
+            <span>{isGoogleCalendarLoading ? 'Syncing...' : 'Sync GCal'}</span>
           </button>
 
           <button
-            onClick={() => setIsAddEventModalOpen(true)}
+            onClick={() => handleOpenAddModal(undefined, 'booking')}
             className="px-4 py-2.5 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs flex items-center gap-2 shadow-lg hover:brightness-110"
           >
             <Plus className="w-4 h-4" />
@@ -220,7 +304,7 @@ export const AdminDiary: React.FC = () => {
               </span>
             </label>
 
-            {/* Android / Google Calendar Sync Feed Link */}
+            {/* Android Feed URL */}
             <button
               onClick={handleCopyAndroidFeedLink}
               className="px-3 py-1.5 rounded-xl bg-sky-900/50 hover:bg-sky-800/60 text-sky-200 border border-sky-700/60 text-xs font-semibold flex items-center gap-1.5 transition"
@@ -251,7 +335,7 @@ export const AdminDiary: React.FC = () => {
               <button onClick={() => setShowAndroidInstructions(false)} className="text-gray-400 hover:text-white">✕</button>
             </div>
             <p className="text-[11px] leading-relaxed">
-              Because Spud is on Android, adding the website subscription link once into his Google Calendar will sync every confirmed gig, client phone number, venue location, and tartan choice directly to his phone with Google Maps directions!
+              Because Spud is on Android, adding the website subscription link into his Google Calendar will sync every confirmed gig, client phone number, venue location, and tartan choice directly to his phone with Google Maps directions!
             </p>
             <ol className="list-decimal list-inside space-y-1 text-[11px] text-gray-300">
               <li>Open <strong className="text-sky-300">calendar.google.com</strong> on any computer or browser signed into <code className="text-tartan-gold">spudthepiper@gmail.com</code>.</li>
@@ -281,28 +365,9 @@ export const AdminDiary: React.FC = () => {
               {monthNames[currentMonth]} {currentYear}
             </h3>
             
-            {/* Clear Status Breakdown Pills */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-tartan-gold bg-tartan-navy px-3 py-1 rounded-full border border-tartan-accent/30">
-                {totalMonthEvents} {totalMonthEvents === 1 ? 'Website Gig' : 'Website Gigs'}
-              </span>
-              <span className="text-xs font-bold text-emerald-300 bg-emerald-950/80 px-2.5 py-1 rounded-full border border-emerald-800 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{confirmedCount} Confirmed</span>
-              </span>
-              {pendingCount > 0 && (
-                <span className="text-xs font-bold text-yellow-300 bg-amber-950/80 px-2.5 py-1 rounded-full border border-yellow-800 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-yellow-400" />
-                  <span>{pendingCount} Pending</span>
-                </span>
-              )}
-              {monthGCalEvents.length > 0 && (
-                <span className="text-xs font-bold text-sky-300 bg-sky-950/80 px-2.5 py-1 rounded-full border border-sky-800 flex items-center gap-1.5">
-                  <span className="text-[10px]">🗓️</span>
-                  <span>{monthGCalEvents.length} GCal Events</span>
-                </span>
-              )}
-            </div>
+            <span className="text-xs font-bold text-tartan-gold bg-tartan-navy px-3 py-1 rounded-full border border-tartan-accent/30">
+              {totalEntriesCount} {totalEntriesCount === 1 ? 'Total Entry' : 'Total Entries'} this month
+            </span>
           </div>
 
           <div className="flex items-center gap-2 self-end md:self-auto">
@@ -319,6 +384,77 @@ export const AdminDiary: React.FC = () => {
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
+        </div>
+
+        {/* Entry Type Filter Pills Bar */}
+        <div className="flex items-center gap-2 flex-wrap border-y border-tartan-border/50 py-3">
+          <span className="text-xs font-semibold text-gray-400 flex items-center gap-1 mr-1">
+            <Filter className="w-3.5 h-3.5 text-tartan-gold" /> Filter:
+          </span>
+
+          <button
+            onClick={() => setActiveCategoryFilter('all')}
+            className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border ${
+              activeCategoryFilter === 'all'
+                ? 'bg-gold-gradient text-tartan-dark border-yellow-400 shadow-md'
+                : 'bg-tartan-dark hover:bg-tartan-navy text-gray-300 border-tartan-border'
+            }`}
+          >
+            <span>All Types</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20">{totalEntriesCount}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveCategoryFilter('booking')}
+            className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border ${
+              activeCategoryFilter === 'booking'
+                ? 'bg-emerald-600 text-white border-emerald-400 shadow-md'
+                : 'bg-tartan-dark hover:bg-tartan-navy text-emerald-300 border-emerald-900/60'
+            }`}
+          >
+            <Briefcase className="w-3 h-3" />
+            <span>Bookings</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20">{bookingCount}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveCategoryFilter('holiday')}
+            className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border ${
+              activeCategoryFilter === 'holiday'
+                ? 'bg-amber-600 text-white border-amber-400 shadow-md'
+                : 'bg-tartan-dark hover:bg-tartan-navy text-amber-300 border-amber-900/60'
+            }`}
+          >
+            <Palmtree className="w-3 h-3" />
+            <span>Holiday</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20">{holidayCount}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveCategoryFilter('family')}
+            className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border ${
+              activeCategoryFilter === 'family'
+                ? 'bg-purple-600 text-white border-purple-400 shadow-md'
+                : 'bg-tartan-dark hover:bg-tartan-navy text-purple-300 border-purple-900/60'
+            }`}
+          >
+            <Users className="w-3 h-3" />
+            <span>Family</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20">{familyCount}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveCategoryFilter('other')}
+            className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border ${
+              activeCategoryFilter === 'other'
+                ? 'bg-teal-600 text-white border-teal-400 shadow-md'
+                : 'bg-tartan-dark hover:bg-tartan-navy text-teal-300 border-teal-900/60'
+            }`}
+          >
+            <Bookmark className="w-3 h-3" />
+            <span>Other</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20">{otherCount}</span>
+          </button>
         </div>
 
         {/* Day Name Headers */}
@@ -340,8 +476,20 @@ export const AdminDiary: React.FC = () => {
             const dayFormatted = String(dayNum).padStart(2, '0');
             const dateStr = `${currentYear}-${monthFormatted}-${dayFormatted}`;
 
-            const dayEvents = (bookings || []).filter(b => b && b.date === dateStr);
-            const dayGCal = (googleCalendarEvents || []).filter(evt => isEventOnDate(evt, dateStr));
+            // Filter website events for this day
+            const rawDayEvents = (bookings || []).filter(b => isBookingOnDate(b, dateStr));
+            const dayEvents = rawDayEvents.filter(b => {
+              if (activeCategoryFilter === 'all') return true;
+              const type = b.entryType || 'booking';
+              return type === activeCategoryFilter;
+            });
+
+            // Filter Google Calendar events for this day
+            const rawDayGCal = (googleCalendarEvents || []).filter(evt => isEventOnDate(evt, dateStr));
+            const dayGCal = rawDayGCal.filter(g => {
+              if (activeCategoryFilter === 'all') return true;
+              return (g.category || 'other') === activeCategoryFilter;
+            });
 
             const hasAnyEvents = dayEvents.length > 0 || dayGCal.length > 0;
 
@@ -354,7 +502,9 @@ export const AdminDiary: React.FC = () => {
                   <span className="font-bold text-gray-300">{dayNum}</span>
                   {hasAnyEvents && (
                     <div className="flex items-center gap-1">
-                      {dayEvents.length > 0 && <span className="w-2 h-2 rounded-full bg-tartan-gold"></span>}
+                      {dayEvents.some(b => b.entryType === 'holiday') && <span className="w-2 h-2 rounded-full bg-amber-400"></span>}
+                      {dayEvents.some(b => b.entryType === 'family') && <span className="w-2 h-2 rounded-full bg-purple-400"></span>}
+                      {dayEvents.some(b => !b.entryType || b.entryType === 'booking') && <span className="w-2 h-2 rounded-full bg-emerald-400"></span>}
                       {dayGCal.length > 0 && <span className="w-2 h-2 rounded-full bg-sky-400"></span>}
                     </div>
                   )}
@@ -363,8 +513,50 @@ export const AdminDiary: React.FC = () => {
                 {/* Day events badges */}
                 <div className="space-y-1 mt-1 overflow-y-auto max-h-20 no-scrollbar">
                   
-                  {/* Website Bookings */}
+                  {/* Website Entries (Bookings, Holiday, Family, Other) */}
                   {dayEvents.map((evt) => {
+                    const type = evt.entryType || 'booking';
+
+                    if (type === 'holiday') {
+                      return (
+                        <button
+                          key={evt.id}
+                          onClick={() => setSelectedCustomEntry(evt)}
+                          className="w-full text-left p-1 rounded-lg text-[10px] font-bold border truncate block bg-amber-950/80 text-amber-200 border-amber-600/70 hover:brightness-125 transition shadow-sm"
+                          title={`Holiday: ${evt.clientName} - ${evt.venueName}`}
+                        >
+                          <span className="mr-1">🏖️</span>{evt.clientName}
+                        </button>
+                      );
+                    }
+
+                    if (type === 'family') {
+                      return (
+                        <button
+                          key={evt.id}
+                          onClick={() => setSelectedCustomEntry(evt)}
+                          className="w-full text-left p-1 rounded-lg text-[10px] font-bold border truncate block bg-purple-950/80 text-purple-200 border-purple-600/70 hover:brightness-125 transition shadow-sm"
+                          title={`Family: ${evt.clientName} - ${evt.venueName}`}
+                        >
+                          <span className="mr-1">👨‍👩‍👧‍👦</span>{evt.clientName}
+                        </button>
+                      );
+                    }
+
+                    if (type === 'other') {
+                      return (
+                        <button
+                          key={evt.id}
+                          onClick={() => setSelectedCustomEntry(evt)}
+                          className="w-full text-left p-1 rounded-lg text-[10px] font-bold border truncate block bg-teal-950/80 text-teal-200 border-teal-600/70 hover:brightness-125 transition shadow-sm"
+                          title={`Other: ${evt.clientName} - ${evt.venueName}`}
+                        >
+                          <span className="mr-1">📌</span>{evt.clientName}
+                        </button>
+                      );
+                    }
+
+                    // Standard Gig Booking
                     const isPaid = evt.status === 'deposit_paid';
                     const isApproved = evt.status === 'approved';
                     const isPending = evt.status === 'pending';
@@ -395,26 +587,38 @@ export const AdminDiary: React.FC = () => {
                   })}
 
                   {/* Google Calendar Events */}
-                  {dayGCal.map((gEvt) => (
-                    <button
-                      key={gEvt.id}
-                      onClick={() => setSelectedGCalEvent(gEvt)}
-                      className="w-full text-left p-1 rounded-lg text-[10px] font-semibold border truncate block bg-sky-950/70 text-sky-200 border-sky-700/60 hover:brightness-125 transition shadow-sm"
-                      title={`Google Calendar: ${gEvt.summary}${gEvt.startTime ? ' at ' + gEvt.startTime : ''}${gEvt.location ? ' - ' + gEvt.location : ''}`}
-                    >
-                      <span className="text-sky-400 mr-1">🗓️</span>
-                      {gEvt.startTime ? `${gEvt.startTime} ` : ''}{gEvt.summary}
-                    </button>
-                  ))}
+                  {dayGCal.map((gEvt) => {
+                    let catIcon = '🗓️';
+                    let catColor = 'bg-sky-950/70 text-sky-200 border-sky-700/60';
+                    if (gEvt.category === 'holiday') {
+                      catIcon = '🏖️';
+                      catColor = 'bg-amber-950/70 text-amber-200 border-amber-700/60';
+                    } else if (gEvt.category === 'family') {
+                      catIcon = '👨‍👩‍👧‍👦';
+                      catColor = 'bg-purple-950/70 text-purple-200 border-purple-700/60';
+                    } else if (gEvt.category === 'booking') {
+                      catIcon = '🎵';
+                      catColor = 'bg-emerald-950/70 text-emerald-200 border-emerald-700/60';
+                    }
+
+                    return (
+                      <button
+                        key={gEvt.id}
+                        onClick={() => setSelectedGCalEvent(gEvt)}
+                        className={`w-full text-left p-1 rounded-lg text-[10px] font-semibold border truncate block hover:brightness-125 transition shadow-sm ${catColor}`}
+                        title={`Google Calendar: ${gEvt.summary}${gEvt.startTime ? ' at ' + gEvt.startTime : ''}${gEvt.location ? ' - ' + gEvt.location : ''}`}
+                      >
+                        <span className="mr-1">{catIcon}</span>
+                        {gEvt.startTime ? `${gEvt.startTime} ` : ''}{gEvt.summary}
+                      </button>
+                    );
+                  })}
 
                 </div>
 
                 <div className="text-right">
                   <button
-                    onClick={() => {
-                      setManualDate(dateStr);
-                      setIsAddEventModalOpen(true);
-                    }}
+                    onClick={() => handleOpenAddModal(dateStr, 'booking')}
                     className="opacity-0 group-hover:opacity-100 text-[10px] text-tartan-gold hover:underline font-semibold"
                   >
                     + Add
@@ -434,6 +638,96 @@ export const AdminDiary: React.FC = () => {
           isOpen={!!selectedEvent}
           onClose={() => setSelectedEvent(null)}
         />
+      )}
+
+      {/* Selected Custom Entry Modal (Holiday / Family / Other) */}
+      {selectedCustomEntry && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-tartan-card border border-tartan-accent/50 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95">
+            <div className={`px-6 py-4 border-b flex items-center justify-between ${
+              selectedCustomEntry.entryType === 'holiday' ? 'bg-amber-950 border-amber-800' :
+              selectedCustomEntry.entryType === 'family' ? 'bg-purple-950 border-purple-800' :
+              'bg-teal-950 border-teal-800'
+            }`}>
+              <div className="flex items-center gap-2">
+                <span className="text-lg">
+                  {selectedCustomEntry.entryType === 'holiday' ? '🏖️' : selectedCustomEntry.entryType === 'family' ? '👨‍👩‍👧‍👦' : '📌'}
+                </span>
+                <h3 className="text-base font-bold text-white font-serif">
+                  {selectedCustomEntry.entryType === 'holiday' ? 'Holiday / Time Off' :
+                   selectedCustomEntry.entryType === 'family' ? 'Family Event' : 'Personal Entry'}
+                </h3>
+              </div>
+              <button onClick={() => setSelectedCustomEntry(null)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+
+            <div className="p-6 space-y-4 text-xs">
+              <div>
+                <p className="text-[11px] font-bold text-tartan-gold uppercase tracking-wider">Entry Title</p>
+                <p className="text-base font-extrabold text-white mt-0.5">{selectedCustomEntry.clientName}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 p-3 rounded-2xl bg-tartan-dark/70 border border-tartan-border/60">
+                <div>
+                  <p className="text-gray-400 font-semibold">Date</p>
+                  <p className="text-white font-bold">
+                    {selectedCustomEntry.date}
+                    {(selectedCustomEntry as any).endDate && (selectedCustomEntry as any).endDate !== selectedCustomEntry.date && (
+                      <span className="block text-[10px] text-gray-300">to {(selectedCustomEntry as any).endDate}</span>
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-400 font-semibold">Timing</p>
+                  <p className="text-white font-bold">{selectedCustomEntry.timeSlot || 'All Day'}</p>
+                </div>
+              </div>
+
+              {selectedCustomEntry.venueName && selectedCustomEntry.venueName !== 'Private Location' && (
+                <div>
+                  <p className="text-gray-400 font-semibold mb-1">Location</p>
+                  <div className="flex items-start gap-2 p-3 rounded-2xl bg-tartan-dark/70 border border-tartan-border/60">
+                    <MapPin className="w-4 h-4 text-tartan-gold shrink-0 mt-0.5" />
+                    <p className="text-white font-medium">{selectedCustomEntry.venueName}</p>
+                  </div>
+                </div>
+              )}
+
+              {selectedCustomEntry.notes && (
+                <div>
+                  <p className="text-gray-400 font-semibold mb-1">Notes</p>
+                  <div className="p-3 rounded-2xl bg-tartan-dark/70 border border-tartan-border/60">
+                    <p className="text-gray-200 whitespace-pre-line text-[11px]">{selectedCustomEntry.notes}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="p-3 rounded-2xl bg-emerald-950/30 border border-emerald-800/40 text-[11px] text-emerald-300 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>This date is blocked on the public booking calendar so clients cannot book.</span>
+              </div>
+
+              <div className="pt-2 flex items-center justify-between gap-2 border-t border-tartan-border/60">
+                <button
+                  type="button"
+                  onClick={() => handleDeleteCustomEntry(selectedCustomEntry.id)}
+                  className="px-3 py-2 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-300 text-xs font-semibold flex items-center gap-1.5 border border-rose-800 transition"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Remove from Diary</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedCustomEntry(null)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 rounded-xl"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Selected Google Calendar Event Modal */}
@@ -535,99 +829,271 @@ export const AdminDiary: React.FC = () => {
         </div>
       )}
 
-      {/* Manual Add Event Modal */}
+      {/* Add Diary Event Modal (Supporting Booking, Holiday, Family, Other) */}
       {isAddEventModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-tartan-card border border-tartan-accent/50 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95">
-            <div className="bg-tartan-navy px-6 py-4 border-b border-tartan-border flex items-center justify-between">
-              <h3 className="text-base font-bold text-white font-serif">Add Diary Booking</h3>
+          <div className="bg-tartan-card border border-tartan-accent/50 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 max-h-[90vh] flex flex-col">
+            
+            {/* Modal Header */}
+            <div className="bg-tartan-navy px-6 py-4 border-b border-tartan-border flex items-center justify-between shrink-0">
+              <h3 className="text-base font-bold text-white font-serif">Add Entry to Spud&apos;s Diary</h3>
               <button onClick={() => setIsAddEventModalOpen(false)} className="text-gray-400 hover:text-white">✕</button>
             </div>
 
-            <form onSubmit={handleCreateManualEvent} className="p-6 space-y-3 text-xs">
+            {/* Modal Content */}
+            <form onSubmit={handleSaveDiaryEntry} className="p-6 space-y-4 text-xs overflow-y-auto">
+              
+              {/* Entry Type Selector Tabs */}
               <div>
-                <label className="block text-tartan-gold font-semibold mb-1">Client / Couple Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={manualClient}
-                  onChange={(e) => setManualClient(e.target.value)}
-                  placeholder="e.g. Isla & Bruce MacKay"
-                  className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white"
+                <label className="block text-tartan-gold font-semibold mb-1.5">
+                  Choose Entry Category *
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEntryType('booking')}
+                    className={`py-2 px-2 rounded-xl font-bold text-xs flex flex-col items-center gap-1 border transition ${
+                      entryType === 'booking'
+                        ? 'bg-emerald-950 text-emerald-300 border-emerald-500 ring-2 ring-emerald-500/30'
+                        : 'bg-tartan-dark hover:bg-tartan-navy text-gray-400 border-tartan-border'
+                    }`}
+                  >
+                    <Briefcase className="w-4 h-4 text-emerald-400" />
+                    <span>Booking</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setEntryType('holiday'); setIsAllDay(true); }}
+                    className={`py-2 px-2 rounded-xl font-bold text-xs flex flex-col items-center gap-1 border transition ${
+                      entryType === 'holiday'
+                        ? 'bg-amber-950 text-amber-300 border-amber-500 ring-2 ring-amber-500/30'
+                        : 'bg-tartan-dark hover:bg-tartan-navy text-gray-400 border-tartan-border'
+                    }`}
+                  >
+                    <Palmtree className="w-4 h-4 text-amber-400" />
+                    <span>Holiday</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setEntryType('family'); setIsAllDay(true); }}
+                    className={`py-2 px-2 rounded-xl font-bold text-xs flex flex-col items-center gap-1 border transition ${
+                      entryType === 'family'
+                        ? 'bg-purple-950 text-purple-300 border-purple-500 ring-2 ring-purple-500/30'
+                        : 'bg-tartan-dark hover:bg-tartan-navy text-gray-400 border-tartan-border'
+                    }`}
+                  >
+                    <Users className="w-4 h-4 text-purple-400" />
+                    <span>Family</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setEntryType('other'); setIsAllDay(true); }}
+                    className={`py-2 px-2 rounded-xl font-bold text-xs flex flex-col items-center gap-1 border transition ${
+                      entryType === 'other'
+                        ? 'bg-teal-950 text-teal-300 border-teal-500 ring-2 ring-teal-500/30'
+                        : 'bg-tartan-dark hover:bg-tartan-navy text-gray-400 border-tartan-border'
+                    }`}
+                  >
+                    <Bookmark className="w-4 h-4 text-teal-400" />
+                    <span>Other</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Dynamic Form Fields based on Type */}
+              {entryType === 'booking' ? (
+                <>
+                  <div>
+                    <label className="block text-tartan-gold font-semibold mb-1">Client / Couple Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={manualClient}
+                      onChange={(e) => setManualClient(e.target.value)}
+                      placeholder="e.g. Isla & Bruce MacKay"
+                      className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-tartan-gold font-semibold mb-1">Date *</label>
+                      <input
+                        type="date"
+                        required
+                        value={manualDate}
+                        onChange={(e) => setManualDate(e.target.value)}
+                        className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-tartan-gold font-semibold mb-1">Time Slot</label>
+                      <input
+                        type="text"
+                        value={manualTime}
+                        onChange={(e) => setManualTime(e.target.value)}
+                        placeholder="13:00 - 16:30"
+                        className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-tartan-gold font-semibold mb-1">Venue / Castle Location *</label>
+                    <input
+                      type="text"
+                      required
+                      value={manualVenue}
+                      onChange={(e) => setManualVenue(e.target.value)}
+                      placeholder="e.g. Blair Castle, Perthshire"
+                      className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-tartan-gold font-semibold mb-1">Total Fee (£)</label>
+                      <input
+                        type="number"
+                        value={manualPrice}
+                        onChange={(e) => setManualPrice(Number(e.target.value))}
+                        className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-tartan-gold font-semibold mb-1">Deposit (£)</label>
+                      <input
+                        type="number"
+                        value={manualDeposit}
+                        onChange={(e) => setManualDeposit(Number(e.target.value))}
+                        className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white"
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* Holiday / Family / Other Form */
+                <>
+                  <div>
+                    <label className="block text-tartan-gold font-semibold mb-1">
+                      {entryType === 'holiday' ? 'Holiday Title / Destination *' :
+                       entryType === 'family' ? 'Family Event / Reason *' : 'Entry Title *'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={manualTitle}
+                      onChange={(e) => setManualTitle(e.target.value)}
+                      placeholder={
+                        entryType === 'holiday' ? 'e.g. Summer Vacation in Skye' :
+                        entryType === 'family' ? "e.g. Daughter's Birthday Celebration" :
+                        'e.g. Bagpipes Chanter Maintenance & Practice'
+                      }
+                      className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-tartan-gold font-semibold mb-1">Start Date *</label>
+                      <input
+                        type="date"
+                        required
+                        value={manualDate}
+                        onChange={(e) => setManualDate(e.target.value)}
+                        className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-tartan-gold font-semibold mb-1">
+                        End Date <span className="text-gray-400 font-normal">(Optional for multi-day)</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={manualEndDate}
+                        min={manualDate}
+                        onChange={(e) => setManualEndDate(e.target.value)}
+                        className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-2 cursor-pointer text-gray-300">
+                      <input
+                        type="checkbox"
+                        checked={isAllDay}
+                        onChange={(e) => setIsAllDay(e.target.checked)}
+                        className="w-3.5 h-3.5 accent-tartan-accent rounded"
+                      />
+                      <span>All Day Event</span>
+                    </label>
+
+                    {!isAllDay && (
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={manualTime}
+                          onChange={(e) => setManualTime(e.target.value)}
+                          placeholder="e.g. 10:00 - 14:00"
+                          className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-1.5 text-white"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-tartan-gold font-semibold mb-1">Location / Details</label>
+                    <input
+                      type="text"
+                      value={manualVenue}
+                      onChange={(e) => setManualVenue(e.target.value)}
+                      placeholder="e.g. Aviemore / Edinburgh / Private"
+                      className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Common Notes field */}
+              <div>
+                <label className="block text-tartan-gold font-semibold mb-1">Personal Notes / Reminder</label>
+                <textarea
+                  rows={2}
+                  value={manualNotes}
+                  onChange={(e) => setManualNotes(e.target.value)}
+                  placeholder="Additional notes for Spud's diary..."
+                  className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white text-xs resize-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-tartan-gold font-semibold mb-1">Date *</label>
-                  <input
-                    type="date"
-                    required
-                    value={manualDate}
-                    onChange={(e) => setManualDate(e.target.value)}
-                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-tartan-gold font-semibold mb-1">Time Slot</label>
-                  <input
-                    type="text"
-                    value={manualTime}
-                    onChange={(e) => setManualTime(e.target.value)}
-                    placeholder="13:00 - 16:30"
-                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white"
-                  />
-                </div>
+              <div className="p-3 rounded-2xl bg-sky-950/40 border border-sky-800/40 text-[11px] text-sky-300 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
+                <span>
+                  This date will automatically sync to Spud&apos;s Android phone and block out the public booking form.
+                </span>
               </div>
 
-              <div>
-                <label className="block text-tartan-gold font-semibold mb-1">Venue / Castle Location *</label>
-                <input
-                  type="text"
-                  required
-                  value={manualVenue}
-                  onChange={(e) => setManualVenue(e.target.value)}
-                  placeholder="e.g. Blair Castle, Perthshire"
-                  className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-tartan-gold font-semibold mb-1">Total Fee (£)</label>
-                  <input
-                    type="number"
-                    value={manualPrice}
-                    onChange={(e) => setManualPrice(Number(e.target.value))}
-                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-tartan-gold font-semibold mb-1">Deposit (£)</label>
-                  <input
-                    type="number"
-                    value={manualDeposit}
-                    onChange={(e) => setManualDeposit(Number(e.target.value))}
-                    className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3 py-2 text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-3 flex items-center justify-end gap-2">
+              {/* Form Buttons */}
+              <div className="pt-2 flex items-center justify-end gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsAddEventModalOpen(false)}
-                  className="px-4 py-2 bg-slate-800 text-gray-300 rounded-xl"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 rounded-xl"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-gold-gradient text-tartan-dark font-bold rounded-xl"
+                  className="px-5 py-2 bg-gold-gradient text-tartan-dark font-bold rounded-xl shadow hover:brightness-110"
                 >
-                  Save to Diary
+                  Save Entry
                 </button>
               </div>
+
             </form>
           </div>
         </div>

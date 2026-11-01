@@ -1,3 +1,5 @@
+import { DiaryEntryType } from '@/types/spud';
+
 export interface ParsedCalendarEvent {
   id: string;
   summary: string;
@@ -9,6 +11,25 @@ export interface ParsedCalendarEvent {
   endTime?: string; // HH:mm
   isAllDay: boolean;
   status?: string;
+  category?: DiaryEntryType;
+}
+
+/**
+ * Automatically infers calendar entry type ('family' | 'holiday' | 'booking' | 'other') from summary & notes
+ */
+export function categorizeCalendarEvent(summary: string, description?: string): DiaryEntryType {
+  const text = `${summary || ''} ${description || ''}`.toLowerCase();
+
+  if (text.includes('holiday') || text.includes('vacation') || text.includes('away') || text.includes('trip') || text.includes('flight') || text.includes('spain') || text.includes('cottage')) {
+    return 'holiday';
+  }
+  if (text.includes('family') || text.includes('mum') || text.includes('dad') || text.includes('kids') || text.includes('birthday') || text.includes('anniversary') || text.includes('school') || text.includes('vet') || text.includes('dentist') || text.includes('doctor')) {
+    return 'family';
+  }
+  if (text.includes('wedding') || text.includes('gig') || text.includes('piper') || text.includes('pipes') || text.includes('burns') || text.includes('haggis') || text.includes('ceremony') || text.includes('castle') || text.includes('reception') || text.includes('funeral') || text.includes('fayre') || text.includes('deposit') || text.includes('paid')) {
+    return 'booking';
+  }
+  return 'other';
 }
 
 /**
@@ -148,7 +169,8 @@ export function parseGoogleICalFeed(
             endDate,
             endTime: endParsed.time,
             isAllDay: startParsed.isAllDay,
-            status: currentEvent.status || 'CONFIRMED'
+            status: currentEvent.status || 'CONFIRMED',
+            category: categorizeCalendarEvent(currentEvent.summary || '', currentEvent.description)
           });
         }
       }

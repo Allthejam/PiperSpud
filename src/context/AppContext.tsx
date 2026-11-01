@@ -3028,10 +3028,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: 'system'
     };
 
+    const isNonBooking = newBookingData.entryType && newBookingData.entryType !== 'booking';
+    const initialStatus: BookingStatus = isNonBooking ? 'deposit_paid' : 'pending';
+
     const newBooking: BookingEvent = {
       ...newBookingData,
       id,
-      status: 'pending',
+      entryType: newBookingData.entryType || 'booking',
+      status: initialStatus,
       createdAt: nowIso,
       brevoEmailSent: false,
       brevoEmailHistory: [],

@@ -38,6 +38,7 @@ import { isEventOnDate } from '@/lib/icalParser';
 
 export const BookingCalendar: React.FC = () => {
   const { 
+    bookings,
     createBooking, 
     tunesList, 
     travelConfig, 
@@ -451,13 +452,19 @@ export const BookingCalendar: React.FC = () => {
                   const isSelectableFuture = dateString > todayFormatted;
                   const isSelected = selectedDate === dateString;
                   const isGCalBooked = isGoogleCalendarBlockEnabled && (googleCalendarEvents || []).some(evt => isEventOnDate(evt, dateString));
+                  const isWebsiteBooked = (bookings || []).some(b => {
+                    if (!b || !b.date || b.status === 'cancelled') return false;
+                    const endDate = (b as any).endDate || b.date;
+                    return dateString >= b.date && dateString <= endDate;
+                  });
 
-                  const isAvailable = isSelectableFuture && !isGCalBooked;
+                  const isBookedOut = isGCalBooked || isWebsiteBooked;
+                  const isAvailable = isSelectableFuture && !isBookedOut;
 
                   let btnStyle = '';
                   if (isSelected) {
                     btnStyle = 'bg-gold-gradient text-tartan-dark font-extrabold ring-2 ring-yellow-400 shadow-xl scale-105 z-10';
-                  } else if (isGCalBooked) {
+                  } else if (isBookedOut) {
                     btnStyle = 'bg-rose-950/40 text-rose-300 border border-rose-800/60 cursor-not-allowed opacity-50 line-through';
                   } else if (isToday) {
                     btnStyle = 'bg-tartan-dark/80 text-gray-400 border border-tartan-gold/50 cursor-not-allowed opacity-60';
@@ -476,13 +483,13 @@ export const BookingCalendar: React.FC = () => {
                         if (isAvailable) {
                           setSelectedDate(dateString);
                           setDateError('');
-                        } else if (isGCalBooked) {
+                        } else if (isBookedOut) {
                           setDateError(`The date ${dayNum} ${monthNames[currentMonth]} ${currentYear} is already reserved in Spud's diary. Please choose an alternate date.`);
                         }
                       }}
                       className={`h-11 rounded-xl text-xs font-semibold flex flex-col items-center justify-center transition-all relative ${btnStyle}`}
                       title={
-                        isGCalBooked
+                        isBookedOut
                           ? `Date reserved in Spud's Diary (${dayNum} ${monthNames[currentMonth]}) - Unavailable`
                           : isToday
                           ? `Today (${dayNum} ${monthNames[currentMonth]}) - Events must be booked for future dates`
@@ -492,7 +499,7 @@ export const BookingCalendar: React.FC = () => {
                       }
                     >
                       <span>{dayNum}</span>
-                      {isGCalBooked && (
+                      {isBookedOut && (
                         <span className="text-[7px] font-bold text-rose-400 uppercase leading-none tracking-tighter mt-0.5">Booked</span>
                       )}
                       {isToday && !isGCalBooked && (

@@ -104,13 +104,22 @@ export async function GET() {
         `ONLINE BOOKING ID: #${b.id}`
       ].filter(Boolean).join('\n');
 
+      let summaryText = `Piper: ${b.clientName} (${b.eventType})`;
+      if (b.entryType === 'holiday') {
+        summaryText = `🏖️ Holiday: ${b.clientName || 'Time Off'}`;
+      } else if (b.entryType === 'family') {
+        summaryText = `👨‍👩‍👧‍👦 Family: ${b.clientName || 'Family Event'}`;
+      } else if (b.entryType === 'other') {
+        summaryText = `📌 Other: ${b.clientName || 'Personal Event'}`;
+      }
+
       icsLines.push(
         'BEGIN:VEVENT',
         `UID:spud-booking-${b.id}@spudthepiper.com`,
         `DTSTAMP:${nowStamp}`,
         `DTSTART;TZID=Europe/London:${dtStart}`,
         `DTEND;TZID=Europe/London:${dtEnd}`,
-        `SUMMARY:${formatIcsText(`Piper: ${b.clientName} (${b.eventType})`)}`,
+        `SUMMARY:${formatIcsText(summaryText)}`,
         `LOCATION:${formatIcsText(location)}`,
         `DESCRIPTION:${formatIcsText(descParts)}`,
         `STATUS:${b.status === 'deposit_paid' ? 'CONFIRMED' : 'TENTATIVE'}`,

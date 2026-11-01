@@ -31,6 +31,8 @@ export interface BookingMessage {
   status?: 'queued' | 'sent' | 'delivered' | 'read';
 }
 
+export type DiaryEntryType = 'booking' | 'family' | 'holiday' | 'other';
+
 export interface GoogleCalendarEvent {
   id: string;
   summary: string;
@@ -42,10 +44,12 @@ export interface GoogleCalendarEvent {
   endTime?: string; // HH:mm
   isAllDay: boolean;
   status?: string;
+  category?: DiaryEntryType;
 }
 
 export interface BookingEvent {
   id: string;
+  entryType?: DiaryEntryType; // 'booking' | 'family' | 'holiday' | 'other'
   clientName: string;
   clientEmail: string;
   clientPhone: string;
