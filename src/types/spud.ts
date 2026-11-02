@@ -112,6 +112,7 @@ export interface BookingEvent {
   discountReason?: string;
   declineReason?: string;
   basePackagePrice?: number;
+  isCustomPriceSet?: boolean;
 }
 
 export interface CustomTravelZone {

@@ -59,6 +59,7 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
   onClose
 }) => {
   const { 
+    services,
     updateBooking, 
     addBookingAudit, 
     sendBookingMessage, 
@@ -77,6 +78,17 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'pricing' | 'messages' | 'audit'>('overview');
+
+  const matchedService = React.useMemo(() => {
+    if (!booking || !services || services.length === 0) return null;
+    const clean = (booking.eventType || '').trim().toLowerCase();
+    return services.find(s => 
+      s.title.toLowerCase() === clean ||
+      s.slug.toLowerCase() === clean ||
+      clean.includes(s.title.toLowerCase()) ||
+      s.title.toLowerCase().includes(clean)
+    ) || null;
+  }, [booking?.eventType, services]);
 
   // Pricing & surcharge state
   const [basePriceInput, setBasePriceInput] = useState<number>(0);
@@ -148,9 +160,16 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
   // Synchronize state when booking changes
   React.useEffect(() => {
     if (booking) {
-      const initialBase = booking.basePackagePrice !== undefined 
+      let initialBase = booking.basePackagePrice !== undefined 
         ? booking.basePackagePrice 
         : Math.max(0, booking.estimatedPrice - (booking.travelExpense || 0) - (booking.customSurcharge || 0) + (booking.discountAmount || 0));
+      let initialDeposit = booking.depositAmount || 100;
+
+      // If pending and not custom priced, adopt live package pricing from database
+      if (booking.status === 'pending' && !booking.isCustomPriceSet && matchedService) {
+        if (matchedService.basePrice !== undefined) initialBase = matchedService.basePrice;
+        if (matchedService.depositAmount !== undefined) initialDeposit = matchedService.depositAmount;
+      }
       
       setBasePriceInput(initialBase);
       setTravelWaived(booking.travelWaived || false);
@@ -158,7 +177,7 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
       setCustomSurchargeReason(booking.customSurchargeReason || '');
       setDiscountAmount(booking.discountAmount || 0);
       setDiscountReason(booking.discountReason || '');
-      setDepositAmountInput(booking.depositAmount || 100);
+      setDepositAmountInput(initialDeposit);
       setAdminNotesInput(booking.adminNotes || '');
       setMessageSubject(`Regarding your ${booking.eventType} booking on ${booking.date}`);
       setMessageBody('');
@@ -167,7 +186,7 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
       setBalanceActionMsg('');
       setCopiedBalanceLink(false);
     }
-  }, [booking]);
+  }, [booking, matchedService]);
 
   if (!isOpen || !booking) return null;
 
@@ -230,6 +249,7 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
         basePackagePrice: basePriceInput,
         estimatedPrice: calculatedTotal,
         depositAmount: depositAmountInput,
+        isCustomPriceSet: true,
         travelWaived,
         customSurcharge: Number(customSurcharge) || 0,
         customSurchargeReason,
@@ -308,7 +328,23 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
   };
 
   const handleConfirmApproval = async () => {
-    await approveBooking(booking.id, { note: approvalNote.trim() || undefined });
+    const pricingUpdates = {
+      basePackagePrice: basePriceInput,
+      estimatedPrice: calculatedTotal,
+      depositAmount: depositAmountInput,
+      isCustomPriceSet: true,
+      travelWaived,
+      customSurcharge: Number(customSurcharge) || 0,
+      customSurchargeReason,
+      discountAmount: Number(discountAmount) || 0,
+      discountReason,
+      adminNotes: adminNotesInput
+    };
+    await updateBooking(booking.id, pricingUpdates);
+    await approveBooking(booking.id, { 
+      note: approvalNote.trim() || undefined,
+      updates: pricingUpdates
+    });
     setIsApproveModalOpen(false);
   };
 
@@ -440,14 +476,23 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                   
                   {/* Total Performance Fee */}
                   <div className="bg-tartan-dark/90 p-4 rounded-2xl border border-tartan-border/80 space-y-1">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-                      Total Performance Fee:
-                    </span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                        Total Performance Fee:
+                      </span>
+                      {isPending && matchedService && (
+                        <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-700">
+                          ⚡ Live Rate
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xl font-extrabold text-white">
-                      £{booking.estimatedPrice}.00
+                      £{calculatedTotal}.00
                     </p>
                     <p className="text-[11px] text-gray-400">
-                      Base: £{booking.basePackagePrice ?? (booking.estimatedPrice - (booking.travelExpense || 0))} • Travel: £{booking.travelWaived ? '0.00 (Waived)' : `${booking.travelExpense || 0}.00`}
+                      Base: £{basePriceInput}.00 • Travel: £{travelWaived ? '0.00 (Waived)' : `${booking.travelExpense || 0}.00`}
+                      {customSurcharge > 0 && ` • Surcharge: +£${customSurcharge}`}
+                      {discountAmount > 0 && ` • Discount: -£${discountAmount}`}
                     </p>
                   </div>
 
@@ -472,12 +517,12 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                       )}
                     </div>
                     <p className="text-xl font-extrabold text-white">
-                      £{booking.depositAmountPaid || booking.depositAmount}.00 <span className="text-xs font-normal text-tartan-gold">via {booking.depositPaymentMethod || 'PayPal'}</span>
+                      £{booking.status === 'deposit_paid' ? (booking.depositAmountPaid || booking.depositAmount) : depositAmountInput}.00 <span className="text-xs font-normal text-tartan-gold">via {booking.depositPaymentMethod || 'PayPal'}</span>
                     </p>
                     <p className="text-[11px] text-gray-300">
                       {booking.depositPaidAt 
                         ? `Paid: ${new Date(booking.depositPaidAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`
-                        : 'Deposit invoice sent to client'}
+                        : 'Deposit invoice ready for client approval'}
                     </p>
                     {booking.paypalOrderId && (
                       <p className="text-[10px] text-gray-400 font-mono">
@@ -780,6 +825,40 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                     Live Total: £{calculatedTotal}.00
                   </span>
                 </div>
+
+                {matchedService && (
+                  <div className="bg-tartan-navy/90 p-4 rounded-2xl border border-emerald-600/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-emerald-400" />
+                        <span className="text-xs font-bold text-white uppercase tracking-wider">
+                          Linked Database Service: {matchedService.title}
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-700">
+                          Active Rate
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-300">
+                        Live DB Base Rate: <strong className="text-white">£{matchedService.basePrice || 0}.00</strong> • Live Deposit: <strong className="text-tartan-gold">£{matchedService.depositAmount || 0}.00</strong> • Display &quot;From&quot;: <strong className="text-gray-200">{matchedService.priceEstimate}</strong>
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBasePriceInput(matchedService.basePrice || 0);
+                        setDepositAmountInput(matchedService.depositAmount || 0);
+                        setPricingSuccessMsg(`Synchronized rates with "${matchedService.title}" live database pricing!`);
+                        setTimeout(() => setPricingSuccessMsg(''), 4000);
+                      }}
+                      className="px-3.5 py-2 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-600 rounded-xl text-xs font-bold shrink-0 transition flex items-center gap-1.5 shadow"
+                      title="Reset input fees to the current values in Services, Pricing & POA Studio"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Sync with Database Pricing</span>
+                    </button>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs">
                   

@@ -147,7 +147,7 @@ interface AppContextType {
   updateBooking: (id: string, updates: Partial<BookingEvent>) => Promise<void>;
   addBookingAudit: (id: string, action: string, actor?: string, details?: string, type?: BookingAuditEntry['type']) => Promise<void>;
   sendBookingMessage: (id: string, msg: { body: string; subject?: string; channel?: 'email' | 'chat'; senderName?: string }) => Promise<{ success: boolean; error?: string }>;
-  approveBooking: (id: string, customOptions?: { note?: string }) => void;
+  approveBooking: (id: string, customOptions?: { note?: string; updates?: Partial<BookingEvent> }) => void;
   resendApprovalEmail: (idOrBooking: string | BookingEvent) => Promise<{ success: boolean; error?: string; sendCount?: number }>;
   rejectBooking: (id: string, reason?: string, sendEmail?: boolean) => void;
   markDepositPaid: (id: string, paypalOrderId?: string, options?: { method?: string; notes?: string; depositAmount?: number; sendEmail?: boolean }) => Promise<void>;
@@ -3202,10 +3202,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const approveBooking = async (id: string, customOptions?: { note?: string }) => {
+  const approveBooking = async (id: string, customOptions?: { note?: string; updates?: Partial<BookingEvent> }) => {
     const paypalLink = `https://spudthepiper.com/pay?id=${id}`;
-    const existingBk = (bookings || []).find(b => b.id === id);
-    if (!existingBk) return;
+    const rawBk = (bookings || []).find(b => b.id === id);
+    if (!rawBk) return;
+    const existingBk = customOptions?.updates ? { ...rawBk, ...customOptions.updates } : rawBk;
 
     const auditEntry: BookingAuditEntry = {
       id: `audit-${Date.now()}`,

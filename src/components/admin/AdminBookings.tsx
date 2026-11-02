@@ -39,6 +39,7 @@ import { ManualDepositModal } from '@/components/admin/ManualDepositModal';
 export const AdminBookings: React.FC = () => {
   const { 
     bookings, 
+    services,
     approveBooking, 
     rejectBooking, 
     deleteBooking, 
@@ -78,6 +79,46 @@ export const AdminBookings: React.FC = () => {
       (b.specialTunes || []).some(t => t.toLowerCase().includes(q));
     return matchesStatus && matchesSearch;
   });
+
+  const getBookingDisplayPricing = (bk: BookingEvent) => {
+    // If customized or already finalized (not pending), return saved prices
+    if (bk.isCustomPriceSet || bk.status !== 'pending') {
+      return {
+        totalFee: bk.estimatedPrice,
+        deposit: bk.depositAmount,
+        isLiveSynced: false
+      };
+    }
+
+    // Match with service package
+    const clean = (bk.eventType || '').trim().toLowerCase();
+    const matched = (services || []).find(s => 
+      s.title.toLowerCase() === clean ||
+      s.slug.toLowerCase() === clean ||
+      clean.includes(s.title.toLowerCase()) ||
+      s.title.toLowerCase().includes(clean)
+    );
+
+    if (matched && matched.basePrice !== undefined) {
+      const travel = bk.travelWaived ? 0 : (bk.travelExpense || 0);
+      const surcharge = bk.customSurcharge || 0;
+      const discount = bk.discountAmount || 0;
+      const totalFee = Math.max(0, matched.basePrice + travel + surcharge - discount);
+      const deposit = matched.depositAmount !== undefined ? matched.depositAmount : (bk.depositAmount || 100);
+      const hasChanged = totalFee !== bk.estimatedPrice || deposit !== bk.depositAmount;
+      return {
+        totalFee,
+        deposit,
+        isLiveSynced: hasChanged
+      };
+    }
+
+    return {
+      totalFee: bk.estimatedPrice,
+      deposit: bk.depositAmount,
+      isLiveSynced: false
+    };
+  };
 
   const handleOpenDetailModal = (booking: BookingEvent) => {
     setSelectedBookingForModal(booking);
@@ -229,6 +270,8 @@ export const AdminBookings: React.FC = () => {
               ? bk.remainingBalance
               : Math.max(0, bk.estimatedPrice - bk.depositAmount);
 
+            const pricingInfo = getBookingDisplayPricing(bk);
+
             let statusBadge = (
               <span className="bg-amber-950/80 text-yellow-300 border border-yellow-800 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
                 <Clock className="w-3 h-3" />
@@ -292,12 +335,26 @@ export const AdminBookings: React.FC = () => {
 
                   <div className="flex items-center gap-4 text-xs">
                     <div className="text-left lg:text-right">
-                      <span className="text-xs text-gray-400">Total Fee:</span>
-                      <p className="text-base font-bold text-white">£{bk.estimatedPrice}.00</p>
+                      <div className="flex items-center gap-1 justify-start lg:justify-end">
+                        <span className="text-xs text-gray-400">Total Fee:</span>
+                        {pricingInfo.isLiveSynced && (
+                          <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-750" title="Reading updated live package rate from database">
+                            ⚡ Live
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-base font-bold text-white">£{pricingInfo.totalFee}.00</p>
                     </div>
                     <div className="text-left lg:text-right">
-                      <span className="text-xs text-gray-400">Deposit:</span>
-                      <p className="text-base font-bold text-tartan-gold">£{bk.depositAmount}.00</p>
+                      <div className="flex items-center gap-1 justify-start lg:justify-end">
+                        <span className="text-xs text-gray-400">Deposit:</span>
+                        {pricingInfo.isLiveSynced && (
+                          <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-750" title="Reading updated live package rate from database">
+                            ⚡ Live
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-base font-bold text-tartan-gold">£{pricingInfo.deposit}.00</p>
                     </div>
                     {isPaid && (
                       <div className="text-left lg:text-right">

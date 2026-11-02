@@ -417,15 +417,31 @@ export const AdminServices: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Slug and Pricing Row */}
-                <div className="grid grid-cols-2 gap-2 bg-tartan-dark/80 p-3 rounded-xl border border-tartan-border/60 text-xs">
-                  <div>
-                    <span className="text-[10px] text-gray-400 uppercase font-bold block">Page URL Slug:</span>
-                    <span className="text-gray-300 font-mono text-[11px] truncate block">/services/{service.slug}</span>
+                {/* Full Pricing & Deposit Breakdown Row */}
+                <div className="bg-tartan-dark/90 p-3.5 rounded-2xl border border-tartan-border/80 space-y-2.5">
+                  <div className="grid grid-cols-3 gap-2 text-xs divide-x divide-tartan-border/60">
+                    <div>
+                      <span className="text-[10px] text-gray-400 uppercase font-bold block">Base Price:</span>
+                      <span className="text-base font-extrabold text-white block">£{service.basePrice || 0}.00</span>
+                      <span className="text-[9px] text-emerald-400 font-semibold">DB Live Price</span>
+                    </div>
+                    <div className="pl-2">
+                      <span className="text-[10px] text-gray-400 uppercase font-bold block">Deposit:</span>
+                      <span className="text-base font-extrabold text-tartan-gold block">£{service.depositAmount || 0}.00</span>
+                      <span className="text-[9px] text-gray-400">Required deposit</span>
+                    </div>
+                    <div className="pl-2">
+                      <span className="text-[10px] text-gray-400 uppercase font-bold block">Display &quot;From&quot;:</span>
+                      <span className="text-xs font-bold text-gray-200 block truncate" title={service.priceEstimate}>
+                        {service.priceEstimate || `From £${service.basePrice}`}
+                      </span>
+                      <span className="text-[9px] text-gray-400">Public label</span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className="text-[10px] text-gray-400 uppercase font-bold block">Pricing & Deposit:</span>
-                    <span className="text-white font-bold">{service.priceEstimate} ({service.deposit})</span>
+
+                  <div className="pt-2 border-t border-tartan-border/40 flex items-center justify-between text-[11px]">
+                    <span className="text-gray-400 font-semibold">Page Slug:</span>
+                    <span className="text-gray-300 font-mono truncate max-w-[200px]">/services/{service.slug}</span>
                   </div>
                 </div>
 
@@ -560,7 +576,7 @@ export const AdminServices: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-tartan-gold mb-1">
-                    Display Price Estimate *
+                    Display &quot;From&quot; Estimate *
                   </label>
                   <input
                     type="text"
@@ -570,6 +586,7 @@ export const AdminServices: React.FC = () => {
                     placeholder="e.g. From £320 - £480"
                     className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent"
                   />
+                  <span className="text-[10px] text-gray-400 mt-1 block">Shown on public cards (e.g. From £450)</span>
                 </div>
 
                 <div>
@@ -583,6 +600,7 @@ export const AdminServices: React.FC = () => {
                     onChange={(e) => setFormBasePrice(Number(e.target.value))}
                     className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-tartan-accent"
                   />
+                  <span className="text-[10px] text-emerald-400 mt-1 block">Exact price applied to bookings</span>
                 </div>
 
                 <div>
@@ -599,6 +617,7 @@ export const AdminServices: React.FC = () => {
                     }}
                     className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-tartan-accent"
                   />
+                  <span className="text-[10px] text-tartan-gold mt-1 block">PayPal deposit amount</span>
                 </div>
               </div>
 
