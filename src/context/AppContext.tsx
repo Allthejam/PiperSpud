@@ -644,7 +644,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const userCreated = parsed.filter(s => !initialIds.has(s.id));
             const merged = initialServices.map(initS => {
               const userVer = parsed.find(p => p.id === initS.id);
-              return userVer ? { ...initS, ...userVer, slug: userVer.slug || initS.slug } : initS;
+              if (!userVer) return initS;
+              return {
+                ...initS,
+                ...userVer,
+                basePrice: userVer.basePrice ?? initS.basePrice,
+                depositAmount: userVer.depositAmount ?? initS.depositAmount ?? 80,
+                deposit: userVer.deposit || (userVer.depositAmount ? `£${userVer.depositAmount} Deposit` : initS.deposit),
+                priceEstimate: userVer.priceEstimate || initS.priceEstimate,
+                slug: userVer.slug || initS.slug
+              };
             });
             setServices([...merged, ...userCreated]);
           } else {
@@ -1249,7 +1258,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const remoteServices: ServicePackage[] = [];
           snapshot.forEach((d) => remoteServices.push(d.data() as ServicePackage));
           if (remoteServices.length > 0) {
-            setServices(remoteServices);
+            // Guarantee all 7 foundational services always exist, never get lost, and retain valid defaults
+            const initialIds = new Set(initialServices.map(s => s.id));
+            const userCustom = remoteServices.filter(r => !initialIds.has(r.id));
+            const merged = initialServices.map(initS => {
+              const remote = remoteServices.find(r => r.id === initS.id);
+              if (!remote) return initS;
+              return {
+                ...initS,
+                ...remote,
+                basePrice: remote.basePrice ?? initS.basePrice,
+                depositAmount: remote.depositAmount ?? initS.depositAmount ?? 80,
+                deposit: remote.deposit || (remote.depositAmount ? `£${remote.depositAmount} Deposit` : initS.deposit),
+                priceEstimate: remote.priceEstimate || initS.priceEstimate,
+                slug: remote.slug || initS.slug
+              };
+            });
+            setServices([...merged, ...userCustom]);
           }
         }
       }, (err) => console.log('Firestore services listener:', err.message));
