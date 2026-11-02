@@ -165,8 +165,9 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
         : Math.max(0, booking.estimatedPrice - (booking.travelExpense || 0) - (booking.customSurcharge || 0) + (booking.discountAmount || 0));
       let initialDeposit = booking.depositAmount || 100;
 
-      // If pending and not custom priced, adopt live package pricing from database
-      if (booking.status === 'pending' && !booking.isCustomPriceSet && matchedService) {
+      // If not yet deposit-paid and not custom priced, adopt live package pricing from database
+      const isUnsettled = booking.status !== 'deposit_paid' && booking.status !== 'completed' && booking.status !== 'cancelled';
+      if (isUnsettled && !booking.isCustomPriceSet && matchedService) {
         if (matchedService.basePrice !== undefined) initialBase = matchedService.basePrice;
         if (matchedService.depositAmount !== undefined) initialDeposit = matchedService.depositAmount;
       }
@@ -190,12 +191,18 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
 
   if (!isOpen || !booking) return null;
 
-  // Real-time recalculated total & remaining balance
+  // Real-time recalculated total & remaining balance - GUARANTEED consistency: Deposit + Balance = Total
   const calculatedTravel = travelWaived ? 0 : (booking.travelExpense || 0);
   const calculatedTotal = Math.max(0, basePriceInput + calculatedTravel + (Number(customSurcharge) || 0) - (Number(discountAmount) || 0));
-  const remainingBalance = booking.remainingBalance !== undefined
-    ? booking.remainingBalance
-    : Math.max(0, booking.estimatedPrice - (booking.depositAmount || 0));
+  
+  const activeDeposit = booking.status === 'deposit_paid'
+    ? (booking.depositAmountPaid ?? booking.depositAmount ?? depositAmountInput)
+    : depositAmountInput;
+  const remainingBalance = booking.remainingBalancePaid
+    ? 0
+    : (booking.status === 'deposit_paid' && booking.remainingBalance !== undefined
+        ? booking.remainingBalance
+        : Math.max(0, calculatedTotal - activeDeposit));
   const balancePaymentUrl = `https://paypal.me/spudthepiper/${remainingBalance}`;
 
   const handleMarkBalancePaidModal = async () => {
@@ -405,8 +412,15 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
 
           <div className="flex items-center gap-3 self-end sm:self-center">
             <div className="text-right pr-2 hidden sm:block">
-              <span className="text-[11px] text-gray-400 block">Total Fee:</span>
-              <span className="text-xl font-bold text-white">£{booking.estimatedPrice}.00</span>
+              <div className="flex items-center gap-1 justify-end">
+                <span className="text-[11px] text-gray-400 block">Total Fee:</span>
+                {(!booking.isCustomPriceSet && matchedService && booking.status !== 'deposit_paid') && (
+                  <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-700" title="Reading live package rate from database">
+                    ⚡ Live
+                  </span>
+                )}
+              </div>
+              <span className="text-xl font-bold text-white">£{calculatedTotal}.00</span>
             </div>
             <button
               onClick={onClose}
@@ -480,7 +494,7 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
                         Total Performance Fee:
                       </span>
-                      {isPending && matchedService && (
+                      {!isPaid && !booking.isCustomPriceSet && matchedService && (
                         <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-700">
                           ⚡ Live Rate
                         </span>

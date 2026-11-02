@@ -81,16 +81,21 @@ export const AdminBookings: React.FC = () => {
   });
 
   const getBookingDisplayPricing = (bk: BookingEvent) => {
-    // If customized or already finalized (not pending), return saved prices
-    if (bk.isCustomPriceSet || bk.status !== 'pending') {
+    // If deposit is already paid, or booking is completed/cancelled, or custom pricing was explicitly saved, use stored prices
+    const isSettled = bk.status === 'deposit_paid' || bk.status === 'completed' || bk.status === 'cancelled';
+    if (isSettled || bk.isCustomPriceSet) {
+      const remaining = bk.remainingBalancePaid 
+        ? 0 
+        : (bk.remainingBalance !== undefined ? bk.remainingBalance : Math.max(0, bk.estimatedPrice - (bk.depositAmount || 0)));
       return {
         totalFee: bk.estimatedPrice,
-        deposit: bk.depositAmount,
+        deposit: bk.depositAmountPaid || bk.depositAmount,
+        remainingBalance: remaining,
         isLiveSynced: false
       };
     }
 
-    // Match with service package
+    // Match with live service package
     const clean = (bk.eventType || '').trim().toLowerCase();
     const matched = (services || []).find(s => 
       s.title.toLowerCase() === clean ||
@@ -104,18 +109,22 @@ export const AdminBookings: React.FC = () => {
       const surcharge = bk.customSurcharge || 0;
       const discount = bk.discountAmount || 0;
       const totalFee = Math.max(0, matched.basePrice + travel + surcharge - discount);
-      const deposit = matched.depositAmount !== undefined ? matched.depositAmount : (bk.depositAmount || 100);
+      const deposit = matched.depositAmount !== undefined ? matched.depositAmount : (bk.depositAmount || 80);
+      const remainingBalance = Math.max(0, totalFee - deposit);
       const hasChanged = totalFee !== bk.estimatedPrice || deposit !== bk.depositAmount;
       return {
         totalFee,
         deposit,
+        remainingBalance,
         isLiveSynced: hasChanged
       };
     }
 
+    const fallbackRemaining = Math.max(0, bk.estimatedPrice - (bk.depositAmount || 0));
     return {
       totalFee: bk.estimatedPrice,
       deposit: bk.depositAmount,
+      remainingBalance: fallbackRemaining,
       isLiveSynced: false
     };
   };
@@ -127,9 +136,10 @@ export const AdminBookings: React.FC = () => {
 
   const handleMarkBalancePaid = async (e: React.MouseEvent, bk: BookingEvent) => {
     e.stopPropagation();
-    const remainingAmt = bk.remainingBalance !== undefined 
-      ? bk.remainingBalance 
-      : Math.max(0, bk.estimatedPrice - bk.depositAmount);
+    const pricing = getBookingDisplayPricing(bk);
+    const remainingAmt = bk.remainingBalancePaid 
+      ? 0 
+      : (bk.remainingBalance !== undefined ? bk.remainingBalance : pricing.remainingBalance);
     
     if (confirm(`Confirm receipt of remaining balance £${remainingAmt}.00 for ${bk.clientName}? This will issue an official full settlement receipt via Brevo.`)) {
       await markRemainingBalancePaid(bk.id);
@@ -266,11 +276,8 @@ export const AdminBookings: React.FC = () => {
             const isPaid = bk.status === 'deposit_paid';
             const isCancelled = bk.status === 'cancelled';
 
-            const remainingBalance = bk.remainingBalance !== undefined
-              ? bk.remainingBalance
-              : Math.max(0, bk.estimatedPrice - bk.depositAmount);
-
             const pricingInfo = getBookingDisplayPricing(bk);
+            const remainingBalance = pricingInfo.remainingBalance;
 
             let statusBadge = (
               <span className="bg-amber-950/80 text-yellow-300 border border-yellow-800 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase flex items-center gap-1">
