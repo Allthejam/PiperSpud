@@ -7,7 +7,7 @@ import { LiveChatWidget } from '@/components/LiveChatWidget';
 import { VisualPencilOverlay } from '@/components/VisualPencilOverlay';
 import { EditableElement } from '@/components/EditableElement';
 import Link from 'next/link';
-import { FileText, ShieldCheck, Scale, CheckCircle2 } from 'lucide-react';
+import { FileText, ShieldCheck, Scale, CheckCircle2, Music } from 'lucide-react';
 
 export default function TermsPage() {
   return (
@@ -163,18 +163,48 @@ export default function TermsPage() {
           />
         </section>
 
+        <section id="audio-copyright" className="bg-tartan-card p-6 sm:p-8 rounded-3xl border border-tartan-accent/60 space-y-4 shadow-xl">
+          <div className="flex items-center gap-2 text-tartan-gold">
+            <Music className="w-5 h-5 text-tartan-gold shrink-0" />
+            <EditableElement
+              id="terms-sec6-title"
+              label="Section 6 Title"
+              section="terms"
+              tag="h2"
+              defaultContent="6. Audio Recordings, Master Rights & Intellectual Property"
+              className="text-xl font-bold text-white font-serif text-tartan-gold"
+            />
+          </div>
+          <EditableElement
+            id="terms-sec6-p1"
+            label="Section 6 Clause 1 - Ownership"
+            section="terms"
+            tag="p"
+            defaultContent="All Great Highland Bagpipe audio recordings, master tracks, musical performances, bagpipe chanter arrangements, and downloadable media published on this website are the sole and exclusive intellectual property and copyright of Spud the Piper (Calum Fraser). All master sound recording rights, performance rights, and neighboring rights are strictly reserved under the Copyright, Designs and Patents Act 1988 and international intellectual property conventions."
+            className="text-gray-200"
+          />
+          <EditableElement
+            id="terms-sec6-body"
+            label="Section 6 Audio Usage & Commercial Prohibition Clauses"
+            section="terms"
+            tag="div"
+            defaultContent={`• Permitted Personal Use: Website visitors, wedding couples, and event clients are granted a limited, non-exclusive, revocable license to stream audio samples and download designated repertoire tracks solely for private, personal, non-commercial listening and event evaluation.\n• Commercial Prohibition: Strictly prohibited without prior express written consent: Any reproduction, resale, re-distribution, sub-licensing, public broadcasting, film/television/podcast synchronization, sampling, remixing, commercial streaming, or use in advertising or corporate media.\n• Moral & Attribution Rights: Spud the Piper asserts his moral right to be identified as the performer and producer of all audio recordings. No track may be stripped of metadata, misattributed, or presented as another musician's work.\n• Commercial Licensing Inquiries: For commercial synchronization, media licensing, or broadcast rights, please contact Spud directly at spud@spudthepiper.co.uk.`}
+            className="whitespace-pre-line space-y-2 text-gray-300"
+          />
+        </section>
+
         <section className="bg-tartan-card p-6 sm:p-8 rounded-3xl border border-tartan-border space-y-4 shadow-xl">
           <EditableElement
-            id="terms-sec6-title"
-            label="Section 6 Title"
+            id="terms-sec7-title"
+            label="Section 7 Title"
             section="terms"
             tag="h2"
-            defaultContent="6. Governing Law"
+            defaultContent="7. Governing Law"
             className="text-xl font-bold text-white font-serif text-tartan-gold"
           />
           <EditableElement
-            id="terms-sec6-p1"
-            label="Section 6 Governing Law Clause"
+            id="terms-sec7-p1"
+            label="Section 7 Governing Law Clause"
             section="terms"
             tag="p"
             defaultContent="These terms are governed by and construed in accordance with the laws of Scotland, and both parties submit to the exclusive jurisdiction of the Scottish Courts."

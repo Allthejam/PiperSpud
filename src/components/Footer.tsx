@@ -348,14 +348,42 @@ export const Footer: React.FC = () => {
 
           </div>
 
+          {/* Intellectual Property & Audio Copyright Protection Notice */}
+          <div className="mt-10 p-4 sm:p-5 rounded-2xl bg-tartan-navy/70 border border-tartan-accent/40 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-xl bg-tartan-dark text-tartan-gold border border-tartan-border shrink-0 mt-0.5 sm:mt-0 shadow-inner">
+                <Music className="w-4 h-4" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h5 className="text-xs font-bold text-white uppercase tracking-wider">
+                    Audio Copyright &amp; Master Track Ownership
+                  </h5>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-tartan-gold/15 text-tartan-gold border border-tartan-gold/30 font-semibold">
+                    Protected by Scots &amp; International IP Law
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-300 leading-relaxed max-w-4xl">
+                  All Highland bagpipe audio recordings, musical arrangements, sound samples, and downloadable MP3 media published on this website are the exclusive intellectual property and copyright of <strong>Spud the Piper (Calum Fraser)</strong>. Audio downloads and streaming previews are strictly permitted for private, personal listening and event planning evaluation only. Any commercial reproduction, public broadcast, synchronization, sampling, resale, re-distribution, or use in advertising or commercial productions without prior express written permission from Spud the Piper is strictly prohibited. All rights reserved.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/terms#audio-copyright"
+              className="px-3.5 py-1.5 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-[11px] shrink-0 transition-all shadow hover:brightness-110 active:scale-95 whitespace-nowrap"
+            >
+              Terms &amp; Licensing →
+            </Link>
+          </div>
+
           {/* Bottom Bar */}
-          <div className="mt-12 pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-gray-400">
+          <div className="mt-8 pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-gray-400">
             <EditableElement
               id="footer-copyright-notice"
               label="Footer Copyright Text"
               section="footer"
               tag="p"
-              defaultContent={`© ${new Date().getFullYear()} Spud the Piper. All Rights Reserved. Scotland.`}
+              defaultContent={`© ${new Date().getFullYear()} Spud the Piper (Calum Fraser). All Rights Reserved. All audio tracks & digital media are proprietary intellectual property.`}
               className="text-[11px] text-gray-400"
             />
             
@@ -390,9 +418,19 @@ export const Footer: React.FC = () => {
                 label="Footer 'Terms' Link"
                 section="footer"
                 tag="a"
-                defaultContent="Terms"
+                defaultContent="Terms &amp; Conditions"
                 defaultLinkUrl="/terms"
                 className="hover:underline"
+              />
+              <span>•</span>
+              <EditableElement
+                id="footer-link-audio-terms"
+                label="Footer 'Audio Copyright' Link"
+                section="footer"
+                tag="a"
+                defaultContent="Audio Copyright"
+                defaultLinkUrl="/terms#audio-copyright"
+                className="hover:underline text-tartan-gold font-medium"
               />
               <span>•</span>
               <EditableElement
