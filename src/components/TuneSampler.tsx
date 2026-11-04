@@ -419,15 +419,17 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
           
           {/* Header Action Pills: WhatsApp Share, Repertoire Links */}
           <div className="pt-2 flex items-center justify-center gap-3 flex-wrap">
-            <button
-              type="button"
-              onClick={handleOpenShareJukebox}
-              className="px-4 py-2 rounded-full bg-emerald-950/80 hover:bg-emerald-900 text-[#25D366] hover:text-white border border-emerald-600/50 text-xs font-bold transition flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95"
-              title="Share Spud's Complete Bagpipe Jukebox on WhatsApp or Social Media"
-            >
-              <MessageCircle className="w-4 h-4 fill-current" />
-              <span>Share Jukebox on WhatsApp</span>
-            </button>
+            {audioPlaybackEnabled && (
+              <button
+                type="button"
+                onClick={handleOpenShareJukebox}
+                className="px-4 py-2 rounded-full bg-emerald-950/80 hover:bg-emerald-900 text-[#25D366] hover:text-white border border-emerald-600/50 text-xs font-bold transition flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95"
+                title="Share Spud's Complete Bagpipe Jukebox on WhatsApp or Social Media"
+              >
+                <MessageCircle className="w-4 h-4 fill-current" />
+                <span>Share Jukebox on WhatsApp</span>
+              </button>
+            )}
 
             {isHomePage ? (
               <>
@@ -766,15 +768,17 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
               </div>
 
               <div className="flex items-center gap-2 flex-wrap self-end sm:self-auto shrink-0">
-                <button
-                  type="button"
-                  onClick={handleOpenShareJukebox}
-                  className="px-3.5 py-1.5 rounded-xl bg-tartan-navy hover:bg-slate-700 text-tartan-gold border border-tartan-accent/40 font-bold text-xs flex items-center gap-1.5 shadow transition-all active:scale-95"
-                  title="Share Spud's Complete Bagpipe Jukebox Repertoire on WhatsApp, Social Media, etc."
-                >
-                  <Share2 className="w-3.5 h-3.5 text-tartan-gold" />
-                  <span>Share Jukebox</span>
-                </button>
+                {audioPlaybackEnabled && (
+                  <button
+                    type="button"
+                    onClick={handleOpenShareJukebox}
+                    className="px-3.5 py-1.5 rounded-xl bg-tartan-navy hover:bg-slate-700 text-tartan-gold border border-tartan-accent/40 font-bold text-xs flex items-center gap-1.5 shadow transition-all active:scale-95"
+                    title="Share Spud's Complete Bagpipe Jukebox Repertoire on WhatsApp, Social Media, etc."
+                  >
+                    <Share2 className="w-3.5 h-3.5 text-tartan-gold" />
+                    <span>Share Jukebox</span>
+                  </button>
+                )}
 
                 {canManage && (
                   <button
@@ -885,15 +889,17 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                           <Clock className="w-3 h-3 text-gray-500" />
                           {tune.duration}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenShareTune(tune)}
-                          className="p-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 text-[#25D366] hover:text-white border border-emerald-700/40 transition-colors flex items-center gap-1 text-[10px] font-bold px-2 shadow-sm"
-                          title={`Share "${tune.title}" on WhatsApp or Social Media`}
-                        >
-                          <Share2 className="w-3 h-3" />
-                          <span>Share</span>
-                        </button>
+                        {audioPlaybackEnabled && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenShareTune(tune)}
+                            className="p-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 text-[#25D366] hover:text-white border border-emerald-700/40 transition-colors flex items-center gap-1 text-[10px] font-bold px-2 shadow-sm"
+                            title={`Share "${tune.title}" on WhatsApp or Social Media`}
+                          >
+                            <Share2 className="w-3 h-3" />
+                            <span>Share</span>
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -985,15 +991,17 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                           </button>
                         )}
 
-                        <button
-                          type="button"
-                          onClick={() => handleOpenShareTune(tune)}
-                          className="px-3.5 py-2.5 rounded-xl bg-[#25D366]/15 hover:bg-[#25D366]/25 text-[#25D366] hover:text-emerald-300 border border-[#25D366]/40 transition-all flex items-center gap-1.5 text-xs font-bold shadow-md active:scale-95"
-                          title={`Share "${tune.title}" on WhatsApp, Facebook, X, etc.`}
-                        >
-                          <MessageCircle className="w-3.5 h-3.5 fill-current" />
-                          <span>Share / WhatsApp</span>
-                        </button>
+                        {audioPlaybackEnabled && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenShareTune(tune)}
+                            className="px-3.5 py-2.5 rounded-xl bg-[#25D366]/15 hover:bg-[#25D366]/25 text-[#25D366] hover:text-emerald-300 border border-[#25D366]/40 transition-all flex items-center gap-1.5 text-xs font-bold shadow-md active:scale-95"
+                            title={`Share "${tune.title}" on WhatsApp, Facebook, X, etc.`}
+                          >
+                            <MessageCircle className="w-3.5 h-3.5 fill-current" />
+                            <span>Share / WhatsApp</span>
+                          </button>
+                        )}
                       </div>
 
                       {/* Request CTA for booking */}
@@ -1404,7 +1412,7 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
       )}
 
       {/* Social & WhatsApp Sharing Modal */}
-      {(sharingTune || isSharingJukebox) && (
+      {audioPlaybackEnabled && (sharingTune || isSharingJukebox) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
           <div 
             className="bg-tartan-navy border-2 border-tartan-gold/50 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative text-left text-white max-h-[90vh] overflow-y-auto"

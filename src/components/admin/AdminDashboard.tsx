@@ -136,24 +136,24 @@ export const AdminDashboard: React.FC<{ onNavigateTab: (tab: string) => void }> 
             <div className="space-y-1">
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h3 className="text-base font-bold text-white font-serif tracking-tight">
-                  Site-Wide Music &amp; Audio Preview Kill Switch
+                  Site-Wide Music, Previews &amp; WhatsApp Share Toggle
                 </h3>
                 {!audioPlaybackEnabled ? (
                   <span className="bg-red-950 text-red-300 border border-red-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase flex items-center gap-1.5 shadow">
                     <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse"></span>
-                    <span>Safe Mode: All Audio Hidden &amp; Silenced</span>
+                    <span>Safe Mode: Audio &amp; Sharing Hidden</span>
                   </span>
                 ) : (
                   <span className="bg-emerald-950 text-emerald-300 border border-emerald-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase flex items-center gap-1.5 shadow">
                     <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                    <span>Active: Previews Enabled</span>
+                    <span>Active: Audio &amp; Sharing Live</span>
                   </span>
                 )}
               </div>
               <p className="text-xs text-gray-300 max-w-2xl leading-relaxed">
                 {!audioPlaybackEnabled
-                  ? 'All tune play buttons, audio previews, and synthesis playback are completely hidden across the website (Tunes repertoire, booking forms, services, and navbar) until Spud records and uploads his original studio tracks.'
-                  : 'Audio playback is currently live across the website. Turn this OFF at any time to instantly hide all play buttons site-wide.'}
+                  ? 'All tune play buttons, audio previews, MP3 downloads, and Share / WhatsApp buttons are completely hidden across the website (Tunes repertoire, booking forms, services, and navbar) until Spud records and uploads his original studio tracks.'
+                  : 'Audio playback and WhatsApp/social tune sharing are currently live across the website. Turn this OFF at any time to instantly hide all play and share buttons site-wide.'}
               </p>
             </div>
           </div>
@@ -170,12 +170,12 @@ export const AdminDashboard: React.FC<{ onNavigateTab: (tab: string) => void }> 
               {!audioPlaybackEnabled ? (
                 <>
                   <Volume2 className="w-4 h-4 text-emerald-300" />
-                  <span>Enable Audio Previews</span>
+                  <span>Enable Audio &amp; Sharing</span>
                 </>
               ) : (
                 <>
                   <VolumeX className="w-4 h-4 text-red-300" />
-                  <span>Disable All Audio (Kill Switch)</span>
+                  <span>Disable Audio &amp; Sharing (Safe Mode)</span>
                 </>
               )}
             </button>
