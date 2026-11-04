@@ -27,6 +27,7 @@ import {
   FaqItem,
   GalleryItem,
   PricingConfig,
+  AudioConfig,
   PartnerItem,
   AttireItem,
   VideoItem,
@@ -64,6 +65,7 @@ import {
   initialFaqs,
   initialGallery,
   initialPricingConfig,
+  initialAudioConfig,
   initialPartners,
   initialAttires,
   initialVideos,
@@ -250,6 +252,8 @@ interface AppContextType {
   unreadChatCount: number;
 
   // Audio Bagpipe Player & Tune Manager
+  audioPlaybackEnabled: boolean;
+  setAudioPlaybackEnabled: (enabled: boolean) => Promise<void>;
   currentPlayingTune: string | null;
   playTune: (titleOrId: string) => void;
   playSampleTune: () => void;
@@ -535,6 +539,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeSeoDrawerPageId, setActiveSeoDrawerPageId] = useState<string | null>(null);
   const [travelConfig, setTravelConfig] = useState<TravelExpensesConfig>(initialTravelConfig);
   const [pricingConfig, setPricingConfig] = useState<PricingConfig>(initialPricingConfig);
+  const [audioPlaybackEnabled, setAudioPlaybackEnabledState] = useState<boolean>(initialAudioConfig.audioPlaybackEnabled);
   const [mailingContacts, setMailingContacts] = useState<MailingContact[]>(initialMailingContacts);
   const [emailCampaigns, setEmailCampaigns] = useState<EmailCampaign[]>(initialCampaigns);
   const [broadcastAudits, setBroadcastAudits] = useState<BroadcastAuditEntry[]>([]);
@@ -800,14 +805,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                   instrumentRecommended: userVer.instrumentRecommended || initTune.instrumentRecommended,
                   duration: userVer.duration || initTune.duration,
                   showOnHomePage: userVer.showOnHomePage !== undefined ? userVer.showOnHomePage : initTune.showOnHomePage,
-                  audioUrl: userVer.audioUrl && userVer.audioUrl.trim().length > 0 ? userVer.audioUrl : initTune.audioUrl
+                  audioUrl: (userVer.audioUrl && userVer.audioUrl.trim().length > 0 && !userVer.audioUrl.includes('scottishbagpipers.com')) ? userVer.audioUrl : undefined
                 };
               }
               return initTune;
             });
 
             // Keep any brand new tunes added by user
-            const customTunes = validParsed.filter(p => p && !initialMap.has(p.id) && !initialTitleMap.has((p.title || '').toLowerCase()));
+            const customTunes = validParsed
+              .filter(p => p && !initialMap.has(p.id) && !initialTitleMap.has((p.title || '').toLowerCase()))
+              .map(c => ({
+                ...c,
+                audioUrl: (c.audioUrl && !c.audioUrl.includes('scottishbagpipers.com')) ? c.audioUrl : undefined
+              }));
             setTunesList([...mergedInitial, ...customTunes]);
           } else {
             setTunesList(initialTunes);
@@ -817,6 +827,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       } else {
         setTunesList(initialTunes);
+      }
+
+      const savedAudioEnabled = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}audio_playback_enabled`);
+      if (savedAudioEnabled !== null) {
+        setAudioPlaybackEnabledState(savedAudioEnabled === 'true');
+      } else {
+        setAudioPlaybackEnabledState(false);
       }
 
       const savedSpudOnline = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}spud_online`);
@@ -1156,6 +1173,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let unsubTunes = () => {};
     let unsubTravel = () => {};
     let unsubPricing = () => {};
+    let unsubAudio = () => {};
     let unsubChatStatus = () => {};
     let unsubChatSessions = () => {};
     let unsubChatMessages = () => {};
@@ -1429,7 +1447,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     duration: r.duration || p.duration || initT?.duration || '2:30',
                     description: (r.description && r.description.trim().length > 0) ? r.description : (p.description || initT?.description || ''),
                     funFact: (r.funFact && r.funFact.trim().length > 0) ? r.funFact : (p.funFact || initT?.funFact || ''),
-                    audioUrl: (r.audioUrl && r.audioUrl.trim().length > 0) ? r.audioUrl : (p.audioUrl || initT?.audioUrl || ''),
+                    audioUrl: (r.audioUrl && r.audioUrl.trim().length > 0 && !r.audioUrl.includes('scottishbagpipers.com')) 
+                      ? r.audioUrl 
+                      : (p.audioUrl && !p.audioUrl.includes('scottishbagpipers.com') ? p.audioUrl : undefined),
                     showOnHomePage: r.showOnHomePage !== undefined ? r.showOnHomePage : (p.showOnHomePage !== undefined ? p.showOnHomePage : initT?.showOnHomePage),
                   };
                 } else {
@@ -1462,6 +1482,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
       }, (err) => console.log('Firestore pricing_config listener:', err.message));
+
+      unsubAudio = onSnapshot(doc(db, 'settings', 'audio_config'), (snap) => {
+        if (snap.exists()) {
+          const remote = snap.data();
+          if (remote && typeof remote.audioPlaybackEnabled === 'boolean') {
+            setAudioPlaybackEnabledState(remote.audioPlaybackEnabled);
+            if (!remote.audioPlaybackEnabled) {
+              if (audioPlayerRef.current) {
+                audioPlayerRef.current.pause();
+                audioPlayerRef.current.currentTime = 0;
+              }
+              if (bagpipeSynth) bagpipeSynth.stop();
+              setCurrentPlayingTune(null);
+            }
+          }
+        }
+      }, (err) => console.log('Firestore audio_config listener:', err.message));
 
 
       // Real-time Firestore listener for opt_outs collection
@@ -1733,6 +1770,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubTunes();
       unsubTravel();
       unsubPricing();
+      unsubAudio();
       unsubChatStatus();
       unsubChatSessions();
       unsubChatMessages();
@@ -4762,7 +4800,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Audio Bagpipe Player & Tune Manager
+  const setAudioPlaybackEnabled = async (enabled: boolean) => {
+    setAudioPlaybackEnabledState(enabled);
+    if (!enabled) {
+      stopTune();
+    }
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}audio_playback_enabled`, enabled ? 'true' : 'false');
+    }
+    if (db) {
+      try {
+        await setDoc(doc(db, 'settings', 'audio_config'), { 
+          audioPlaybackEnabled: enabled,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (e) {
+        console.warn('Firestore audio_config sync error:', e);
+      }
+    }
+    addNotification({
+      type: 'system',
+      title: enabled ? 'Music Previews Enabled' : 'Master Audio Kill Switch Active',
+      message: enabled 
+        ? 'Audio playback options are now visible and active across the site.' 
+        : 'All music playback buttons and audio previews are completely hidden across the website.',
+      actionUrl: '/admin'
+    });
+  };
+
   const playTune = (titleOrId: string) => {
+    if (!audioPlaybackEnabled) {
+      console.warn('Audio playback is disabled via master kill switch.');
+      return;
+    }
     const targetQuery = (titleOrId || '').toLowerCase();
     const tune = (tunesList || []).find(t => 
       t && (t.id === titleOrId || (t.title && t.title.toLowerCase() === targetQuery))
@@ -4778,59 +4848,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       bagpipeSynth.stop();
     }
 
-    // If the tune has an audio track URL, stream the authentic audio recording
-    if (tune && tune.audioUrl && tune.audioUrl.trim().length > 0) {
+    // Never stream from unauthorized external domains
+    const cleanUrl = tune?.audioUrl && !tune.audioUrl.includes('scottishbagpipers.com') ? tune.audioUrl : undefined;
+
+    // If the tune has an authentic authorized audio track URL, stream it
+    if (cleanUrl && cleanUrl.trim().length > 0) {
       try {
-        const audio = new Audio(tune.audioUrl);
+        const audio = new Audio(cleanUrl);
         audioPlayerRef.current = audio;
         audio.onended = () => {
           setCurrentPlayingTune(null);
         };
         audio.onerror = (e) => {
-          console.warn('Real audio playback error, falling back to synthesizer:', e);
-          if (bagpipeSynth) {
-            bagpipeSynth.playTune(tune.title, () => setCurrentPlayingTune(null));
-          }
+          console.warn('Audio playback error:', e);
         };
         const playPromise = audio.play();
         if (playPromise !== undefined) {
           playPromise
             .then(() => {
-              setCurrentPlayingTune(tune.title);
+              setCurrentPlayingTune(tune?.title || titleOrId);
             })
             .catch(err => {
               console.warn('Audio autoplay/play promise error:', err);
-              if (bagpipeSynth) {
-                bagpipeSynth.playTune(tune.title, () => setCurrentPlayingTune(null));
-                setCurrentPlayingTune(tune.title);
-              }
             });
         }
       } catch (e) {
-        if (bagpipeSynth) {
-          bagpipeSynth.playTune(tune.title, () => setCurrentPlayingTune(null));
-          setCurrentPlayingTune(tune.title);
-        }
+        console.warn('Audio instantiation error:', e);
       }
-    } else if (bagpipeSynth) {
-      bagpipeSynth.playTune(tune ? tune.title : titleOrId, () => {
-        setCurrentPlayingTune(null);
-      });
-      setCurrentPlayingTune(tune ? tune.title : titleOrId);
     }
   };
 
   const playSampleTune = () => {
-    // 1. Find all tunes that have real audio uploaded in Firebase Storage
-    const storageTunes = tunesList.filter(t => t.audioUrl && t.audioUrl.trim().length > 0);
-    
-    if (storageTunes.length > 0) {
-      // Pick a random real audio track from Firebase Storage
-      const randomTune = storageTunes[Math.floor(Math.random() * storageTunes.length)];
+    if (!audioPlaybackEnabled) {
+      console.warn('Audio playback is disabled via master kill switch.');
+      return;
+    }
+    const cleanTunes = tunesList.filter(t => t.audioUrl && t.audioUrl.trim().length > 0 && !t.audioUrl.includes('scottishbagpipers.com'));
+    if (cleanTunes.length > 0) {
+      const randomTune = cleanTunes[Math.floor(Math.random() * cleanTunes.length)];
       playTune(randomTune.title);
-    } else {
-      // Fallback to iconic Highland Cathedral
-      playTune('Highland Cathedral');
     }
   };
 
@@ -6509,6 +6565,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       waitingChatSessionsCount: chatSessions.filter(s => s.isWaitingForSpud).length,
       unreadChatCount,
 
+      audioPlaybackEnabled,
+      setAudioPlaybackEnabled,
       currentPlayingTune,
       playTune,
       playSampleTune,

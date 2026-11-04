@@ -17,7 +17,7 @@ import {
 import { SpudHeritageLogo } from './SpudHeritageLogo';
 
 export const HeroSection: React.FC = () => {
-  const { playTune, playSampleTune, currentPlayingTune, stopTune, showLiveStream, toggleLiveStream, isVisualEditMode } = useApp();
+  const { playTune, playSampleTune, currentPlayingTune, stopTune, showLiveStream, toggleLiveStream, isVisualEditMode, audioPlaybackEnabled } = useApp();
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -138,38 +138,40 @@ export const HeroSection: React.FC = () => {
                 />
               </button>
 
-              <button
-                onClick={() => {
-                  if (currentPlayingTune) {
-                    stopTune();
-                  } else {
-                    playSampleTune();
-                  }
-                }}
-                className={`w-full sm:w-auto px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all border shadow-lg ${
-                  currentPlayingTune
-                    ? 'bg-tartan-gold text-tartan-dark border-yellow-300 ring-2 ring-yellow-400/50 animate-pulse'
-                    : 'bg-tartan-navy/80 hover:bg-tartan-navy text-white border-tartan-accent/50 hover:border-tartan-gold'
-                }`}
-              >
-                {currentPlayingTune ? (
-                  <>
-                    <Volume2 className="w-5 h-5 animate-pulse shrink-0 text-tartan-dark" />
-                    <span>Stop Sample ({currentPlayingTune})</span>
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-5 h-5 text-tartan-gold fill-tartan-gold shrink-0" />
-                    <EditableElement
-                      id="hero-btn-sample"
-                      tag="span"
-                      defaultContent="Listen to Bagpipe Sample"
-                      label="Hero Audio Button Text"
-                      section="hero"
-                    />
-                  </>
-                )}
-              </button>
+              {audioPlaybackEnabled && (
+                <button
+                  onClick={() => {
+                    if (currentPlayingTune) {
+                      stopTune();
+                    } else {
+                      playSampleTune();
+                    }
+                  }}
+                  className={`w-full sm:w-auto px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all border shadow-lg ${
+                    currentPlayingTune
+                      ? 'bg-tartan-gold text-tartan-dark border-yellow-300 ring-2 ring-yellow-400/50 animate-pulse'
+                      : 'bg-tartan-navy/80 hover:bg-tartan-navy text-white border-tartan-accent/50 hover:border-tartan-gold'
+                  }`}
+                >
+                  {currentPlayingTune ? (
+                    <>
+                      <Volume2 className="w-5 h-5 animate-pulse shrink-0 text-tartan-dark" />
+                      <span>Stop Sample ({currentPlayingTune})</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-5 h-5 text-tartan-gold fill-tartan-gold shrink-0" />
+                      <EditableElement
+                        id="hero-btn-sample"
+                        tag="span"
+                        defaultContent="Listen to Bagpipe Sample"
+                        label="Hero Audio Button Text"
+                        section="hero"
+                      />
+                    </>
+                  )}
+                </button>
+              )}
             </div>
 
             {/* Phone Quick Inquiry */}

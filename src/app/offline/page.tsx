@@ -26,6 +26,7 @@ export default function OfflinePage() {
     isOffline, 
     isOfflineShowcaseMode, 
     toggleOfflineShowcaseMode,
+    audioPlaybackEnabled,
     currentPlayingTune, 
     playTune, 
     stopTune, 
@@ -118,7 +119,9 @@ export default function OfflinePage() {
             <span className="text-[11px] text-tartan-gold uppercase font-bold tracking-wider">Web Audio Active</span>
           </div>
           <p className="text-xs text-gray-300">
-            Sample classic Scottish anthems below. Real recordings or real-time bagpipe synthesizer chanter will play instantly:
+            {audioPlaybackEnabled
+              ? "Sample classic Scottish anthems below. Real recordings or real-time bagpipe synthesizer chanter will play instantly:"
+              : "Browse classic Scottish repertoire anthems below:"}
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
@@ -137,23 +140,29 @@ export default function OfflinePage() {
                     <p className="font-bold text-xs truncate">{tune.title}</p>
                     <p className="text-[10px] text-gray-400 truncate">{tune.category}</p>
                   </div>
-                  <button
-                    onClick={() => {
-                      if (isPlaying) {
-                        stopTune();
-                      } else {
-                        playTune(tune.title);
-                      }
-                    }}
-                    className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 transition-transform active:scale-95 ${
-                      isPlaying 
-                        ? 'bg-red-600 text-white' 
-                        : 'bg-gold-gradient text-tartan-dark shadow'
-                    }`}
-                  >
-                    <Volume2 className="w-3.5 h-3.5" />
-                    <span>{isPlaying ? 'Stop' : 'Play'}</span>
-                  </button>
+                  {audioPlaybackEnabled ? (
+                    <button
+                      onClick={() => {
+                        if (isPlaying) {
+                          stopTune();
+                        } else {
+                          playTune(tune.title);
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 transition-transform active:scale-95 ${
+                        isPlaying 
+                          ? 'bg-red-600 text-white' 
+                          : 'bg-gold-gradient text-tartan-dark shadow'
+                      }`}
+                    >
+                      <Volume2 className="w-3.5 h-3.5" />
+                      <span>{isPlaying ? 'Stop' : 'Play'}</span>
+                    </button>
+                  ) : (
+                    <span className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-tartan-card text-gray-400 border border-tartan-border shrink-0">
+                      Repertoire
+                    </span>
+                  )}
                 </div>
               );
             })}

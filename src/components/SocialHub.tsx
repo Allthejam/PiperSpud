@@ -99,6 +99,7 @@ export const SocialHub: React.FC = () => {
     togglePinPost,
     deleteSocialPost,
     isAdminLoggedIn,
+    audioPlaybackEnabled,
     playTune,
     stopTune,
     currentPlayingTune,
@@ -1207,28 +1208,34 @@ export const SocialHub: React.FC = () => {
                                 <Volume2 className="w-4 h-4 text-amber-400 animate-pulse" />
                                 <span className="font-mono font-bold">🎵 Featured Tune: {post.tunePlayed}</span>
                               </div>
-                              <button
-                                onClick={() => {
-                                  if (isPlayingThisTune) {
-                                    stopTune();
-                                  } else {
-                                    playTune(post.tunePlayed || 'Highland Cathedral');
-                                  }
-                                }}
-                                className="px-4 py-2 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs flex items-center gap-1.5 shadow hover:scale-105 transition-all"
-                              >
-                                {isPlayingThisTune ? (
-                                  <>
-                                    <Square className="w-3.5 h-3.5 fill-current" />
-                                    <span>Stop</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Play className="w-3.5 h-3.5 fill-current" />
-                                    <span>Play Sample</span>
-                                  </>
-                                )}
-                              </button>
+                              {audioPlaybackEnabled ? (
+                                <button
+                                  onClick={() => {
+                                    if (isPlayingThisTune) {
+                                      stopTune();
+                                    } else {
+                                      playTune(post.tunePlayed || 'Highland Cathedral');
+                                    }
+                                  }}
+                                  className="px-4 py-2 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs flex items-center gap-1.5 shadow hover:scale-105 transition-all"
+                                >
+                                  {isPlayingThisTune ? (
+                                    <>
+                                      <Square className="w-3.5 h-3.5 fill-current" />
+                                      <span>Stop</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Play className="w-3.5 h-3.5 fill-current" />
+                                      <span>Play Sample</span>
+                                    </>
+                                  )}
+                                </button>
+                              ) : (
+                                <span className="px-3 py-1.5 rounded-xl bg-amber-900/30 text-amber-300 border border-amber-500/20 text-xs font-semibold">
+                                  Repertoire Track
+                                </span>
+                              )}
                             </div>
                           </div>
                         )}
@@ -1259,28 +1266,34 @@ export const SocialHub: React.FC = () => {
                               <Volume2 className="w-4 h-4 text-amber-400 animate-pulse" />
                               <span className="font-mono font-bold">🎵 Featured Tune: {post.tunePlayed}</span>
                             </div>
-                            <button
-                              onClick={() => {
-                                if (isPlayingThisTune) {
-                                  stopTune();
-                                } else {
-                                  playTune(post.tunePlayed || 'Highland Cathedral');
-                                }
-                              }}
-                              className="px-4 py-2 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs flex items-center gap-1.5 shadow hover:scale-105 transition-all"
-                            >
-                              {isPlayingThisTune ? (
-                                <>
-                                  <Square className="w-3.5 h-3.5 fill-current" />
-                                  <span>Stop</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Play className="w-3.5 h-3.5 fill-current" />
-                                  <span>Play Sample</span>
-                                </>
-                              )}
-                            </button>
+                            {audioPlaybackEnabled ? (
+                              <button
+                                onClick={() => {
+                                  if (isPlayingThisTune) {
+                                    stopTune();
+                                  } else {
+                                    playTune(post.tunePlayed || 'Highland Cathedral');
+                                  }
+                                }}
+                                className="px-4 py-2 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-xs flex items-center gap-1.5 shadow hover:scale-105 transition-all"
+                              >
+                                {isPlayingThisTune ? (
+                                  <>
+                                    <Square className="w-3.5 h-3.5 fill-current" />
+                                    <span>Stop</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Play className="w-3.5 h-3.5 fill-current" />
+                                    <span>Play Sample</span>
+                                  </>
+                                )}
+                              </button>
+                            ) : (
+                              <span className="px-3 py-1.5 rounded-xl bg-amber-900/30 text-amber-300 border border-amber-500/20 text-xs font-semibold">
+                                Repertoire Track
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>

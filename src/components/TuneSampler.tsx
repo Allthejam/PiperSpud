@@ -58,7 +58,8 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
     updateTune, 
     deleteTune, 
     isAdminLoggedIn, 
-    isVisualEditMode 
+    isVisualEditMode,
+    audioPlaybackEnabled 
   } = useApp();
 
   // Filter & Search State
@@ -791,6 +792,17 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
         )}
 
         {/* ── 3. JUKEBOX TUNE CARDS GRID ── */}
+        {!audioPlaybackEnabled && (
+          <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-tartan-card via-tartan-navy to-tartan-card border border-tartan-gold/40 text-xs text-gray-300 flex items-center gap-3 shadow-lg">
+            <div className="p-2.5 rounded-xl bg-amber-500/20 text-tartan-gold shrink-0 border border-tartan-gold/40">
+              <Music className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-bold text-white text-sm font-serif">Original Studio Tracks in Production</p>
+              <p className="text-gray-300">Spud is currently in the recording studio cutting his official Highland bagpipe repertoire. You can explore the full repertoire history, wedding moments, and select your favorite tunes directly for your booking request below.</p>
+            </div>
+          </div>
+        )}
         {displayedTunes.length === 0 ? (
           <div className="text-center py-16 bg-tartan-card rounded-3xl border border-tartan-border space-y-3">
             <Music className="w-12 h-12 text-gray-600 mx-auto" />
@@ -863,7 +875,7 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                       </div>
 
                       <div className="flex items-center gap-2 text-xs text-gray-400 font-mono">
-                        {tune.audioUrl && (
+                        {tune.audioUrl && audioPlaybackEnabled && (
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-950/90 text-emerald-300 border border-emerald-500/40 flex items-center gap-1" title="High-res studio recording uploaded by Spud">
                             <Headphones className="w-2.5 h-2.5" />
                             <span>Studio MP3</span>
@@ -922,34 +934,41 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                     
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <button
-                          onClick={() => {
-                            if (isThisPlaying) {
-                              stopTune();
-                            } else {
-                              playTune(tune.title);
-                            }
-                          }}
-                          className={`px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-md ${
-                            isThisPlaying
-                              ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
-                              : 'bg-gold-gradient hover:brightness-110 text-tartan-dark'
-                          }`}
-                        >
-                          {isThisPlaying ? (
-                            <>
-                              <Square className="w-3.5 h-3.5 fill-white" />
-                              <span>Stop</span>
-                            </>
-                          ) : (
-                            <>
-                              <Play className="w-3.5 h-3.5 fill-tartan-dark" />
-                              <span>Play</span>
-                            </>
-                          )}
-                        </button>
+                        {audioPlaybackEnabled ? (
+                          <button
+                            onClick={() => {
+                              if (isThisPlaying) {
+                                stopTune();
+                              } else {
+                                playTune(tune.title);
+                              }
+                            }}
+                            className={`px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-md ${
+                              isThisPlaying
+                                ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
+                                : 'bg-gold-gradient hover:brightness-110 text-tartan-dark'
+                            }`}
+                          >
+                            {isThisPlaying ? (
+                              <>
+                                <Square className="w-3.5 h-3.5 fill-white" />
+                                <span>Stop</span>
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-3.5 h-3.5 fill-tartan-dark" />
+                                <span>Play</span>
+                              </>
+                            )}
+                          </button>
+                        ) : (
+                          <span className="text-[11px] text-gray-400 font-medium italic flex items-center gap-1.5 py-1 px-1">
+                            <Music className="w-3.5 h-3.5 text-tartan-gold/70" />
+                            <span>Repertoire Track</span>
+                          </span>
+                        )}
 
-                        {tune.audioUrl && (
+                        {tune.audioUrl && audioPlaybackEnabled && (
                           <button
                             type="button"
                             onClick={() => handleDownloadTune(tune)}
@@ -1435,7 +1454,7 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
                     &ldquo;{sharingTune.description || 'Authentic traditional Scottish Highland bagpipe performance.'}&rdquo;
                   </p>
                 </div>
-                {sharingTune.audioUrl && (
+                {sharingTune.audioUrl && audioPlaybackEnabled && (
                   <button
                     type="button"
                     onClick={() => {

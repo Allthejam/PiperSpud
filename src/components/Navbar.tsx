@@ -49,6 +49,7 @@ export const Navbar: React.FC = () => {
   const { 
     isMounted, 
     isAdminLoggedIn, 
+    audioPlaybackEnabled,
     currentPlayingTune, 
     stopTune, 
     playTune,
@@ -348,26 +349,28 @@ export const Navbar: React.FC = () => {
             {/* Header Right CTAs */}
             <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
               {/* Bagpipe Audio Synth Quick Toggle (Desktop only) */}
-              <button
-                onClick={() => {
-                  if (currentPlayingTune) {
-                    stopTune();
-                  } else {
-                    playSampleTune();
-                  }
-                }}
-                className={`hidden md:flex px-3 py-2 rounded-xl text-xs font-semibold items-center gap-1.5 transition-all shadow-md ${
-                  currentPlayingTune
-                    ? 'bg-tartan-gold text-tartan-dark ring-2 ring-yellow-300 animate-pulse font-bold'
-                    : 'bg-tartan-navy text-tartan-gold hover:bg-tartan-card border border-tartan-accent/40'
-                }`}
-                title={currentPlayingTune ? `Playing: ${currentPlayingTune} (Click to pause)` : "Play Real Highland Bagpipe Sample from Cloud Storage"}
-              >
-                {currentPlayingTune ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-                <span className="hidden xl:inline text-xs font-bold">
-                  {currentPlayingTune ? `Playing: ${currentPlayingTune}` : 'Sound Sample'}
-                </span>
-              </button>
+              {audioPlaybackEnabled && (
+                <button
+                  onClick={() => {
+                    if (currentPlayingTune) {
+                      stopTune();
+                    } else {
+                      playSampleTune();
+                    }
+                  }}
+                  className={`hidden md:flex px-3 py-2 rounded-xl text-xs font-semibold items-center gap-1.5 transition-all shadow-md ${
+                    currentPlayingTune
+                      ? 'bg-tartan-gold text-tartan-dark ring-2 ring-yellow-300 animate-pulse font-bold'
+                      : 'bg-tartan-navy text-tartan-gold hover:bg-tartan-card border border-tartan-accent/40'
+                  }`}
+                  title={currentPlayingTune ? `Playing: ${currentPlayingTune} (Click to pause)` : "Play Real Highland Bagpipe Sample from Cloud Storage"}
+                >
+                  {currentPlayingTune ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                  <span className="hidden xl:inline text-xs font-bold">
+                    {currentPlayingTune ? `Playing: ${currentPlayingTune}` : 'Sound Sample'}
+                  </span>
+                </button>
+              )}
 
               {/* Book Now Primary Button */}
               <Link

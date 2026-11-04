@@ -44,6 +44,7 @@ export const BookingCalendar: React.FC = () => {
     travelConfig, 
     services, 
     pricingConfig,
+    audioPlaybackEnabled,
     currentPlayingTune,
     playTune,
     stopTune,
@@ -986,22 +987,24 @@ export const BookingCalendar: React.FC = () => {
 
                           <div className="flex items-center gap-1.5 shrink-0">
                             {/* Speaker Audio Preview Button */}
-                            <button
-                              type="button"
-                              onClick={(e) => handlePlayTunePreview(e, tune.title)}
-                              className={`p-2 rounded-xl border transition-all flex items-center justify-center ${
-                                isPlaying
-                                  ? 'bg-gold-gradient text-tartan-dark border-amber-300 shadow-lg shadow-amber-500/20 scale-105 animate-pulse'
-                                  : 'bg-tartan-card hover:bg-gold-gradient hover:text-tartan-dark text-tartan-gold border-tartan-border hover:border-tartan-gold shadow-sm'
-                              }`}
-                              title={isPlaying ? `Stop listening to ${tune.title}` : `Listen to ${tune.title} bagpipe sample`}
-                            >
-                              {isPlaying ? (
-                                <VolumeX className="w-4 h-4" />
-                              ) : (
-                                <Volume2 className="w-4 h-4" />
-                              )}
-                            </button>
+                            {audioPlaybackEnabled && (
+                              <button
+                                type="button"
+                                onClick={(e) => handlePlayTunePreview(e, tune.title)}
+                                className={`p-2 rounded-xl border transition-all flex items-center justify-center ${
+                                  isPlaying
+                                    ? 'bg-gold-gradient text-tartan-dark border-amber-300 shadow-lg shadow-amber-500/20 scale-105 animate-pulse'
+                                    : 'bg-tartan-card hover:bg-gold-gradient hover:text-tartan-dark text-tartan-gold border-tartan-border hover:border-tartan-gold shadow-sm'
+                                }`}
+                                title={isPlaying ? `Stop listening to ${tune.title}` : `Listen to ${tune.title} bagpipe sample`}
+                              >
+                                {isPlaying ? (
+                                  <VolumeX className="w-4 h-4" />
+                                ) : (
+                                  <Volume2 className="w-4 h-4" />
+                                )}
+                              </button>
+                            )}
 
                             {tune.showOnHomePage && !isPlaying && (
                               <span className="text-[9px] px-1.5 py-0.5 rounded bg-tartan-gold/15 text-tartan-gold font-bold shrink-0 border border-tartan-gold/30 hidden lg:inline-block">

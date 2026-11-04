@@ -72,6 +72,7 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
     deleteBooking,
     openBrevoPreview, 
     openPayPalModal,
+    audioPlaybackEnabled,
     playTune,
     currentPlayingTune,
     stopTune
@@ -763,17 +764,19 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                             </span>
                             <span className="text-white font-medium truncate">{tuneTitle}</span>
                           </div>
-                          <button
-                            onClick={() => isPlaying ? stopTune() : playTune(tuneTitle)}
-                            className={`p-1.5 rounded-lg border transition-all ${
-                              isPlaying 
-                                ? 'bg-amber-500 text-tartan-dark border-amber-400 animate-pulse' 
-                                : 'bg-tartan-dark hover:bg-slate-700 text-tartan-gold border-tartan-border'
-                            }`}
-                            title={isPlaying ? 'Stop tune preview' : 'Play bagpipe tune preview'}
-                          >
-                            {isPlaying ? <Square className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                          </button>
+                          {audioPlaybackEnabled && (
+                            <button
+                              onClick={() => isPlaying ? stopTune() : playTune(tuneTitle)}
+                              className={`p-1.5 rounded-lg border transition-all ${
+                                isPlaying 
+                                  ? 'bg-amber-500 text-tartan-dark border-amber-400 animate-pulse' 
+                                  : 'bg-tartan-dark hover:bg-slate-700 text-tartan-gold border-tartan-border'
+                              }`}
+                              title={isPlaying ? 'Stop tune preview' : 'Play bagpipe tune preview'}
+                            >
+                              {isPlaying ? <Square className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                            </button>
+                          )}
                         </div>
                       );
                     })}

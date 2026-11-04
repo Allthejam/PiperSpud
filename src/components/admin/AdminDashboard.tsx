@@ -24,7 +24,9 @@ import {
   BookOpen,
   Eye,
   BellRing,
-  Send
+  Send,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { BookingEvent } from '@/types/spud';
 
@@ -46,7 +48,9 @@ export const AdminDashboard: React.FC<{ onNavigateTab: (tab: string) => void }> 
     pricingConfig,
     updatePricingConfig,
     syncAllToFirestore,
-    isSyncingFirestore 
+    isSyncingFirestore,
+    audioPlaybackEnabled,
+    setAudioPlaybackEnabled
   } = useApp();
 
   // Metrics with safe fallbacks
@@ -111,6 +115,71 @@ export const AdminDashboard: React.FC<{ onNavigateTab: (tab: string) => void }> 
             <Calendar className="w-4 h-4 text-tartan-gold" />
             <span>Open Diary</span>
           </button>
+        </div>
+      </div>
+
+      {/* MASTER AUDIO & MUSIC PREVIEW KILL SWITCH CARD */}
+      <div className={`rounded-3xl p-6 border shadow-2xl transition-all ${
+        !audioPlaybackEnabled
+          ? 'bg-gradient-to-r from-red-950/70 via-tartan-card to-tartan-navy border-red-600/70'
+          : 'bg-gradient-to-r from-emerald-950/60 via-tartan-card to-tartan-navy border-emerald-600/60'
+      }`}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="flex items-start gap-4">
+            <div className={`p-3.5 rounded-2xl border shrink-0 ${
+              !audioPlaybackEnabled 
+                ? 'bg-red-950 text-red-400 border-red-700/80 shadow-lg shadow-red-950/50' 
+                : 'bg-emerald-950 text-emerald-400 border-emerald-700/80 shadow-lg shadow-emerald-950/50'
+            }`}>
+              {!audioPlaybackEnabled ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h3 className="text-base font-bold text-white font-serif tracking-tight">
+                  Site-Wide Music &amp; Audio Preview Kill Switch
+                </h3>
+                {!audioPlaybackEnabled ? (
+                  <span className="bg-red-950 text-red-300 border border-red-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase flex items-center gap-1.5 shadow">
+                    <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse"></span>
+                    <span>Safe Mode: All Audio Hidden &amp; Silenced</span>
+                  </span>
+                ) : (
+                  <span className="bg-emerald-950 text-emerald-300 border border-emerald-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase flex items-center gap-1.5 shadow">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span>Active: Previews Enabled</span>
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-300 max-w-2xl leading-relaxed">
+                {!audioPlaybackEnabled
+                  ? 'All tune play buttons, audio previews, and synthesis playback are completely hidden across the website (Tunes repertoire, booking forms, services, and navbar) until Spud records and uploads his original studio tracks.'
+                  : 'Audio playback is currently live across the website. Turn this OFF at any time to instantly hide all play buttons site-wide.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0 self-start md:self-center">
+            <button
+              onClick={() => setAudioPlaybackEnabled(!audioPlaybackEnabled)}
+              className={`px-5 py-3 rounded-2xl text-xs font-extrabold uppercase tracking-wider flex items-center gap-2 transition-all shadow-lg active:scale-95 ${
+                !audioPlaybackEnabled
+                  ? 'bg-emerald-900/90 hover:bg-emerald-800 text-emerald-200 border border-emerald-600'
+                  : 'bg-red-900/90 hover:bg-red-800 text-red-200 border border-red-600'
+              }`}
+            >
+              {!audioPlaybackEnabled ? (
+                <>
+                  <Volume2 className="w-4 h-4 text-emerald-300" />
+                  <span>Enable Audio Previews</span>
+                </>
+              ) : (
+                <>
+                  <VolumeX className="w-4 h-4 text-red-300" />
+                  <span>Disable All Audio (Kill Switch)</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 

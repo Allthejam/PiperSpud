@@ -325,6 +325,11 @@ export interface PricingConfig {
   poaDescription: string; // explanation shown on booking and service pages
 }
 
+export interface AudioConfig {
+  audioPlaybackEnabled: boolean; // if false, site-wide audio previews and play buttons are completely hidden
+  reasonNotice?: string;
+}
+
 export interface ServiceItineraryStep {
   stepOrTime: string;
   title: string;

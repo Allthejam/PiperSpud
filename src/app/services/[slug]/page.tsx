@@ -63,6 +63,7 @@ export default function ServiceDetailPage() {
   const { 
     services, 
     reviews, 
+    audioPlaybackEnabled,
     playTune, 
     stopTune, 
     currentPlayingTune, 
@@ -382,7 +383,9 @@ export default function ServiceDetailPage() {
                 Signature Repertoire for This Occasion
               </h2>
               <p className="text-xs sm:text-sm text-gray-300">
-                Click any tune below to hear a live bagpipe audio preview performed by Spud.
+                {audioPlaybackEnabled
+                  ? "Click any tune below to hear a live bagpipe audio preview performed by Spud."
+                  : "Spud's traditional Highland repertoire recommendations for this service."}
               </p>
             </div>
 
@@ -409,17 +412,23 @@ export default function ServiceDetailPage() {
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => isPlaying ? stopTune() : playTune(tuneTitle)}
-                      className={`p-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                        isPlaying 
-                          ? 'bg-red-900/40 text-red-300 border border-red-700 hover:bg-red-800' 
-                          : 'bg-gold-gradient text-tartan-dark shadow hover:brightness-110'
-                      }`}
-                      title={isPlaying ? 'Stop Audio' : 'Play Sample'}
-                    >
-                      {isPlaying ? <Square className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
-                    </button>
+                    {audioPlaybackEnabled ? (
+                      <button
+                        onClick={() => isPlaying ? stopTune() : playTune(tuneTitle)}
+                        className={`p-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                          isPlaying 
+                            ? 'bg-red-900/40 text-red-300 border border-red-700 hover:bg-red-800' 
+                            : 'bg-gold-gradient text-tartan-dark shadow hover:brightness-110'
+                        }`}
+                        title={isPlaying ? 'Stop Audio' : 'Play Sample'}
+                      >
+                        {isPlaying ? <Square className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+                      </button>
+                    ) : (
+                      <span className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-tartan-dark/70 text-gray-400 border border-tartan-border shrink-0">
+                        Repertoire
+                      </span>
+                    )}
                   </div>
                 );
               })}
