@@ -58,6 +58,7 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Spud the Piper" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="p:domain_verify" content="93359088c9fe7ab17a86170057d2eb7a" />
+        <meta name="trustpilot-domain-verification" content="677b74d9-a361-4c28-a445-e484f0ac7f69" />
         <link rel="alternate" type="application/rss+xml" title="Spud the Piper RSS Feed" href="/feed.xml" />
         <StructuredData />
         {/* Trustpilot TrustBox Script */}
