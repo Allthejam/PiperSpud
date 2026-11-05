@@ -110,6 +110,7 @@ export const Navbar: React.FC = () => {
       children: [
         { label: 'All Services & Packages', href: '/services', desc: 'Weddings, Castles, Funerals & Corporate', icon: Sparkles },
         { label: 'Airbnb Bagpipe Masterclass', href: '/experience', desc: 'Learn to Play at Carrbridge Hotel (Official Airbnb Partner)', icon: Award },
+        { label: 'Virtual Bagpipe Studio', href: '/studio', desc: 'Synthesiser, Virtual Chanter & Compose Tunes', icon: Music },
         { label: 'Tour & Coach Groups', href: '/tour-groups', desc: 'Scottish Welcome & Experiences for Visitors', icon: Globe },
         { label: 'Highland Attire & Tartans', href: '/attire', desc: 'No. 1 Feather Bonnet, Fraser Tartan & Modern', icon: Shirt },
       ]
@@ -121,6 +122,10 @@ export const Navbar: React.FC = () => {
     {
       label: 'Tunes',
       href: '/tunes',
+      children: [
+        { label: 'Bagpipe Tune Repertoire', href: '/tunes', desc: "Explore Spud's Classic Scottish Repertoire", icon: Music },
+        { label: 'Bagpipe Synthesiser Studio', href: '/studio', desc: 'Play Chanter, Drones & Compose Procedural Tunes', icon: Sparkles },
+      ]
     },
     {
       label: 'Community',

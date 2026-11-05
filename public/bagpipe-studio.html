@@ -1,0 +1,2811 @@
+<!DOCTYPE html>
+<html lang="en-GB" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ceòl Mòr &amp; Ceòl Beag — Solo Highland Bagpipe Synthesiser</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Cinzel', 'serif'],
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            slateHighland: {
+              950: '#0b0f14',
+              900: '#111720',
+              850: '#161e2a',
+              800: '#1d2736',
+              700: '#2b394e',
+            },
+            brass: {
+              300: '#f3d286',
+              400: '#dfb15b',
+              500: '#c89236',
+              600: '#a37120',
+            },
+            heather: {
+              400: '#a78bfa',
+              500: '#8b5cf6',
+              600: '#6d28d9',
+            },
+            moss: {
+              400: '#4ade80',
+              500: '#22c55e',
+              600: '#15803d',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    /* Custom Highland Aesthetic Styling & Range Sliders */
+    body {
+      background-color: #0b0f14;
+      background-image:
+        radial-gradient(circle at 15% 15%, rgba(200, 146, 54, 0.08) 0%, transparent 45%),
+        radial-gradient(circle at 85% 20%, rgba(139, 92, 246, 0.07) 0%, transparent 45%),
+        radial-gradient(circle at 50% 90%, rgba(21, 128, 61, 0.06) 0%, transparent 50%);
+      color: #e2e8f0;
+      overflow-x: hidden;
+    }
+
+    /* Subtle tartan-inspired hairline grid overlay */
+    .tartan-header {
+      background-image:
+        linear-gradient(90deg, rgba(200, 146, 54, 0.06) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(200, 146, 54, 0.06) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+
+    /* Custom Range Inputs */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      background: #1d2736;
+      border-radius: 999px;
+      outline: none;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #f3d286, #c89236);
+      cursor: pointer;
+      border: 2px solid #0b0f14;
+      box-shadow: 0 0 8px rgba(200, 146, 54, 0.55);
+      transition: transform 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #f3d286, #c89236);
+      cursor: pointer;
+      border: 2px solid #0b0f14;
+      box-shadow: 0 0 8px rgba(200, 146, 54, 0.55);
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #111720;
+      border-radius: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2b394e;
+      border-radius: 6px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #c89236;
+    }
+
+    /* Chanter Note Key Active Glow */
+    .note-btn-active {
+      background: linear-gradient(135deg, rgba(200, 146, 54, 0.35), rgba(200, 146, 54, 0.12)) !important;
+      border-color: #dfb15b !important;
+      box-shadow: 0 0 14px rgba(223, 177, 91, 0.35);
+      color: #fef3c7 !important;
+    }
+
+    /* ABC Live Token Highlight */
+    .abc-token {
+      transition: background-color 0.06s ease, color 0.06s ease;
+      border-radius: 4px;
+      padding: 1px 2px;
+    }
+    .abc-token-active {
+      background-color: rgba(223, 177, 91, 0.32);
+      color: #fde68a;
+      box-shadow: 0 0 0 1px rgba(223, 177, 91, 0.65);
+      font-weight: 600;
+    }
+
+    /* Bag pressure pulse when active */
+    @keyframes bagBreathe {
+      0%, 100% { box-shadow: 0 0 14px rgba(200, 146, 54, 0.35); }
+      50% { box-shadow: 0 0 24px rgba(200, 146, 54, 0.65); }
+    }
+    .bag-active-glow {
+      animation: bagBreathe 3.2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen font-sans antialiased selection:bg-brass-500/30 selection:text-brass-300">
+
+  <!-- Toast Notification Banner (No alert() used anywhere) -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Top Header Bar -->
+  <header class="tartan-header border-b border-slate-800/80 bg-slateHighland-900/90 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <!-- Brand Title -->
+      <div class="flex items-center gap-3.5">
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-brass-400 via-brass-500 to-brass-600 p-[1.5px] shadow-lg shadow-brass-500/20">
+          <div class="w-full h-full bg-slateHighland-950 rounded-[10px] flex items-center justify-center">
+            <!-- Custom Highland Bagpipe Drones & Chanter Icon -->
+            <svg class="w-6 h-6 text-brass-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 15c0-3 2.5-5 6-5s5 2 5 5c0 2.5-2.5 4-5.5 4S5 17.5 5 15Z" fill="rgba(200,146,54,0.18)"/>
+              <path d="M8 10L5 3"/>
+              <path d="M10.5 10L9.5 2"/>
+              <path d="M13 10.5L14 3.5"/>
+              <path d="M15.5 14L20 21"/>
+              <path d="M6 12L3 9"/>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-display text-lg sm:text-xl font-bold tracking-wide text-slate-100">
+              PÌOB MÒR <span class="text-brass-400">STUDIO</span>
+            </h1>
+            <span class="hidden md:inline-block text-[11px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-brass-500/15 text-brass-300 border border-brass-500/30">
+              Solo K:HP Just Intonation
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">Great Highland Bagpipe Acoustic Synthesiser &amp; Traditional Scottish Tune Generator</p>
+        </div>
+      </div>
+
+      <!-- Primary Transport & Bag Controls -->
+      <div class="flex flex-wrap items-center gap-2.5">
+        <!-- Strike-In / Bag Airflow Toggle -->
+        <button id="btnStrikeIn" class="px-4 py-2.5 rounded-xl font-semibold text-sm flex items-center gap-2.5 transition-all bg-gradient-to-r from-brass-500 to-brass-600 hover:from-brass-400 hover:to-brass-500 text-slateHighland-950 shadow-lg shadow-brass-500/20 cursor-pointer">
+          <span id="strikeLed" class="w-2.5 h-2.5 rounded-full bg-slateHighland-950/60 transition-colors"></span>
+          <span id="strikeLabel">Strike In Pipes</span>
+        </button>
+
+        <!-- Practice Chanter / Full Pipes Mode Toggle -->
+        <button id="btnGooseMode" title="Toggle between Full Highland Pipes (with 3 Drones) and Practice Chanter (Chanter Only)" class="px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium border border-slate-700/80 bg-slateHighland-850 hover:bg-slateHighland-800 text-slate-200 flex items-center gap-2 transition-all">
+          <span id="dronesBadge" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span id="gooseModeText">3 Drones Active</span>
+        </button>
+
+        <!-- WAV Performance Recorder -->
+        <button id="btnRecordWav" class="px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium border border-slate-700/80 bg-slateHighland-850 hover:border-rose-500/50 hover:bg-rose-950/30 text-slate-200 flex items-center gap-2 transition-all">
+          <span id="recDot" class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+          <span id="recLabel">Record WAV</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace Container -->
+  <main class="max-w-[1440px] mx-auto px-4 sm:px-6 py-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+    <!-- LEFT COLUMN (4 cols): Interactive Visual Chanter + Live Note & Ornament Pad -->
+    <section class="lg:col-span-4 flex flex-col gap-5">
+
+      <!-- Interactive Great Highland Chanter Card -->
+      <div class="rounded-2xl bg-slateHighland-900/90 border border-slate-800/90 p-4 sm:p-5 shadow-xl">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-brass-400 flex items-center gap-2">
+              <span>Blackwood Solo Chanter</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Click notes or use keys <span class="font-mono text-slate-300">A–L</span> + ornaments</p>
+          </div>
+          <!-- Real-Time Pitch & Just Ratio Readout -->
+          <div class="text-right bg-slateHighland-950/90 border border-slate-800 rounded-xl px-3 py-1.5">
+            <div class="flex items-baseline justify-end gap-1.5">
+              <span id="activeNoteName" class="font-display font-bold text-lg text-brass-300">Low A</span>
+              <span id="activeRatioBadge" class="font-mono text-[11px] text-heather-400">1/1</span>
+            </div>
+            <div id="activeFreqReadout" class="font-mono text-[11px] text-slate-400">478.0 Hz</div>
+          </div>
+        </div>
+
+        <!-- Bag Pressure Meter -->
+        <div class="mb-4">
+          <div class="flex justify-between text-[11px] font-mono text-slate-400 mb-1">
+            <span>BAG AIR PRESSURE</span>
+            <span id="pressurePercent">0% (Idle)</span>
+          </div>
+          <div class="w-full h-2 rounded-full bg-slateHighland-950 overflow-hidden border border-slate-800/80">
+            <div id="bagPressureBar" class="h-full w-0 bg-gradient-to-r from-amber-600 via-brass-400 to-emerald-400 transition-all duration-150"></div>
+          </div>
+        </div>
+
+        <!-- Chanter Diagram + Note Trigger Buttons Side by Side -->
+        <div class="grid grid-cols-12 gap-3 items-center bg-slateHighland-950/60 rounded-xl p-3 border border-slate-800/70">
+
+          <!-- Left: Authentic Carved Highland Chanter SVG with 8 Finger Holes -->
+          <div class="col-span-5 flex flex-col items-center justify-center relative py-1">
+            <svg id="chanterSvg" viewBox="0 0 120 430" class="w-full max-w-[118px] h-auto select-none drop-shadow-lg">
+              <defs>
+                <linearGradient id="blackwoodGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#171311"/>
+                  <stop offset="32%" stop-color="#332922"/>
+                  <stop offset="65%" stop-color="#1b1613"/>
+                  <stop offset="100%" stop-color="#0d0a09"/>
+                </linearGradient>
+                <linearGradient id="ivoryMount" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#d6c7a9"/>
+                  <stop offset="45%" stop-color="#f5ebd6"/>
+                  <stop offset="100%" stop-color="#b5a27e"/>
+                </linearGradient>
+                <linearGradient id="brassStaple" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#9a6b1f"/>
+                  <stop offset="50%" stop-color="#f3d286"/>
+                  <stop offset="100%" stop-color="#8c5e14"/>
+                </linearGradient>
+              </defs>
+
+              <!-- Cane Double Reed & Brass Staple at top -->
+              <polygon points="53,6 67,6 64,28 56,28" fill="#d4a359" stroke="#8c5e14" stroke-width="1"/>
+              <line x1="55" y1="19" x2="65" y2="19" stroke="#991b1b" stroke-width="2.5"/>
+              <rect x="55" y="28" width="10" height="10" rx="1" fill="url(#brassStaple)"/>
+
+              <!-- Imitation Ivory Top Ferrule / Bulb -->
+              <rect x="44" y="38" width="32" height="14" rx="4" fill="url(#ivoryMount)"/>
+              <rect x="46" y="52" width="28" height="8" rx="2" fill="url(#brassStaple)"/>
+
+              <!-- Conical Blackwood Chanter Body -->
+              <polygon points="47,60 73,60 83,388 37,388" fill="url(#blackwoodGrad)" stroke="#3f342c" stroke-width="1"/>
+
+              <!-- Carved Imitation Ivory Sole at Bottom -->
+              <ellipse cx="60" cy="396" rx="31" ry="9" fill="url(#ivoryMount)" stroke="#8c7853" stroke-width="1"/>
+              <rect x="36" y="385" width="48" height="8" rx="3" fill="url(#ivoryMount)"/>
+
+              <!-- Back Thumb Hole (High A) - Offset indicator to upper left with dashed guide -->
+              <line x1="25" y1="88" x2="48" y2="88" stroke="#64748b" stroke-width="1" stroke-dasharray="2,2"/>
+              <text x="16" y="76" fill="#94a3b8" font-size="8.5" font-family="JetBrains Mono" text-anchor="middle">THM</text>
+              <circle id="hole-T" cx="22" cy="88" r="8.5" fill="#dfb15b" stroke="#cbd5e1" stroke-width="1.6"/>
+
+              <!-- Top Hand Holes: L1 (High G), L2 (F), L3 (E) -->
+              <circle id="hole-L1" cx="60" cy="106" r="7.5" fill="#dfb15b" stroke="#cbd5e1" stroke-width="1.5"/>
+              <circle id="hole-L2" cx="60" cy="142" r="7.8" fill="#dfb15b" stroke="#cbd5e1" stroke-width="1.5"/>
+              <circle id="hole-L3" cx="60" cy="178" r="8.0" fill="#dfb15b" stroke="#cbd5e1" stroke-width="1.5"/>
+
+              <!-- Subtle Hand Divider Ring -->
+              <line x1="44" y1="203" x2="76" y2="203" stroke="rgba(223,177,91,0.35)" stroke-width="1.2"/>
+
+              <!-- Bottom Hand Holes: R1 (D), R2 (C), R3 (B), R4 (Low A) -->
+              <circle id="hole-R1" cx="60" cy="226" r="8.2" fill="#dfb15b" stroke="#cbd5e1" stroke-width="1.5"/>
+              <circle id="hole-R2" cx="60" cy="264" r="8.4" fill="#dfb15b" stroke="#cbd5e1" stroke-width="1.5"/>
+              <circle id="hole-R3" cx="60" cy="302" r="8.4" fill="#dfb15b" stroke="#cbd5e1" stroke-width="1.5"/>
+              <circle id="hole-R4" cx="64" cy="340" r="7.6" fill="#111720" stroke="#cbd5e1" stroke-width="1.5"/>
+
+              <!-- Side Sound Vent Holes near Sole -->
+              <ellipse cx="43" cy="371" rx="3" ry="5" fill="#090c10" stroke="#475569" stroke-width="0.8"/>
+              <ellipse cx="77" cy="371" rx="3" ry="5" fill="#090c10" stroke="#475569" stroke-width="0.8"/>
+            </svg>
+            <div class="flex items-center gap-3 text-[10px] text-slate-400 mt-1">
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-brass-400 inline-block"></span> Closed</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-slateHighland-950 border border-slate-400 inline-block"></span> Open</span>
+            </div>
+          </div>
+
+          <!-- Right: 9 Just-Intonation Highland Scale Buttons (High A at top down to Low G at bottom) -->
+          <div id="chanterNoteButtons" class="col-span-7 flex flex-col gap-1.5">
+            <!-- Populated dynamically in descending pitch order (High A -> Low G) to match physical chanter layout -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Authentic Highland Ornamentation & Grace Note Pad -->
+      <div class="rounded-2xl bg-slateHighland-900/90 border border-slate-800/90 p-4 sm:p-5 shadow-xl">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-brass-400">Pipe Ornamentation Pad</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Trigger live embellishments on the active chanter note</p>
+          </div>
+          <span id="lastOrnamentBadge" class="font-mono text-[11px] px-2.5 py-1 rounded-lg bg-slateHighland-950 border border-slate-800 text-heather-400">
+            Ready
+          </span>
+        </div>
+
+        <!-- Single Grace Notes -->
+        <div class="mb-3">
+          <div class="text-[11px] font-mono uppercase text-slate-400 mb-1.5">Single Grace Notes (Keys 1–5)</div>
+          <div class="grid grid-cols-5 gap-1.5">
+            <button data-orn="g" class="orn-btn px-2 py-2 rounded-xl bg-slateHighland-850 hover:bg-slateHighland-800 border border-slate-700/80 text-xs font-medium text-slate-200 flex flex-col items-center transition-all">
+              <span class="font-mono text-brass-300 font-semibold">{g}</span>
+              <span class="text-[10px] text-slate-400">High G [1]</span>
+            </button>
+            <button data-orn="d" class="orn-btn px-2 py-2 rounded-xl bg-slateHighland-850 hover:bg-slateHighland-800 border border-slate-700/80 text-xs font-medium text-slate-200 flex flex-col items-center transition-all">
+              <span class="font-mono text-brass-300 font-semibold">{d}</span>
+              <span class="text-[10px] text-slate-400">D Grace [2]</span>
+            </button>
+            <button data-orn="e" class="orn-btn px-2 py-2 rounded-xl bg-slateHighland-850 hover:bg-slateHighland-800 border border-slate-700/80 text-xs font-medium text-slate-200 flex flex-col items-center transition-all">
+              <span class="font-mono text-brass-300 font-semibold">{e}</span>
+              <span class="text-[10px] text-slate-400">E Grace [3]</span>
+            </button>
+            <button data-orn="a" class="orn-btn px-2 py-2 rounded-xl bg-slateHighland-850 hover:bg-slateHighland-800 border border-slate-700/80 text-xs font-medium text-slate-200 flex flex-col items-center transition-all">
+              <span class="font-mono text-brass-300 font-semibold">{a}</span>
+              <span class="text-[10px] text-slate-400">Thumb [4]</span>
+            </button>
+            <button data-orn="G" class="orn-btn px-2 py-2 rounded-xl bg-slateHighland-850 hover:bg-slateHighland-800 border border-slate-700/80 text-xs font-medium text-slate-200 flex flex-col items-center transition-all">
+              <span class="font-mono text-brass-300 font-semibold">{G}</span>
+              <span class="text-[10px] text-slate-400">Strike [5]</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Compound Traditional Movements -->
+        <div>
+          <div class="text-[11px] font-mono uppercase text-slate-400 mb-1.5">Compound Embellishments (Keys Q–T)</div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <button data-compound="doubling" class="compound-btn p-2.5 rounded-xl bg-slateHighland-850 hover:bg-slateHighland-800 border border-slate-700/80 text-left transition-all">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-100">Doubling</span>
+                <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slateHighland-950 text-brass-300">Q</span>
+              </div>
+              <div class="font-mono text-[10px] text-slate-400 mt-0.5">Context e.g. {gde}</div>
+            </button>
+
+            <button data-compound="throwD" class="compound-btn p-2.5 rounded-xl bg-slateHighland-850 hover:bg-slateHighland-800 border border-slate-700/80 text-left transition-all">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-100">Throw on D</span>
+                <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slateHighland-950 text-brass-300">W</span>
+              </div>
+              <div class="font-mono text-[10px] text-slate-400 mt-0.5">{Gdc} → D</div>
+            </button>
+
+            <button data-compound="grip" class="compound-btn p-2.5 rounded-xl bg-slateHighland-850 hover:bg-slateHighland-800 border border-slate-700/80 text-left transition-all">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-100">Grip (Leumlath)</span>
+                <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slateHighland-950 text-brass-300">E</span>
+              </div>
+              <div class="font-mono text-[10px] text-slate-400 mt-0.5">{Gdg} ripple</div>
+            </button>
+
+            <button data-compound="taorluath" class="compound-btn p-2.5 rounded-xl bg-slateHighland-850 hover:bg-slateHighland-800 border border-slate-700/80 text-left transition-all">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-100">Taorluath</span>
+                <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slateHighland-950 text-brass-300">R</span>
+              </div>
+              <div class="font-mono text-[10px] text-slate-400 mt-0.5">{GdGe} → Low A</div>
+            </button>
+
+            <button data-compound="birl" class="compound-btn col-span-2 sm:col-span-2 p-2.5 rounded-xl bg-slateHighland-850 hover:bg-slateHighland-800 border border-slate-700/80 text-left transition-all">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-100">Low A Birl</span>
+                <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slateHighland-950 text-brass-300">T</span>
+              </div>
+              <div class="font-mono text-[10px] text-slate-400 mt-0.5">{AGAG} double tap on Low G → Low A</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Movement Breakdown Inspector -->
+        <div id="ornamentInspector" class="mt-3 p-2.5 rounded-xl bg-slateHighland-950/90 border border-slate-800/80 text-xs text-slate-300 font-mono">
+          Tip: Press any embellishment pad (even while idle) to audition &amp; inspect its exact finger sequence.
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN (8 cols): Acoustic Visualiser, Mixer Controls, Tune Generator & Live ABC Sequencer -->
+    <section class="lg:col-span-8 flex flex-col gap-5">
+
+      <!-- Top Row: Harmonic Lock Visualiser + Acoustic Synthesis Mixer -->
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-5">
+
+        <!-- Oscilloscope & Spectrum Visualiser (5 cols) -->
+        <div class="xl:col-span-5 rounded-2xl bg-slateHighland-900/90 border border-slate-800/90 p-4 sm:p-5 shadow-xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2.5">
+              <div>
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-brass-400">Harmonic Lock Visualiser</h2>
+                <p class="text-xs text-slate-400">Drone &amp; chanter bore resonance</p>
+              </div>
+              <div class="flex rounded-lg bg-slateHighland-950 p-0.5 border border-slate-800 text-[11px]">
+                <button id="visModeWave" class="px-2.5 py-1 rounded-md bg-brass-500/20 text-brass-300 font-medium">Scope</button>
+                <button id="visModeSpec" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200">Spectrum</button>
+              </div>
+            </div>
+
+            <div class="relative w-full h-44 rounded-xl overflow-hidden bg-slateHighland-950 border border-slate-800/90">
+              <canvas id="audioCanvas" class="w-full h-full block"></canvas>
+              <div class="absolute bottom-2 left-2.5 right-2.5 flex justify-between text-[10px] font-mono text-slate-400 pointer-events-none">
+                <span id="droneLockInfo">Bass: 119.5 Hz · Tenors: 239.0 Hz</span>
+                <span id="pitchStandardInfo">A = 478 Hz (Pipe Pitch)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Drone Tuning & Reed Status Pills -->
+          <div class="grid grid-cols-3 gap-2 mt-3 text-center">
+            <div class="p-2 rounded-xl bg-slateHighland-950/80 border border-slate-800">
+              <div class="text-[10px] font-mono text-slate-400">BASS DRONE</div>
+              <div id="bassHzLabel" class="text-xs font-mono font-semibold text-brass-300 mt-0.5">119.5 Hz</div>
+              <div class="text-[10px] text-emerald-400">1/4 Ratio</div>
+            </div>
+            <div class="p-2 rounded-xl bg-slateHighland-950/80 border border-slate-800">
+              <div class="text-[10px] font-mono text-slate-400">TENOR I &amp; II</div>
+              <div id="tenorHzLabel" class="text-xs font-mono font-semibold text-brass-300 mt-0.5">239.0 Hz</div>
+              <div class="text-[10px] text-emerald-400">1/2 Ratio</div>
+            </div>
+            <div class="p-2 rounded-xl bg-slateHighland-950/80 border border-slate-800">
+              <div class="text-[10px] font-mono text-slate-400">CONICAL BORE</div>
+              <div class="text-xs font-mono font-semibold text-heather-400 mt-0.5">3-Formant</div>
+              <div class="text-[10px] text-slate-400">950·1850·3100</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acoustic Pipe & Drone Mixer (7 cols) -->
+        <div class="xl:col-span-7 rounded-2xl bg-slateHighland-900/90 border border-slate-800/90 p-4 sm:p-5 shadow-xl">
+          <div class="flex items-center justify-between mb-3.5">
+            <div>
+              <h2 class="text-sm font-semibold uppercase tracking-wider text-brass-400">Acoustic Synthesis &amp; Drone Mixer</h2>
+              <p class="text-xs text-slate-400">Pure harmonic ratios locked to configurable Low A master pitch</p>
+            </div>
+            <button id="btnResetMixer" class="text-xs text-slate-400 hover:text-brass-300 underline underline-offset-2">
+              Reset Defaults
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-3.5">
+            <!-- Master Low A Pitch (440 Hz Concert to 486 Hz Modern Solo Pipe Pitch) -->
+            <div class="sm:col-span-2 p-2.5 rounded-xl bg-slateHighland-950/70 border border-slate-800/80">
+              <div class="flex justify-between text-xs mb-1.5">
+                <span class="font-medium text-slate-200">Master Low A Pitch Standard</span>
+                <span id="valMasterPitch" class="font-mono text-brass-300 font-semibold">478 Hz (Modern Solo Pipe)</span>
+              </div>
+              <input id="sliderMasterPitch" type="range" min="440" max="486" step="0.5" value="478" />
+              <div class="flex justify-between text-[10px] font-mono text-slate-500 mt-1">
+                <span>440 Hz (Concert A)</span>
+                <span>466 Hz (19th C. Pipes)</span>
+                <span>478 Hz (Solo Standard)</span>
+                <span>486 Hz (Bright)</span>
+              </div>
+            </div>
+
+            <!-- Chanter Volume -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300">Chanter Volume</span>
+                <span id="valChanterVol" class="font-mono text-slate-400">82%</span>
+              </div>
+              <input id="sliderChanterVol" type="range" min="0" max="100" value="82" />
+            </div>
+
+            <!-- Tenor Drones Volume -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300">Two Tenor Drones</span>
+                <span id="valTenorVol" class="font-mono text-slate-400">52%</span>
+              </div>
+              <input id="sliderTenorVol" type="range" min="0" max="100" value="52" />
+            </div>
+
+            <!-- Bass Drone Volume -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300">Bass Drone</span>
+                <span id="valBassVol" class="font-mono text-slate-400">58%</span>
+              </div>
+              <input id="sliderBassVol" type="range" min="0" max="100" value="58" />
+            </div>
+
+            <!-- Organic Drone Reed Drift -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300">Organic Drone Drift</span>
+                <span id="valDrift" class="font-mono text-slate-400">1.1 cents</span>
+              </div>
+              <input id="sliderDrift" type="range" min="0" max="3.0" step="0.1" value="1.1" />
+            </div>
+
+            <!-- Highland Glen / Stone Hall Reverb -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300">Highland Hall / Glen Reverb</span>
+                <span id="valReverb" class="font-mono text-slate-400">28%</span>
+              </div>
+              <input id="sliderReverb" type="range" min="0" max="85" value="28" />
+            </div>
+
+            <!-- Grace Note Crispness (ms per grace note) -->
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300">Grace Note Crispness</span>
+                <span id="valGraceMs" class="font-mono text-slate-400">32 ms</span>
+              </div>
+              <input id="sliderGraceMs" type="range" min="22" max="48" step="1" value="32" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Procedural Scottish Solo Tune Generator & Classic Library -->
+      <div class="rounded-2xl bg-slateHighland-900/90 border border-slate-800/90 p-4 sm:p-5 shadow-xl">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-brass-400">Traditional Tune Composer &amp; Solo Pipe Library</h2>
+            <p class="text-xs text-slate-400">Double-tonic Highland motifs with authentic {g}/{d}/{e} grace notes, doublings, throws &amp; birls</p>
+          </div>
+
+          <!-- Tempo Slider Inline -->
+          <div class="flex items-center gap-3 bg-slateHighland-950/90 border border-slate-800 px-3.5 py-2 rounded-xl">
+            <span class="text-xs font-medium text-slate-300 whitespace-nowrap">Tempo:</span>
+            <input id="sliderTempo" type="range" min="42" max="140" value="82" class="w-28 sm:w-36" />
+            <span id="valTempo" class="font-mono text-xs text-brass-300 font-semibold w-16 text-right">82 BPM</span>
+          </div>
+        </div>
+
+        <!-- Composer Controls Bar -->
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 mb-4">
+          <!-- Idiom Select -->
+          <div class="sm:col-span-4">
+            <label class="block text-[11px] font-mono uppercase text-slate-400 mb-1">Scottish Idiom / Form</label>
+            <select id="selectIdiom" class="w-full rounded-xl bg-slateHighland-950 border border-slate-700/90 px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-brass-400">
+              <option value="march24">2/4 Competition March</option>
+              <option value="jig68">6/8 Highland Jig</option>
+              <option value="march44">4/4 Highland March</option>
+              <option value="strathspey">Strathspey (Scots Snap)</option>
+              <option value="reel">Highland Reel</option>
+              <option value="air">Slow Gaelic Air</option>
+            </select>
+          </div>
+
+          <!-- Tune Length Select -->
+          <div class="sm:col-span-3">
+            <label class="block text-[11px] font-mono uppercase text-slate-400 mb-1">Structure</label>
+            <select id="selectBars" class="w-full rounded-xl bg-slateHighland-950 border border-slate-700/90 px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-brass-400">
+              <option value="8">8 Bars (1 Part)</option>
+              <option value="16" selected>16 Bars (2 Parts A/B)</option>
+            </select>
+          </div>
+
+          <!-- Ornament Density -->
+          <div class="sm:col-span-2">
+            <label class="block text-[11px] font-mono uppercase text-slate-400 mb-1">Ornamentation</label>
+            <select id="selectOrnDensity" class="w-full rounded-xl bg-slateHighland-950 border border-slate-700/90 px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-brass-400">
+              <option value="full" selected>Competition</option>
+              <option value="moderate">Moderate</option>
+            </select>
+          </div>
+
+          <!-- Generate Button -->
+          <div class="sm:col-span-3 flex items-end">
+            <button id="btnGenerateTune" class="w-full py-2.5 px-4 rounded-xl font-semibold text-sm bg-gradient-to-r from-heather-600 to-indigo-600 hover:from-heather-500 hover:to-indigo-500 text-white shadow-lg shadow-heather-600/20 flex items-center justify-center gap-2 transition-all cursor-pointer">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+              </svg>
+              <span>Compose Tune</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Classic Solo Pipe Library Presets & Saved Favourites -->
+        <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-800/80">
+          <span class="text-xs font-mono uppercase text-slate-400 mr-1">Classic Library:</span>
+          <div id="presetButtonsContainer" class="flex flex-wrap gap-1.5">
+            <!-- Populated with classic solo tunes + user Favourites -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Live ABC (K:HP) Sequencer, Real-Time Highlighter & Editable Notation -->
+      <div class="rounded-2xl bg-slateHighland-900/90 border border-slate-800/90 p-4 sm:p-5 shadow-xl">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <div class="flex items-center gap-3">
+            <button id="btnPlaySeq" class="px-4 py-2.5 rounded-xl font-semibold text-sm bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer">
+              <svg id="iconPlay" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+              <span id="labelPlaySeq">Play Tune</span>
+            </button>
+
+            <button id="btnStopSeq" class="px-3.5 py-2.5 rounded-xl font-medium text-sm bg-slateHighland-850 hover:bg-slateHighland-800 border border-slate-700/80 text-slate-200 transition-all">
+              Stop
+            </button>
+
+            <div>
+              <div id="currentTuneTitle" class="text-sm font-semibold text-slate-100">Scotland the Brave</div>
+              <div id="seqProgressLabel" class="text-[11px] font-mono text-slate-400">Ready · K:HP Highland Pipe Scale</div>
+            </div>
+          </div>
+
+          <!-- ABC Action Buttons -->
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="btnToggleEditAbc" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slateHighland-850 hover:bg-slateHighland-800 border border-slate-700 text-brass-300 transition-all">
+              Edit ABC Source
+            </button>
+            <button id="btnSaveFavourite" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slateHighland-850 hover:bg-slateHighland-800 border border-slate-700 text-slate-200 transition-all">
+              ★ Save to Favourites
+            </button>
+            <button id="btnCopyAbc" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slateHighland-850 hover:bg-slateHighland-800 border border-slate-700 text-slate-200 transition-all">
+              Copy ABC
+            </button>
+          </div>
+        </div>
+
+        <!-- Playback Progress Bar -->
+        <div class="w-full h-1.5 rounded-full bg-slateHighland-950 overflow-hidden mb-3 border border-slate-800/80">
+          <div id="seqProgressBar" class="h-full w-0 bg-gradient-to-r from-brass-500 to-emerald-400 transition-all duration-100"></div>
+        </div>
+
+        <!-- Live Highlighted ABC Score View (Default) -->
+        <div id="abcLiveView" class="rounded-xl bg-slateHighland-950/95 border border-slate-800 p-4 font-mono text-xs sm:text-sm leading-relaxed text-slate-300 max-h-64 overflow-y-auto whitespace-pre-wrap"></div>
+
+        <!-- Editable ABC Textarea View (Toggled when editing) -->
+        <div id="abcEditorContainer" class="hidden">
+          <textarea id="abcTextarea" rows="9" spellcheck="false" class="w-full rounded-xl bg-slateHighland-950 border border-brass-500/50 p-4 font-mono text-xs sm:text-sm leading-relaxed text-slate-100 focus:outline-none focus:border-brass-400"></textarea>
+          <div class="flex justify-between items-center mt-2 text-xs text-slate-400">
+            <span>Notation: <code class="text-brass-300">G A B c d e f g a</code> · Grace notes in braces e.g. <code class="text-brass-300">{g}A {Gdc}d {gde}e {AGAG}A</code></span>
+            <button id="btnApplyAbc" class="px-3.5 py-1.5 rounded-lg bg-brass-500 hover:bg-brass-400 text-slateHighland-950 font-semibold">
+              Apply &amp; Parse ABC
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Subtle Footer Reference -->
+  <footer class="max-w-[1440px] mx-auto px-4 sm:px-6 pb-8 pt-2 text-xs text-slate-500 flex flex-wrap justify-between gap-2">
+    <div>Pure Just Intonation Harmonics: Low G (8/9) · Low A (1/1) · B (9/8) · C# (5/4) · D (4/3) · E (3/2) · F# (5/3) · High G (16/9) · High A (2/1)</div>
+    <div>Live Keyboard: <span class="font-mono text-slate-400">A S D F G H J K L</span> (Chanter) · <span class="font-mono text-slate-400">1–5</span> (Grace Notes) · <span class="font-mono text-slate-400">Q W E R T</span> (Embellishments)</div>
+  </footer>
+
+  <script>
+    /**
+     * ============================================================================
+     * PÌOB MÒR STUDIO — SOLO GREAT HIGHLAND BAGPIPE SYNTHESISER & TUNE GENERATOR
+     * Pure Web Audio API Conical Bore & 3-Drone Engine + K:HP ABC Sequencer
+     * ============================================================================
+     */
+
+    // ----------------------------------------------------------------------------
+    // 1. PURE JUST INTONATION HIGHLAND CHANTER SCALE & AUTHENTIC FINGERINGS
+    // ----------------------------------------------------------------------------
+    const HIGHLAND_NOTES = [
+      {
+        id: 'G', abc: 'G', name: 'Low G', ratio: 8 / 9, ratioText: '8/9', key: 'a', keyLabel: 'A',
+        // All 8 holes closed
+        holes: { T: 1, L1: 1, L2: 1, L3: 1, R1: 1, R2: 1, R3: 1, R4: 1 }
+      },
+      {
+        id: 'A', abc: 'A', name: 'Low A', ratio: 1 / 1, ratioText: '1/1', key: 's', keyLabel: 'S',
+        // R4 pinky open
+        holes: { T: 1, L1: 1, L2: 1, L3: 1, R1: 1, R2: 1, R3: 1, R4: 0 }
+      },
+      {
+        id: 'B', abc: 'B', name: 'B', ratio: 9 / 8, ratioText: '9/8', key: 'd', keyLabel: 'D',
+        // R3, R4 open
+        holes: { T: 1, L1: 1, L2: 1, L3: 1, R1: 1, R2: 1, R3: 0, R4: 0 }
+      },
+      {
+        id: 'C', abc: 'c', name: 'C (C♯)', ratio: 5 / 4, ratioText: '5/4', key: 'f', keyLabel: 'F',
+        // Authentic Highland cross-fingering: R2, R3 open, R4 pinky CLOSED
+        holes: { T: 1, L1: 1, L2: 1, L3: 1, R1: 1, R2: 0, R3: 0, R4: 1 }
+      },
+      {
+        id: 'D', abc: 'd', name: 'D', ratio: 4 / 3, ratioText: '4/3', key: 'g', keyLabel: 'G',
+        // R1, R2, R3 open, R4 pinky CLOSED
+        holes: { T: 1, L1: 1, L2: 1, L3: 1, R1: 0, R2: 0, R3: 0, R4: 1 }
+      },
+      {
+        id: 'E', abc: 'e', name: 'E', ratio: 3 / 2, ratioText: '3/2', key: 'h', keyLabel: 'H',
+        // L3 open; bottom hand down in Low A position (R1,R2,R3 closed, R4 open)
+        holes: { T: 1, L1: 1, L2: 1, L3: 0, R1: 1, R2: 1, R3: 1, R4: 0 }
+      },
+      {
+        id: 'F', abc: 'f', name: 'F (F♯)', ratio: 5 / 3, ratioText: '5/3', key: 'j', keyLabel: 'J',
+        // L2, L3 open; bottom hand in Low A position
+        holes: { T: 1, L1: 1, L2: 0, L3: 0, R1: 1, R2: 1, R3: 1, R4: 0 }
+      },
+      {
+        id: 'g', abc: 'g', name: 'High G', ratio: 16 / 9, ratioText: '16/9', key: 'k', keyLabel: 'K',
+        // L1, L2, L3 open, Thumb closed; bottom hand in Low A position
+        holes: { T: 1, L1: 0, L2: 0, L3: 0, R1: 1, R2: 1, R3: 1, R4: 0 }
+      },
+      {
+        id: 'a', abc: 'a', name: 'High A', ratio: 2 / 1, ratioText: '2/1', key: 'l', keyLabel: 'L',
+        // Thumb & L1 open, L2 draped/closed, L3 open; bottom hand in Low A position
+        holes: { T: 0, L1: 0, L2: 1, L3: 0, R1: 1, R2: 1, R3: 1, R4: 0 }
+      }
+    ];
+
+    const NOTE_MAP = {};
+    HIGHLAND_NOTES.forEach(n => {
+      NOTE_MAP[n.id] = n;
+      NOTE_MAP[n.abc] = n;
+    });
+    // Map uppercase/lowercase ABC aliases safely for K:HP
+    NOTE_MAP['C'] = NOTE_MAP['c'];
+    NOTE_MAP['D'] = NOTE_MAP['d'];
+    NOTE_MAP['E'] = NOTE_MAP['e'];
+    NOTE_MAP['F'] = NOTE_MAP['f'];
+
+    // Context-sensitive traditional Highland Doublings for every chanter note
+    const DOUBLING_TABLE = {
+      'G': ['g', 'G', 'd'],
+      'A': ['g', 'A', 'd'],
+      'B': ['g', 'B', 'd'],
+      'C': ['g', 'c', 'd'],
+      'D': ['g', 'd', 'e'],
+      'E': ['g', 'e', 'f'],
+      'F': ['g', 'f', 'g'],
+      'g': ['a', 'g'],
+      'a': ['a', 'g'] // Thumb-shake / half-doubling on High A
+    };
+
+    // ----------------------------------------------------------------------------
+    // 2. TOAST NOTIFICATION HELPER (Zero alert() / confirm())
+    // ----------------------------------------------------------------------------
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      const borderColour = type === 'success' ? 'border-emerald-500/60' : type === 'record' ? 'border-rose-500/60' : 'border-brass-500/60';
+      el.className = `pointer-events-auto px-4 py-2.5 rounded-xl bg-slateHighland-900/95 border ${borderColour} text-xs sm:text-sm text-slate-100 shadow-2xl backdrop-blur-md transition-all duration-300 opacity-0 translate-y-2`;
+      el.textContent = message;
+      container.appendChild(el);
+      requestAnimationFrame(() => {
+        el.classList.remove('opacity-0', 'translate-y-2');
+      });
+      setTimeout(() => {
+        el.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => el.remove(), 300);
+      }, 3100);
+    }
+
+    // ----------------------------------------------------------------------------
+    // 3. ACOUSTIC HIGHLAND BAGPIPE WEB AUDIO SYNTHESIS ENGINE
+    // ----------------------------------------------------------------------------
+    class HighlandBagpipeSynth {
+      constructor() {
+        this.ctx = null;
+        this.isInitialised = false;
+        this.isBagActive = false;
+        this.dronesEnabled = true; // True = Full Pipes, False = Chanter-Only / Goose Mode
+
+        // Synthesis parameters
+        this.masterLowA = 478.0; // Modern solo pipe pitch
+        this.chanterVolume = 0.82;
+        this.tenorVolume = 0.52;
+        this.bassVolume = 0.58;
+        this.droneDriftCents = 1.1;
+        this.reverbMix = 0.28;
+        this.graceDurationMs = 32;
+
+        this.currentNoteId = 'A';
+        this.bagPressure = 0;
+
+        // Audio nodes
+        this.chanterOsc = null;
+        this.chanterSubAir = null;
+        this.chanterGain = null;
+        this.tenor1Osc = null;
+        this.tenor2Osc = null;
+        this.bassOsc = null;
+        this.tenorGain = null;
+        this.bassGain = null;
+        this.driftGain1 = null;
+        this.driftGain2 = null;
+        this.driftGainBass = null;
+
+        this.dryGain = null;
+        this.wetGain = null;
+        this.masterBus = null;
+        this.analyser = null;
+
+        // WAV Recording state
+        this.isRecording = false;
+        this.recBuffersL = [];
+        this.recBuffersR = [];
+        this.recLength = 0;
+        this.recorderNode = null;
+      }
+
+      init() {
+        if (this.isInitialised) {
+          if (this.ctx.state === 'suspended') this.ctx.resume();
+          return;
+        }
+
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioCtx();
+
+        // 1. Build Custom PeriodicWaves for Cane Chanter Double-Reed & Cane Drone Single-Reeds
+        const chanterWave = this.createChanterPeriodicWave();
+        const droneWave = this.createDronePeriodicWave();
+
+        // 2. Master Bus, Dry/Wet Highland Stone Hall Convolver & Analyser
+        this.masterBus = this.ctx.createGain();
+        this.masterBus.gain.value = 0.88;
+
+        this.dryGain = this.ctx.createGain();
+        this.wetGain = this.ctx.createGain();
+        this.convolver = this.ctx.createConvolver();
+        this.convolver.buffer = this.buildHighlandHallImpulse(2.4, 2.7);
+
+        this.updateReverbMix();
+
+        // Gentle master limiter/compressor to prevent clipping when all 3 drones + chanter lock
+        this.compressor = this.ctx.createDynamicsCompressor();
+        this.compressor.threshold.value = -8;
+        this.compressor.knee.value = 12;
+        this.compressor.ratio.value = 4;
+        this.compressor.attack.value = 0.005;
+        this.compressor.release.value = 0.15;
+
+        this.analyser = this.ctx.createAnalyser();
+        this.analyser.fftSize = 2048;
+        this.analyser.smoothingTimeConstant = 0.82;
+
+        this.masterBus.connect(this.dryGain);
+        this.masterBus.connect(this.convolver);
+        this.convolver.connect(this.wetGain);
+
+        this.dryGain.connect(this.compressor);
+        this.wetGain.connect(this.compressor);
+        this.compressor.connect(this.analyser);
+        this.analyser.connect(this.ctx.destination);
+
+        // Setup WAV Recorder Tap Node on Compressor Output
+        this.setupWavRecorderNode();
+
+        // 3. Build Conical Bore Multi-Formant Filter Bank for the Chanter
+        this.setupChanterVoice(chanterWave);
+
+        // 4. Build Three-Drone Engine (Two Tenors + One Bass with Organic LFO Drift)
+        this.setupDronesEngine(droneWave);
+
+        this.isInitialised = true;
+      }
+
+      /**
+       * Creates a 22-partial PeriodicWave modelling a cane double-reed inside a conical bore:
+       * Strong odd & even harmonics with characteristic conical-bore spectral tilt and
+       * slight dip around the 8th/13th partials for authentic woody Highland bite.
+       */
+      createChanterPeriodicWave() {
+        const numPartials = 22;
+        const real = new Float32Array(numPartials + 1);
+        const imag = new Float32Array(numPartials + 1);
+        real[0] = 0;
+        imag[0] = 0;
+
+        const amplitudes = [
+          0,
+          1.00, 0.82, 0.94, 0.68, 0.76, 0.54, 0.62, 0.28, 0.48, 0.36,
+          0.31, 0.22, 0.14, 0.19, 0.15, 0.11, 0.09, 0.07, 0.05, 0.04,
+          0.03, 0.02
+        ];
+
+        for (let n = 1; n <= numPartials; n++) {
+          // Slight phase dispersion prevents synthetic sawtooth spike
+          const phase = (n * 0.17) % (Math.PI * 2);
+          real[n] = amplitudes[n] * Math.sin(phase);
+          imag[n] = amplitudes[n] * Math.cos(phase);
+        }
+        return this.ctx.createPeriodicWave(real, imag, { disableNormalization: false });
+      }
+
+      /**
+       * Single-reed cylindrical bore PeriodicWave for Tenor & Bass drones:
+       * Warm, buzzing harmonic foundation rich in lower-mid partials so chanter ratios lock cleanly.
+       */
+      createDronePeriodicWave() {
+        const numPartials = 18;
+        const real = new Float32Array(numPartials + 1);
+        const imag = new Float32Array(numPartials + 1);
+        for (let n = 1; n <= numPartials; n++) {
+          // Cylindrical drone reed emphasises odd partials slightly over even, decaying smoothly
+          const oddBoost = (n % 2 === 1) ? 1.0 : 0.68;
+          const amp = (oddBoost / Math.pow(n, 0.78));
+          const phase = n * 0.23;
+          real[n] = amp * Math.sin(phase);
+          imag[n] = amp * Math.cos(phase);
+        }
+        return this.ctx.createPeriodicWave(real, imag, { disableNormalization: false });
+      }
+
+      /**
+       * Algorithmic stereo impulse response simulating a Scottish stone hall / open Highland glen
+       */
+      buildHighlandHallImpulse(durationSec, decayRate) {
+        const sampleRate = this.ctx.sampleRate;
+        const length = Math.floor(sampleRate * durationSec);
+        const impulse = this.ctx.createBuffer(2, length, sampleRate);
+
+        for (let ch = 0; ch < 2; ch++) {
+          const data = impulse.getChannelData(ch);
+          let lp = 0;
+          for (let i = 0; i < length; i++) {
+            const t = i / sampleRate;
+            // Early stone reflections + smooth exponential decay
+            const early = (i === Math.floor(0.019 * sampleRate) || i === Math.floor(0.037 * sampleRate)) ? 0.35 : 0;
+            const white = (Math.random() * 2 - 1);
+            // Warm low-pass damping on reverberant tail
+            lp = lp * 0.68 + white * 0.32;
+            const env = Math.pow(1 - i / length, decayRate) * (1 - Math.exp(-t * 35));
+            data[i] = (lp * env * 0.65) + early;
+          }
+        }
+        return impulse;
+      }
+
+      setupChanterVoice(chanterWave) {
+        const now = this.ctx.currentTime;
+        const baseFreq = this.getNoteFrequency(this.currentNoteId);
+
+        this.chanterOsc = this.ctx.createOscillator();
+        this.chanterOsc.setPeriodicWave(chanterWave);
+        this.chanterOsc.frequency.setValueAtTime(baseFreq, now);
+
+        // Subtle bag-pressure micro-vibrato/breath instability (~4.3 Hz, < 0.6 cents)
+        this.bagAirLfo = this.ctx.createOscillator();
+        this.bagAirLfo.frequency.value = 4.3;
+        this.bagAirLfoGain = this.ctx.createGain();
+        this.bagAirLfoGain.gain.value = 0.16; // very subtle Hz shimmer
+        this.bagAirLfo.connect(this.bagAirLfoGain);
+        this.bagAirLfoGain.connect(this.chanterOsc.frequency);
+
+        // Subtle reed air-rush noise for realism
+        const noiseBuf = this.ctx.createBuffer(1, this.ctx.sampleRate * 2, this.ctx.sampleRate);
+        const nd = noiseBuf.getChannelData(0);
+        for (let i = 0; i < nd.length; i++) nd[i] = (Math.random() * 2 - 1);
+        this.airNoise = this.ctx.createBufferSource();
+        this.airNoise.buffer = noiseBuf;
+        this.airNoise.loop = true;
+
+        const airBandpass = this.ctx.createBiquadFilter();
+        airBandpass.type = 'bandpass';
+        airBandpass.frequency.value = 2100;
+        airBandpass.Q.value = 1.8;
+
+        this.airNoiseGain = this.ctx.createGain();
+        this.airNoiseGain.gain.value = 0.012;
+        this.airNoise.connect(airBandpass);
+        airBandpass.connect(this.airNoiseGain);
+
+        // Conical Bore Multi-Band Formant Filter Bank:
+        // Body warmth around 540 Hz + Formant 1 (950 Hz) + Formant 2 (1850 Hz) + Formant 3 (3100 Hz) + High-Shelf Roll-off > 5.5 kHz
+        const bodyRes = this.ctx.createBiquadFilter();
+        bodyRes.type = 'peaking';
+        bodyRes.frequency.value = 540;
+        bodyRes.Q.value = 1.2;
+        bodyRes.gain.value = 3.0;
+
+        this.formant1 = this.ctx.createBiquadFilter();
+        this.formant1.type = 'peaking';
+        this.formant1.frequency.value = 950;
+        this.formant1.Q.value = 2.4;
+        this.formant1.gain.value = 7.5;
+
+        this.formant2 = this.ctx.createBiquadFilter();
+        this.formant2.type = 'peaking';
+        this.formant2.frequency.value = 1850;
+        this.formant2.Q.value = 2.8;
+        this.formant2.gain.value = 6.2;
+
+        this.formant3 = this.ctx.createBiquadFilter();
+        this.formant3.type = 'peaking';
+        this.formant3.frequency.value = 3100;
+        this.formant3.Q.value = 3.2;
+        this.formant3.gain.value = 5.0;
+
+        const highShelf = this.ctx.createBiquadFilter();
+        highShelf.type = 'highshelf';
+        highShelf.frequency.value = 5500;
+        highShelf.gain.value = -11.5;
+
+        const antiBuzzLowpass = this.ctx.createBiquadFilter();
+        antiBuzzLowpass.type = 'lowpass';
+        antiBuzzLowpass.frequency.value = 7400;
+        antiBuzzLowpass.Q.value = 0.65;
+
+        // Envelope & Volume stage
+        this.chanterEnvelope = this.ctx.createGain();
+        this.chanterEnvelope.gain.setValueAtTime(0.0001, now);
+
+        this.chanterGain = this.ctx.createGain();
+        this.chanterGain.gain.value = this.chanterVolume * 0.42;
+
+        // Slight stereo pan slightly right for solo piper perspective
+        const chanterPan = this.ctx.createStereoPanner();
+        chanterPan.pan.value = 0.08;
+
+        this.chanterOsc.connect(bodyRes);
+        this.airNoiseGain.connect(bodyRes);
+        bodyRes.connect(this.formant1);
+        this.formant1.connect(this.formant2);
+        this.formant2.connect(this.formant3);
+        this.formant3.connect(highShelf);
+        highShelf.connect(antiBuzzLowpass);
+        antiBuzzLowpass.connect(this.chanterEnvelope);
+        this.chanterEnvelope.connect(this.chanterGain);
+        this.chanterGain.connect(chanterPan);
+        chanterPan.connect(this.masterBus);
+
+        this.chanterOsc.start(now);
+        this.bagAirLfo.start(now);
+        this.airNoise.start(now);
+      }
+
+      setupDronesEngine(droneWave) {
+        const now = this.ctx.currentTime;
+        const tenorFreq = this.masterLowA * 0.5;
+        const bassFreq = this.masterLowA * 0.25;
+
+        // Tenor 1 & Tenor 2 (1 octave below Low A) with slight phase/detune & organic LFO drift
+        this.tenor1Osc = this.ctx.createOscillator();
+        this.tenor2Osc = this.ctx.createOscillator();
+        this.bassOsc = this.ctx.createOscillator();
+
+        this.tenor1Osc.setPeriodicWave(droneWave);
+        this.tenor2Osc.setPeriodicWave(droneWave);
+        this.bassOsc.setPeriodicWave(droneWave);
+
+        this.tenor1Osc.frequency.setValueAtTime(tenorFreq, now);
+        this.tenor2Osc.frequency.setValueAtTime(tenorFreq, now);
+        this.bassOsc.frequency.setValueAtTime(bassFreq, now);
+
+        // Slow independent LFOs (~0.17 Hz, ~0.23 Hz, ~0.13 Hz) driving cents detune for organic cane reed breathing
+        this.lfoTenor1 = this.ctx.createOscillator();
+        this.lfoTenor2 = this.ctx.createOscillator();
+        this.lfoBass = this.ctx.createOscillator();
+
+        this.lfoTenor1.frequency.value = 0.17;
+        this.lfoTenor2.frequency.value = 0.23;
+        this.lfoBass.frequency.value = 0.13;
+
+        this.driftGain1 = this.ctx.createGain();
+        this.driftGain2 = this.ctx.createGain();
+        this.driftGainBass = this.ctx.createGain();
+        this.updateDroneDrift();
+
+        this.lfoTenor1.connect(this.driftGain1);
+        this.lfoTenor2.connect(this.driftGain2);
+        this.lfoBass.connect(this.driftGainBass);
+
+        this.driftGain1.connect(this.tenor1Osc.detune);
+        this.driftGain2.connect(this.tenor2Osc.detune);
+        this.driftGainBass.connect(this.bassOsc.detune);
+
+        // Subtle constant 0.45 cent offset between Tenor 1 and Tenor 2 so they chorus naturally without beating harshly
+        this.tenor2Osc.detune.setValueAtTime(0.45, now);
+
+        // Drone Bore Resonance Filters
+        const tenorFilter = this.ctx.createBiquadFilter();
+        tenorFilter.type = 'lowpass';
+        tenorFilter.frequency.value = 2300;
+        tenorFilter.Q.value = 1.1;
+
+        const tenorFormant = this.ctx.createBiquadFilter();
+        tenorFormant.type = 'peaking';
+        tenorFormant.frequency.value = 720;
+        tenorFormant.Q.value = 1.8;
+        tenorFormant.gain.value = 4.0;
+
+        const bassFilter = this.ctx.createBiquadFilter();
+        bassFilter.type = 'lowpass';
+        bassFilter.frequency.value = 1350;
+        bassFilter.Q.value = 1.2;
+
+        const bassWarmth = this.ctx.createBiquadFilter();
+        bassWarmth.type = 'peaking';
+        bassWarmth.frequency.value = 240;
+        bassWarmth.Q.value = 1.4;
+        bassWarmth.gain.value = 4.5;
+
+        // Stereo Spread across the piper's left shoulder
+        const panT1 = this.ctx.createStereoPanner();
+        panT1.pan.value = -0.22;
+        const panT2 = this.ctx.createStereoPanner();
+        panT2.pan.value = -0.06;
+        const panBass = this.ctx.createStereoPanner();
+        panBass.pan.value = -0.15;
+
+        this.tenorEnvelope = this.ctx.createGain();
+        this.tenorEnvelope.gain.setValueAtTime(0.0001, now);
+        this.bassEnvelope = this.ctx.createGain();
+        this.bassEnvelope.gain.setValueAtTime(0.0001, now);
+
+        this.tenorGain = this.ctx.createGain();
+        this.tenorGain.gain.value = this.tenorVolume * 0.21;
+        this.bassGain = this.ctx.createGain();
+        this.bassGain.gain.value = this.bassVolume * 0.30;
+
+        this.tenor1Osc.connect(panT1);
+        this.tenor2Osc.connect(panT2);
+        panT1.connect(tenorFormant);
+        panT2.connect(tenorFormant);
+        tenorFormant.connect(tenorFilter);
+        tenorFilter.connect(this.tenorEnvelope);
+        this.tenorEnvelope.connect(this.tenorGain);
+        this.tenorGain.connect(this.masterBus);
+
+        this.bassOsc.connect(bassWarmth);
+        bassWarmth.connect(bassFilter);
+        bassFilter.connect(panBass);
+        panBass.connect(this.bassEnvelope);
+        this.bassEnvelope.connect(this.bassGain);
+        this.bassGain.connect(this.masterBus);
+
+        this.tenor1Osc.start(now);
+        this.tenor2Osc.start(now);
+        this.bassOsc.start(now);
+        this.lfoTenor1.start(now);
+        this.lfoTenor2.start(now);
+        this.lfoBass.start(now);
+      }
+
+      getNoteFrequency(noteId) {
+        const note = NOTE_MAP[noteId] || NOTE_MAP['A'];
+        return this.masterLowA * note.ratio;
+      }
+
+      /**
+       * Strike In Pipes: Realistic 350ms bag inflation ramp & slight flat-to-locked pitch stabilise curve!
+       */
+      strikeIn() {
+        this.init();
+        if (this.isBagActive) return;
+        this.isBagActive = true;
+
+        const now = this.ctx.currentTime;
+        const targetChanterFreq = this.getNoteFrequency(this.currentNoteId);
+        const tenorFreq = this.masterLowA * 0.5;
+        const bassFreq = this.masterLowA * 0.25;
+
+        // Authentic bag strike-in pitch scoop (~35 cents flat for first 220ms as reeds catch air pressure, locking at 350ms)
+        this.chanterOsc.frequency.cancelScheduledValues(now);
+        this.chanterOsc.frequency.setValueAtTime(targetChanterFreq * 0.978, now);
+        this.chanterOsc.frequency.exponentialRampToValueAtTime(targetChanterFreq, now + 0.32);
+
+        this.tenor1Osc.frequency.cancelScheduledValues(now);
+        this.tenor2Osc.frequency.cancelScheduledValues(now);
+        this.bassOsc.frequency.cancelScheduledValues(now);
+
+        this.tenor1Osc.frequency.setValueAtTime(tenorFreq * 0.985, now);
+        this.tenor1Osc.frequency.exponentialRampToValueAtTime(tenorFreq, now + 0.28);
+        this.tenor2Osc.frequency.setValueAtTime(tenorFreq * 0.983, now);
+        this.tenor2Osc.frequency.exponentialRampToValueAtTime(tenorFreq, now + 0.31);
+        this.bassOsc.frequency.setValueAtTime(bassFreq * 0.982, now);
+        this.bassOsc.frequency.exponentialRampToValueAtTime(bassFreq, now + 0.35);
+
+        // Drones strike in slightly ahead of chanter (~120ms), then chanter reeds catch at full pressure (~350ms)
+        if (this.dronesEnabled) {
+          this.tenorEnvelope.gain.cancelScheduledValues(now);
+          this.bassEnvelope.gain.cancelScheduledValues(now);
+          this.tenorEnvelope.gain.setValueAtTime(0.001, now);
+          this.tenorEnvelope.gain.linearRampToValueAtTime(1.0, now + 0.26);
+          this.bassEnvelope.gain.setValueAtTime(0.001, now);
+          this.bassEnvelope.gain.linearRampToValueAtTime(1.0, now + 0.30);
+        }
+
+        this.chanterEnvelope.gain.cancelScheduledValues(now);
+        this.chanterEnvelope.gain.setValueAtTime(0.001, now);
+        this.chanterEnvelope.gain.exponentialRampToValueAtTime(0.15, now + 0.14);
+        this.chanterEnvelope.gain.linearRampToValueAtTime(1.0, now + 0.35);
+
+        this.animateBagPressure(100);
+        updateStrikeUi(true);
+      }
+
+      cutOff() {
+        if (!this.isInitialised || !this.isBagActive) return;
+        this.isBagActive = false;
+        const now = this.ctx.currentTime;
+
+        // Clean piper's arm cut-off (~95ms air drop without ugly reed squeak)
+        this.chanterEnvelope.gain.cancelScheduledValues(now);
+        this.chanterEnvelope.gain.setValueAtTime(this.chanterEnvelope.gain.value, now);
+        this.chanterEnvelope.gain.linearRampToValueAtTime(0.0001, now + 0.09);
+
+        this.tenorEnvelope.gain.cancelScheduledValues(now);
+        this.tenorEnvelope.gain.setValueAtTime(this.tenorEnvelope.gain.value, now);
+        this.tenorEnvelope.gain.linearRampToValueAtTime(0.0001, now + 0.14);
+
+        this.bassEnvelope.gain.cancelScheduledValues(now);
+        this.bassEnvelope.gain.setValueAtTime(this.bassEnvelope.gain.value, now);
+        this.bassEnvelope.gain.linearRampToValueAtTime(0.0001, now + 0.16);
+
+        this.animateBagPressure(0);
+        updateStrikeUi(false);
+      }
+
+      animateBagPressure(target) {
+        this.bagPressure = target;
+        const bar = document.getElementById('bagPressureBar');
+        const label = document.getElementById('pressurePercent');
+        if (target > 0) {
+          bar.style.width = '100%';
+          label.textContent = this.dronesEnabled ? '100% (Steady Arm Pressure)' : '85% (Goose / Practice Mode)';
+        } else {
+          bar.style.width = '0%';
+          label.textContent = '0% (Idle)';
+        }
+      }
+
+      setDronesMode(enabled) {
+        this.dronesEnabled = enabled;
+        if (!this.isInitialised) return;
+        const now = this.ctx.currentTime;
+        if (this.isBagActive) {
+          this.tenorEnvelope.gain.cancelScheduledValues(now);
+          this.bassEnvelope.gain.cancelScheduledValues(now);
+          this.tenorEnvelope.gain.setTargetAtTime(enabled ? 1.0 : 0.0001, now, 0.06);
+          this.bassEnvelope.gain.setTargetAtTime(enabled ? 1.0 : 0.0001, now, 0.06);
+          this.animateBagPressure(100);
+        }
+      }
+
+      /**
+       * Change chanter note immediately or at a scheduled Web Audio time
+       */
+      setNoteAtTime(noteId, audioTime) {
+        if (!this.isInitialised) this.init();
+        const note = NOTE_MAP[noteId] || NOTE_MAP['A'];
+        const freq = this.masterLowA * note.ratio;
+        const t = audioTime || this.ctx.currentTime;
+
+        // Instantaneous crisp finger transition (1.5ms timeConstant avoids digital clicks while sounding razor-crisp)
+        this.chanterOsc.frequency.setTargetAtTime(freq, t, 0.0014);
+
+        if (!audioTime || audioTime <= this.ctx.currentTime + 0.015) {
+          this.currentNoteId = note.id;
+          updateChanterVisuals(note.id);
+        }
+      }
+
+      /**
+       * Trigger a sequence of grace notes `[g1, g2, ...]` landing on `targetNoteId`
+       * Used for both live ornamentation pad and live keyboard play!
+       */
+      playLiveOrnament(graceNoteIds, targetNoteId, labelText) {
+        this.init();
+        const wasIdle = !this.isBagActive;
+        if (wasIdle) {
+          // Audition mode if bag wasn't struck in yet: quick strike, play ornament, hold briefly or stay on if playing
+          this.strikeIn();
+        }
+
+        const startOffset = wasIdle ? 0.25 : 0.005;
+        const now = this.ctx.currentTime + startOffset;
+        const stepSec = this.graceDurationMs / 1000;
+
+        graceNoteIds.forEach((gId, idx) => {
+          const gNote = NOTE_MAP[gId] || NOTE_MAP['g'];
+          const t = now + idx * stepSec;
+          this.setNoteAtTime(gNote.id, t);
+          setTimeout(() => {
+            updateChanterVisuals(gNote.id);
+          }, (startOffset + idx * stepSec) * 1000);
+        });
+
+        const landTime = now + graceNoteIds.length * stepSec;
+        const finalNote = NOTE_MAP[targetNoteId] || NOTE_MAP[this.currentNoteId];
+        this.setNoteAtTime(finalNote.id, landTime);
+
+        setTimeout(() => {
+          this.currentNoteId = finalNote.id;
+          updateChanterVisuals(finalNote.id);
+        }, (startOffset + graceNoteIds.length * stepSec) * 1000);
+
+        if (labelText) {
+          document.getElementById('lastOrnamentBadge').textContent = labelText;
+        }
+      }
+
+      setMasterPitch(hz) {
+        this.masterLowA = hz;
+        if (!this.isInitialised) return;
+        const now = this.ctx.currentTime;
+        this.chanterOsc.frequency.setTargetAtTime(this.getNoteFrequency(this.currentNoteId), now, 0.02);
+        this.tenor1Osc.frequency.setTargetAtTime(hz * 0.5, now, 0.02);
+        this.tenor2Osc.frequency.setTargetAtTime(hz * 0.5, now, 0.02);
+        this.bassOsc.frequency.setTargetAtTime(hz * 0.25, now, 0.02);
+      }
+
+      updateVolumes() {
+        if (!this.isInitialised) return;
+        const now = this.ctx.currentTime;
+        this.chanterGain.gain.setTargetAtTime(this.chanterVolume * 0.42, now, 0.02);
+        this.tenorGain.gain.setTargetAtTime(this.tenorVolume * 0.21, now, 0.02);
+        this.bassGain.gain.setTargetAtTime(this.bassVolume * 0.30, now, 0.02);
+      }
+
+      updateDroneDrift() {
+        if (!this.driftGain1) return;
+        this.driftGain1.gain.value = this.droneDriftCents;
+        this.driftGain2.gain.value = this.droneDriftCents * 1.15;
+        this.driftGainBass.gain.value = this.droneDriftCents * 0.9;
+      }
+
+      updateReverbMix() {
+        if (!this.dryGain || !this.wetGain) return;
+        this.wetGain.gain.value = this.reverbMix;
+        this.dryGain.gain.value = 1.0 - (this.reverbMix * 0.32);
+      }
+
+      // ------------------------------------------------------------------------
+      // Stereo Uncompressed 16-bit PCM WAV Recorder
+      // ------------------------------------------------------------------------
+      setupWavRecorderNode() {
+        // ScriptProcessorNode guarantees raw stereo float capture across all browsers cleanly
+        this.recorderNode = this.ctx.createScriptProcessor(4096, 2, 2);
+        this.compressor.connect(this.recorderNode);
+        // Connect to a silent gain node so ScriptProcessor stays active without doubling output
+        const silentOut = this.ctx.createGain();
+        silentOut.gain.value = 0;
+        this.recorderNode.connect(silentOut);
+        silentOut.connect(this.ctx.destination);
+
+        this.recorderNode.onaudioprocess = (e) => {
+          if (!this.isRecording) return;
+          const left = e.inputBuffer.getChannelData(0);
+          const right = e.inputBuffer.getChannelData(1);
+          this.recBuffersL.push(new Float32Array(left));
+          this.recBuffersR.push(new Float32Array(right));
+          this.recLength += left.length;
+        };
+      }
+
+      startWavRecording() {
+        this.init();
+        this.recBuffersL = [];
+        this.recBuffersR = [];
+        this.recLength = 0;
+        this.isRecording = true;
+      }
+
+      stopAndExportWav(filenameTitle = 'solo-highland-pipes') {
+        this.isRecording = false;
+        if (this.recLength === 0) {
+          showToast('No audio captured yet — play a note or tune while recording.', 'info');
+          return;
+        }
+        const sampleRate = this.ctx.sampleRate;
+        const mergedL = this.mergeFloatBuffers(this.recBuffersL, this.recLength);
+        const mergedR = this.mergeFloatBuffers(this.recBuffersR, this.recLength);
+        const interleaved = new Float32Array(this.recLength * 2);
+        for (let i = 0; i < this.recLength; i++) {
+          interleaved[i * 2] = mergedL[i];
+          interleaved[i * 2 + 1] = mergedR[i];
+        }
+
+        const wavBuffer = this.encodeWAV(interleaved, sampleRate, 2);
+        const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const safeName = filenameTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'highland-pipes';
+        a.href = url;
+        a.download = `${safeName}-${Math.round(this.masterLowA)}Hz.wav`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        showToast(`Downloaded WAV audio: ${a.download}`, 'success');
+      }
+
+      mergeFloatBuffers(buffers, totalLen) {
+        const res = new Float32Array(totalLen);
+        let offset = 0;
+        for (let i = 0; i < buffers.length; i++) {
+          res.set(buffers[i], offset);
+          offset += buffers[i].length;
+        }
+        return res;
+      }
+
+      encodeWAV(samples, sampleRate, numChannels) {
+        const buffer = new ArrayBuffer(44 + samples.length * 2);
+        const view = new DataView(buffer);
+        const writeStr = (offset, str) => {
+          for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+        };
+
+        writeStr(0, 'RIFF');
+        view.setUint32(4, 36 + samples.length * 2, true);
+        writeStr(8, 'WAVE');
+        writeStr(12, 'fmt ');
+        view.setUint32(16, 16, true); // PCM chunk size
+        view.setUint16(20, 1, true);  // PCM format = 1
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * numChannels * 2, true);
+        view.setUint16(32, numChannels * 2, true);
+        view.setUint16(34, 16, true); // 16-bit
+        writeStr(36, 'data');
+        view.setUint32(40, samples.length * 2, true);
+
+        let offset = 44;
+        for (let i = 0; i < samples.length; i++, offset += 2) {
+          const s = Math.max(-1, Math.min(1, samples[i]));
+          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+        }
+        return buffer;
+      }
+    }
+
+    const synth = new HighlandBagpipeSynth();
+
+    // ----------------------------------------------------------------------------
+    // 4. BUILT-IN CLASSIC SOLO HIGHLAND PIPE LIBRARY (Authentic K:HP ABC Notation)
+    // ----------------------------------------------------------------------------
+    const CLASSIC_LIBRARY = [
+      {
+        id: 'scotland-brave',
+        title: 'Scotland the Brave',
+        idiom: '4/4 March',
+        bpm: 88,
+        abc: `X:1
+T:Scotland the Brave
+M:4/4
+L:1/8
+Q:1/4=88
+K:HP
+|:{g}A2 {AGAG}A>B {gcd}c<{e}A {gcd}c>e | {ag}a2 {g}a2 {g}a>e {gcd}c<{e}A | {Gdc}d2 {g}f>d {gcd}c<{e}A {gcd}c>A | {gBd}B2 {e}G2 {gBd}B>d {gcd}c>B |
+{g}A2 {AGAG}A>B {gcd}c<{e}A {gcd}c>e | {ag}a2 {g}a2 {g}a>e {gcd}c<{e}A | {Gdc}d2 {g}f>d {gcd}c<{e}A {gBd}B>G | {g}A2 {AGAG}A2 {g}A4 :|
+|:{gfg}f2 {g}f>g {ag}a>f {Gdc}d>f | {gef}e2 {g}e>f {gef}e>c {e}A>c | {Gdc}d2 {g}f>d {gcd}c<{e}A {gcd}c>d | {gef}e2 {ag}a2 {g}a>g {f}g>e |
+{g}A2 {AGAG}A>B {gcd}c<{e}A {gcd}c>e | {ag}a2 {g}a2 {g}a>e {gcd}c<{e}A | {Gdc}d2 {g}f>d {gcd}c<{e}A {gBd}B>G | {g}A2 {AGAG}A2 {g}A4 :|`
+      },
+      {
+        id: 'green-hills',
+        title: 'The Green Hills of Tyrol',
+        idiom: '3/4 Retreat March',
+        bpm: 78,
+        abc: `X:2
+T:The Green Hills of Tyrol
+M:3/4
+L:1/8
+Q:1/4=78
+K:HP
+|:{g}A>B {gcd}c2 {e}c>d | {gef}e2 {A}e>f {g}e>c | {Gdc}d>c {gBd}B2 {e}B>c | {Gdc}d>e {gfg}f2 {g}e>c |
+{g}A>B {gcd}c2 {e}c>d | {gef}e2 {A}e>f {g}e>c | {Gdc}d>B {g}G2 {d}B>G | {g}A2 {AGAG}A4 :|
+|:{gf}g2 {a}g>f {g}e>g | {ag}a2 {g}a>f {g}e>d | {gcd}c>d {gef}e2 {g}e>c | {Gdc}d>c {gBd}B2 {G}B>e |
+{gf}g2 {a}g>f {g}e>g | {ag}a2 {g}a>f {g}e>c | {Gdc}d>B {g}G2 {d}B>G | {g}A2 {AGAG}A4 :|`
+      },
+      {
+        id: 'skye-boat',
+        title: 'The Skye Boat Song',
+        idiom: '6/8 Slow Air / March',
+        bpm: 64,
+        abc: `X:3
+T:The Skye Boat Song
+M:6/8
+L:1/8
+Q:1/4=64
+K:HP
+{g}A>BA {Gdc}d2 A | {gef}e>fe {ag}a3 | {gfg}f>ed {g}B2 d | {g}A>BA {d}G3 |
+{g}A>BA {Gdc}d2 A | {gef}e>fe {ag}a3 | {gfg}f>ed {gBd}B2 {G}A | {Gdc}d3 {gdc}d3 ||
+{gfg}f>df {ag}a2 f | {gef}e>ce {g}e3 | {Gdc}d>Bd {gfg}f2 d | {gBd}B>AG {g}B3 |
+{gfg}f>df {ag}a2 f | {gef}e>ce {g}e3 | {Gdc}d>BA {d}G2 {g}A | {AGAG}A3 {g}A3 |]`
+      },
+      {
+        id: 'brown-haired-maid',
+        title: "Mairi's Wedding & Highland Reel",
+        idiom: '2/4 Highland Polka-Reel',
+        bpm: 102,
+        abc: `X:4
+T:Mairi's Wedding (Solo Pipe Setting)
+M:2/4
+L:1/8
+Q:1/4=102
+K:HP
+|:{g}A>A {AGAG}A>B | {Gdc}d>e {gfg}f2 | {gef}e>d {gBd}B>d | {gfg}f>e {g}f<a |
+{g}A>A {AGAG}A>B | {Gdc}d>e {gfg}f2 | {gef}e>d {gBd}B<{e}G | {g}A2 {AGAG}A2 :|
+|:{ag}a>a {g}a>f | {gef}e>d {gBd}B2 | {Gdc}d>e {gfg}f>d | {gef}e>d {gBd}B<d |
+{ag}a>a {g}a>f | {gef}e>d {gBd}B2 | {Gdc}d>B {d}G>B | {g}A2 {AGAG}A2 :|`
+      },
+      {
+        id: 'amazing-grace',
+        title: 'Amazing Grace (Solo Piper)',
+        idiom: '3/4 Slow Air',
+        bpm: 58,
+        abc: `X:5
+T:Amazing Grace
+M:3/4
+L:1/8
+Q:1/4=58
+K:HP
+{g}A2 | {Gdc}d4 {g}f>d | {ag}a4 {g}f>e | {Gdc}d4 {gBd}B2 | {g}A4 {AGAG}A2 |
+{Gdc}d4 {g}f>d | {ag}a4 {g}f>a | {ag}a6 | {f}a4 {g}f>a |
+{ag}a4 {g}f>d | {Gdc}d4 {g}f>e | {Gdc}d4 {gBd}B2 | {g}A4 {AGAG}A2 |
+{Gdc}d4 {g}f>d | {gef}e4 {Gdc}d>B | {g}A6 | {AGAG}A4 |]`
+      }
+    ];
+
+    // ----------------------------------------------------------------------------
+    // 5. K:HP ABC NOTATION PARSER & MILLISECOND-ACCURATE PLAYBACK SEQUENCER
+    // ----------------------------------------------------------------------------
+    class AbcPipeSequencer {
+      constructor(synthEngine) {
+        this.synth = synthEngine;
+        this.events = [];
+        this.rawAbc = '';
+        this.title = 'Untitled Tune';
+        this.bpm = 84;
+        this.isPlaying = false;
+        this.schedulerTimer = null;
+        this.uiTimers = [];
+        this.startTime = 0;
+        this.totalDuration = 0;
+        this.nextEventIdx = 0;
+      }
+
+      /**
+       * Parses ABC (K:HP) into timed melody + grace-note events while preserving exact
+       * character offsets (`charStart`, `charEnd`) so the live ABC view highlights notes accurately!
+       */
+      parse(abcText) {
+        this.rawAbc = abcText;
+        this.title = 'Traditional Solo Tune';
+        let meterNum = 4, meterDen = 4;
+        let defaultLen = 1 / 8; // L:1/8 default
+        let parsedBpm = null;
+
+        const lines = abcText.split('\n');
+        let charCursor = 0;
+        const bodySegments = [];
+
+        for (const line of lines) {
+          const lineLen = line.length;
+          const trimmed = line.trim();
+          if (/^[A-Za-z]:/.test(trimmed)) {
+            const key = trimmed[0].toUpperCase();
+            const val = trimmed.slice(2).trim();
+            if (key === 'T') this.title = val;
+            else if (key === 'M') {
+              if (val === 'C') { meterNum = 4; meterDen = 4; }
+              else if (val === 'C|') { meterNum = 2; meterDen = 2; }
+              else {
+                const m = val.match(/(\d+)\s*\/\s*(\d+)/);
+                if (m) { meterNum = parseInt(m[1], 10); meterDen = parseInt(m[2], 10); }
+              }
+            } else if (key === 'L') {
+              const m = val.match(/(\d+)\s*\/\s*(\d+)/);
+              if (m) defaultLen = parseInt(m[1], 10) / parseInt(m[2], 10);
+            } else if (key === 'Q') {
+              const m = val.match(/(\d+)\s*$/);
+              if (m) parsedBpm = parseInt(m[1], 10);
+            }
+          } else if (!trimmed.startsWith('%') && trimmed.length > 0) {
+            bodySegments.push({ text: line, offset: charCursor });
+          }
+          charCursor += lineLen + 1;
+        }
+
+        if (parsedBpm) {
+          this.bpm = Math.max(42, Math.min(140, parsedBpm));
+        }
+
+        // Tokenise body into structural repeat blocks and playable note tokens
+        const rawTokens = [];
+        for (const seg of bodySegments) {
+          const s = seg.text;
+          let i = 0;
+          let pendingGraces = [];
+          let tokenStart = -1;
+
+          while (i < s.length) {
+            const ch = s[i];
+            if (/\s/.test(ch)) {
+              i++;
+              continue;
+            }
+            // Barlines & Repeat markers
+            if (ch === ':' || ch === '|' || ch === '[' || ch === ']') {
+              let barStr = '';
+              while (i < s.length && /[:|\[\]12]/.test(s[i])) {
+                barStr += s[i];
+                i++;
+              }
+              if (barStr.includes('|:')) rawTokens.push({ type: 'repeatStart' });
+              if (barStr.includes(':|')) rawTokens.push({ type: 'repeatEnd' });
+              continue;
+            }
+            // Grace notes block `{...}`
+            if (ch === '{') {
+              if (tokenStart === -1) tokenStart = seg.offset + i;
+              i++;
+              while (i < s.length && s[i] !== '}') {
+                const gChar = s[i];
+                if (NOTE_MAP[gChar]) pendingGraces.push(gChar);
+                i++;
+              }
+              if (s[i] === '}') i++;
+              continue;
+            }
+            // Ignore slurs/decorations
+            if (ch === '(' || ch === ')' || ch === '~' || ch === '^' || ch === '=' || ch === '_') {
+              i++;
+              continue;
+            }
+            // Chanter Note or Rest
+            if (NOTE_MAP[ch] || ch === 'z' || ch === 'Z') {
+              const cStart = tokenStart !== -1 ? tokenStart : (seg.offset + i);
+              const noteChar = ch;
+              i++;
+              // Parse duration multiplier (e.g. 2, 3/2, /2, /, 4)
+              let durStr = '';
+              while (i < s.length && /[0-9\/]/.test(s[i])) {
+                durStr += s[i];
+                i++;
+              }
+              // Check broken rhythm `>` (dotted-cut) or `<` (Scots snap!)
+              let broken = null;
+              let spacePeek = i;
+              while (spacePeek < s.length && s[spacePeek] === ' ') spacePeek++;
+              if (s[spacePeek] === '>' || s[spacePeek] === '<') {
+                broken = s[spacePeek];
+                i = spacePeek + 1;
+              }
+              const cEnd = seg.offset + i;
+
+              let mult = 1.0;
+              if (durStr) {
+                if (durStr === '/') mult = 0.5;
+                else if (durStr === '//') mult = 0.25;
+                else if (durStr.startsWith('/')) mult = 1 / parseFloat(durStr.slice(1) || '2');
+                else if (durStr.includes('/')) {
+                  const [num, den] = durStr.split('/');
+                  mult = (parseFloat(num || '1') / parseFloat(den || '2'));
+                } else {
+                  mult = parseFloat(durStr);
+                }
+              }
+
+              rawTokens.push({
+                type: 'note',
+                noteChar,
+                graces: pendingGraces,
+                baseWhole: defaultLen * mult,
+                broken,
+                charStart: cStart,
+                charEnd: cEnd
+              });
+
+              pendingGraces = [];
+              tokenStart = -1;
+              continue;
+            }
+            i++;
+          }
+        }
+
+        // Apply broken rhythms (`>` = 1.5x current, 0.5x next; `<` Scots snap = 0.5x current, 1.5x next)
+        const noteList = [];
+        let repeatMarkIdx = 0;
+
+        for (let idx = 0; idx < rawTokens.length; idx++) {
+          const tk = rawTokens[idx];
+          if (tk.type === 'repeatStart') {
+            repeatMarkIdx = noteList.length;
+          } else if (tk.type === 'repeatEnd') {
+            // Duplicate section from repeatMarkIdx to current end once
+            const slice = noteList.slice(repeatMarkIdx).map(n => ({ ...n, graces: [...n.graces] }));
+            noteList.push(...slice);
+            repeatMarkIdx = noteList.length;
+          } else if (tk.type === 'note') {
+            noteList.push({ ...tk, graces: [...tk.graces] });
+          }
+        }
+
+        for (let i = 0; i < noteList.length - 1; i++) {
+          if (noteList[i].broken === '>') {
+            noteList[i].baseWhole *= 1.5;
+            noteList[i + 1].baseWhole *= 0.5;
+            noteList[i].broken = null;
+          } else if (noteList[i].broken === '<') {
+            noteList[i].baseWhole *= 0.5;
+            noteList[i + 1].baseWhole *= 1.5;
+            noteList[i].broken = null;
+          }
+        }
+
+        // Ensure authentic solo piping articulation: if two identical adjacent notes have NO grace note
+        // between them, insert a crisp High G `{g}` (or `{a}` if already on High G/A) so repeated notes articulate!
+        for (let i = 1; i < noteList.length; i++) {
+          const prev = noteList[i - 1];
+          const curr = noteList[i];
+          if (curr.noteChar !== 'z' && prev.noteChar !== 'z') {
+            const prevId = NOTE_MAP[prev.noteChar].id;
+            const currId = NOTE_MAP[curr.noteChar].id;
+            if (prevId === currId && curr.graces.length === 0) {
+              curr.graces = (currId === 'g' || currId === 'a') ? ['d'] : ['g'];
+            }
+          }
+        }
+
+        this.noteList = noteList;
+        this.recalculateTimings();
+        renderLiveAbcTokens(this.rawAbc, this.noteList);
+        return this.noteList;
+      }
+
+      recalculateTimings() {
+        // Quarter note = 1/4 of whole note => 1 whole note = 4 beats
+        const secPerWhole = (60 / this.bpm) * 4;
+        let cursorSec = 0;
+        this.events = this.noteList.map((n, index) => {
+          const durSec = Math.max(0.06, n.baseWhole * secPerWhole);
+          const ev = {
+            index,
+            noteId: NOTE_MAP[n.noteChar] ? NOTE_MAP[n.noteChar].id : 'A',
+            graces: n.graces.map(g => (NOTE_MAP[g] ? NOTE_MAP[g].id : 'g')),
+            startSec: cursorSec,
+            durSec,
+            charStart: n.charStart,
+            charEnd: n.charEnd
+          };
+          cursorSec += durSec;
+          return ev;
+        });
+        this.totalDuration = cursorSec;
+      }
+
+      play() {
+        if (!this.noteList || this.noteList.length === 0) {
+          this.parse(document.getElementById('abcTextarea').value);
+        }
+        this.stop(false);
+        this.synth.init();
+        this.recalculateTimings();
+
+        const wasBagOff = !this.synth.isBagActive;
+        if (wasBagOff) {
+          this.synth.strikeIn();
+        }
+
+        this.isPlaying = true;
+        updateSequencerTransportUi(true);
+
+        // Give 420ms bag strike-in cushion if pipes were idle so drones settle before beat 1
+        const leadInSec = wasBagOff ? 0.45 : 0.08;
+        this.startTime = this.synth.ctx.currentTime + leadInSec;
+        this.nextEventIdx = 0;
+
+        const lookaheadMs = 35;
+        const scheduleAheadSec = 0.16;
+
+        this.schedulerTimer = setInterval(() => {
+          if (!this.isPlaying) return;
+          const now = this.synth.ctx.currentTime;
+          const elapsed = Math.max(0, now - this.startTime);
+
+          // Update progress bar
+          const pct = this.totalDuration > 0 ? Math.min(100, (elapsed / this.totalDuration) * 100) : 0;
+          document.getElementById('seqProgressBar').style.width = `${pct.toFixed(1)}%`;
+          document.getElementById('seqProgressLabel').textContent =
+            `Playing ${formatSeconds(elapsed)} / ${formatSeconds(this.totalDuration)} · ${this.bpm} BPM`;
+
+          while (
+            this.nextEventIdx < this.events.length &&
+            this.startTime + this.events[this.nextEventIdx].startSec < now + scheduleAheadSec
+          ) {
+            this.scheduleNoteEvent(this.events[this.nextEventIdx]);
+            this.nextEventIdx++;
+          }
+
+          if (this.nextEventIdx >= this.events.length && now > this.startTime + this.totalDuration + 0.18) {
+            this.stop(true);
+          }
+        }, lookaheadMs);
+      }
+
+      scheduleNoteEvent(ev) {
+        const eventAudioStart = this.startTime + ev.startSec;
+        const graceStepSec = Math.min(this.synth.graceDurationMs / 1000, (ev.durSec * 0.55) / Math.max(1, ev.graces.length));
+
+        // Schedule ultra-crisp grace notes right at beat onset (traditional Highland on-the-beat embellishment placement)
+        ev.graces.forEach((gId, idx) => {
+          const gTime = eventAudioStart + idx * graceStepSec;
+          this.synth.setNoteAtTime(gId, gTime);
+
+          const delayMs = Math.max(0, (gTime - this.synth.ctx.currentTime) * 1000);
+          const timer = setTimeout(() => {
+            if (this.isPlaying) updateChanterVisuals(gId);
+          }, delayMs);
+          this.uiTimers.push(timer);
+        });
+
+        const melodyLandTime = eventAudioStart + ev.graces.length * graceStepSec;
+        this.synth.setNoteAtTime(ev.noteId, melodyLandTime);
+
+        const uiDelayMs = Math.max(0, (eventAudioStart - this.synth.ctx.currentTime) * 1000);
+        const uiLandDelayMs = Math.max(0, (melodyLandTime - this.synth.ctx.currentTime) * 1000);
+
+        const tHighlight = setTimeout(() => {
+          if (!this.isPlaying) return;
+          highlightAbcEvent(ev.index);
+        }, uiDelayMs);
+
+        const tChanter = setTimeout(() => {
+          if (!this.isPlaying) return;
+          this.synth.currentNoteId = ev.noteId;
+          updateChanterVisuals(ev.noteId);
+        }, uiLandDelayMs);
+
+        this.uiTimers.push(tHighlight, tChanter);
+      }
+
+      stop(cutBagAfterTune = false) {
+        this.isPlaying = false;
+        if (this.schedulerTimer) {
+          clearInterval(this.schedulerTimer);
+          this.schedulerTimer = null;
+        }
+        this.uiTimers.forEach(t => clearTimeout(t));
+        this.uiTimers = [];
+        clearAbcHighlights();
+        document.getElementById('seqProgressBar').style.width = '0%';
+        document.getElementById('seqProgressLabel').textContent = `Ready · ${this.events.length} notes (${formatSeconds(this.totalDuration)})`;
+        updateSequencerTransportUi(false);
+
+        if (cutBagAfterTune && this.synth.isBagActive) {
+          setTimeout(() => {
+            if (!this.isPlaying) this.synth.cutOff();
+          }, 320);
+        }
+      }
+    }
+
+    const sequencer = new AbcPipeSequencer(synth);
+
+    function formatSeconds(sec) {
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    // ----------------------------------------------------------------------------
+    // 6. PROCEDURAL SCOTTISH HIGHLAND TUNE GENERATOR (Idiomatic Double-Tonic K:HP)
+    // ----------------------------------------------------------------------------
+    const SCOTTISH_TITLE_PREFIXES = [
+      'The Braes of', 'Piper of', 'The Mist o’er', 'Glen', 'Sound of', 'Bonnie', 'The Hills of', 'Loch', 'Pass of', 'Dawn on'
+    ];
+    const SCOTTISH_PLACES = [
+      'Bennachie', 'Glenfinnan', 'Glencoe', 'Lochaber', 'Skye', 'Deeside', 'Rannoch', 'Kintail', 'knoydart', 'Assynt', 'Mull', 'strathspey', 'Braemar', 'Cruachan'
+    ];
+
+    function pick(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function generateTuneTitle(idiom) {
+      const place = pick(SCOTTISH_PLACES);
+      const capPlace = place.charAt(0).toUpperCase() + place.slice(1);
+      const suffixes = {
+        march24: ['March', 'Gathering', 'Welcome'],
+        jig68: ['Jig', 'Quickstep'],
+        march44: ['Highland March', 'Salute'],
+        strathspey: ['Strathspey', 'Fling'],
+        reel: ['Reel', 'Pass'],
+        air: ['Lament', 'Slow Air', 'Lullaby']
+      };
+      return `${pick(SCOTTISH_TITLE_PREFIXES)} ${capPlace} (${pick(suffixes[idiom] || ['Tune'])})`;
+    }
+
+    /**
+     * Adds authentic Highland grace notes/embellishments to generated bar motifs
+     */
+    function ornamentBarString(barAbc, density = 'full') {
+      if (density === 'moderate') {
+        // Keep primary structural throws/birls and High G grace notes, simplify inner doublings
+        return barAbc
+          .replace(/\{gde\}/g, '{g}')
+          .replace(/\{gfg\}/g, '{g}')
+          .replace(/\{gcd\}/g, '{g}');
+      }
+      return barAbc;
+    }
+
+    /**
+     * Generates an authentic 8-bar or 16-bar solo Great Highland Bagpipe tune in K:HP
+     * obeying the Double-Tonic (A pentatonic/mixolydian <-> G triad) structure & cadences!
+     */
+    function composeScottishPipeTune(idiom, numBars = 16, density = 'full') {
+      const title = generateTuneTitle(idiom);
+      let meter = '4/4', unitLen = '1/8', bpm = 84;
+      let partABars = [];
+      let partBBars = [];
+
+      // Idiomatic Bar Pools: A-Tonic (`A c e f a`), G-Shift (`G B d g`), Half-Cadence (on B/e), Final Cadence (on Low A with birl!)
+      if (idiom === 'march24') {
+        meter = '2/4'; unitLen = '1/8'; bpm = 78;
+        const aTonic = [
+          '{g}A>B {gcd}c<{e}A', '{g}A>{d}c {gef}e>c', '{Gdc}d>f {gef}e<{g}A', '{g}c>e {ag}a>e', '{g}A>B {gcd}c>d'
+        ];
+        const gShift = [
+          '{Gdc}d>B {d}G>B', '{gf}g>d {gBd}B<{e}G', '{gBd}B>d {gf}g>d', '{Gdc}d>c {gBd}B<{e}G'
+        ];
+        const halfCad = ['{gcd}c>A {gBd}B2', '{gef}e>c {gBd}B2', '{Gdc}d>c {gBd}B2'];
+        const fullCad = ['{Gdc}d<{g}B {g}A2', '{gcd}c<{e}B {AGAG}A2', '{gBd}B<{e}G {AGAG}A2'];
+        const bHigh = [
+          '{ag}a>f {gef}e>c', '{gfg}f>a {gef}e>c', '{gf}g>e {Gdc}d>B', '{ag}a>e {gfg}f>d', '{gef}e>f {ag}a>e'
+        ];
+
+        const m1 = pick(aTonic), m2 = pick(gShift), m3 = pick(aTonic);
+        partABars = [m1, m2, m3, pick(halfCad), m1, pick(gShift), '{Gdc}d>f {gef}e>c', pick(fullCad)];
+        const h1 = pick(bHigh), h2 = pick(gShift);
+        partBBars = [h1, h2, pick(bHigh), pick(halfCad), h1, pick(aTonic), '{Gdc}d>B {gcd}c>B', pick(fullCad)];
+
+      } else if (idiom === 'jig68') {
+        meter = '6/8'; unitLen = '1/8'; bpm = 108;
+        const aJig = [
+          '{g}A2 A {gcd}c2 e', '{g}e>fe {gcd}c>BA', '{g}A>ce {ag}a2 e', '{Gdc}d>fa {gef}e>cA', '{g}c>BA {gef}e2 c'
+        ];
+        const gJig = [
+          '{Gdc}d>BG {gBd}B2 d', '{gf}g>dB {d}G>Bd', '{gBd}B>cd {Gdc}d>BG', '{gf}g2 d {gBd}B>AG'
+        ];
+        const halfJig = ['{gcd}c>Ac {gBd}B3', '{gef}e>cA {gBd}B2 e', '{Gdc}d>cd {gBd}B3'];
+        const fullJig = ['{gcd}c>BG {AGAG}A3', '{Gdc}d>BG {AGAG}A2 e', '{gBd}B>GB {AGAG}A3'];
+        const bJig = [
+          '{ag}a>ga {gef}e>ce', '{gfg}f>df {ag}a2 f', '{gf}g>eg {Gdc}d>Bd', '{ag}a>ec {gef}e>cA'
+        ];
+
+        const m1 = pick(aJig), m2 = pick(gJig);
+        partABars = [m1, m2, pick(aJig), pick(halfJig), m1, pick(gJig), '{Gdc}d>fd {gef}e>cA', pick(fullJig)];
+        const h1 = pick(bJig);
+        partBBars = [h1, pick(gJig), pick(bJig), pick(halfJig), h1, pick(aJig), '{Gdc}d>BG {gcd}c>BA', pick(fullJig)];
+
+      } else if (idiom === 'strathspey') {
+        // Authentic Scots snap (`<`) and dotted-cut (`>`) Highland Strathspey!
+        meter = '4/4'; unitLen = '1/8'; bpm = 112;
+        const aStrath = [
+          '{g}A<{AGAG}A {gcd}c>A {gef}e>A {gcd}c<{e}A',
+          '{g}A>B {gcd}c<{e}A {gfg}f>A {gef}e>c',
+          '{gcd}c<{e}A {gef}e>A {ag}a>e {gcd}c<{e}A',
+          '{Gdc}d<{g}f {gef}e>c {g}A<{AGAG}A {gcd}c>e'
+        ];
+        const gStrath = [
+          '{d}G<{g}G {gBd}B>G {Gdc}d>G {gBd}B<{e}G',
+          '{gf}g>d {gBd}B<{e}G {Gdc}d>G {gBd}B>d',
+          '{gBd}B<{e}G {Gdc}d>B {gf}g>d {gBd}B<{e}G'
+        ];
+        const halfStrath = [
+          '{gcd}c<{e}A {gef}e>c {Gdc}d>B {gBd}B2',
+          '{ag}a>e {gcd}c<{e}A {gBd}B<{e}G {gBd}B2'
+        ];
+        const fullStrath = [
+          '{Gdc}d<{g}f {gef}e>c {gBd}B<{e}G {AGAG}A2',
+          '{gcd}c<{e}A {gBd}B>G {g}A<{AGAG}A {g}A2'
+        ];
+        const bStrath = [
+          '{ag}a>e {gfg}f<a {gef}e>c {gcd}c<{e}A',
+          '{gf}g>e {gfg}f<d {gef}e>c {ag}a>e',
+          '{ag}a<{g}a {gfg}f>a {gef}e>A {gcd}c<{e}A'
+        ];
+
+        const m1 = pick(aStrath), m2 = pick(gStrath);
+        partABars = [m1, m2, pick(aStrath), pick(halfStrath), m1, m2, pick(aStrath), pick(fullStrath)];
+        const h1 = pick(bStrath);
+        partBBars = [h1, pick(gStrath), pick(bStrath), pick(halfStrath), h1, pick(aStrath), m2, pick(fullStrath)];
+
+      } else if (idiom === 'reel') {
+        meter = '4/4'; unitLen = '1/8'; bpm = 118;
+        const aReel = [
+          '{g}A2 eA cAeA', '{g}Aced {gcd}cAec', '{ag}a2 ea caec', '{Gdc}dfed {gcd}cAec'
+        ];
+        const gReel = [
+          '{d}G2 dG BGdG', '{gf}gdBG {Gdc}dGBd', '{gBd}BcdB {d}GBdB'
+        ];
+        const halfReel = ['{gcd}cAec {gBd}B2 eB', '{ag}aecA {gBd}B2 dB'];
+        const fullReel = ['{gcd}cABG {AGAG}A2 eA', '{Gdc}dBGB {AGAG}A2 {g}A2'];
+        const bReel = [
+          '{ag}a2 fa eaca', '{gfg}fdfa {gef}ecAc', '{gf}g2 dg Bgdg', '{ag}aecA {gfg}fdfa'
+        ];
+
+        const m1 = pick(aReel), m2 = pick(gReel);
+        partABars = [m1, m2, pick(aReel), pick(halfReel), m1, m2, '{Gdc}dfed {gcd}cABG', pick(fullReel)];
+        const h1 = pick(bReel);
+        partBBars = [h1, pick(gReel), pick(bReel), pick(halfReel), h1, pick(aReel), m2, pick(fullReel)];
+
+      } else if (idiom === 'air') {
+        meter = '3/4'; unitLen = '1/8'; bpm = 58;
+        const aAir = [
+          '{g}A>B {gcd}c2 {gef}e2', '{ag}a>f {gef}e2 {gcd}c2', '{Gdc}d>f {gef}e2 {g}A2', '{g}A>c {gef}e3 f'
+        ];
+        const gAir = [
+          '{Gdc}d>c {gBd}B2 {d}G2', '{gf}g>e {Gdc}d2 {gBd}B2', '{gBd}B>d {gf}g3 e'
+        ];
+        const halfAir = ['{gcd}c>A {gBd}B4', '{gef}e>c {gBd}B4'];
+        const fullAir = ['{gcd}c>B {AGAG}A4', '{gBd}B>G {AGAG}A4'];
+        const bAir = [
+          '{ag}a>g {gfg}f2 {ag}a2', '{gf}g>f {gef}e2 {gcd}c2', '{gfg}f>e {Gdc}d2 {gfg}f2'
+        ];
+
+        const m1 = pick(aAir), m2 = pick(gAir);
+        partABars = [m1, m2, pick(aAir), pick(halfAir), m1, m2, '{Gdc}d>f {gef}e2 {gcd}c>B', pick(fullAir)];
+        const h1 = pick(bAir);
+        partBBars = [h1, pick(gAir), pick(bAir), pick(halfAir), h1, pick(aAir), '{Gdc}d>B {d}G2 {gBd}B>G', pick(fullAir)];
+
+      } else {
+        // 4/4 Highland March
+        meter = '4/4'; unitLen = '1/8'; bpm = 86;
+        const aM44 = [
+          '{g}A2 {AGAG}A>B {gcd}c>B {g}A>c',
+          '{gef}e2 {A}e>f {gef}e>c {e}A>c',
+          '{Gdc}d>e {gfg}f>a {gef}e>c {e}A>c',
+          '{g}A>B {gcd}c>d {gef}e2 {ag}a2'
+        ];
+        const gM44 = [
+          '{Gdc}d2 {g}d>c {gBd}B>A {d}G>B',
+          '{gf}g2 {a}g>e {Gdc}d>B {d}G>B',
+          '{gBd}B>c {Gdc}d>e {gf}g>d {gBd}B>G'
+        ];
+        const halfM44 = [
+          '{gcd}c>d {gef}e>c {gBd}B2 {G}B>c',
+          '{ag}a>e {gcd}c>A {gBd}B2 {e}B2'
+        ];
+        const fullM44 = [
+          '{Gdc}d>B {gf}g>B {g}A2 {AGAG}A2',
+          '{gcd}c>A {gBd}B>G {g}A2 {AGAG}A2'
+        ];
+        const bM44 = [
+          '{ag}a2 {g}a>f {gef}e>c {e}A>e',
+          '{gfg}f>e {gfg}f<a {gef}e>c {e}A>c',
+          '{gf}g>f {gf}g>e {Gdc}d>B {d}G>B'
+        ];
+
+        const m1 = pick(aM44), m2 = pick(gM44);
+        partABars = [m1, m2, pick(aM44), pick(halfM44), m1, m2, '{Gdc}d>f {gef}e>c {Gdc}d>B {gcd}c>B', pick(fullM44)];
+        const h1 = pick(bM44);
+        partBBars = [h1, pick(gM44), pick(bM44), pick(halfM44), h1, pick(aM44), m2, pick(fullM44)];
+      }
+
+      const cleanA = partABars.map(b => ornamentBarString(b, density));
+      const cleanB = partBBars.map(b => ornamentBarString(b, density));
+
+      const format8Bars = (bars) =>
+        `|: ${bars.slice(0, 4).join(' | ')} |\n${bars.slice(4, 8).join(' | ')} :|`;
+
+      const body = numBars === 16
+        ? `${format8Bars(cleanA)}\n${format8Bars(cleanB)}`
+        : format8Bars(cleanA);
+
+      const abc = `X:1
+T:${title}
+M:${meter}
+L:${unitLen}
+Q:1/4=${bpm}
+K:HP
+${body}`;
+
+      return { title, bpm, abc };
+    }
+
+    // ----------------------------------------------------------------------------
+    // 7. VISUAL CHANTER UI, LIVE ABC HIGHLIGHTER & HARMONIC OSCILLOSCOPE
+    // ----------------------------------------------------------------------------
+    function buildChanterButtons() {
+      const container = document.getElementById('chanterNoteButtons');
+      container.innerHTML = '';
+      // Display High A at top down to Low G at bottom so buttons align naturally with chanter holes
+      const descending = [...HIGHLAND_NOTES].reverse();
+
+      descending.forEach(note => {
+        const btn = document.createElement('button');
+        btn.id = `noteBtn-${note.id}`;
+        btn.className = 'w-full px-3 py-2 rounded-xl bg-slateHighland-850 hover:bg-slateHighland-800 border border-slate-700/80 text-left flex items-center justify-between transition-all cursor-pointer select-none';
+        btn.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-md bg-slateHighland-950 border border-slate-700 font-mono text-[11px] text-brass-300 flex items-center justify-center">${note.keyLabel}</span>
+            <span class="text-xs sm:text-sm font-semibold text-slate-100">${note.name}</span>
+          </div>
+          <span class="font-mono text-[11px] text-slate-400">${note.ratioText}</span>
+        `;
+
+        const triggerNote = (e) => {
+          e.preventDefault();
+          synth.init();
+          if (!synth.isBagActive) {
+            synth.currentNoteId = note.id;
+            synth.strikeIn();
+            updateChanterVisuals(note.id);
+          } else {
+            // If clicking the SAME note that's already sounding, articulate with an authentic High G (or D) grace note!
+            if (synth.currentNoteId === note.id) {
+              const g = (note.id === 'g' || note.id === 'a') ? 'd' : 'g';
+              synth.playLiveOrnament([g], note.id, `{${g}}${note.abc}`);
+            } else {
+              synth.setNoteAtTime(note.id);
+            }
+          }
+        };
+
+        btn.addEventListener('mousedown', triggerNote);
+        btn.addEventListener('touchstart', triggerNote, { passive: false });
+        container.appendChild(btn);
+      });
+    }
+
+    function updateChanterVisuals(noteId) {
+      const note = NOTE_MAP[noteId] || NOTE_MAP['A'];
+      const freq = synth.masterLowA * note.ratio;
+
+      // Update SVG Finger Holes (1 = Closed Brass/Gold fill, 0 = Open Dark bore fill)
+      Object.entries(note.holes).forEach(([holeKey, isClosed]) => {
+        const circle = document.getElementById(`hole-${holeKey}`);
+        if (circle) {
+          circle.setAttribute('fill', isClosed ? '#dfb15b' : '#0b0f14');
+          circle.setAttribute('stroke', isClosed ? '#fef3c7' : '#94a3b8');
+        }
+      });
+
+      // Highlight Active Note Button
+      HIGHLAND_NOTES.forEach(n => {
+        const btn = document.getElementById(`noteBtn-${n.id}`);
+        if (btn) {
+          if (n.id === note.id) btn.classList.add('note-btn-active');
+          else btn.classList.remove('note-btn-active');
+        }
+      });
+
+      // Update Top Readouts
+      document.getElementById('activeNoteName').textContent = note.name;
+      document.getElementById('activeRatioBadge').textContent = note.ratioText;
+      document.getElementById('activeFreqReadout').textContent = `${freq.toFixed(1)} Hz`;
+    }
+
+    function updateStrikeUi(isActive) {
+      const btn = document.getElementById('btnStrikeIn');
+      const led = document.getElementById('strikeLed');
+      const label = document.getElementById('strikeLabel');
+
+      if (isActive) {
+        btn.classList.add('bag-active-glow');
+        led.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 shadow shadow-emerald-400';
+        label.textContent = 'Cut Off Bag';
+      } else {
+        btn.classList.remove('bag-active-glow');
+        led.className = 'w-2.5 h-2.5 rounded-full bg-slateHighland-950/60';
+        label.textContent = 'Strike In Pipes';
+      }
+    }
+
+    function updateSequencerTransportUi(isPlaying) {
+      const btn = document.getElementById('btnPlaySeq');
+      const label = document.getElementById('labelPlaySeq');
+      if (isPlaying) {
+        label.textContent = 'Restart Tune';
+        btn.classList.replace('bg-emerald-600', 'bg-amber-600');
+        btn.classList.replace('hover:bg-emerald-500', 'hover:bg-amber-500');
+      } else {
+        label.textContent = 'Play Tune';
+        btn.classList.replace('bg-amber-600', 'bg-emerald-600');
+        btn.classList.replace('hover:bg-amber-500', 'hover:bg-emerald-500');
+      }
+    }
+
+    /**
+     * Renders the ABC text into safe DOM spans mapped to parsed note indices for real-time highlighting
+     */
+    function renderLiveAbcTokens(abcText, noteList) {
+      const view = document.getElementById('abcLiveView');
+      view.innerHTML = '';
+
+      // Deduplicate spans for repeated sections (map character ranges to all matching note indices)
+      const rangeMap = new Map();
+      noteList.forEach((n, idx) => {
+        const key = `${n.charStart}:${n.charEnd}`;
+        if (!rangeMap.has(key)) {
+          rangeMap.set(key, { start: n.charStart, end: n.charEnd, indices: [] });
+        }
+        rangeMap.get(key).indices.push(idx);
+      });
+
+      const ranges = Array.from(rangeMap.values()).sort((a, b) => a.start - b.start);
+      let cursor = 0;
+      const frag = document.createDocumentFragment();
+
+      ranges.forEach(r => {
+        if (r.start > cursor) {
+          frag.appendChild(document.createTextNode(abcText.slice(cursor, r.start)));
+        }
+        const span = document.createElement('span');
+        span.className = 'abc-token';
+        span.dataset.indices = r.indices.join(',');
+        span.textContent = abcText.slice(r.start, r.end);
+        r.indices.forEach(idx => {
+          span.classList.add(`abc-ev-${idx}`);
+        });
+        frag.appendChild(span);
+        cursor = r.end;
+      });
+
+      if (cursor < abcText.length) {
+        frag.appendChild(document.createTextNode(abcText.slice(cursor)));
+      }
+      view.appendChild(frag);
+    }
+
+    function highlightAbcEvent(evIndex) {
+      clearAbcHighlights();
+      const el = document.querySelector(`.abc-ev-${evIndex}`);
+      if (el) {
+        el.classList.add('abc-token-active');
+        // Smooth scroll inside container if needed
+        const container = document.getElementById('abcLiveView');
+        const elTop = el.offsetTop - container.offsetTop;
+        if (elTop < container.scrollTop || elTop > container.scrollTop + container.clientHeight - 36) {
+          container.scrollTo({ top: Math.max(0, elTop - 60), behavior: 'smooth' });
+        }
+      }
+    }
+
+    function clearAbcHighlights() {
+      document.querySelectorAll('.abc-token-active').forEach(el => el.classList.remove('abc-token-active'));
+    }
+
+    // ----------------------------------------------------------------------------
+    // 8. REAL-TIME HARMONIC OSCILLOSCOPE & SPECTRUM VISUALISER CANVAS
+    // ----------------------------------------------------------------------------
+    let visMode = 'wave'; // 'wave' or 'spec'
+
+    function startAudioVisualiser() {
+      const canvas = document.getElementById('audioCanvas');
+      const c = canvas.getContext('2d');
+
+      function resizeCanvas() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.max(200, Math.floor(rect.width * dpr));
+        canvas.height = Math.max(120, Math.floor(rect.height * dpr));
+      }
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+
+      const timeData = new Uint8Array(2048);
+      const freqData = new Uint8Array(1024);
+
+      function drawFrame() {
+        requestAnimationFrame(drawFrame);
+        const w = canvas.width;
+        const h = canvas.height;
+
+        c.fillStyle = '#0b0f14';
+        c.fillRect(0, 0, w, h);
+
+        // Subtle subtle grid lines
+        c.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+        c.lineWidth = 1;
+        c.beginPath();
+        c.moveTo(0, h / 2);
+        c.lineTo(w, h / 2);
+        c.stroke();
+
+        if (!synth.isInitialised || !synth.analyser || !synth.isBagActive) {
+          // Idle calm baseline
+          c.strokeStyle = 'rgba(200, 146, 54, 0.35)';
+          c.lineWidth = 2;
+          c.beginPath();
+          c.moveTo(0, h / 2);
+          c.lineTo(w, h / 2);
+          c.stroke();
+          return;
+        }
+
+        if (visMode === 'wave') {
+          synth.analyser.getByteTimeDomainData(timeData);
+
+          // Trigger zero-crossing lock so the drone-chanter harmonic lock waveform stands crystal steady!
+          let triggerIdx = 0;
+          for (let i = 1; i < 600; i++) {
+            if (timeData[i - 1] < 128 && timeData[i] >= 128) {
+              triggerIdx = i;
+              break;
+            }
+          }
+
+          const grad = c.createLinearGradient(0, 0, w, 0);
+          grad.addColorStop(0, '#c89236');
+          grad.addColorStop(0.5, '#f3d286');
+          grad.addColorStop(1, '#34d399');
+
+          c.strokeStyle = grad;
+          c.lineWidth = 2.2;
+          c.beginPath();
+
+          const samplesToDraw = 750;
+          const sliceWidth = w / samplesToDraw;
+          let x = 0;
+          for (let i = 0; i < samplesToDraw; i++) {
+            const v = timeData[triggerIdx + i] / 128.0;
+            const y = (v * h) / 2;
+            if (i === 0) c.moveTo(x, y);
+            else c.lineTo(x, y);
+            x += sliceWidth;
+          }
+          c.stroke();
+        } else {
+          // Harmonic Spectrum Mode
+          synth.analyser.getByteFrequencyData(freqData);
+          const bins = 140; // Focus on 0 - ~6.5 kHz acoustic chanter & drone range
+          const barW = (w / bins) - 1;
+          for (let i = 0; i < bins; i++) {
+            const val = freqData[i] / 255;
+            const barH = val * (h - 24);
+            c.fillStyle = i < 16 ? '#34d399' : '#dfb15b'; // Drones in emerald, chanter harmonics in Highland brass
+            c.fillRect(i * (barW + 1), h - barH - 18, Math.max(1.5, barW), barH);
+          }
+        }
+      }
+
+      drawFrame();
+    }
+
+    // ----------------------------------------------------------------------------
+    // 9. FAVOURITES LIBRARY MANAGEMENT & PRESET LOADING
+    // ----------------------------------------------------------------------------
+    let userFavourites = [];
+    try {
+      const saved = localStorage.getItem('piobMorFavourites_v1');
+      if (saved) userFavourites = JSON.parse(saved);
+    } catch (_) {
+      userFavourites = [];
+    }
+
+    function renderLibraryPresets() {
+      const container = document.getElementById('presetButtonsContainer');
+      container.innerHTML = '';
+
+      CLASSIC_LIBRARY.forEach(tune => {
+        const btn = document.createElement('button');
+        btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-slateHighland-850 hover:bg-slateHighland-800 border border-slate-700/90 text-slate-200 hover:border-brass-400/60 transition-all cursor-pointer';
+        btn.textContent = tune.title;
+        btn.addEventListener('click', () => loadAbcTuneIntoStudio(tune.abc, tune.bpm));
+        container.appendChild(btn);
+      });
+
+      userFavourites.forEach((fav, idx) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'inline-flex items-center rounded-lg bg-brass-500/15 border border-brass-500/40 overflow-hidden';
+
+        const btn = document.createElement('button');
+        btn.className = 'px-2.5 py-1.5 text-xs font-medium text-brass-300 hover:bg-brass-500/20 transition-all';
+        btn.textContent = `★ ${fav.title}`;
+        btn.addEventListener('click', () => loadAbcTuneIntoStudio(fav.abc, fav.bpm));
+
+        const delBtn = document.createElement('button');
+        delBtn.title = 'Remove from Favourites';
+        delBtn.className = 'px-1.5 py-1.5 text-xs text-brass-400/70 hover:text-rose-400 hover:bg-rose-950/40 transition-all';
+        delBtn.textContent = '×';
+        delBtn.addEventListener('click', () => {
+          userFavourites.splice(idx, 1);
+          try { localStorage.setItem('piobMorFavourites_v1', JSON.stringify(userFavourites)); } catch (_) {}
+          renderLibraryPresets();
+          showToast('Removed tune from Favourites.', 'info');
+        });
+
+        wrap.appendChild(btn);
+        wrap.appendChild(delBtn);
+        container.appendChild(wrap);
+      });
+    }
+
+    function loadAbcTuneIntoStudio(abcText, bpmOverride) {
+      const wasPlaying = sequencer.isPlaying;
+      sequencer.stop(false);
+
+      document.getElementById('abcTextarea').value = abcText;
+      sequencer.parse(abcText);
+
+      if (bpmOverride) {
+        sequencer.bpm = bpmOverride;
+      }
+      document.getElementById('sliderTempo').value = sequencer.bpm;
+      document.getElementById('valTempo').textContent = `${sequencer.bpm} BPM`;
+      sequencer.recalculateTimings();
+
+      document.getElementById('currentTuneTitle').textContent = sequencer.title;
+      document.getElementById('seqProgressLabel').textContent =
+        `Loaded · ${sequencer.events.length} notes (${formatSeconds(sequencer.totalDuration)})`;
+
+      if (wasPlaying) {
+        sequencer.play();
+      }
+    }
+
+    // ----------------------------------------------------------------------------
+    // 10. ORNAMENTATION ENGINE HELPERS & INSPECTOR
+    // ----------------------------------------------------------------------------
+    function triggerCompoundEmbellishment(type) {
+      const target = synth.currentNoteId || 'A';
+      const inspector = document.getElementById('ornamentInspector');
+
+      if (type === 'doubling') {
+        const seq = DOUBLING_TABLE[target] || ['g', target, 'd'];
+        synth.playLiveOrnament(seq, target, `Doubling on ${NOTE_MAP[target].name}`);
+        inspector.textContent = `Doubling on ${NOTE_MAP[target].name}: {${seq.join('')}} → ${NOTE_MAP[target].name} (${seq.length} grace taps @ ${synth.graceDurationMs}ms each)`;
+      } else if (type === 'throwD') {
+        const seq = ['G', 'd', 'c'];
+        synth.playLiveOrnament(seq, 'D', 'Throw on D {Gdc}d');
+        inspector.textContent = `Heavy Throw on D: Low G → D → C → D ({Gdc}d) — classic Highland D articulation.`;
+      } else if (type === 'grip') {
+        const mid = (target === 'D') ? 'B' : 'd';
+        const seq = ['G', mid, 'G'];
+        synth.playLiveOrnament(seq, target, `Grip {G${mid}G}${NOTE_MAP[target].abc}`);
+        inspector.textContent = `Grip (Leumlath): Low G → ${NOTE_MAP[mid].name} → Low G → ${NOTE_MAP[target].name} — crisp double Low G ripple.`;
+      } else if (type === 'taorluath') {
+        const seq = ['G', 'd', 'G', 'e'];
+        synth.playLiveOrnament(seq, 'A', 'Taorluath {GdGe}A');
+        inspector.textContent = `Taorluath: Low G → D → Low G → E → Low A ({GdGe}A) — classic Ceòl Mòr & competition march movement.`;
+      } else if (type === 'birl') {
+        const seq = ['A', 'G', 'A', 'G'];
+        synth.playLiveOrnament(seq, 'A', 'Low A Birl {AGAG}A');
+        inspector.textContent = `Low A Birl: Low A → Low G → Low A → Low G → Low A ({AGAG}A) — rapid double pinky sweep across Low A hole.`;
+      }
+    }
+
+    // ----------------------------------------------------------------------------
+    // 11. EVENT LISTENERS, MIXER CONTROLS & COMPUTER KEYBOARD MAPPING
+    // ----------------------------------------------------------------------------
+    function bindAllEvents() {
+      // Strike In / Cut Off
+      document.getElementById('btnStrikeIn').addEventListener('click', () => {
+        if (synth.isBagActive) {
+          sequencer.stop(false);
+          synth.cutOff();
+        } else {
+          synth.strikeIn();
+        }
+      });
+
+      // Full 3-Drone Pipes vs Goose / Practice Chanter Mode
+      document.getElementById('btnGooseMode').addEventListener('click', () => {
+        const nextMode = !synth.dronesEnabled;
+        synth.setDronesMode(nextMode);
+        const badge = document.getElementById('dronesBadge');
+        const text = document.getElementById('gooseModeText');
+        if (nextMode) {
+          badge.className = 'w-2 h-2 rounded-full bg-emerald-400';
+          text.textContent = '3 Drones Active';
+          showToast('Full Great Highland Pipes: 2 Tenors + 1 Bass Drone active.', 'info');
+        } else {
+          badge.className = 'w-2 h-2 rounded-full bg-amber-400';
+          text.textContent = 'Chanter Only (Practice)';
+          showToast('Practice / Goose Mode: Solo chanter active without drones.', 'info');
+        }
+      });
+
+      // WAV Audio Recorder
+      document.getElementById('btnRecordWav').addEventListener('click', () => {
+        const btn = document.getElementById('btnRecordWav');
+        const label = document.getElementById('recLabel');
+        const dot = document.getElementById('recDot');
+
+        if (!synth.isRecording) {
+          synth.startWavRecording();
+          label.textContent = 'Stop & Save WAV';
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-rose-400 animate-ping';
+          btn.classList.add('border-rose-500', 'bg-rose-950/40');
+          showToast('Recording uncompressed stereo WAV... Play live or start a tune!', 'record');
+        } else {
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500';
+          label.textContent = 'Record WAV';
+          btn.classList.remove('border-rose-500', 'bg-rose-950/40');
+          synth.stopAndExportWav(sequencer.title);
+        }
+      });
+
+      // Single Grace Note Pad Buttons
+      document.querySelectorAll('.orn-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const g = btn.dataset.orn;
+          const target = synth.currentNoteId || 'A';
+          synth.playLiveOrnament([g], target, `{${g}}${NOTE_MAP[target].abc}`);
+          document.getElementById('ornamentInspector').textContent =
+            `Single ${NOTE_MAP[g].name} Grace Note ({${g}}): ${synth.graceDurationMs}ms pitch articulation landing on ${NOTE_MAP[target].name}.`;
+        });
+      });
+
+      // Compound Embellishment Buttons
+      document.querySelectorAll('.compound-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          triggerCompoundEmbellishment(btn.dataset.compound);
+        });
+      });
+
+      // Visualiser Mode Toggle
+      const btnWave = document.getElementById('visModeWave');
+      const btnSpec = document.getElementById('visModeSpec');
+      btnWave.addEventListener('click', () => {
+        visMode = 'wave';
+        btnWave.className = 'px-2.5 py-1 rounded-md bg-brass-500/20 text-brass-300 font-medium';
+        btnSpec.className = 'px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200';
+      });
+      btnSpec.addEventListener('click', () => {
+        visMode = 'spec';
+        btnSpec.className = 'px-2.5 py-1 rounded-md bg-brass-500/20 text-brass-300 font-medium';
+        btnWave.className = 'px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200';
+      });
+
+      // Acoustic Mixer Sliders
+      const updatePitchLabels = (hz) => {
+        let tag = 'Solo Pipe';
+        if (hz <= 442) tag = 'Concert A';
+        else if (hz < 470) tag = 'Historic / Folk Pipe';
+        else if (hz >= 482) tag = 'Modern Championship';
+        document.getElementById('valMasterPitch').textContent = `${hz.toFixed(1)} Hz (${tag})`;
+        document.getElementById('bassHzLabel').textContent = `${(hz * 0.25).toFixed(1)} Hz`;
+        document.getElementById('tenorHzLabel').textContent = `${(hz * 0.5).toFixed(1)} Hz`;
+        document.getElementById('droneLockInfo').textContent =
+          `Bass: ${(hz * 0.25).toFixed(1)} Hz · Tenors: ${(hz * 0.5).toFixed(1)} Hz`;
+        document.getElementById('pitchStandardInfo').textContent = `A = ${hz.toFixed(1)} Hz`;
+        updateChanterVisuals(synth.currentNoteId);
+      };
+
+      document.getElementById('sliderMasterPitch').addEventListener('input', (e) => {
+        const hz = parseFloat(e.target.value);
+        synth.setMasterPitch(hz);
+        updatePitchLabels(hz);
+      });
+
+      document.getElementById('sliderChanterVol').addEventListener('input', (e) => {
+        const v = parseInt(e.target.value, 10);
+        synth.chanterVolume = v / 100;
+        document.getElementById('valChanterVol').textContent = `${v}%`;
+        synth.updateVolumes();
+      });
+
+      document.getElementById('sliderTenorVol').addEventListener('input', (e) => {
+        const v = parseInt(e.target.value, 10);
+        synth.tenorVolume = v / 100;
+        document.getElementById('valTenorVol').textContent = `${v}%`;
+        synth.updateVolumes();
+      });
+
+      document.getElementById('sliderBassVol').addEventListener('input', (e) => {
+        const v = parseInt(e.target.value, 10);
+        synth.bassVolume = v / 100;
+        document.getElementById('valBassVol').textContent = `${v}%`;
+        synth.updateVolumes();
+      });
+
+      document.getElementById('sliderDrift').addEventListener('input', (e) => {
+        const v = parseFloat(e.target.value);
+        synth.droneDriftCents = v;
+        document.getElementById('valDrift').textContent = `${v.toFixed(1)} cents`;
+        synth.updateDroneDrift();
+      });
+
+      document.getElementById('sliderReverb').addEventListener('input', (e) => {
+        const v = parseInt(e.target.value, 10);
+        synth.reverbMix = v / 100;
+        document.getElementById('valReverb').textContent = `${v}%`;
+        synth.updateReverbMix();
+      });
+
+      document.getElementById('sliderGraceMs').addEventListener('input', (e) => {
+        const v = parseInt(e.target.value, 10);
+        synth.graceDurationMs = v;
+        document.getElementById('valGraceMs').textContent = `${v} ms`;
+      });
+
+      document.getElementById('btnResetMixer').addEventListener('click', () => {
+        document.getElementById('sliderMasterPitch').value = 478;
+        document.getElementById('sliderChanterVol').value = 82;
+        document.getElementById('sliderTenorVol').value = 52;
+        document.getElementById('sliderBassVol').value = 58;
+        document.getElementById('sliderDrift').value = 1.1;
+        document.getElementById('sliderReverb').value = 28;
+        document.getElementById('sliderGraceMs').value = 32;
+
+        synth.setMasterPitch(478);
+        synth.chanterVolume = 0.82;
+        synth.tenorVolume = 0.52;
+        synth.bassVolume = 0.58;
+        synth.droneDriftCents = 1.1;
+        synth.reverbMix = 0.28;
+        synth.graceDurationMs = 32;
+
+        synth.updateVolumes();
+        synth.updateDroneDrift();
+        synth.updateReverbMix();
+        updatePitchLabels(478);
+
+        document.getElementById('valChanterVol').textContent = '82%';
+        document.getElementById('valTenorVol').textContent = '52%';
+        document.getElementById('valBassVol').textContent = '58%';
+        document.getElementById('valDrift').textContent = '1.1 cents';
+        document.getElementById('valReverb').textContent = '28%';
+        document.getElementById('valGraceMs').textContent = '32 ms';
+        showToast('Restored solo competition Highland pipe defaults (A = 478 Hz).', 'info');
+      });
+
+      // Tempo Slider
+      document.getElementById('sliderTempo').addEventListener('input', (e) => {
+        const bpm = parseInt(e.target.value, 10);
+        sequencer.bpm = bpm;
+        document.getElementById('valTempo').textContent = `${bpm} BPM`;
+        sequencer.recalculateTimings();
+        if (!sequencer.isPlaying) {
+          document.getElementById('seqProgressLabel').textContent =
+            `Ready · ${sequencer.events.length} notes (${formatSeconds(sequencer.totalDuration)})`;
+        }
+      });
+
+      // Procedural Tune Generator
+      document.getElementById('btnGenerateTune').addEventListener('click', () => {
+        const idiom = document.getElementById('selectIdiom').value;
+        const bars = parseInt(document.getElementById('selectBars').value, 10);
+        const density = document.getElementById('selectOrnDensity').value;
+
+        const generated = composeScottishPipeTune(idiom, bars, density);
+        loadAbcTuneIntoStudio(generated.abc, generated.bpm);
+        showToast(`Composed "${generated.title}" in K:HP!`, 'success');
+      });
+
+      // Sequencer Play / Stop
+      document.getElementById('btnPlaySeq').addEventListener('click', () => {
+        sequencer.play();
+      });
+
+      document.getElementById('btnStopSeq').addEventListener('click', () => {
+        sequencer.stop(true);
+      });
+
+      // Toggle Editable ABC Source
+      const btnEdit = document.getElementById('btnToggleEditAbc');
+      const liveView = document.getElementById('abcLiveView');
+      const editorWrap = document.getElementById('abcEditorContainer');
+
+      btnEdit.addEventListener('click', () => {
+        const isEditing = !editorWrap.classList.contains('hidden');
+        if (isEditing) {
+          editorWrap.classList.add('hidden');
+          liveView.classList.remove('hidden');
+          btnEdit.textContent = 'Edit ABC Source';
+        } else {
+          editorWrap.classList.remove('hidden');
+          liveView.classList.add('hidden');
+          btnEdit.textContent = 'Show Live Score';
+        }
+      });
+
+      document.getElementById('btnApplyAbc').addEventListener('click', () => {
+        const edited = document.getElementById('abcTextarea').value;
+        loadAbcTuneIntoStudio(edited);
+        editorWrap.classList.add('hidden');
+        liveView.classList.remove('hidden');
+        btnEdit.textContent = 'Edit ABC Source';
+        showToast(`Parsed "${sequencer.title}" (${sequencer.events.length} notes).`, 'success');
+      });
+
+      // Save to Favourites
+      document.getElementById('btnSaveFavourite').addEventListener('click', () => {
+        const abc = document.getElementById('abcTextarea').value;
+        const fav = {
+          title: sequencer.title || 'Custom Pipe Tune',
+          bpm: sequencer.bpm,
+          abc
+        };
+        userFavourites.push(fav);
+        try { localStorage.setItem('piobMorFavourites_v1', JSON.stringify(userFavourites)); } catch (_) {}
+        renderLibraryPresets();
+        showToast(`Saved "${fav.title}" to Favourites!`, 'success');
+      });
+
+      // Copy ABC to Clipboard (iframe-safe execCommand fallback)
+      document.getElementById('btnCopyAbc').addEventListener('click', () => {
+        const abc = document.getElementById('abcTextarea').value;
+        const temp = document.createElement('textarea');
+        temp.value = abc;
+        temp.style.position = 'fixed';
+        temp.style.opacity = '0';
+        document.body.appendChild(temp);
+        temp.select();
+        try {
+          document.execCommand('copy');
+          showToast('Copied K:HP ABC notation to clipboard!', 'success');
+        } catch (_) {
+          showToast('Could not copy automatically — open Edit ABC Source to copy.', 'info');
+        }
+        temp.remove();
+      });
+
+      // Live Computer Keyboard Play (Ignored when typing inside ABC editor or inputs)
+      const keyToNote = {};
+      HIGHLAND_NOTES.forEach(n => { keyToNote[n.key] = n; });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.repeat) return;
+        const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+        if (tag === 'textarea' || tag === 'input' || tag === 'select') return;
+
+        const k = e.key.toLowerCase();
+
+        // Spacebar toggles bag Strike-In / Cut-Off
+        if (k === ' ') {
+          e.preventDefault();
+          if (synth.isBagActive) {
+            sequencer.stop(false);
+            synth.cutOff();
+          } else {
+            synth.strikeIn();
+          }
+          return;
+        }
+
+        // Chanter Scale Keys (A S D F G H J K L)
+        if (keyToNote[k]) {
+          e.preventDefault();
+          const note = keyToNote[k];
+          synth.init();
+          if (!synth.isBagActive) {
+            synth.currentNoteId = note.id;
+            synth.strikeIn();
+            updateChanterVisuals(note.id);
+          } else if (synth.currentNoteId === note.id) {
+            const g = (note.id === 'g' || note.id === 'a') ? 'd' : 'g';
+            synth.playLiveOrnament([g], note.id, `{${g}}${note.abc}`);
+          } else {
+            synth.setNoteAtTime(note.id);
+          }
+          return;
+        }
+
+        // Single Grace Note Keys (1 2 3 4 5)
+        const singleGraces = { '1': 'g', '2': 'd', '3': 'e', '4': 'a', '5': 'G' };
+        if (singleGraces[k]) {
+          e.preventDefault();
+          const g = singleGraces[k];
+          const target = synth.currentNoteId || 'A';
+          synth.playLiveOrnament([g], target, `{${g}}${NOTE_MAP[target].abc}`);
+          return;
+        }
+
+        // Compound Ornament Keys (Q W E R T)
+        const compounds = { 'q': 'doubling', 'w': 'throwD', 'e': 'grip', 'r': 'taorluath', 't': 'birl' };
+        if (compounds[k]) {
+          e.preventDefault();
+          triggerCompoundEmbellishment(compounds[k]);
+        }
+      });
+    }
+
+    // ----------------------------------------------------------------------------
+    // 12. INITIALISATION ON WINDOW LOAD
+    // ----------------------------------------------------------------------------
+    window.onload = function () {
+      buildChanterButtons();
+      renderLibraryPresets();
+      bindAllEvents();
+      updateChanterVisuals('A');
+      loadAbcTuneIntoStudio(CLASSIC_LIBRARY[0].abc, CLASSIC_LIBRARY[0].bpm);
+      startAudioVisualiser();
+    };
+  </script>
+</body>
+</html>

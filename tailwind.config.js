@@ -26,6 +26,10 @@ module.exports = {
         serif: ["Playfair Display", "Georgia", "serif"],
         sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
       },
+      maxWidth: {
+        '7xl': '1560px',
+        '8xl': '1680px',
+      },
       backgroundImage: {
         'tartan-pattern': "radial-gradient(ellipse at top, #112240, #070E1B)",
         'gold-gradient': "linear-gradient(135deg, #D4AF37 0%, #F3C954 50%, #B89726 100%)",

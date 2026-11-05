@@ -155,7 +155,7 @@ export default function AirbnbExperiencePage() {
 
       {/* Hero Header */}
       <div className="relative bg-gradient-to-b from-tartan-card via-tartan-navy to-tartan-dark border-b border-tartan-border py-12 lg:py-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
           
           {/* Breadcrumb & Official Partnership Badge */}
           <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -206,7 +206,7 @@ export default function AirbnbExperiencePage() {
         </div>
       </div>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
         
         {/* Photo Gallery Grid (Authentic Airbnb Images) */}
         <section className="space-y-3">
