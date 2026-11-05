@@ -29,7 +29,8 @@ import {
   Users,
   Briefcase,
   Bookmark,
-  Trash2
+  Trash2,
+  Sparkles
 } from 'lucide-react';
 import { BookingEvent, BookingStatus, GoogleCalendarEvent, DiaryEntryType } from '@/types/spud';
 import { BookingDetailModal } from '@/components/admin/BookingDetailModal';
@@ -109,6 +110,7 @@ export const AdminDiary: React.FC = () => {
 
   // Breakdown metrics for the current month
   const bookingCount = monthWebsiteEvents.filter(b => !b.entryType || b.entryType === 'booking').length;
+  const airbnbCount = monthWebsiteEvents.filter(b => b.entryType === 'airbnb').length + monthGCalEvents.filter(g => g.category === 'airbnb').length;
   const holidayCount = monthWebsiteEvents.filter(b => b.entryType === 'holiday').length + monthGCalEvents.filter(g => g.category === 'holiday').length;
   const familyCount = monthWebsiteEvents.filter(b => b.entryType === 'family').length + monthGCalEvents.filter(g => g.category === 'family').length;
   const otherCount = monthWebsiteEvents.filter(b => b.entryType === 'other').length + monthGCalEvents.filter(g => g.category === 'other').length;
@@ -169,8 +171,9 @@ export const AdminDiary: React.FC = () => {
         notes: manualNotes || 'Direct diary booking added by Spud'
       });
     } else {
-      // Holiday, Family, or Other
+      // Holiday, Family, Airbnb, or Other
       const title = manualTitle || (
+        entryType === 'airbnb' ? 'Airbnb Bagpipe Masterclass (Carrbridge)' :
         entryType === 'holiday' ? 'Holiday / Time Off' :
         entryType === 'family' ? 'Family Event' : 'Personal Entry'
       );
@@ -180,15 +183,15 @@ export const AdminDiary: React.FC = () => {
         clientName: title,
         clientEmail: 'spudthepiper@gmail.com',
         clientPhone: '07793 491367',
-        eventType: entryType === 'holiday' ? 'Holiday / Vacation' : entryType === 'family' ? 'Family Commitment' : 'Personal Diary Entry',
+        eventType: entryType === 'airbnb' ? 'Airbnb Highland Experience' : entryType === 'holiday' ? 'Holiday / Vacation' : entryType === 'family' ? 'Family Commitment' : 'Personal Diary Entry',
         date: manualDate,
         ...(manualEndDate && manualEndDate >= manualDate ? { endDate: manualEndDate } : {}),
         timeSlot: isAllDay ? 'All Day' : manualTime,
-        venueName: manualVenue || 'Private Location',
-        venueAddress: manualVenue || 'Highlands',
-        venuePostcode: 'PH22 1UJ',
+        venueName: manualVenue || (entryType === 'airbnb' ? 'Carrbridge Hotel' : 'Private Location'),
+        venueAddress: manualVenue || (entryType === 'airbnb' ? 'Carrbridge Hotel, PH23 3AB' : 'Highlands'),
+        venuePostcode: entryType === 'airbnb' ? 'PH23 3AB' : 'PH22 1UJ',
         tartanChoice: 'Fraser Tartan (Traditional Clan Red)',
-        estimatedPrice: 0,
+        estimatedPrice: entryType === 'airbnb' ? 90 : 0,
         depositAmount: 0,
         specialTunes: [],
         notes: manualNotes || `${entryType.toUpperCase()} entry created in Back Office Diary.`
@@ -304,6 +307,19 @@ export const AdminDiary: React.FC = () => {
           </button>
 
           <button
+            onClick={() => setActiveCategoryFilter('airbnb')}
+            className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border ${
+              activeCategoryFilter === 'airbnb'
+                ? 'bg-rose-600 text-white border-rose-400 shadow-md'
+                : 'bg-tartan-dark hover:bg-tartan-navy text-rose-300 border-rose-900/60'
+            }`}
+          >
+            <Sparkles className="w-3 h-3 text-rose-400" />
+            <span>Airbnb Exp</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20">{airbnbCount}</span>
+          </button>
+
+          <button
             onClick={() => setActiveCategoryFilter('holiday')}
             className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border ${
               activeCategoryFilter === 'holiday'
@@ -403,6 +419,19 @@ export const AdminDiary: React.FC = () => {
                   {dayEvents.map((evt) => {
                     const type = evt.entryType || 'booking';
 
+                    if (type === 'airbnb') {
+                      return (
+                        <button
+                          key={evt.id}
+                          onClick={() => setSelectedCustomEntry(evt)}
+                          className="w-full text-left p-1 rounded-lg text-[10px] font-bold border truncate block bg-rose-950/80 text-rose-200 border-rose-500/70 hover:brightness-125 transition shadow-sm"
+                          title={`Airbnb Experience: ${evt.clientName} - ${evt.venueName}`}
+                        >
+                          <span className="mr-1">🏠</span>{evt.clientName}
+                        </button>
+                      );
+                    }
+
                     if (type === 'holiday') {
                       return (
                         <button
@@ -476,7 +505,10 @@ export const AdminDiary: React.FC = () => {
                   {dayGCal.map((gEvt) => {
                     let catIcon = '🗓️';
                     let catColor = 'bg-sky-950/70 text-sky-200 border-sky-700/60';
-                    if (gEvt.category === 'holiday') {
+                    if (gEvt.category === 'airbnb') {
+                      catIcon = '🏠';
+                      catColor = 'bg-rose-950/80 text-rose-200 border-rose-500/70 shadow-sm';
+                    } else if (gEvt.category === 'holiday') {
                       catIcon = '🏖️';
                       catColor = 'bg-amber-950/70 text-amber-200 border-amber-700/60';
                     } else if (gEvt.category === 'family') {
@@ -531,16 +563,18 @@ export const AdminDiary: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-tartan-card border border-tartan-accent/50 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95">
             <div className={`px-6 py-4 border-b flex items-center justify-between ${
+              selectedCustomEntry.entryType === 'airbnb' ? 'bg-rose-950 border-rose-800' :
               selectedCustomEntry.entryType === 'holiday' ? 'bg-amber-950 border-amber-800' :
               selectedCustomEntry.entryType === 'family' ? 'bg-purple-950 border-purple-800' :
               'bg-teal-950 border-teal-800'
             }`}>
               <div className="flex items-center gap-2">
                 <span className="text-lg">
-                  {selectedCustomEntry.entryType === 'holiday' ? '🏖️' : selectedCustomEntry.entryType === 'family' ? '👨‍👩‍👧‍👦' : '📌'}
+                  {selectedCustomEntry.entryType === 'airbnb' ? '🏠' : selectedCustomEntry.entryType === 'holiday' ? '🏖️' : selectedCustomEntry.entryType === 'family' ? '👨‍👩‍👧‍👦' : '📌'}
                 </span>
                 <h3 className="text-base font-bold text-white font-serif">
-                  {selectedCustomEntry.entryType === 'holiday' ? 'Holiday / Time Off' :
+                  {selectedCustomEntry.entryType === 'airbnb' ? 'Airbnb Bagpipe Masterclass' :
+                   selectedCustomEntry.entryType === 'holiday' ? 'Holiday / Time Off' :
                    selectedCustomEntry.entryType === 'family' ? 'Family Event' : 'Personal Entry'}
                 </h3>
               </div>
@@ -734,7 +768,7 @@ export const AdminDiary: React.FC = () => {
                 <label className="block text-tartan-gold font-semibold mb-1.5">
                   Choose Entry Category *
                 </label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   <button
                     type="button"
                     onClick={() => setEntryType('booking')}
@@ -746,6 +780,19 @@ export const AdminDiary: React.FC = () => {
                   >
                     <Briefcase className="w-4 h-4 text-emerald-400" />
                     <span>Booking</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setEntryType('airbnb'); setIsAllDay(false); setManualTime('12:00 - 13:30'); setManualVenue('Carrbridge Hotel'); }}
+                    className={`py-2 px-2 rounded-xl font-bold text-xs flex flex-col items-center gap-1 border transition ${
+                      entryType === 'airbnb'
+                        ? 'bg-rose-950 text-rose-300 border-rose-500 ring-2 ring-rose-500/30'
+                        : 'bg-tartan-dark hover:bg-tartan-navy text-gray-400 border-tartan-border'
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4 text-rose-400" />
+                    <span>Airbnb</span>
                   </button>
 
                   <button

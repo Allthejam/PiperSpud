@@ -20,6 +20,9 @@ export interface ParsedCalendarEvent {
 export function categorizeCalendarEvent(summary: string, description?: string): DiaryEntryType {
   const text = `${summary || ''} ${description || ''}`.toLowerCase();
 
+  if (text.includes('airbnb') || text.includes('experience') || text.includes('workshop') || text.includes('masterclass') || text.includes('carrbridge') || text.includes('chanter lesson')) {
+    return 'airbnb';
+  }
   if (text.includes('holiday') || text.includes('vacation') || text.includes('away') || text.includes('trip') || text.includes('flight') || text.includes('spain') || text.includes('cottage')) {
     return 'holiday';
   }

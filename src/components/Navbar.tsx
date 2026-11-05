@@ -27,7 +27,8 @@ import {
   Camera,
   Video,
   Globe,
-  BookOpen
+  BookOpen,
+  Award
 } from 'lucide-react';
 
 import { SpudHeritageLogo } from '@/components/SpudHeritageLogo';
@@ -108,6 +109,7 @@ export const Navbar: React.FC = () => {
       href: '/services',
       children: [
         { label: 'All Services & Packages', href: '/services', desc: 'Weddings, Castles, Funerals & Corporate', icon: Sparkles },
+        { label: 'Airbnb Bagpipe Masterclass', href: '/experience', desc: 'Learn to Play at Carrbridge Hotel (Official Airbnb Partner)', icon: Award },
         { label: 'Tour & Coach Groups', href: '/tour-groups', desc: 'Scottish Welcome & Experiences for Visitors', icon: Globe },
         { label: 'Highland Attire & Tartans', href: '/attire', desc: 'No. 1 Feather Bonnet, Fraser Tartan & Modern', icon: Shirt },
       ]

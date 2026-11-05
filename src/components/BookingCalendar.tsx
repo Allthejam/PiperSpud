@@ -452,6 +452,7 @@ export const BookingCalendar: React.FC = () => {
                   const isToday = dateString === todayFormatted;
                   const isSelectableFuture = dateString > todayFormatted;
                   const isSelected = selectedDate === dateString;
+                  const airbnbEvt = (googleCalendarEvents || []).find(evt => evt.category === 'airbnb' && isEventOnDate(evt, dateString));
                   const isGCalBooked = isGoogleCalendarBlockEnabled && (googleCalendarEvents || []).some(evt => isEventOnDate(evt, dateString));
                   const isWebsiteBooked = (bookings || []).some(b => {
                     if (!b || !b.date || b.status === 'cancelled') return false;
@@ -490,7 +491,9 @@ export const BookingCalendar: React.FC = () => {
                       }}
                       className={`h-11 rounded-xl text-xs font-semibold flex flex-col items-center justify-center transition-all relative ${btnStyle}`}
                       title={
-                        isBookedOut
+                        airbnbEvt
+                          ? `Airbnb Bagpipe Masterclass (${dayNum} ${monthNames[currentMonth]} ${airbnbEvt.startTime || ''}) - Carrbridge Hotel`
+                          : isBookedOut
                           ? `Date reserved in Spud's Diary (${dayNum} ${monthNames[currentMonth]}) - Unavailable`
                           : isToday
                           ? `Today (${dayNum} ${monthNames[currentMonth]}) - Events must be booked for future dates`
@@ -501,7 +504,9 @@ export const BookingCalendar: React.FC = () => {
                     >
                       <span>{dayNum}</span>
                       {isBookedOut && (
-                        <span className="text-[7px] font-bold text-rose-400 uppercase leading-none tracking-tighter mt-0.5">Booked</span>
+                        <span className="text-[7px] font-bold text-rose-400 uppercase leading-none tracking-tighter mt-0.5">
+                          {airbnbEvt ? 'Airbnb' : 'Booked'}
+                        </span>
                       )}
                       {isToday && !isGCalBooked && (
                         <span className="text-[8px] font-bold text-tartan-gold uppercase leading-none tracking-tighter mt-0.5">Today</span>

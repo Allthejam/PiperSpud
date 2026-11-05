@@ -1287,58 +1287,66 @@ export const initialServices: ServicePackage[] = [
     id: 'srv-experience',
     slug: 'service-2',
     icon: 'Sparkles',
-    title: 'The Ultimate Highland Bagpipe Experience',
-    tagline: 'Hands-on workshop, storytelling & piping masterclass with the cutest piper this side of the Great Wall of China',
-    priceEstimate: 'From £250 - £350 (Group Rate)',
+    title: 'Learn to Play Highland Bagpipes (Airbnb Masterclass)',
+    tagline: 'Official Airbnb Experience (#7375032) at historic Carrbridge Hotel with @spudthepiper',
+    priceEstimate: 'From £90 / Guest (or £280 Private Group)',
     basePrice: 280,
     depositAmount: 60,
     deposit: '£60 Deposit',
     popularBadge: true,
-    badgeText: 'New & Trending',
-    heroImage: 'https://www.spudthepiper.com/og-image.png',
-    description: 'The ultimate interactive Scottish entertainment experience for tourists, tour groups, Airbnb / holiday home rentals, stag & hen parties, and corporate retreats! Spud visits your accommodation or venue to reveal the secrets of the Great Highland Bagpipe, hands out practice chanters so everyone learns the Scottish scale, lets everyone have a shot on the big pipes, performs a private concert, and poses for unforgettable group photos in full ceremonial kilt regalia.',
-    fullDescription: 'Looking for a genuine, unforgettable Scottish experience that goes far beyond simply watching a performance? The Highland Bagpipe Experience is an interactive, laughter-packed masterclass brought straight to your holiday home, castle lodge, Airbnb, hotel, or private venue across Scotland. Spud the Piper—warm, charismatic, and widely known as "the cutest piper this side of the Great Wall of China"—will guide your group through the ancient mechanics of the pipes, teach everyone how to play the Scottish scale on practice chanters, let every brave guest try blowing the full Great Highland Bagpipes, and deliver a stirring private concert followed by souvenir photos in full ceremonial Number 1 kilt regalia.',
+    badgeText: 'Official Airbnb Partner',
+    heroImage: 'https://a0.muscache.com/im/pictures/Mt/MtTemplate-7375032/original/d4cc11a9-61a6-4af2-90b5-ee568d7775dc.jpeg',
+    description: 'The official Highland Bagpipe Experience partnered with Airbnb (#7375032)! Hosted by Callum Fraser (Spud the Piper) at the historic Carrbridge Hotel. Guests learn the history and anatomy of the pipes, practice on traditional chanters, learn breath and bag control, and take unforgettable souvenir photos in full Highland dress on the iconic 1717 Packhorse Bridge.',
+    fullDescription: 'Join award-winning Scottish musician Spud the Piper (Callum Fraser) for an interactive, hands-on masterclass in the art of the Great Highland Bagpipe. As seen on Airbnb Experiences (#7375032), this 90-minute workshop takes place at the historic Carrbridge Hotel in the Scottish Highlands (or can travel directly to your holiday lodge). Spud reveals the secrets of the pipes, guides you through finger placement on traditional practice chanters, lets you try blowing the full pipes, and wraps up with an iconic photo shoot on the 1717 packhorse stone bridge.',
     features: [
-      'Interactive demo: how the bag, blowpipe, drones & reed mechanics work',
-      'Hands-on practice chanter workshop (learn your first Scottish scale)',
-      '"Have a Shot on the Big Pipes" (everyone gets to hold and blow the Highland pipes)',
-      'Private close-up mini concert & personal Scottish tune requests',
-      'Souvenir group photo shoot with Spud in Full Highland No. 1 Dress',
-      'Hilarious storytelling & legendary tales from Spud\'s global travels',
-      'Spud travels directly to your rented holiday home, lodge, Airbnb, or venue'
+      'Official Airbnb Experience Contract Partner (#7375032)',
+      'Intimate 90-minute hands-on masterclass (max 10 guests)',
+      'Deconstruct the Great Highland Bagpipe & understand the mechanics',
+      'Learn finger placement & scales on traditional practice chanters',
+      'Refine bag control, arm pressure & sustaining notes on full pipes',
+      'Souvenir group photo shoot at the historic 1717 Carrbridge Bridge',
+      'All instruments, sanitized chanters & gear provided free',
+      'Hosted at Carrbridge Hotel (PH23 3AB) or available mobile for private groups'
     ],
     itinerary: [
       {
         stepOrTime: 'Step 1 • 15 Mins',
-        title: 'Ceremonial Welcome & Anatomy of the Pipes',
-        description: 'Spud arrives in full Highland regalia, strikes up a welcoming march, and gives an engaging walkthrough of the bagpipe components: the pipe bag, blowpipe, drones, chanter, and delicate cane reeds.'
+        title: 'Discover the Life of a Bagpiper',
+        description: "Spud introduces professional piping, tracing his career since 1999, stories from high-profile castle weddings (including Madonna's wedding at Skibo Castle), and the bagpipes in Scottish culture."
       },
       {
-        stepOrTime: 'Step 2 • 25 Mins',
-        title: 'Hands-On Practice Chanter Workshop',
-        description: 'Spud distributes individual practice chanters to every guest. He teaches finger placement, scale progressions, and simple Scottish ornaments, guiding everyone to play their first Scottish notes together.'
+        stepOrTime: 'Step 2 • 20 Mins',
+        title: 'Deconstruct the Instrument',
+        description: 'Watch the Great Highland Bagpipe get disassembled piece by piece for an engaging primer on the bag, blowpipe, drones, chanter, and delicate cane reeds.'
       },
       {
-        stepOrTime: 'Step 3 • 25 Mins',
-        title: '"Have a Shot on the Big Pipes!"',
-        description: 'Each guest gets to step into the piper\'s shoes! Spud helps you strap in, find the balance, strike the bag, and squeeze the air through the drones. Expect huge laughs and iconic videos.'
+        stepOrTime: 'Step 3 • 15 Mins',
+        title: 'Take in a Live Demonstration',
+        description: 'See Spud play scales on both acoustic and electronic bagpipe models, demonstrating lightning grace notes and the nuance across all nine Scottish notes.'
       },
       {
-        stepOrTime: 'Step 4 • 15 Mins',
-        title: 'Private Mini-Concert & Scottish Storytelling',
-        description: 'Spud performs a bespoke selection of Scotland\'s greatest anthems up close, taking custom tune requests while sharing hilarious stories from his world tours and royal performances.'
+        stepOrTime: 'Step 4 • 20 Mins',
+        title: 'Practice Finger Placement on Chanters',
+        description: 'Play the basic Scottish scale yourself on an individual practice chanter woodwind designed specifically for learning and rehearsing.'
       },
       {
-        stepOrTime: 'Step 5 • 10 Mins',
-        title: 'Souvenir Group Photo Session & Farewell',
-        description: 'Pose for photos with Spud in full military feather bonnet or glengarry, holding the pipes or chanters. A perfect keepsake of your Scottish journey.'
+        stepOrTime: 'Step 5 • 15 Mins',
+        title: 'Refine Your Bag Control',
+        description: 'Pick up an inflated bagpipe to practice arm pressure, blowing technique, and how to coordinate breathing to sustain notes.'
+      },
+      {
+        stepOrTime: 'Step 6 • 15 Mins',
+        title: 'Snap Pictures with the Bagpipes at the 1717 Bridge',
+        description: 'Memorialize your masterclass by posing with the pipes on the famous 1717 Carrbridge Packhorse Bridge with the rushing River Dulnain and Highland scenery behind you.'
       }
     ],
     galleryImages: [
-      'https://www.spudthepiper.com/og-image.png',
-      'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80',
-      'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80',
-      'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80'
+      'https://a0.muscache.com/im/pictures/Mt/MtTemplate-7375032/original/d4cc11a9-61a6-4af2-90b5-ee568d7775dc.jpeg',
+      'https://a0.muscache.com/im/pictures/Mt/MtTemplate-7375032/original/43e4e33f-51ba-48b1-b0f5-aa5e9bd8a014.jpeg',
+      'https://a0.muscache.com/im/pictures/Mt/MtTemplate-7375032/original/a4018f00-cee3-41ab-b7e6-bdd2f0bc8d6c.jpeg',
+      'https://a0.muscache.com/im/pictures/Mt/MtTemplate-7375032/original/7f958b11-c2dd-454a-aa79-0c0714b7b39f.jpeg',
+      'https://a0.muscache.com/im/pictures/Mt/MtTemplate-7375032/original/fcf44259-b36b-4589-99af-670e604f08ce.png',
+      'https://a0.muscache.com/im/pictures/Mt/MtTemplate-7375032/original/fc385be9-5647-4333-90c3-0bb86f51fa43.jpeg'
     ],
     recommendedTunes: [
       'Scotland the Brave',

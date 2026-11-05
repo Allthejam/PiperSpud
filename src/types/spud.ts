@@ -31,7 +31,7 @@ export interface BookingMessage {
   status?: 'queued' | 'sent' | 'delivered' | 'read';
 }
 
-export type DiaryEntryType = 'booking' | 'family' | 'holiday' | 'other';
+export type DiaryEntryType = 'booking' | 'family' | 'holiday' | 'airbnb' | 'other';
 
 export interface GoogleCalendarEvent {
   id: string;
