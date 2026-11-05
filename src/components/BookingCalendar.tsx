@@ -447,7 +447,7 @@ export const BookingCalendar: React.FC = () => {
               </div>
 
               {/* Calendar Days Matrix */}
-              <div className="grid grid-cols-7 gap-1 text-center">
+              <div suppressHydrationWarning className="grid grid-cols-7 gap-1 text-center">
                 {/* Empty padding days */}
                 {[...Array(firstDayIndex)].map((_, i) => (
                   <div key={`empty-${i}`} className="h-11"></div>
@@ -493,6 +493,7 @@ export const BookingCalendar: React.FC = () => {
                     <button
                       key={dayNum}
                       type="button"
+                      suppressHydrationWarning
                       disabled={!isSelectable}
                       onClick={() => {
                         if (isSelectable) {
@@ -747,13 +748,12 @@ export const BookingCalendar: React.FC = () => {
                     <select
                       value={eventType}
                       onChange={(e) => setEventType(e.target.value)}
+                      suppressHydrationWarning
                       className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-3 text-white text-sm focus:outline-none focus:border-tartan-accent font-medium"
                     >
                       {services && services.length > 0 ? (
                         services.map((srv) => (
-                          <option key={srv.id} value={srv.title} className="bg-tartan-navy text-white">
-                            {srv.title} {pricingConfig?.hidePrices ? '(POA)' : `(${srv.priceEstimate || `£${srv.basePrice}`})`}
-                          </option>
+                          <option key={srv.id} value={srv.title} className="bg-tartan-navy text-white">{srv.title} {pricingConfig?.hidePrices ? '(POA)' : `(${srv.priceEstimate || `£${srv.basePrice}`})`}</option>
                         ))
                       ) : (
                         <option value="Scottish Castle & Highland Weddings">Scottish Castle & Highland Weddings</option>
@@ -773,26 +773,15 @@ export const BookingCalendar: React.FC = () => {
                     <select
                       value={selectedTimeSlot}
                       onChange={(e) => setSelectedTimeSlot(e.target.value)}
+                      suppressHydrationWarning
                       className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-3 text-white text-sm focus:outline-none focus:border-tartan-accent font-medium"
                     >
-                      <option value="12:00 - 15:00 (Afternoon Ceremony)">
-                        12:00 - 15:00 (Afternoon Ceremony) {selectedDateSchedule?.isPartiallyBooked ? (selectedDateSchedule.bookedSlots.some(b => checkTimeOverlap(timeToMinutes('12:00'), timeToMinutes('15:00'), b.startMins, b.endMins)) ? '⚠️ (Overlaps)' : '✅ (Available)') : ''}
-                      </option>
-                      <option value="13:30 - 17:00 (Ceremony & Drinks)">
-                        13:30 - 17:00 (Ceremony & Drinks) {selectedDateSchedule?.isPartiallyBooked ? (selectedDateSchedule.bookedSlots.some(b => checkTimeOverlap(timeToMinutes('13:30'), timeToMinutes('17:00'), b.startMins, b.endMins)) ? '⚠️ (Overlaps)' : '✅ (Available)') : ''}
-                      </option>
-                      <option value="17:30 - 21:30 (Evening Reception / Banquet)">
-                        17:30 - 21:30 (Evening Reception / Banquet) {selectedDateSchedule?.isPartiallyBooked ? (selectedDateSchedule.bookedSlots.some(b => checkTimeOverlap(timeToMinutes('17:30'), timeToMinutes('21:30'), b.startMins, b.endMins)) ? '⚠️ (Overlaps)' : '✅ (Available)') : ''}
-                      </option>
-                      <option value="Full Day Highland Package (12:00 - 22:00)">
-                        Full Day Highland Package (12:00 - 22:00) {selectedDateSchedule?.isPartiallyBooked ? '⚠️ (Overlaps with existing gig)' : ''}
-                      </option>
-                      <option value="Morning Memorial / Funeral (10:00 - 12:30)">
-                        Morning Memorial / Funeral (10:00 - 12:30) {selectedDateSchedule?.isPartiallyBooked ? (selectedDateSchedule.bookedSlots.some(b => checkTimeOverlap(timeToMinutes('10:00'), timeToMinutes('12:30'), b.startMins, b.endMins)) ? '⚠️ (Overlaps)' : '✅ (Available)') : ''}
-                      </option>
-                      <option value="Custom Time Window">
-                        Custom Time Window (Specify below)...
-                      </option>
+                      <option value="12:00 - 15:00 (Afternoon Ceremony)">{`12:00 - 15:00 (Afternoon Ceremony)${selectedDateSchedule?.isPartiallyBooked ? (selectedDateSchedule.bookedSlots.some(b => checkTimeOverlap(timeToMinutes('12:00'), timeToMinutes('15:00'), b.startMins, b.endMins)) ? ' ⚠️ (Overlaps)' : ' ✅ (Available)') : ''}`}</option>
+                      <option value="13:30 - 17:00 (Ceremony & Drinks)">{`13:30 - 17:00 (Ceremony & Drinks)${selectedDateSchedule?.isPartiallyBooked ? (selectedDateSchedule.bookedSlots.some(b => checkTimeOverlap(timeToMinutes('13:30'), timeToMinutes('17:00'), b.startMins, b.endMins)) ? ' ⚠️ (Overlaps)' : ' ✅ (Available)') : ''}`}</option>
+                      <option value="17:30 - 21:30 (Evening Reception / Banquet)">{`17:30 - 21:30 (Evening Reception / Banquet)${selectedDateSchedule?.isPartiallyBooked ? (selectedDateSchedule.bookedSlots.some(b => checkTimeOverlap(timeToMinutes('17:30'), timeToMinutes('21:30'), b.startMins, b.endMins)) ? ' ⚠️ (Overlaps)' : ' ✅ (Available)') : ''}`}</option>
+                      <option value="Full Day Highland Package (12:00 - 22:00)">{`Full Day Highland Package (12:00 - 22:00)${selectedDateSchedule?.isPartiallyBooked ? ' ⚠️ (Overlaps with existing gig)' : ''}`}</option>
+                      <option value="Morning Memorial / Funeral (10:00 - 12:30)">{`Morning Memorial / Funeral (10:00 - 12:30)${selectedDateSchedule?.isPartiallyBooked ? (selectedDateSchedule.bookedSlots.some(b => checkTimeOverlap(timeToMinutes('10:00'), timeToMinutes('12:30'), b.startMins, b.endMins)) ? ' ⚠️ (Overlaps)' : ' ✅ (Available)') : ''}`}</option>
+                      <option value="Custom Time Window">Custom Time Window (Specify below)...</option>
                     </select>
 
                     {selectedTimeSlot === 'Custom Time Window' && (
@@ -1012,15 +1001,14 @@ export const BookingCalendar: React.FC = () => {
                         setSelectedAttireId(matched.id);
                       }
                     }}
+                    suppressHydrationWarning
                     className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-3 text-white text-sm focus:outline-none focus:border-tartan-accent font-medium"
                   >
                     {currentAttiresList.map((attire) => {
                       const effectiveName = attire.name || attire.title;
                       const effectiveTitle = attire.title;
                       return (
-                        <option key={attire.id} value={effectiveName} className="bg-tartan-navy text-white">
-                          {effectiveName} {effectiveTitle && effectiveTitle !== effectiveName ? `(${effectiveTitle})` : ''}
-                        </option>
+                        <option key={attire.id} value={effectiveName} className="bg-tartan-navy text-white">{effectiveName}{effectiveTitle && effectiveTitle !== effectiveName ? ` (${effectiveTitle})` : ''}</option>
                       );
                     })}
                   </select>

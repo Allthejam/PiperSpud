@@ -108,7 +108,7 @@ export function computeDaySchedule(
     }
     const isAbnb = g.category === 'airbnb' || (g.summary || '').toLowerCase().includes('airbnb');
     bookedSlots.push({
-      id: g.id || `gcal-${Math.random()}`,
+      id: g.id || `gcal-${g.startDate || dateString}-${sTime}`,
       summary: 'Unavailable',
       startTime: sTime,
       endTime: eTime,
@@ -126,7 +126,7 @@ export function computeDaySchedule(
     const eTime = parsed ? minutesToTime(parsed.end) : '16:00';
     const isAbnb = b.entryType === 'airbnb';
     bookedSlots.push({
-      id: b.id || `web-${Math.random()}`,
+      id: b.id || `web-${b.date || dateString}-${sTime}`,
       summary: 'Unavailable',
       startTime: sTime,
       endTime: eTime,
