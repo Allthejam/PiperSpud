@@ -109,13 +109,13 @@ export function computeDaySchedule(
     const isAbnb = g.category === 'airbnb' || (g.summary || '').toLowerCase().includes('airbnb');
     bookedSlots.push({
       id: g.id || `gcal-${Math.random()}`,
-      summary: isAbnb ? 'Airbnb Bagpipe Masterclass (Carrbridge)' : 'Reserved Session',
+      summary: 'Unavailable',
       startTime: sTime,
       endTime: eTime,
       startMins: timeToMinutes(sTime),
       endMins: timeToMinutes(eTime),
       timeLabel: `${sTime} - ${eTime}`,
-      categoryLabel: isAbnb ? 'Airbnb Masterclass' : 'Private Diary Booking',
+      categoryLabel: 'Reserved',
       isAirbnb: isAbnb
     });
   }
@@ -127,13 +127,13 @@ export function computeDaySchedule(
     const isAbnb = b.entryType === 'airbnb';
     bookedSlots.push({
       id: b.id || `web-${Math.random()}`,
-      summary: isAbnb ? 'Airbnb Bagpipe Masterclass' : (b.eventType || 'Confirmed Booking'),
+      summary: 'Unavailable',
       startTime: sTime,
       endTime: eTime,
       startMins: timeToMinutes(sTime),
       endMins: timeToMinutes(eTime),
       timeLabel: `${sTime} - ${eTime}`,
-      categoryLabel: isAbnb ? 'Airbnb Masterclass' : 'Confirmed Gig',
+      categoryLabel: 'Reserved',
       isAirbnb: isAbnb
     });
   }

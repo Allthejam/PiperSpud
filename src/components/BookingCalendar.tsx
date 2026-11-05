@@ -524,7 +524,7 @@ export const BookingCalendar: React.FC = () => {
                       {isPartiallyBooked && !isSelected && (
                         <span className="text-[7px] font-bold text-amber-400 uppercase leading-none tracking-tighter mt-0.5 flex items-center gap-0.5">
                           <span className="w-1 h-1 rounded-full bg-amber-400"></span>
-                          <span>{airbnbSlot ? 'Airbnb' : 'Partial'}</span>
+                          <span>Partial</span>
                         </span>
                       )}
                       {isToday && !isAllDayBlocked && !isPartiallyBooked && (
@@ -628,11 +628,11 @@ export const BookingCalendar: React.FC = () => {
                       >
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                          <span className="font-extrabold">{slot.timeLabel}</span>
-                          <span className="text-gray-400">• {slot.summary}</span>
+                          <span className="font-extrabold text-white font-mono">{slot.timeLabel}</span>
+                          <span className="text-gray-400">• Unavailable</span>
                         </div>
                         <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">
-                          Booked
+                          Reserved
                         </span>
                       </div>
                     ))}
@@ -817,7 +817,7 @@ export const BookingCalendar: React.FC = () => {
                         <div>
                           <span className="font-bold">Schedule Notice: </span>
                           <span>
-                            Spud has an existing gig at {slotConflict.timeLabel} on this date. Your enquiry will be submitted for Spud&apos;s personal review to see if timings/travel allow both events, or you can choose an available time window above!
+                            Spud is unavailable during {slotConflict.timeLabel} on this date. Your enquiry will be submitted for Spud&apos;s personal review to see if timings/travel allow both events, or you can choose an available time window above!
                           </span>
                         </div>
                       </div>
