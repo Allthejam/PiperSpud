@@ -35,6 +35,7 @@ import { EventType, HighlandDressOption } from '@/types/spud';
 import { calculateTravelCosts } from '@/lib/travelCalculator';
 import { initialTravelConfig } from '@/lib/initialData';
 import { isEventOnDate } from '@/lib/icalParser';
+import { computeDaySchedule, parseSlotRange, checkTimeOverlap, timeToMinutes } from '@/lib/scheduleHelper';
 
 export const BookingCalendar: React.FC = () => {
   const { 
@@ -73,6 +74,7 @@ export const BookingCalendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [dateError, setDateError] = useState<string>('');
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('13:30 - 16:30');
+  const [customTimeWindow, setCustomTimeWindow] = useState<string>('');
   
   // Form fields - default to first active service package title
   const [clientName, setClientName] = useState('');
@@ -176,6 +178,16 @@ export const BookingCalendar: React.FC = () => {
   const travelExpense = travelResult.isOverseasOrMaxDistance ? 0 : travelResult.totalTravelExpense;
   const estimatedPrice = basePackagePrice + travelExpense;
 
+  // Rich Daily Schedule calculation for currently selected date
+  const selectedDateSchedule = selectedDate
+    ? computeDaySchedule(selectedDate, googleCalendarEvents, bookings, isGoogleCalendarBlockEnabled)
+    : null;
+
+  const parsedSelectedSlot = parseSlotRange(selectedTimeSlot === 'Custom Time Window' ? customTimeWindow : selectedTimeSlot);
+  const slotConflict = parsedSelectedSlot && selectedDateSchedule?.bookedSlots.find(b => 
+    checkTimeOverlap(parsedSelectedSlot.start, parsedSelectedSlot.end, b.startMins, b.endMins)
+  );
+
   // Calendar day generator
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay(); // 0 is Sun
@@ -253,7 +265,7 @@ export const BookingCalendar: React.FC = () => {
         preferredContactMethod,
         eventType,
         date: selectedDate,
-        timeSlot: selectedTimeSlot,
+        timeSlot: selectedTimeSlot === 'Custom Time Window' && customTimeWindow ? customTimeWindow : selectedTimeSlot,
         venueName,
         venueAddress: venueAddress || venueName,
         venuePostcode: venuePostcode || 'EH1 1AA',
@@ -452,22 +464,21 @@ export const BookingCalendar: React.FC = () => {
                   const isToday = dateString === todayFormatted;
                   const isSelectableFuture = dateString > todayFormatted;
                   const isSelected = selectedDate === dateString;
-                  const airbnbEvt = (googleCalendarEvents || []).find(evt => evt.category === 'airbnb' && isEventOnDate(evt, dateString));
-                  const isGCalBooked = isGoogleCalendarBlockEnabled && (googleCalendarEvents || []).some(evt => isEventOnDate(evt, dateString));
-                  const isWebsiteBooked = (bookings || []).some(b => {
-                    if (!b || !b.date || b.status === 'cancelled') return false;
-                    const endDate = (b as any).endDate || b.date;
-                    return dateString >= b.date && dateString <= endDate;
-                  });
 
-                  const isBookedOut = isGCalBooked || isWebsiteBooked;
-                  const isAvailable = isSelectableFuture && !isBookedOut;
+                  // Compute rich day availability schedule
+                  const schedule = computeDaySchedule(dateString, googleCalendarEvents, bookings, isGoogleCalendarBlockEnabled);
+                  const isAllDayBlocked = schedule.isAllDayBlocked;
+                  const isPartiallyBooked = schedule.isPartiallyBooked;
+                  const isSelectable = isSelectableFuture && !isAllDayBlocked;
+                  const airbnbSlot = schedule.bookedSlots.find(s => s.isAirbnb);
 
                   let btnStyle = '';
                   if (isSelected) {
                     btnStyle = 'bg-gold-gradient text-tartan-dark font-extrabold ring-2 ring-yellow-400 shadow-xl scale-105 z-10';
-                  } else if (isBookedOut) {
+                  } else if (isAllDayBlocked) {
                     btnStyle = 'bg-rose-950/40 text-rose-300 border border-rose-800/60 cursor-not-allowed opacity-50 line-through';
+                  } else if (isPartiallyBooked) {
+                    btnStyle = 'bg-amber-950/40 text-amber-200 border-2 border-amber-500/80 hover:bg-amber-900/60 hover:border-amber-400 cursor-pointer shadow-md';
                   } else if (isToday) {
                     btnStyle = 'bg-tartan-dark/80 text-gray-400 border border-tartan-gold/50 cursor-not-allowed opacity-60';
                   } else if (isPast) {
@@ -476,39 +487,47 @@ export const BookingCalendar: React.FC = () => {
                     btnStyle = 'bg-tartan-navy/70 text-gray-200 hover:bg-tartan-accent/25 hover:text-white hover:border-tartan-gold/60 border border-tartan-border/50 cursor-pointer active:scale-95';
                   }
 
+                  const bookedTimesTooltip = schedule.bookedSlots.map(s => s.timeLabel).join(', ');
+
                   return (
                     <button
                       key={dayNum}
                       type="button"
-                      disabled={!isAvailable}
+                      disabled={!isSelectable}
                       onClick={() => {
-                        if (isAvailable) {
+                        if (isSelectable) {
                           setSelectedDate(dateString);
                           setDateError('');
-                        } else if (isBookedOut) {
-                          setDateError(`The date ${dayNum} ${monthNames[currentMonth]} ${currentYear} is already reserved in Spud's diary. Please choose an alternate date.`);
+                        } else if (isAllDayBlocked) {
+                          setDateError(`The date ${dayNum} ${monthNames[currentMonth]} ${currentYear} is fully reserved all day in Spud's diary. Please choose an alternate date or a date marked Partial.`);
                         }
                       }}
                       className={`h-11 rounded-xl text-xs font-semibold flex flex-col items-center justify-center transition-all relative ${btnStyle}`}
                       title={
-                        airbnbEvt
-                          ? `Airbnb Bagpipe Masterclass (${dayNum} ${monthNames[currentMonth]} ${airbnbEvt.startTime || ''}) - Carrbridge Hotel`
-                          : isBookedOut
-                          ? `Date reserved in Spud's Diary (${dayNum} ${monthNames[currentMonth]}) - Unavailable`
+                        isPartiallyBooked
+                          ? `Partial Availability (${dayNum} ${monthNames[currentMonth]}): Booked at ${bookedTimesTooltip}. Other times available!`
+                          : isAllDayBlocked
+                          ? `Fully reserved all day in Spud's Diary (${dayNum} ${monthNames[currentMonth]}) - Unavailable`
                           : isToday
                           ? `Today (${dayNum} ${monthNames[currentMonth]}) - Events must be booked for future dates`
                           : isPast
                           ? `Past date (${dayNum} ${monthNames[currentMonth]}) - Unavailable`
-                          : `Select ${dayNum} ${monthNames[currentMonth]} ${currentYear}`
+                          : `Select ${dayNum} ${monthNames[currentMonth]} ${currentYear} (Available all day)`
                       }
                     >
                       <span>{dayNum}</span>
-                      {isBookedOut && (
+                      {isAllDayBlocked && (
                         <span className="text-[7px] font-bold text-rose-400 uppercase leading-none tracking-tighter mt-0.5">
-                          {airbnbEvt ? 'Airbnb' : 'Booked'}
+                          Booked
                         </span>
                       )}
-                      {isToday && !isGCalBooked && (
+                      {isPartiallyBooked && !isSelected && (
+                        <span className="text-[7px] font-bold text-amber-400 uppercase leading-none tracking-tighter mt-0.5 flex items-center gap-0.5">
+                          <span className="w-1 h-1 rounded-full bg-amber-400"></span>
+                          <span>{airbnbSlot ? 'Airbnb' : 'Partial'}</span>
+                        </span>
+                      )}
+                      {isToday && !isAllDayBlocked && !isPartiallyBooked && (
                         <span className="text-[8px] font-bold text-tartan-gold uppercase leading-none tracking-tighter mt-0.5">Today</span>
                       )}
                       {isSelected && (
@@ -521,19 +540,27 @@ export const BookingCalendar: React.FC = () => {
 
               {/* Privacy & Selection Legend */}
               <div className="pt-4 border-t border-tartan-border/60 flex items-center justify-between text-[11px] text-gray-300 flex-wrap gap-2">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-full bg-tartan-gold"></span>
                     <span className="font-semibold text-white">Selected</span>
                   </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    <span className="text-amber-300 font-semibold">Partial (Times Open)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                    <span className="text-rose-300">Booked All Day</span>
+                  </div>
                   <div className="flex items-center gap-1.5 text-gray-500">
                     <span className="w-2.5 h-2.5 rounded-full bg-slate-600 opacity-40"></span>
-                    <span>Past (Closed)</span>
+                    <span>Past</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 text-tartan-gold font-medium">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Private Diary</span>
+                  <span>Live Diary Sync</span>
                 </div>
               </div>
 
@@ -574,6 +601,62 @@ export const BookingCalendar: React.FC = () => {
                   </div>
                 )}
               </div>
+
+              {/* Daily Availability Breakdown (When Selected Date has partial or timed bookings) */}
+              {selectedDate && selectedDateSchedule?.isPartiallyBooked && (
+                <div className="p-4 rounded-2xl bg-amber-950/40 border-2 border-amber-500/70 space-y-3 animate-in fade-in duration-200 shadow-xl">
+                  <div className="flex items-center justify-between text-xs font-bold text-amber-300">
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-amber-400" />
+                      <span>Spud&apos;s Schedule on This Date:</span>
+                    </span>
+                    <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-amber-900/80 text-amber-200 border border-amber-500/50">
+                      Partial Availability
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-gray-300 leading-relaxed">
+                    Spud has booked session(s) at the times below. You can still book any remaining slot on this date!
+                  </p>
+
+                  {/* Booked Slots */}
+                  <div className="space-y-1.5">
+                    {selectedDateSchedule.bookedSlots.map((slot) => (
+                      <div
+                        key={slot.id}
+                        className="flex items-center justify-between text-xs px-3 py-2 rounded-xl bg-slate-900/80 border border-rose-800/60 text-rose-300"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                          <span className="font-extrabold">{slot.timeLabel}</span>
+                          <span className="text-gray-400">• {slot.summary}</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">
+                          Booked
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Available Open Windows */}
+                  <div className="p-3 rounded-xl bg-emerald-950/50 border border-emerald-600/60 space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-300">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Available Windows for Your Event:</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {selectedDateSchedule.freeWindows.map((win, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-900/60 text-emerald-200 border border-emerald-500/50 text-xs font-bold font-mono"
+                        >
+                          {win}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Right: Booking Form & Instant Estimator */}
@@ -679,20 +762,66 @@ export const BookingCalendar: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-tartan-gold mb-1.5">
-                      Preferred Time Slot *
+                    <label className="block text-xs font-semibold text-tartan-gold mb-1.5 flex items-center justify-between">
+                      <span>Preferred Time Slot *</span>
+                      {selectedDateSchedule?.isPartiallyBooked && (
+                        <span className="text-[10px] text-amber-300 font-normal">
+                          Fits Spud&apos;s free windows
+                        </span>
+                      )}
                     </label>
                     <select
                       value={selectedTimeSlot}
                       onChange={(e) => setSelectedTimeSlot(e.target.value)}
-                      className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-3 text-white text-sm focus:outline-none focus:border-tartan-accent"
+                      className="w-full bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-3 text-white text-sm focus:outline-none focus:border-tartan-accent font-medium"
                     >
-                      <option value="12:00 - 15:00 (Afternoon Ceremony)">12:00 - 15:00 (Afternoon Ceremony)</option>
-                      <option value="13:30 - 17:00 (Ceremony & Drinks)">13:30 - 17:00 (Ceremony & Drinks)</option>
-                      <option value="17:30 - 21:30 (Evening Reception / Banquet)">17:30 - 21:30 (Evening Reception / Banquet)</option>
-                      <option value="Full Day Highland Package (12:00 - 22:00)">Full Day Highland Package (12:00 - 22:00)</option>
-                      <option value="Morning Memorial / Funeral (10:00 - 12:30)">Morning Memorial / Funeral (10:00 - 12:30)</option>
+                      <option value="12:00 - 15:00 (Afternoon Ceremony)">
+                        12:00 - 15:00 (Afternoon Ceremony) {selectedDateSchedule?.isPartiallyBooked ? (selectedDateSchedule.bookedSlots.some(b => checkTimeOverlap(timeToMinutes('12:00'), timeToMinutes('15:00'), b.startMins, b.endMins)) ? '⚠️ (Overlaps)' : '✅ (Available)') : ''}
+                      </option>
+                      <option value="13:30 - 17:00 (Ceremony & Drinks)">
+                        13:30 - 17:00 (Ceremony & Drinks) {selectedDateSchedule?.isPartiallyBooked ? (selectedDateSchedule.bookedSlots.some(b => checkTimeOverlap(timeToMinutes('13:30'), timeToMinutes('17:00'), b.startMins, b.endMins)) ? '⚠️ (Overlaps)' : '✅ (Available)') : ''}
+                      </option>
+                      <option value="17:30 - 21:30 (Evening Reception / Banquet)">
+                        17:30 - 21:30 (Evening Reception / Banquet) {selectedDateSchedule?.isPartiallyBooked ? (selectedDateSchedule.bookedSlots.some(b => checkTimeOverlap(timeToMinutes('17:30'), timeToMinutes('21:30'), b.startMins, b.endMins)) ? '⚠️ (Overlaps)' : '✅ (Available)') : ''}
+                      </option>
+                      <option value="Full Day Highland Package (12:00 - 22:00)">
+                        Full Day Highland Package (12:00 - 22:00) {selectedDateSchedule?.isPartiallyBooked ? '⚠️ (Overlaps with existing gig)' : ''}
+                      </option>
+                      <option value="Morning Memorial / Funeral (10:00 - 12:30)">
+                        Morning Memorial / Funeral (10:00 - 12:30) {selectedDateSchedule?.isPartiallyBooked ? (selectedDateSchedule.bookedSlots.some(b => checkTimeOverlap(timeToMinutes('10:00'), timeToMinutes('12:30'), b.startMins, b.endMins)) ? '⚠️ (Overlaps)' : '✅ (Available)') : ''}
+                      </option>
+                      <option value="Custom Time Window">
+                        Custom Time Window (Specify below)...
+                      </option>
                     </select>
+
+                    {selectedTimeSlot === 'Custom Time Window' && (
+                      <div className="mt-2.5 space-y-1 animate-in fade-in duration-150">
+                        <label className="block text-[11px] font-bold text-gray-300">
+                          Specify Your Desired Event Hours:
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={customTimeWindow}
+                          onChange={(e) => setCustomTimeWindow(e.target.value)}
+                          placeholder="e.g. 11:30 - 14:00 or 15:30 - 17:00"
+                          className="w-full bg-tartan-dark border border-tartan-accent/60 rounded-xl px-3 py-2 text-white text-xs placeholder-gray-500 focus:outline-none focus:border-tartan-gold font-mono"
+                        />
+                      </div>
+                    )}
+
+                    {slotConflict && (
+                      <div className="mt-2.5 p-2.5 rounded-xl bg-amber-950/60 border border-amber-500/70 text-[11px] text-amber-200 flex items-start gap-2 animate-in fade-in">
+                        <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold">Schedule Notice: </span>
+                          <span>
+                            Spud has an existing gig at {slotConflict.timeLabel} on this date. Your enquiry will be submitted for Spud&apos;s personal review to see if timings/travel allow both events, or you can choose an available time window above!
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

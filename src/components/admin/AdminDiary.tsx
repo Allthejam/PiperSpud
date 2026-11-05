@@ -35,6 +35,7 @@ import {
 import { BookingEvent, BookingStatus, GoogleCalendarEvent, DiaryEntryType } from '@/types/spud';
 import { BookingDetailModal } from '@/components/admin/BookingDetailModal';
 import { isEventOnDate } from '@/lib/icalParser';
+import { computeDaySchedule } from '@/lib/scheduleHelper';
 
 export const AdminDiary: React.FC = () => {
   const { 
@@ -394,6 +395,7 @@ export const AdminDiary: React.FC = () => {
             });
 
             const hasAnyEvents = dayEvents.length > 0 || dayGCal.length > 0;
+            const daySchedule = computeDaySchedule(dateStr, googleCalendarEvents, bookings, true);
 
             return (
               <div
@@ -401,7 +403,19 @@ export const AdminDiary: React.FC = () => {
                 className="min-h-[105px] bg-tartan-dark/70 rounded-2xl p-2 border border-tartan-border/50 flex flex-col justify-between hover:border-tartan-accent/40 transition-colors group"
               >
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-gray-300">{dayNum}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-gray-300">{dayNum}</span>
+                    {daySchedule.isPartiallyBooked && (
+                      <span className="text-[8px] font-bold px-1 py-0.2 rounded bg-amber-950/80 text-amber-300 border border-amber-600/50">
+                        Partial
+                      </span>
+                    )}
+                    {daySchedule.isAllDayBlocked && (
+                      <span className="text-[8px] font-bold px-1 py-0.2 rounded bg-rose-950/80 text-rose-300 border border-rose-600/50">
+                        All Day
+                      </span>
+                    )}
+                  </div>
                   {hasAnyEvents && (
                     <div className="flex items-center gap-1">
                       {dayEvents.some(b => b.entryType === 'holiday') && <span className="w-2 h-2 rounded-full bg-amber-400"></span>}
