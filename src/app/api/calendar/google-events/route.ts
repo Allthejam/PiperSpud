@@ -107,7 +107,7 @@ export async function GET(request: Request) {
       headers: {
         'User-Agent': 'SpudThePiper-App/1.0 (+https://www.spudthepiper.com)'
       },
-      next: { revalidate: 180 }
+      cache: 'no-store'
     });
 
     if (!response.ok) {
@@ -139,7 +139,7 @@ export async function GET(request: Request) {
     const airbnbIcalUrl = (serverKeys as any).airbnbIcalUrl || process.env.AIRBNB_ICAL_URL;
     if (airbnbIcalUrl && airbnbIcalUrl.startsWith('http')) {
       try {
-        const abnbRes = await fetch(airbnbIcalUrl, { next: { revalidate: 300 } });
+        const abnbRes = await fetch(airbnbIcalUrl, { cache: 'no-store' });
         if (abnbRes.ok) {
           const abnbText = await abnbRes.text();
           const abnbEvents = parseGoogleICalFeed(abnbText).map(e => ({ ...e, category: 'airbnb' as const }));
