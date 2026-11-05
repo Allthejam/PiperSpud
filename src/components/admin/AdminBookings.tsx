@@ -35,6 +35,7 @@ import {
 import { BookingEvent, BookingStatus } from '@/types/spud';
 import { BookingDetailModal } from '@/components/admin/BookingDetailModal';
 import { ManualDepositModal } from '@/components/admin/ManualDepositModal';
+import { OutlookConfirmModal } from '@/components/admin/OutlookConfirmModal';
 
 export const AdminBookings: React.FC = () => {
   const { 
@@ -56,6 +57,8 @@ export const AdminBookings: React.FC = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedBookingForManualDeposit, setSelectedBookingForManualDeposit] = useState<BookingEvent | null>(null);
   const [isManualDepositOpen, setIsManualDepositOpen] = useState(false);
+  const [selectedBookingForOutlook, setSelectedBookingForOutlook] = useState<BookingEvent | null>(null);
+  const [isOutlookModalOpen, setIsOutlookModalOpen] = useState(false);
   const [copiedBookingId, setCopiedBookingId] = useState<string | null>(null);
   const [actionFeedback, setActionFeedback] = useState<string>('');
 
@@ -587,6 +590,19 @@ export const AdminBookings: React.FC = () => {
                           <span>Approve Request</span>
                         </button>
                         <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedBookingForOutlook(bk);
+                            setIsOutlookModalOpen(true);
+                          }}
+                          className="px-3.5 py-2 rounded-xl bg-sky-950/90 hover:bg-sky-900 text-sky-200 border border-sky-500/70 text-xs font-bold shadow flex items-center gap-1.5 transition"
+                          title="Confirm booking communicated via Outlook or phone (locks in calendar & tracks payment)"
+                        >
+                          <Mail className="w-3.5 h-3.5 text-sky-400" />
+                          <span>Confirm via Outlook / Offline</span>
+                        </button>
+                        <button
                           onClick={() => handleOpenDetailModal(bk)}
                           className="px-3 py-2 rounded-xl bg-red-950/80 hover:bg-red-900 text-red-300 text-xs font-semibold border border-red-800"
                         >
@@ -716,6 +732,18 @@ export const AdminBookings: React.FC = () => {
           onClose={() => {
             setIsManualDepositOpen(false);
             setSelectedBookingForManualDeposit(null);
+          }}
+        />
+      )}
+
+      {/* Outlook & Offline Confirmation Modal */}
+      {isOutlookModalOpen && selectedBookingForOutlook && (
+        <OutlookConfirmModal
+          booking={selectedBookingForOutlook}
+          isOpen={isOutlookModalOpen}
+          onClose={() => {
+            setIsOutlookModalOpen(false);
+            setSelectedBookingForOutlook(null);
           }}
         />
       )}

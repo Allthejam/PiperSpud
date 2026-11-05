@@ -46,6 +46,7 @@ import {
 } from 'lucide-react';
 import { BookingEvent, BookingAuditEntry, BookingMessage, HighlandDressOption } from '@/types/spud';
 import { ManualDepositModal } from '@/components/admin/ManualDepositModal';
+import { OutlookConfirmModal } from '@/components/admin/OutlookConfirmModal';
 
 interface BookingDetailModalProps {
   booking: BookingEvent | null;
@@ -118,6 +119,7 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
 
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [approvalNote, setApprovalNote] = useState('');
+  const [isOutlookModalOpen, setIsOutlookModalOpen] = useState(false);
 
   // Manual Offline Deposit Modal & Copy Link
   const [isManualDepositOpen, setIsManualDepositOpen] = useState(false);
@@ -1327,6 +1329,16 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                   <CheckCircle2 className="w-4 h-4 text-tartan-dark" />
                   <span>Approve & Send Brevo Invoice</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsOutlookModalOpen(true)}
+                  className="px-4 py-2.5 rounded-xl bg-sky-950/90 hover:bg-sky-900 text-sky-200 border border-sky-500/70 text-xs font-bold shadow-lg flex items-center gap-1.5 transition"
+                  title="Confirm booking communicated via Outlook or phone (locks in calendar & tracks payment)"
+                >
+                  <Mail className="w-4 h-4 text-sky-400" />
+                  <span>Confirm via Outlook / Offline</span>
+                </button>
               </>
             )}
 
@@ -1533,6 +1545,18 @@ export const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
           booking={booking}
           isOpen={isManualDepositOpen}
           onClose={() => setIsManualDepositOpen(false)}
+        />
+      )}
+
+      {/* Outlook & Offline Confirmation Modal */}
+      {isOutlookModalOpen && booking && (
+        <OutlookConfirmModal
+          booking={booking}
+          isOpen={isOutlookModalOpen}
+          onClose={() => setIsOutlookModalOpen(false)}
+          onConfirmSuccess={() => {
+            setIsOutlookModalOpen(false);
+          }}
         />
       )}
 
