@@ -1289,7 +1289,7 @@ export const initialServices: ServicePackage[] = [
     icon: 'Sparkles',
     title: 'Learn to Play Highland Bagpipes (Airbnb Masterclass)',
     tagline: 'Official Airbnb Experience (#7375032) at historic Carrbridge Hotel with @spudthepiper',
-    priceEstimate: 'From £90 / Guest (or £280 Private Group)',
+    priceEstimate: 'From £91 / Guest (or £280 Private Group)',
     basePrice: 280,
     depositAmount: 60,
     deposit: '£60 Deposit',

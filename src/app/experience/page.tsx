@@ -9,6 +9,7 @@ import { Footer } from '@/components/Footer';
 import { LiveChatWidget } from '@/components/LiveChatWidget';
 import { VisualPencilOverlay } from '@/components/VisualPencilOverlay';
 import { EditableElement } from '@/components/EditableElement';
+import { useApp } from '@/context/AppContext';
 import { 
   Award, 
   Clock, 
@@ -129,13 +130,17 @@ const AGENDA_STEPS = [
 
 export default function AirbnbExperiencePage() {
   const router = useRouter();
+  const { isMounted, cmsBlocks } = useApp();
   const [selectedSlot, setSelectedSlot] = useState<ExperienceSlot>(UPCOMING_EXPERIENCE_SLOTS[0]);
   const [guestCount, setGuestCount] = useState<number>(2);
   const [customDate, setCustomDate] = useState<string>('');
   const [isBookingSubmitting, setIsBookingSubmitting] = useState<boolean>(false);
 
-  const pricePerGuest = 90.25;
-  const totalPrice = (guestCount * pricePerGuest).toFixed(2);
+  // Read editable CMS price (or fallback to £91 matching live Airbnb advert)
+  const priceBlock = isMounted && Array.isArray(cmsBlocks) ? cmsBlocks.find(b => b && b.id === 'airbnb-price-per-guest') : undefined;
+  const parsedPrice = priceBlock?.content ? parseFloat(priceBlock.content.replace(/[^0-9.]/g, '')) : NaN;
+  const pricePerGuest = !isNaN(parsedPrice) && parsedPrice > 0 ? parsedPrice : 91;
+  const totalPrice = (guestCount * pricePerGuest).toFixed(0);
   const airbnbListingUrl = 'https://www.airbnb.co.uk/experiences/7375032?viralityEntryPoint=2&s=76';
 
   const handleBookDirect = (e: React.FormEvent) => {
@@ -464,7 +469,17 @@ export default function AirbnbExperiencePage() {
               {/* Price & Rating Header */}
               <div className="flex items-baseline justify-between border-b border-tartan-border/80 pb-4">
                 <div>
-                  <span className="text-2xl sm:text-3xl font-extrabold text-white font-serif">£{pricePerGuest}</span>
+                  <span className="text-2xl sm:text-3xl font-extrabold text-white font-serif inline-flex items-center">
+                    <span>£</span>
+                    <EditableElement
+                      id="airbnb-price-per-guest"
+                      tag="span"
+                      defaultContent="91"
+                      label="Airbnb Advertised Rate Per Guest (£)"
+                      section="experience"
+                      className="inline font-extrabold text-white"
+                    />
+                  </span>
                   <span className="text-xs text-gray-400 font-medium"> / guest</span>
                 </div>
                 <div className="flex items-center gap-1 text-xs text-amber-300 font-bold">
