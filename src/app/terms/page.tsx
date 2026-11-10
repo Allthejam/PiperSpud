@@ -193,18 +193,74 @@ export default function TermsPage() {
           />
         </section>
 
+        <section id="repertoire-heritage" className="bg-tartan-card p-6 sm:p-8 rounded-3xl border border-tartan-accent/60 space-y-5 shadow-xl">
+          <div className="flex items-center gap-2 text-tartan-gold">
+            <Scale className="w-5 h-5 text-tartan-gold shrink-0" />
+            <EditableElement
+              id="terms-sec7-title"
+              label="Section 7 Title"
+              section="terms"
+              tag="h2"
+              defaultContent="7. Repertoire, Scottish Heritage & Public Domain Musical Commentary"
+              className="text-xl font-bold text-white font-serif text-tartan-gold"
+            />
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-tartan-navy/70 border border-tartan-border text-xs text-amber-200 leading-relaxed">
+            <strong>Statement of Cultural Commons:</strong> Under UK and Scots intellectual property law, traditional folk tunes, historical facts, song titles, clan heritage, and working performance repertoire cannot be copyrighted, monopolised, or owned exclusively by any private individual, performer, or commercial entity.
+          </div>
+
+          <div className="space-y-4 text-xs sm:text-sm text-gray-300 leading-relaxed">
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-1">
+                <span className="text-tartan-gold">7.1</span> Repertoire &amp; Performance Services
+              </h3>
+              <p>
+                The tunes and musical selections catalogued across this website represent the working performance repertoire of Calum &quot;Spud&quot; Fraser. Listing these titles serves solely to assist couples, event planners, and private clients in curating authentic music for weddings, memorials, and ceremonial occasions. Professional musicians stating what repertoire they offer is standard trade practice.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-1">
+                <span className="text-tartan-gold">7.2</span> Traditional Scottish Heritage &amp; Public Domain Music
+              </h3>
+              <p>
+                The overwhelming majority of the Scottish bagpipe music listed on this website consists of traditional airs, marches, strathspeys, reels, and laments rooted in Scottish folk tradition, clan heritage, and military piping history (including centuries-old standards such as <em>The Skye Boat Song</em>, <em>Amazing Grace</em>, <em>Killiecrankie</em>, <em>Highland Wedding</em>, and <em>Flowers of the Forest</em>). These works have been out of copyright for generations, reside firmly in the public domain, and form part of our shared cultural commons. No individual, artist, or competitor holds exclusive performance or naming rights over traditional Scottish tunes.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-1">
+                <span className="text-tartan-gold">7.3</span> Historical Facts &amp; Educational Commentary
+              </h3>
+              <p>
+                All historical notes, song origins, composer backgrounds, and cultural lore presented alongside each tune are written independently for educational, informational, and contextual purposes. Historical facts, military timelines (e.g. Culloden, Flodden, the 1854 Crimean campaigns, Robert Burns poems), and Highland folk traditions are matters of public record and are not protected by copyright under UK law.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-1">
+                <span className="text-tartan-gold">7.4</span> Contemporary Compositions &amp; Venue Licensing
+              </h3>
+              <p>
+                Where modern, copyright-protected compositions (such as <em>Highland Cathedral</em>) are referenced or performed live at public or commercial venues, all live performance rights are administered through standard venue licensing agreements with the appropriate collection societies (<strong>PRS for Music / PPL</strong> in the United Kingdom, or reciprocal international collecting societies). We fully respect living composers and statutory intellectual property rights.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <section className="bg-tartan-card p-6 sm:p-8 rounded-3xl border border-tartan-border space-y-4 shadow-xl">
           <EditableElement
-            id="terms-sec7-title"
-            label="Section 7 Title"
+            id="terms-sec8-title"
+            label="Section 8 Title"
             section="terms"
             tag="h2"
-            defaultContent="7. Governing Law"
+            defaultContent="8. Governing Law"
             className="text-xl font-bold text-white font-serif text-tartan-gold"
           />
           <EditableElement
-            id="terms-sec7-p1"
-            label="Section 7 Governing Law Clause"
+            id="terms-sec8-p1"
+            label="Section 8 Governing Law Clause"
             section="terms"
             tag="p"
             defaultContent="These terms are governed by and construed in accordance with the laws of Scotland, and both parties submit to the exclusive jurisdiction of the Scottish Courts."

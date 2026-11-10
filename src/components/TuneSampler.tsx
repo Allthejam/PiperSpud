@@ -38,7 +38,9 @@ import {
   ExternalLink,
   MessageCircle,
   Globe,
-  Send
+  Send,
+  Scale,
+  ShieldCheck
 } from 'lucide-react';
 import { BagpipeTune } from '@/types/spud';
 import { EditableElement } from './EditableElement';
@@ -1125,6 +1127,35 @@ export const TuneSampler: React.FC<TuneSamplerProps> = ({ isHomePage = false }) 
           >
             <span>Request a Custom Song</span>
             <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+
+        {/* ── 4B. REPERTOIRE & PUBLIC DOMAIN HERITAGE NOTICE ── */}
+        <div className="mt-6 p-4 sm:p-5 rounded-2xl bg-tartan-card/80 border border-tartan-accent/40 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-gray-300">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-xl bg-tartan-dark text-tartan-gold border border-tartan-border shrink-0 mt-0.5 sm:mt-0 shadow-inner">
+              <Scale className="w-4 h-4" />
+            </div>
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-bold text-white uppercase tracking-wider text-[11px]">
+                  Traditional Repertoire &amp; Public Domain Heritage
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-tartan-gold/15 text-tartan-gold border border-tartan-gold/30 font-semibold">
+                  Scots &amp; UK IP Law
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-400 leading-relaxed max-w-3xl">
+                The tunes catalogued across this site illustrate Spud&apos;s working performance repertoire for event planning. Traditional Scottish airs, clan marches, and Highland folk history are in the public domain and belong to our shared cultural commons. Modern compositions performed under venue PRS/PPL licensing.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/terms#repertoire-heritage"
+            className="text-[11px] font-bold text-tartan-gold hover:underline whitespace-nowrap shrink-0 flex items-center gap-1"
+          >
+            <span>Statement &amp; Rights Notice</span>
+            <span>&rarr;</span>
           </Link>
         </div>
 

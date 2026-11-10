@@ -350,32 +350,65 @@ export const Footer: React.FC = () => {
 
           </div>
 
-          {/* Intellectual Property & Audio Copyright Protection Notice */}
-          <div className="mt-10 p-4 sm:p-5 rounded-2xl bg-tartan-navy/70 border border-tartan-accent/40 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-xl bg-tartan-dark text-tartan-gold border border-tartan-border shrink-0 mt-0.5 sm:mt-0 shadow-inner">
-                <Music className="w-4 h-4" />
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h5 className="text-xs font-bold text-white uppercase tracking-wider">
-                    Audio Copyright &amp; Master Track Ownership
-                  </h5>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-tartan-gold/15 text-tartan-gold border border-tartan-gold/30 font-semibold">
-                    Protected by Scots &amp; International IP Law
-                  </span>
+          {/* Intellectual Property, Repertoire & Heritage Legal Notice */}
+          <div className="mt-10 space-y-4">
+            
+            {/* Box 1: Audio Copyright & Master Track Ownership */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-tartan-navy/70 border border-tartan-accent/40 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 rounded-xl bg-tartan-dark text-tartan-gold border border-tartan-border shrink-0 mt-0.5 sm:mt-0 shadow-inner">
+                  <Music className="w-4 h-4" />
                 </div>
-                <p className="text-[11px] text-gray-300 leading-relaxed max-w-4xl">
-                  All Highland bagpipe audio recordings, musical arrangements, sound samples, and downloadable MP3 media published on this website are the exclusive intellectual property and copyright of <strong>Spud the Piper (Calum Fraser)</strong>. Audio downloads and streaming previews are strictly permitted for private, personal listening and event planning evaluation only. Any commercial reproduction, public broadcast, synchronization, sampling, resale, re-distribution, or use in advertising or commercial productions without prior express written permission from Spud the Piper is strictly prohibited. All rights reserved.
-                </p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h5 className="text-xs font-bold text-white uppercase tracking-wider">
+                      Audio Copyright &amp; Master Track Ownership
+                    </h5>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-tartan-gold/15 text-tartan-gold border border-tartan-gold/30 font-semibold">
+                      Protected by Scots &amp; International IP Law
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-300 leading-relaxed max-w-4xl">
+                    All Highland bagpipe audio recordings, musical arrangements, sound samples, and downloadable MP3 media published on this website are the exclusive intellectual property and copyright of <strong>Spud the Piper (Calum Fraser)</strong>. Audio downloads and streaming previews are strictly permitted for private, personal listening and event planning evaluation only. Any commercial reproduction, public broadcast, synchronization, sampling, resale, re-distribution, or use in advertising or commercial productions without prior express written permission from Spud the Piper is strictly prohibited. All rights reserved.
+                  </p>
+                </div>
               </div>
+              <Link
+                href="/terms#audio-copyright"
+                className="px-3.5 py-1.5 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-[11px] shrink-0 transition-all shadow hover:brightness-110 active:scale-95 whitespace-nowrap"
+              >
+                Audio Licensing →
+              </Link>
             </div>
-            <Link
-              href="/terms#audio-copyright"
-              className="px-3.5 py-1.5 rounded-xl bg-gold-gradient text-tartan-dark font-extrabold text-[11px] shrink-0 transition-all shadow hover:brightness-110 active:scale-95 whitespace-nowrap"
-            >
-              Terms &amp; Licensing →
-            </Link>
+
+            {/* Box 2: Repertoire, Scottish Heritage & Public Domain Notice */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-tartan-card/80 border border-tartan-gold/30 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 rounded-xl bg-tartan-dark text-tartan-gold border border-tartan-border shrink-0 mt-0.5 sm:mt-0 shadow-inner">
+                  <Scale className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h5 className="text-xs font-bold text-white uppercase tracking-wider">
+                      Repertoire, Heritage &amp; Public Domain Statement
+                    </h5>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-600/40 font-semibold">
+                      Scottish Cultural Commons
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-300 leading-relaxed max-w-4xl">
+                    The tunes catalogued on this website represent the working performance repertoire of <strong>Calum &quot;Spud&quot; Fraser</strong> for event curation. Traditional Scottish airs, clan marches, and Highland folk history reside in the public domain and belong to the shared cultural heritage of Scotland—no artist or entity holds exclusive performance or title rights. All historical notes and commentary are researched and written independently. Contemporary protected compositions performed live are licensed via venue <strong>PRS for Music / PPL</strong> collection coverage.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/terms#repertoire-heritage"
+                className="px-3.5 py-1.5 rounded-xl bg-tartan-navy hover:bg-slate-700 text-tartan-gold border border-tartan-gold/50 font-bold text-[11px] shrink-0 transition-all shadow hover:brightness-110 active:scale-95 whitespace-nowrap"
+              >
+                Heritage Notice →
+              </Link>
+            </div>
+
           </div>
 
           {/* Bottom Bar */}
@@ -432,6 +465,16 @@ export const Footer: React.FC = () => {
                 tag="a"
                 defaultContent="Audio Copyright"
                 defaultLinkUrl="/terms#audio-copyright"
+                className="hover:underline text-tartan-gold font-medium"
+              />
+              <span>•</span>
+              <EditableElement
+                id="footer-link-repertoire-heritage"
+                label="Footer 'Repertoire & Heritage' Link"
+                section="footer"
+                tag="a"
+                defaultContent="Repertoire &amp; Heritage"
+                defaultLinkUrl="/terms#repertoire-heritage"
                 className="hover:underline text-tartan-gold font-medium"
               />
               <span>•</span>

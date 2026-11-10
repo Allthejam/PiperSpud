@@ -214,6 +214,12 @@ export const initialSocialPosts: SocialPost[] = [];
 
 export const initialQuickResponses: QuickResponse[] = [
   {
+    id: 'qr-legal-heritage',
+    category: 'Tunes',
+    title: 'Repertoire, Copyright & Heritage Response',
+    text: "Thanks for getting in touch. The tune directory on our website reflects Spud’s active performance repertoire and helps clients choose their music for weddings, events, and memorials.\n\nThe tunes listed are standard, historic staples of the Scottish piping tradition, and our descriptions and historical notes were drafted independently for educational and promotional use. As historical facts, traditional titles, and public domain melodies belong to the wider piping heritage, we are completely within our rights to showcase our services in this way.\n\nFor any contemporary protected compositions performed live, licensing is managed through standard venue PRS/PPL coverage.\n\nWe wish you all the best with your piping engagements."
+  },
+  {
     id: 'qr-1',
     category: 'Weddings',
     title: 'Wedding Ceremony & Package Details',
