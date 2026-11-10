@@ -14,6 +14,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1.0
     },
     {
+      url: `${baseUrl}/experience`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.95
+    },
+    {
       url: `${baseUrl}/booking`,
       lastModified: now,
       changeFrequency: 'daily',
@@ -26,10 +32,28 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.90
     },
     {
+      url: `${baseUrl}/pipes`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.90
+    },
+    {
       url: `${baseUrl}/tunes`,
       lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.90
+    },
+    {
+      url: `${baseUrl}/studio`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.90
+    },
+    {
+      url: `${baseUrl}/blog`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.85
     },
     {
       url: `${baseUrl}/about`,

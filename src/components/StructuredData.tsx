@@ -119,6 +119,24 @@ export const StructuredData: React.FC = () => {
                 name: 'Funerals, Memorials & Graveside Laments',
                 description: 'Compassionate, dignified graveside laments including Amazing Grace, Going Home, and Flowers of the Forest.'
               }
+            },
+            {
+              '@type': 'Offer',
+              url: 'https://www.spudthepiper.com/experience',
+              itemOffered: {
+                '@type': 'Service',
+                name: 'Official Airbnb Bagpipe Masterclass (Carrbridge, Highlands)',
+                description: 'Hands-on bagpipe masterclass at Carrbridge Hotel in the Cairngorms. Learn to blow the Great Highland Bagpipes, try the practice chanter, and pose at the historic 1717 bridge.'
+              }
+            },
+            {
+              '@type': 'Offer',
+              url: 'https://www.spudthepiper.com/pipes',
+              itemOffered: {
+                '@type': 'Service',
+                name: 'Educational Guide to the Great Highland Bagpipe (Pìob Mhòr)',
+                description: 'Comprehensive educational guide to the 4,000-year history, African Blackwood anatomy, clan warfare lore, and public domain traditional Scottish tunes.'
+              }
             }
           ]
         }

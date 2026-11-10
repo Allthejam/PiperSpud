@@ -1144,6 +1144,54 @@ export const initialSeoPages: SeoPageConfig[] = [
     ogImage: 'https://www.spudthepiper.com/og-image.png',
     h1: 'How to Install Spud the Piper App',
     schemaType: 'WebPage, SoftwareApplication'
+  },
+  {
+    pageId: 'experience',
+    pageName: 'Airbnb Bagpipe Masterclass',
+    path: '/experience',
+    title: 'Official Airbnb Bagpipe Masterclass | Learn to Play with Spud the Piper',
+    metaDescription: 'Book the official 5-star Airbnb Bagpipe Masterclass in Carrbridge, Cairngorms. Learn to blow the Great Highland Bagpipes, try the practice chanter, and pose at the historic 1717 packhorse bridge with Spud the Piper.',
+    keywords: ['Airbnb Bagpipe Experience', 'Learn Bagpipes Scotland', 'Bagpipe Masterclass Highlands', 'Carrbridge Bagpipe Experience', 'Scottish Bagpipe Lesson', 'Spud the Piper Airbnb', 'Cairngorms Things to Do'],
+    canonicalUrl: 'https://www.spudthepiper.com/experience',
+    ogImage: 'https://a0.muscache.com/im/pictures/Mt/MtTemplate-7375032/original/d4cc11a9-61a6-4af2-90b5-ee568d7775dc.jpeg',
+    h1: 'The Ultimate Scottish Bagpipe Experience (Official Airbnb Partner)',
+    schemaType: 'Event, EducationalOrganization, TouristAttraction'
+  },
+  {
+    pageId: 'pipes',
+    pageName: 'About The Bagpipes',
+    path: '/pipes',
+    title: 'About the Great Highland Bagpipe | Anatomy, Origins, History & Music Lore',
+    metaDescription: 'Discover the Great Highland Bagpipe (Pìob Mhòr): its 4,000-year ancient origins, African Blackwood anatomy, clan battlefield history, and why traditional Scottish bagpipe music belongs to the public domain.',
+    keywords: ['Great Highland Bagpipe Anatomy', 'Bagpipe History and Origins', 'Pìob Mhòr', 'Who Invented Bagpipes', 'Bagpipe Chanter and Drones', 'Act of Proscription Instrument of War', 'MacCrimmons of Skye', 'Scottish Pipe Music Public Domain'],
+    canonicalUrl: 'https://www.spudthepiper.com/pipes',
+    ogImage: 'https://www.spudthepiper.com/og-image.jpg',
+    h1: 'About The Great Highland Bagpipe (Pìob Mhòr)',
+    schemaType: 'Article, EducationalOrganization'
+  },
+  {
+    pageId: 'studio',
+    pageName: 'Virtual Bagpipe Synthesiser Studio',
+    path: '/studio',
+    title: 'Virtual Bagpipe Synthesiser Studio | Play Scottish Chanter & Compose Online',
+    metaDescription: 'Play the Great Highland Bagpipe online! Interactive 9-note Mixolydian chanter, harmonic bass & tenor drones, real-time procedural Scottish tunes generator, and practice chanter synthesizer.',
+    keywords: ['Virtual Bagpipes Online', 'Play Bagpipes in Browser', 'Bagpipe Synthesizer', 'Scottish Chanter Simulator', 'Online Practice Chanter', 'Highland Bagpipe Web Audio'],
+    canonicalUrl: 'https://www.spudthepiper.com/studio',
+    ogImage: 'https://www.spudthepiper.com/og-image.jpg',
+    h1: 'Virtual Bagpipe Synthesiser Studio',
+    schemaType: 'SoftwareApplication, MusicRecording'
+  },
+  {
+    pageId: 'blog',
+    pageName: "Spud's Blog & Real Castle Weddings",
+    path: '/blog',
+    title: "Spud's Highland Piping Blog | Real Scottish Castle Weddings & Travel Stories",
+    metaDescription: 'Behind-the-scenes stories, castle wedding guides, celebrity piping encounters, and Highland travel tips from 25+ years of professional piping across Scotland.',
+    keywords: ['Scottish Wedding Piper Blog', 'Castle Wedding Bagpiper Stories', 'Highland Piping Stories', 'Spud the Piper News'],
+    canonicalUrl: 'https://www.spudthepiper.com/blog',
+    ogImage: 'https://www.spudthepiper.com/og-image.jpg',
+    h1: "Spud's Blog & Real Castle Weddings",
+    schemaType: 'Blog'
   }
 ];
 
