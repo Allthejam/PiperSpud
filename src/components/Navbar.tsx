@@ -97,10 +97,11 @@ export const Navbar: React.FC = () => {
       href: '/',
       children: [
         { label: 'Welcome / Home', href: '/', desc: 'Main Highland Overview & Hero', icon: Compass },
+        { label: 'About the Pipes', href: '/pipes', desc: 'Anatomy, Ancient Origins, History & Music Lore', icon: Music },
+        { label: 'About Spud', href: '/about', desc: '40+ Years of Piping Heritage', icon: Info },
         { label: "Spud's Blog & Videos", href: '/blog', desc: 'Real Castle Weddings, Stories & Video Diary', icon: BookOpen },
         { label: 'Meet Spud (Videos)', href: '/meet-spud', desc: 'Watch Spud Speak, Play & Share Stories', icon: Video },
         { label: 'Photo Gallery', href: '/gallery', desc: 'Weddings, Castle Venues & Highland Gatherings', icon: Camera },
-        { label: 'About Spud', href: '/about', desc: '40+ Years of Piping Heritage', icon: Info },
         { label: 'How to Install App (PWA)', href: '/install', desc: '1-Tap Offline Bagpipe Music on Phone & PC', icon: Smartphone },
       ]
     },

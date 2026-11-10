@@ -274,7 +274,8 @@ export const Footer: React.FC = () => {
               <h4 className="text-sm font-bold text-white font-serif uppercase tracking-wider">Navigation</h4>
               <ul className="space-y-2 text-xs">
                 <li><Link href="/" className="hover:text-tartan-gold transition-colors">Home Page</Link></li>
-                <li><Link href="/about" className="hover:text-tartan-gold transition-colors">About Spud & Awards</Link></li>
+                <li><Link href="/pipes" className="hover:text-tartan-gold transition-colors font-semibold text-tartan-gold">About the Bagpipes</Link></li>
+                <li><Link href="/about" className="hover:text-tartan-gold transition-colors">About Spud &amp; Awards</Link></li>
                 <li><Link href="/services" className="hover:text-tartan-gold transition-colors">Services & Packages</Link></li>
                 <li><Link href="/experience" className="text-rose-400 hover:text-white transition-colors font-bold flex items-center gap-1"><span>Airbnb Bagpipe Masterclass</span><Sparkles className="w-3 h-3 text-rose-400" /></Link></li>
                 <li><Link href="/blog" className="hover:text-tartan-gold transition-colors font-medium">Spud&apos;s Blog &amp; Videos</Link></li>
