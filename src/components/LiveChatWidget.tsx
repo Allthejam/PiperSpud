@@ -55,9 +55,9 @@ export const LiveChatWidget: React.FC = () => {
     return !m.sessionId || m.sessionId === visitorSessionId;
   });
 
-  // Only count unread messages SENT BY SPUD to this visitor
+  // Only count unread messages SENT BY STAFF (Spud, Developer, Admin) to this visitor
   const visitorUnreadCount = chatMessages.filter(m => 
-    m && !m.isRead && m.sender === 'spud' && (!visitorSessionId || m.sessionId === visitorSessionId)
+    m && !m.isRead && m.sender !== 'client' && (!visitorSessionId || m.sessionId === visitorSessionId)
   ).length;
 
   // Offline / Inquiry Form State
@@ -321,7 +321,8 @@ export const LiveChatWidget: React.FC = () => {
                 ) : (
                   visitorMessages.map((msg) => {
                     const isMe = msg.sender === 'client';
-                    const isSpud = msg.sender === 'spud';
+                    const isStaff = msg.sender === 'spud' || msg.sender === 'developer' || msg.sender === 'admin';
+                    const isDev = msg.sender === 'developer';
                     const isBot = msg.sender === 'system';
 
                     return (
@@ -331,7 +332,12 @@ export const LiveChatWidget: React.FC = () => {
                       >
                         <div className="flex items-center gap-1.5 mb-1 text-[10px] text-gray-400">
                           {isBot && <Bot className="w-3 h-3 text-tartan-gold" />}
-                          <span>{msg.senderName}</span>
+                          {isDev && (
+                            <span className="bg-purple-900/60 text-purple-200 border border-purple-500/40 text-[9px] font-bold px-1.5 py-0.5 rounded">
+                              Developer Support
+                            </span>
+                          )}
+                          <span className="font-bold">{msg.senderName}</span>
                           <span>• {msg.timestamp}</span>
                         </div>
 
@@ -339,8 +345,10 @@ export const LiveChatWidget: React.FC = () => {
                           className={`max-w-[85%] rounded-2xl px-4 py-2.5 leading-relaxed shadow-md ${
                             isMe
                               ? 'bg-tartan-accent text-tartan-dark font-medium rounded-tr-none'
-                              : isSpud
-                              ? 'bg-tartan-navy border border-tartan-accent text-white rounded-tl-none'
+                              : isStaff
+                              ? isDev 
+                                ? 'bg-gradient-to-r from-purple-950 to-slate-900 border border-purple-500/50 text-white rounded-tl-none'
+                                : 'bg-tartan-navy border border-tartan-accent text-white rounded-tl-none'
                               : 'bg-slate-800/90 text-gray-200 border border-slate-700 rounded-tl-none'
                           }`}
                         >

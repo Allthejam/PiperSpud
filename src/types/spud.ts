@@ -231,7 +231,7 @@ export interface ChatSession {
 
 export interface ChatMessage {
   id: string;
-  sender: 'client' | 'spud' | 'system';
+  sender: 'client' | 'spud' | 'system' | 'developer' | 'admin';
   senderName: string;
   text: string;
   timestamp: string;

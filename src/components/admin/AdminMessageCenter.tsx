@@ -50,11 +50,29 @@ export const AdminMessageCenter: React.FC = () => {
     updateQuickResponse,
     deleteQuickResponse,
     waitingChatSessionsCount,
-    unreadChatCount
+    unreadChatCount,
+    currentUserRecord,
+    currentUserRole,
+    firebaseUser,
+    reopenSession
   } = useApp();
 
+  const isDeveloper = currentUserRole === 'developer' || currentUserRecord?.role === 'developer';
+  const rawDeveloperName = currentUserRecord?.displayName || currentUserRecord?.name || firebaseUser?.displayName || 'Allan';
+  const formattedDeveloperName = rawDeveloperName.toLowerCase().includes('developer') 
+    ? rawDeveloperName 
+    : `${rawDeveloperName} (Developer)`;
+
+  const [replySenderRole, setReplySenderRole] = useState<'developer' | 'spud'>(isDeveloper ? 'developer' : 'spud');
+
+  React.useEffect(() => {
+    if (isDeveloper) {
+      setReplySenderRole('developer');
+    }
+  }, [isDeveloper]);
+
   const [replyText, setReplyText] = useState('');
-  const [sessionFilter, setSessionFilter] = useState<'all' | 'waiting' | 'inquiries' | 'resolved'>('all');
+  const [sessionFilter, setSessionFilter] = useState<'active' | 'waiting' | 'inquiries' | 'resolved' | 'all'>('active');
   const [searchTerm, setSearchTerm] = useState('');
   
   // Quick Response Modal & Filter
@@ -88,7 +106,7 @@ export const AdminMessageCenter: React.FC = () => {
       if (!sessionMap.has(sId)) {
         sessionMap.set(sId, {
           id: sId,
-          visitorName: m.senderName && m.senderName !== 'Spud the Piper' ? m.senderName : 'Website Visitor',
+          visitorName: m.senderName && m.senderName !== 'Spud the Piper' && !m.senderName.includes('Developer') ? m.senderName : 'Website Visitor',
           visitorEmail: m.visitorEmail,
           visitorPhone: m.visitorPhone,
           lastMessage: m.text,
@@ -109,8 +127,37 @@ export const AdminMessageCenter: React.FC = () => {
     );
   }, [chatSessions, chatMessages]);
 
+  // Queue counts
+  const activeCount = effectiveSessions.filter(s => s.status !== 'resolved').length;
+  const waitingCount = effectiveSessions.filter(s => s.isWaitingForSpud && s.status !== 'resolved').length;
+  const inquiriesCount = effectiveSessions.filter(s => s.status === 'offline_inquiry').length;
+  const resolvedCount = effectiveSessions.filter(s => s.status === 'resolved').length;
+
+  // Filter sessions list
+  const filteredSessions = (effectiveSessions || []).filter(s => {
+    if (!s) return false;
+    // Category filter
+    if (sessionFilter === 'active' && s.status === 'resolved') return false;
+    if (sessionFilter === 'waiting' && (!s.isWaitingForSpud || s.status === 'resolved')) return false;
+    if (sessionFilter === 'inquiries' && s.status !== 'offline_inquiry') return false;
+    if (sessionFilter === 'resolved' && s.status !== 'resolved') return false;
+    
+    // Search filter
+    const q = (searchTerm || '').toLowerCase().trim();
+    if (q) {
+      const matchName = (s.visitorName || '').toLowerCase().includes(q);
+      const matchMsg = (s.lastMessage || '').toLowerCase().includes(q);
+      const matchEmail = (s.visitorEmail || '').toLowerCase().includes(q);
+      if (!matchName && !matchMsg && !matchEmail) return false;
+    }
+    return true;
+  });
+
   // Active session object
-  const activeSession = effectiveSessions.find(s => s.id === activeChatSessionId) || effectiveSessions[0];
+  const activeSession = effectiveSessions.find(s => s.id === activeChatSessionId) || 
+    filteredSessions[0] || 
+    effectiveSessions.find(s => s.status !== 'resolved') || 
+    effectiveSessions[0];
   const currentSessionId = activeSession?.id || (chatMessages.length > 0 ? (chatMessages[0].sessionId || 'session-visitor-live') : '');
 
   // Automatically mark the currently viewed session as read
@@ -127,31 +174,30 @@ export const AdminMessageCenter: React.FC = () => {
     return m.sessionId === currentSessionId || (!m.sessionId && effectiveSessions.length <= 1);
   });
 
-  // Filter sessions list
-  const filteredSessions = (effectiveSessions || []).filter(s => {
-    if (!s) return false;
-    // Category filter
-    if (sessionFilter === 'waiting' && !s.isWaitingForSpud) return false;
-    if (sessionFilter === 'inquiries' && s.status !== 'offline_inquiry') return false;
-    if (sessionFilter === 'resolved' && s.status !== 'resolved') return false;
-    
-    // Search filter
-    const q = (searchTerm || '').toLowerCase().trim();
-    if (q) {
-      const matchName = (s.visitorName || '').toLowerCase().includes(q);
-      const matchMsg = (s.lastMessage || '').toLowerCase().includes(q);
-      const matchEmail = (s.visitorEmail || '').toLowerCase().includes(q);
-      if (!matchName && !matchMsg && !matchEmail) return false;
+  const handleResolveSession = (sessionId: string) => {
+    markSessionResolved(sessionId);
+    const remaining = filteredSessions.filter(s => s.id !== sessionId);
+    if (remaining.length > 0) {
+      setActiveChatSessionId(remaining[0].id);
+    } else {
+      const nextUnresolved = effectiveSessions.find(s => s.id !== sessionId && s.status !== 'resolved');
+      setActiveChatSessionId(nextUnresolved ? nextUnresolved.id : '');
     }
-    return true;
-  });
+  };
+
+  const handleReopenSession = (sessionId: string) => {
+    reopenSession(sessionId);
+  };
 
   const handleSendReply = (e: React.FormEvent) => {
     e.preventDefault();
     if (!replyText.trim()) return;
 
     const targetSession = currentSessionId || activeSession?.id || `session-visitor-${Date.now()}`;
-    sendChatMessage(replyText, 'spud', targetSession);
+    const senderRole = isDeveloper ? replySenderRole : 'spud';
+    const senderName = senderRole === 'developer' ? formattedDeveloperName : 'Spud the Piper';
+    
+    sendChatMessage(replyText, senderRole, targetSession, undefined, undefined, undefined, senderName);
     setReplyText('');
   };
 
@@ -201,10 +247,12 @@ export const AdminMessageCenter: React.FC = () => {
         
         // Append to chat thread as a system/sent email log
         const sentNote = `✉️ [Email Sent via Brevo to ${activeSession.visitorEmail}]:\n${emailBody.trim()}`;
-        sendChatMessage(sentNote, 'spud', activeSession.id);
+        const senderRole = isDeveloper ? replySenderRole : 'spud';
+        const senderName = senderRole === 'developer' ? formattedDeveloperName : 'Spud the Piper';
+        sendChatMessage(sentNote, senderRole, activeSession.id, undefined, undefined, undefined, senderName);
         
-        // Mark session resolved
-        markSessionResolved(activeSession.id);
+        // Mark session resolved and advance
+        handleResolveSession(activeSession.id);
 
         setTimeout(() => {
           setIsEmailModalOpen(false);
@@ -336,7 +384,7 @@ export const AdminMessageCenter: React.FC = () => {
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-white flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-tartan-gold" />
-                Conversations ({effectiveSessions.length})
+                Conversations ({filteredSessions.length})
               </span>
               <div className="flex items-center gap-2">
                 {unreadChatCount > 0 && (
@@ -376,12 +424,12 @@ export const AdminMessageCenter: React.FC = () => {
             {/* Filter Tabs */}
             <div className="grid grid-cols-4 gap-1 text-[10px] bg-tartan-dark p-1 rounded-xl border border-tartan-border">
               <button
-                onClick={() => setSessionFilter('all')}
-                className={`py-1.5 px-2 rounded-lg font-bold text-center transition ${
-                  sessionFilter === 'all' ? 'bg-tartan-accent text-tartan-dark' : 'text-gray-400 hover:text-white'
+                onClick={() => setSessionFilter('active')}
+                className={`py-1.5 px-1.5 rounded-lg font-bold text-center transition ${
+                  sessionFilter === 'active' ? 'bg-tartan-accent text-tartan-dark' : 'text-gray-400 hover:text-white'
                 }`}
               >
-                All
+                Active {activeCount > 0 && `(${activeCount})`}
               </button>
               <button
                 onClick={() => setSessionFilter('waiting')}
@@ -389,7 +437,7 @@ export const AdminMessageCenter: React.FC = () => {
                   sessionFilter === 'waiting' ? 'bg-red-600 text-white' : 'text-red-400 hover:text-red-300'
                 }`}
               >
-                Waiting {waitingChatSessionsCount > 0 && `(${waitingChatSessionsCount})`}
+                Waiting {waitingCount > 0 && `(${waitingCount})`}
               </button>
               <button
                 onClick={() => setSessionFilter('inquiries')}
@@ -397,7 +445,7 @@ export const AdminMessageCenter: React.FC = () => {
                   sessionFilter === 'inquiries' ? 'bg-tartan-accent text-tartan-dark' : 'text-gray-400 hover:text-white'
                 }`}
               >
-                Inquiries
+                Inquiries {inquiriesCount > 0 && `(${inquiriesCount})`}
               </button>
               <button
                 onClick={() => setSessionFilter('resolved')}
@@ -405,7 +453,7 @@ export const AdminMessageCenter: React.FC = () => {
                   sessionFilter === 'resolved' ? 'bg-tartan-accent text-tartan-dark' : 'text-gray-400 hover:text-white'
                 }`}
               >
-                Resolved
+                Resolved {resolvedCount > 0 && `(${resolvedCount})`}
               </button>
             </div>
 
@@ -538,15 +586,26 @@ export const AdminMessageCenter: React.FC = () => {
                   <span>Email Reply</span>
                 </button>
               )}
-              {activeSession?.status !== 'resolved' && (
-                <button
-                  onClick={() => activeSession && markSessionResolved(activeSession.id)}
-                  className="px-2.5 py-1 bg-emerald-900/40 text-emerald-300 hover:bg-emerald-900/70 border border-emerald-600/40 rounded-lg text-[11px] font-bold flex items-center gap-1"
-                  title="Mark this conversation as answered & resolved"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  <span>Resolve</span>
-                </button>
+              {activeSession && (
+                activeSession.status === 'resolved' ? (
+                  <button
+                    onClick={() => handleReopenSession(activeSession.id)}
+                    className="px-2.5 py-1 bg-amber-900/40 text-amber-300 hover:bg-amber-900/70 border border-amber-600/40 rounded-lg text-[11px] font-bold flex items-center gap-1"
+                    title="Re-open this conversation and return it to active queue"
+                  >
+                    <Radio className="w-3.5 h-3.5" />
+                    <span>Re-open</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleResolveSession(activeSession.id)}
+                    className="px-2.5 py-1 bg-emerald-900/40 text-emerald-300 hover:bg-emerald-900/70 border border-emerald-600/40 rounded-lg text-[11px] font-bold flex items-center gap-1"
+                    title="Mark this conversation as answered & resolved (removes from waiting queue)"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Resolve</span>
+                  </button>
+                )
               )}
             </div>
           </div>
@@ -577,24 +636,40 @@ export const AdminMessageCenter: React.FC = () => {
               </div>
             ) : (
               activeSessionMessages.map((msg) => {
+                const isStaff = msg.sender === 'spud' || msg.sender === 'developer' || msg.sender === 'admin';
+                const isDev = msg.sender === 'developer';
                 const isSpud = msg.sender === 'spud';
                 const isBot = msg.sender === 'system';
 
                 return (
                   <div
                     key={msg.id}
-                    className={`flex flex-col ${isSpud ? 'items-end' : 'items-start'}`}
+                    className={`flex flex-col ${isStaff ? 'items-end' : 'items-start'}`}
                   >
                     <div className="flex items-center gap-1.5 mb-1 text-[10px] text-gray-400">
                       {isBot && <Bot className="w-3 h-3 text-tartan-gold" />}
+                      {isDev && (
+                        <span className="bg-purple-900/60 text-purple-300 border border-purple-500/40 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">
+                          Developer
+                        </span>
+                      )}
+                      {isSpud && (
+                        <span className="bg-amber-900/40 text-amber-300 border border-amber-500/30 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">
+                          Spud
+                        </span>
+                      )}
                       <span className="font-bold">{msg.senderName}</span>
                       <span>• {msg.timestamp}</span>
                     </div>
 
                     <div
                       className={`max-w-[85%] rounded-2xl p-3.5 leading-relaxed shadow-md ${
-                        isSpud
+                        isDev
+                          ? 'bg-gradient-to-r from-purple-950 via-slate-900 to-purple-900 text-purple-100 border border-purple-500/50 font-medium rounded-tr-none shadow-purple-950/40'
+                          : isSpud
                           ? 'bg-gold-gradient text-tartan-dark font-semibold rounded-tr-none'
+                          : isStaff
+                          ? 'bg-emerald-900 text-emerald-100 border border-emerald-500/40 rounded-tr-none'
                           : isBot
                           ? 'bg-slate-800 text-gray-200 border border-slate-700 rounded-tl-none'
                           : 'bg-tartan-navy text-white border border-tartan-accent/40 rounded-tl-none'
@@ -632,21 +707,66 @@ export const AdminMessageCenter: React.FC = () => {
           </div>
 
           {/* Reply Form */}
-          <form onSubmit={handleSendReply} className="bg-tartan-navy p-3.5 border-t border-tartan-border flex items-center gap-2">
-            <input
-              type="text"
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              placeholder="Reply to client as Spud the Piper..."
-              className="flex-1 bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent"
-            />
-            <button
-              type="submit"
-              className="px-4 py-2.5 bg-gold-gradient text-tartan-dark font-extrabold text-xs rounded-xl shadow-md hover:brightness-110 flex items-center gap-1.5 shrink-0"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>Reply</span>
-            </button>
+          <form onSubmit={handleSendReply} className="bg-tartan-navy p-3.5 border-t border-tartan-border space-y-2">
+            {isDeveloper && (
+              <div className="flex items-center justify-between text-[11px] px-1 text-gray-400">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Replying as:</span>
+                  <button
+                    type="button"
+                    onClick={() => setReplySenderRole('developer')}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition flex items-center gap-1 ${
+                      replySenderRole === 'developer'
+                        ? 'bg-purple-600 text-white shadow'
+                        : 'bg-tartan-dark text-gray-400 hover:text-white border border-tartan-border/50'
+                    }`}
+                  >
+                    <span>🛠️</span>
+                    <span>{formattedDeveloperName}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReplySenderRole('spud')}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition flex items-center gap-1 ${
+                      replySenderRole === 'spud'
+                        ? 'bg-gold-gradient text-tartan-dark shadow'
+                        : 'bg-tartan-dark text-gray-400 hover:text-white border border-tartan-border/50'
+                    }`}
+                  >
+                    <span>🎵</span>
+                    <span>Spud the Piper</span>
+                  </button>
+                </div>
+                <span className="text-[10px] text-purple-300 font-semibold hidden sm:inline">
+                  Developer Mode
+                </span>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder={
+                  replySenderRole === 'developer'
+                    ? `Reply to client as ${formattedDeveloperName}...`
+                    : "Reply to client as Spud the Piper..."
+                }
+                className="flex-1 bg-tartan-dark border border-tartan-border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-tartan-accent"
+              />
+              <button
+                type="submit"
+                className={`px-4 py-2.5 font-extrabold text-xs rounded-xl shadow-md hover:brightness-110 flex items-center gap-1.5 shrink-0 ${
+                  replySenderRole === 'developer'
+                    ? 'bg-purple-600 text-white shadow-purple-900/40'
+                    : 'bg-gold-gradient text-tartan-dark shadow-amber-900/40'
+                }`}
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Reply</span>
+              </button>
+            </div>
           </form>
 
         </div>
@@ -761,13 +881,23 @@ export const AdminMessageCenter: React.FC = () => {
                   </a>
                 )}
 
-                <button
-                  onClick={() => markSessionResolved(activeSession.id)}
-                  className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border border-slate-700 transition"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Mark Session Resolved</span>
-                </button>
+                {activeSession.status === 'resolved' ? (
+                  <button
+                    onClick={() => handleReopenSession(activeSession.id)}
+                    className="w-full py-2 bg-amber-900/30 hover:bg-amber-900/50 text-amber-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border border-amber-600/40 transition"
+                  >
+                    <Radio className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Re-open Conversation</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleResolveSession(activeSession.id)}
+                    className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-gray-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border border-slate-700 transition"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Mark Session Resolved</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => {

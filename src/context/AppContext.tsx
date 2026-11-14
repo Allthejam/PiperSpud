@@ -230,11 +230,12 @@ interface AppContextType {
   chatMessages: ChatMessage[];
   sendChatMessage: (
     text: string, 
-    sender?: 'client' | 'spud' | 'system', 
+    sender?: 'client' | 'spud' | 'system' | 'developer' | 'admin', 
     sessionId?: string, 
     visitorName?: string, 
     visitorEmail?: string, 
-    visitorPhone?: string
+    visitorPhone?: string,
+    customSenderName?: string
   ) => void;
   submitOfflineInquiry: (inquiry: {
     name: string;
@@ -246,6 +247,7 @@ interface AppContextType {
   }) => void;
   markChatAsRead: (sessionId?: string) => void;
   markSessionResolved: (sessionId: string) => void;
+  reopenSession: (sessionId: string) => void;
   deleteChatSession: (sessionId: string) => void;
   clearAllChatHistory: () => void;
   waitingChatSessionsCount: number;
@@ -4381,11 +4383,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const sendChatMessage = (
     text: string, 
-    sender: 'client' | 'spud' | 'system' = 'client',
+    sender: 'client' | 'spud' | 'system' | 'developer' | 'admin' = 'client',
     targetSessionId?: string,
     visitorName: string = 'Website Visitor',
     visitorEmail?: string,
-    visitorPhone?: string
+    visitorPhone?: string,
+    customSenderName?: string
   ) => {
     let currentSessionId = targetSessionId || activeChatSessionId;
     if (!currentSessionId) {
@@ -4401,13 +4404,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
+    const isStaff = sender === 'spud' || sender === 'developer' || sender === 'admin';
+
+    // Resolve sender display name
+    let resolvedSenderName = customSenderName;
+    if (!resolvedSenderName) {
+      if (sender === 'developer') {
+        const rawName = currentUserRecord?.displayName || currentUserRecord?.name || firebaseUser?.displayName || 'Allan';
+        resolvedSenderName = rawName.toLowerCase().includes('developer') ? rawName : `${rawName} (Developer)`;
+      } else if (sender === 'spud') {
+        resolvedSenderName = 'Spud the Piper';
+      } else if (sender === 'admin') {
+        const rawName = currentUserRecord?.displayName || currentUserRecord?.name || firebaseUser?.displayName || 'Support Admin';
+        resolvedSenderName = `${rawName} (Admin)`;
+      } else if (sender === 'system') {
+        resolvedSenderName = 'Spud Automated';
+      } else {
+        resolvedSenderName = visitorName || 'Website Visitor';
+      }
+    }
+
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       sender,
-      senderName: sender === 'spud' ? 'Spud the Piper' : visitorName,
+      senderName: resolvedSenderName,
       text,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isRead: sender === 'spud',
+      isRead: isStaff,
       sessionId: currentSessionId,
       visitorEmail,
       visitorPhone
@@ -4416,21 +4439,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updatedMessages = [...chatMessages, newMsg];
     setChatMessages(updatedMessages);
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}chat`, JSON.stringify(updatedMessages));
+      try {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}chat`, JSON.stringify(updatedMessages));
+      } catch (e) {}
     }
 
     // Update or create corresponding session
     let sessionToSave: ChatSession | null = null;
     setChatSessions(prev => {
-      const existing = prev.find(s => s.id === currentSessionId);
+      // Find matching session by ID, or if client provided email, match by email
+      const existing = prev.find(s => 
+        s.id === currentSessionId || 
+        (sender === 'client' && visitorEmail && s.visitorEmail && s.visitorEmail.trim().toLowerCase() === visitorEmail.trim().toLowerCase())
+      );
+
       if (existing) {
+        const actualSessionId = existing.id;
+        newMsg.sessionId = actualSessionId;
         const updated = prev.map(s => {
-          if (s.id === currentSessionId) {
+          if (s.id === actualSessionId) {
             sessionToSave = {
               ...s,
               lastMessage: text,
               lastTimestamp: 'Just now',
-              isWaitingForSpud: sender === 'client',
+              // Client messages re-activate the session and enter the waiting queue
+              // Staff messages answer and clear waiting flag
+              status: sender === 'client' ? 'active' : s.status,
+              isWaitingForSpud: sender === 'client' ? true : false,
               unreadCount: sender === 'client' ? (s.unreadCount || 0) + 1 : 0,
               visitorEmail: visitorEmail || s.visitorEmail,
               visitorPhone: visitorPhone || s.visitorPhone
@@ -4463,11 +4498,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Sync to Cloud Firestore
     syncToFirestore('chat_messages', newMsg.id, newMsg).catch(e => console.warn(e));
     if (sessionToSave) {
-      syncToFirestore('chat_sessions', currentSessionId, sessionToSave).catch(e => console.warn(e));
+      syncToFirestore('chat_sessions', (sessionToSave as ChatSession).id, sessionToSave).catch(e => console.warn(e));
     }
 
-    // If Spud replies, automatically mark all prior unread messages in this session as read
-    if (sender === 'spud') {
+    // If Staff (Spud, Developer, or Admin) replies, automatically mark all prior unread messages in this session as read
+    if (isStaff) {
       setChatMessages(prev => {
         const updated = prev.map(m => {
           if (m && m.sessionId === currentSessionId && !m.isRead) {
@@ -4591,24 +4626,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     eventType?: string;
     question: string;
   }) => {
-    const sessionId = `session-inquiry-${Date.now()}`;
-    const newSession: ChatSession = {
-      id: sessionId,
-      visitorName: `${inquiry.name} (Offline Inquiry)`,
-      visitorEmail: inquiry.email,
-      visitorPhone: inquiry.phone,
-      lastMessage: inquiry.question,
-      lastTimestamp: 'Just now',
-      unreadCount: 1,
-      isWaitingForSpud: true,
-      status: 'offline_inquiry',
-      activePage: 'Offline Question Form',
-      ipOrLocation: 'Direct Email Inquiry',
-      device: typeof navigator !== 'undefined' ? (navigator.userAgent.includes('Mobile') ? 'Mobile Phone' : 'Desktop') : 'Website Inquiry',
-      createdAt: new Date().toISOString(),
-      eventType: inquiry.eventType || 'General Inquiry',
-      eventDate: inquiry.eventDate
-    };
+    // Check if an existing session exists for this email
+    const existingSession = chatSessions.find(s => 
+      s.visitorEmail && s.visitorEmail.trim().toLowerCase() === inquiry.email.trim().toLowerCase()
+    );
+
+    const sessionId = existingSession ? existingSession.id : `session-inquiry-${Date.now()}`;
+
+    let sessionToSave: ChatSession;
+    if (existingSession) {
+      sessionToSave = {
+        ...existingSession,
+        visitorName: `${inquiry.name} (Offline Inquiry)`,
+        visitorPhone: inquiry.phone || existingSession.visitorPhone,
+        lastMessage: inquiry.question,
+        lastTimestamp: 'Just now',
+        unreadCount: (existingSession.unreadCount || 0) + 1,
+        // Crucial: if user contacts again from this email, reopen as live offline_inquiry in waiting queue!
+        status: 'offline_inquiry',
+        isWaitingForSpud: true,
+        eventType: inquiry.eventType || existingSession.eventType || 'General Inquiry',
+        eventDate: inquiry.eventDate || existingSession.eventDate
+      };
+      setChatSessions(prev => prev.map(s => s.id === sessionId ? sessionToSave : s));
+    } else {
+      sessionToSave = {
+        id: sessionId,
+        visitorName: `${inquiry.name} (Offline Inquiry)`,
+        visitorEmail: inquiry.email,
+        visitorPhone: inquiry.phone,
+        lastMessage: inquiry.question,
+        lastTimestamp: 'Just now',
+        unreadCount: 1,
+        isWaitingForSpud: true,
+        status: 'offline_inquiry',
+        activePage: 'Offline Question Form',
+        ipOrLocation: 'Direct Email Inquiry',
+        device: typeof navigator !== 'undefined' ? (navigator.userAgent.includes('Mobile') ? 'Mobile Phone' : 'Desktop') : 'Website Inquiry',
+        createdAt: new Date().toISOString(),
+        eventType: inquiry.eventType || 'General Inquiry',
+        eventDate: inquiry.eventDate
+      };
+      setChatSessions(prev => [sessionToSave, ...prev]);
+    }
 
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
@@ -4622,19 +4682,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       visitorPhone: inquiry.phone
     };
 
-    const updatedSessions = [newSession, ...chatSessions];
     const updatedMessages = [...chatMessages, newMsg];
-
-    setChatSessions(updatedSessions);
     setChatMessages(updatedMessages);
 
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}chat_sessions`, JSON.stringify(updatedSessions));
-      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}chat`, JSON.stringify(updatedMessages));
+      try {
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}chat`, JSON.stringify(updatedMessages));
+      } catch (e) {}
     }
 
     // Sync to Cloud Firestore
-    syncToFirestore('chat_sessions', sessionId, newSession).catch(e => console.warn(e));
+    syncToFirestore('chat_sessions', sessionId, sessionToSave).catch(e => console.warn(e));
     syncToFirestore('chat_messages', newMsg.id, newMsg).catch(e => console.warn(e));
 
     // Capture into mailing list contacts
@@ -4735,12 +4793,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     markChatAsRead(sessionId);
 
     setChatSessions(prev => {
+      let found = false;
       const updated = prev.map(s => {
         if (s && s.id === sessionId) {
+          found = true;
           return { ...s, status: 'resolved' as const, isWaitingForSpud: false, unreadCount: 0 };
         }
         return s;
       });
+
+      if (!found) {
+        const msgs = chatMessages.filter(m => m.sessionId === sessionId);
+        const lastMsg = msgs[msgs.length - 1];
+        const newResolvedSession: ChatSession = {
+          id: sessionId,
+          visitorName: lastMsg?.senderName && lastMsg?.senderName !== 'Spud the Piper' ? lastMsg.senderName : 'Website Visitor',
+          visitorEmail: lastMsg?.visitorEmail,
+          visitorPhone: lastMsg?.visitorPhone,
+          lastMessage: lastMsg?.text || 'Conversation resolved',
+          lastTimestamp: lastMsg?.timestamp || 'Just now',
+          unreadCount: 0,
+          isWaitingForSpud: false,
+          status: 'resolved',
+          activePage: 'Website Live Chat',
+          ipOrLocation: 'Online Session',
+          device: 'Online Visitor',
+          createdAt: new Date().toISOString()
+        };
+        updated.unshift(newResolvedSession);
+      }
+
       if (typeof window !== 'undefined') {
         try {
           localStorage.setItem(`${LOCAL_STORAGE_PREFIX}chat_sessions`, JSON.stringify(updated));
@@ -4756,7 +4838,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addNotification({
       type: 'system',
       title: 'Chat Session Resolved',
-      message: `Conversation has been marked as completed.`,
+      message: `Conversation has been marked as resolved and removed from the waiting queue.`,
+      actionUrl: '/admin/messages'
+    });
+  };
+
+  const reopenSession = (sessionId: string) => {
+    setChatSessions(prev => {
+      const updated = prev.map(s => {
+        if (s && s.id === sessionId) {
+          return { ...s, status: 'active' as const, isWaitingForSpud: true };
+        }
+        return s;
+      });
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_PREFIX}chat_sessions`, JSON.stringify(updated));
+        } catch (e) {}
+      }
+      return updated;
+    });
+
+    if (sessionId && db) {
+      setDoc(doc(db, 'chat_sessions', sessionId), { status: 'active', isWaitingForSpud: true }, { merge: true }).catch(e => console.warn(e));
+    }
+
+    addNotification({
+      type: 'system',
+      title: 'Chat Session Re-opened',
+      message: `Conversation returned to the active queue.`,
       actionUrl: '/admin/messages'
     });
   };
@@ -6560,9 +6670,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       submitOfflineInquiry,
       markChatAsRead,
       markSessionResolved,
+      reopenSession,
       deleteChatSession,
       clearAllChatHistory,
-      waitingChatSessionsCount: chatSessions.filter(s => s.isWaitingForSpud).length,
+      waitingChatSessionsCount: chatSessions.filter(s => s.isWaitingForSpud && s.status !== 'resolved').length,
       unreadChatCount,
 
       audioPlaybackEnabled,
