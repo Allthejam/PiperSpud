@@ -4424,12 +4424,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
+    const now = new Date();
+    const formattedDate = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const formattedTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const fullTimestamp = `${formattedDate}, ${formattedTime}`;
+
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       sender,
       senderName: resolvedSenderName,
       text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: fullTimestamp,
+      createdAt: now.toISOString(),
       isRead: isStaff,
       sessionId: currentSessionId,
       visitorEmail,
@@ -4461,7 +4467,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             sessionToSave = {
               ...s,
               lastMessage: text,
-              lastTimestamp: 'Just now',
+              lastTimestamp: fullTimestamp,
               // Client messages re-activate the session and enter the waiting queue
               // Staff messages answer and clear waiting flag
               status: sender === 'client' ? 'active' : s.status,
@@ -4482,7 +4488,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           visitorEmail,
           visitorPhone,
           lastMessage: text,
-          lastTimestamp: 'Just now',
+          lastTimestamp: fullTimestamp,
           unreadCount: sender === 'client' ? 1 : 0,
           isWaitingForSpud: sender === 'client',
           status: 'active',
@@ -4568,12 +4574,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // If Spud is offline, post an immediate courteous system reply
       if (!isSpudOnline) {
         setTimeout(() => {
+          const now = new Date();
+          const formattedDate = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+          const formattedTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
           const offlineBotMsg: ChatMessage = {
             id: `msg-${Date.now() + 1}`,
             sender: 'system',
             senderName: 'Spud the Piper (Away Notice)',
             text: `Failte! Spud is currently away performing at a Highland venue or event. Your question has been delivered to his Live Message Center. If you would like an email reply, please use the "Email Us / Leave Question" tab!`,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            timestamp: `${formattedDate}, ${formattedTime}`,
+            createdAt: now.toISOString(),
             isRead: true,
             sessionId: currentSessionId
           };
@@ -4602,12 +4612,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             replyText = autoReplies.tune;
           }
 
+          const now = new Date();
+          const formattedDate = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+          const formattedTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
           const botMsg: ChatMessage = {
             id: `msg-${Date.now() + 1}`,
             sender: 'spud',
             senderName: 'Spud the Piper (Auto-Assist)',
             text: replyText,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            timestamp: `${formattedDate}, ${formattedTime}`,
+            createdAt: now.toISOString(),
             isRead: true,
             sessionId: currentSessionId
           };
@@ -4633,6 +4647,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const sessionId = existingSession ? existingSession.id : `session-inquiry-${Date.now()}`;
 
+    const now = new Date();
+    const formattedDate = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const formattedTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const fullTimestamp = `${formattedDate}, ${formattedTime}`;
+
     let sessionToSave: ChatSession;
     if (existingSession) {
       sessionToSave = {
@@ -4640,7 +4659,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         visitorName: `${inquiry.name} (Offline Inquiry)`,
         visitorPhone: inquiry.phone || existingSession.visitorPhone,
         lastMessage: inquiry.question,
-        lastTimestamp: 'Just now',
+        lastTimestamp: fullTimestamp,
         unreadCount: (existingSession.unreadCount || 0) + 1,
         // Crucial: if user contacts again from this email, reopen as live offline_inquiry in waiting queue!
         status: 'offline_inquiry',
@@ -4656,14 +4675,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         visitorEmail: inquiry.email,
         visitorPhone: inquiry.phone,
         lastMessage: inquiry.question,
-        lastTimestamp: 'Just now',
+        lastTimestamp: fullTimestamp,
         unreadCount: 1,
         isWaitingForSpud: true,
         status: 'offline_inquiry',
         activePage: 'Offline Question Form',
         ipOrLocation: 'Direct Email Inquiry',
         device: typeof navigator !== 'undefined' ? (navigator.userAgent.includes('Mobile') ? 'Mobile Phone' : 'Desktop') : 'Website Inquiry',
-        createdAt: new Date().toISOString(),
+        createdAt: now.toISOString(),
         eventType: inquiry.eventType || 'General Inquiry',
         eventDate: inquiry.eventDate
       };
@@ -4675,7 +4694,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       sender: 'client',
       senderName: inquiry.name,
       text: `OFFLINE INQUIRY: ${inquiry.question} ${inquiry.eventDate ? `[Date: ${inquiry.eventDate}]` : ''} ${inquiry.eventType ? `[Type: ${inquiry.eventType}]` : ''} [Reply to: ${inquiry.email}]`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: fullTimestamp,
+      createdAt: now.toISOString(),
       isRead: false,
       sessionId,
       visitorEmail: inquiry.email,

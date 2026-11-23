@@ -235,6 +235,7 @@ export interface ChatMessage {
   senderName: string;
   text: string;
   timestamp: string;
+  createdAt?: string;
   isRead: boolean;
   sessionId: string;
   visitorEmail?: string;

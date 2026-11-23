@@ -31,6 +31,148 @@ import {
 } from 'lucide-react';
 import { ChatMessage, QuickResponse, ChatSession } from '@/types/spud';
 
+// Helper to extract a reliable Date from a ChatMessage
+function getMessageDate(msg: ChatMessage): Date | null {
+  if (msg.createdAt) {
+    const d = new Date(msg.createdAt);
+    if (!isNaN(d.getTime())) return d;
+  }
+  if (msg.id && msg.id.startsWith('msg-')) {
+    const rawMs = msg.id.replace(/^msg-/, '').split('-')[0];
+    const ms = Number(rawMs);
+    if (!isNaN(ms) && ms > 1500000000000) {
+      const d = new Date(ms);
+      if (!isNaN(d.getTime())) return d;
+    }
+  }
+  if (msg.timestamp) {
+    const parsed = Date.parse(msg.timestamp);
+    if (!isNaN(parsed)) return new Date(parsed);
+  }
+  return null;
+}
+
+// Formats message timestamp with both date and time
+function formatMessageDateTime(msg: ChatMessage): string {
+  const d = getMessageDate(msg);
+  
+  let timeStr = '';
+  if (msg.timestamp) {
+    const parts = msg.timestamp.split(',');
+    if (parts.length > 1) {
+      timeStr = parts[parts.length - 1].trim();
+    } else if (msg.timestamp.includes(':')) {
+      timeStr = msg.timestamp.trim();
+    }
+  }
+  if (!timeStr && d) {
+    timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  if (!d) {
+    return msg.timestamp || 'Just now';
+  }
+
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday = d.toDateString() === yesterday.toDateString();
+
+  const isSameYear = d.getFullYear() === now.getFullYear();
+
+  if (isToday) {
+    return `Today • ${timeStr}`;
+  }
+  if (isYesterday) {
+    return `Yesterday • ${timeStr}`;
+  }
+
+  const dayMonth = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  const yearStr = isSameYear ? '' : ` ${d.getFullYear()}`;
+  return `${dayMonth}${yearStr} • ${timeStr}`;
+}
+
+// Full date/time for tooltip hover
+function getMessageFullHover(msg: ChatMessage): string {
+  const d = getMessageDate(msg);
+  if (!d) return msg.timestamp || '';
+  return d.toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+// Day grouping key
+function getMessageDayKey(msg: ChatMessage): string {
+  const d = getMessageDate(msg);
+  if (d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  return 'unknown';
+}
+
+// Day divider label
+function formatDayDividerLabel(dayKey: string, date: Date | null): string {
+  if (!date || dayKey === 'unknown') return 'Message Thread';
+  const now = new Date();
+  if (date.toDateString() === now.toDateString()) {
+    return `Today • ${date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+  }
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) {
+    return `Yesterday • ${date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+  }
+  return date.toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+}
+
+// Format timestamp for session list in Column 1
+function formatSessionListTimestamp(session: ChatSession, allMessages: ChatMessage[]): string {
+  const sessionMsgs = (allMessages || []).filter(m => m && m.sessionId === session.id);
+  const lastMsg = sessionMsgs[sessionMsgs.length - 1];
+  const d = lastMsg ? getMessageDate(lastMsg) : (session.createdAt ? new Date(session.createdAt) : null);
+
+  if (d && !isNaN(d.getTime())) {
+    const now = new Date();
+    const isToday = d.toDateString() === now.toDateString();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const isYesterday = d.toDateString() === yesterday.toDateString();
+    const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    if (isToday) return `Today, ${timeStr}`;
+    if (isYesterday) return `Yesterday, ${timeStr}`;
+
+    const isSameYear = d.getFullYear() === now.getFullYear();
+    const dayMonth = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    return isSameYear ? `${dayMonth}, ${timeStr}` : `${dayMonth} ${d.getFullYear()}`;
+  }
+
+  return session.lastTimestamp || 'Just now';
+}
+
+// Format timeline date in Column 3
+function formatTimelineDate(input: string | Date | null | undefined): string {
+  if (!input) return 'Recently';
+  const d = input instanceof Date ? input : new Date(input);
+  if (isNaN(d.getTime())) return String(input);
+
+  const dateStr = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return `${dateStr} at ${timeStr}`;
+}
+
 export const AdminMessageCenter: React.FC = () => {
   const { 
     chatMessages, 
@@ -517,8 +659,12 @@ export const AdminMessageCenter: React.FC = () => {
                         <h4 className="text-xs font-bold text-white truncate">
                           {session.visitorName}
                         </h4>
-                        <span className="text-[10px] text-gray-400 shrink-0">
-                          {session.lastTimestamp}
+                        <span 
+                          className="text-[10px] text-gray-400 shrink-0 flex items-center gap-1"
+                          title={`Last Activity: ${session.lastTimestamp}`}
+                        >
+                          <Clock className="w-2.5 h-2.5 text-gray-500" />
+                          <span>{formatSessionListTimestamp(session, chatMessages)}</span>
                         </span>
                       </div>
 
@@ -635,49 +781,71 @@ export const AdminMessageCenter: React.FC = () => {
                 <p>No messages yet in this session.</p>
               </div>
             ) : (
-              activeSessionMessages.map((msg) => {
+              activeSessionMessages.map((msg, index) => {
                 const isStaff = msg.sender === 'spud' || msg.sender === 'developer' || msg.sender === 'admin';
                 const isDev = msg.sender === 'developer';
                 const isSpud = msg.sender === 'spud';
                 const isBot = msg.sender === 'system';
 
+                const msgDate = getMessageDate(msg);
+                const dayKey = getMessageDayKey(msg);
+                const prevMsg = index > 0 ? activeSessionMessages[index - 1] : null;
+                const prevDayKey = prevMsg ? getMessageDayKey(prevMsg) : null;
+                const showDayDivider = index === 0 || dayKey !== prevDayKey;
+
                 return (
-                  <div
-                    key={msg.id}
-                    className={`flex flex-col ${isStaff ? 'items-end' : 'items-start'}`}
-                  >
-                    <div className="flex items-center gap-1.5 mb-1 text-[10px] text-gray-400">
-                      {isBot && <Bot className="w-3 h-3 text-tartan-gold" />}
-                      {isDev && (
-                        <span className="bg-purple-900/60 text-purple-300 border border-purple-500/40 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">
-                          Developer
-                        </span>
-                      )}
-                      {isSpud && (
-                        <span className="bg-amber-900/40 text-amber-300 border border-amber-500/30 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">
-                          Spud
-                        </span>
-                      )}
-                      <span className="font-bold">{msg.senderName}</span>
-                      <span>• {msg.timestamp}</span>
-                    </div>
+                  <React.Fragment key={msg.id}>
+                    {showDayDivider && (
+                      <div className="flex items-center justify-center my-3">
+                        <div className="bg-tartan-navy/90 border border-tartan-border px-3 py-1 rounded-full text-[10px] font-bold text-tartan-gold shadow-sm flex items-center gap-1.5">
+                          <Calendar className="w-3 h-3 text-tartan-gold/80" />
+                          <span>{formatDayDividerLabel(dayKey, msgDate)}</span>
+                        </div>
+                      </div>
+                    )}
 
                     <div
-                      className={`max-w-[85%] rounded-2xl p-3.5 leading-relaxed shadow-md ${
-                        isDev
-                          ? 'bg-gradient-to-r from-purple-950 via-slate-900 to-purple-900 text-purple-100 border border-purple-500/50 font-medium rounded-tr-none shadow-purple-950/40'
-                          : isSpud
-                          ? 'bg-gold-gradient text-tartan-dark font-semibold rounded-tr-none'
-                          : isStaff
-                          ? 'bg-emerald-900 text-emerald-100 border border-emerald-500/40 rounded-tr-none'
-                          : isBot
-                          ? 'bg-slate-800 text-gray-200 border border-slate-700 rounded-tl-none'
-                          : 'bg-tartan-navy text-white border border-tartan-accent/40 rounded-tl-none'
-                      }`}
+                      className={`flex flex-col ${isStaff ? 'items-end' : 'items-start'}`}
                     >
-                      {msg.text}
+                      <div className="flex items-center gap-1.5 mb-1 text-[10px] text-gray-400">
+                        {isBot && <Bot className="w-3 h-3 text-tartan-gold" />}
+                        {isDev && (
+                          <span className="bg-purple-900/60 text-purple-300 border border-purple-500/40 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">
+                            Developer
+                          </span>
+                        )}
+                        {isSpud && (
+                          <span className="bg-amber-900/40 text-amber-300 border border-amber-500/30 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">
+                            Spud
+                          </span>
+                        )}
+                        <span className="font-bold">{msg.senderName}</span>
+                        <span 
+                          title={getMessageFullHover(msg)}
+                          className="hover:text-white transition cursor-help flex items-center gap-1"
+                        >
+                          <Clock className="w-2.5 h-2.5 text-gray-500" />
+                          <span>{formatMessageDateTime(msg)}</span>
+                        </span>
+                      </div>
+
+                      <div
+                        className={`max-w-[85%] rounded-2xl p-3.5 leading-relaxed shadow-md ${
+                          isDev
+                            ? 'bg-gradient-to-r from-purple-950 via-slate-900 to-purple-900 text-purple-100 border border-purple-500/50 font-medium rounded-tr-none shadow-purple-950/40'
+                            : isSpud
+                            ? 'bg-gold-gradient text-tartan-dark font-semibold rounded-tr-none'
+                            : isStaff
+                            ? 'bg-emerald-900 text-emerald-100 border border-emerald-500/40 rounded-tr-none'
+                            : isBot
+                            ? 'bg-slate-800 text-gray-200 border border-slate-700 rounded-tl-none'
+                            : 'bg-tartan-navy text-white border border-tartan-accent/40 rounded-tl-none'
+                        }`}
+                      >
+                        {msg.text}
+                      </div>
                     </div>
-                  </div>
+                  </React.Fragment>
                 );
               })
             )}
@@ -845,6 +1013,33 @@ export const AdminMessageCenter: React.FC = () => {
                     <Smartphone className="w-3 h-3 text-tartan-gold" /> Device:
                   </span>
                   <span className="text-white font-medium">{activeSession.device || 'Web Browser'}</span>
+                </div>
+              </div>
+
+              {/* Message Timeline & Date Intelligence */}
+              <div className="bg-tartan-dark p-3 rounded-xl border border-tartan-border space-y-2 text-[11px]">
+                <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider flex items-center gap-1">
+                  <Calendar className="w-3 h-3 text-tartan-gold" /> Message Timeline
+                </span>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-gray-400">
+                    <span>Started:</span>
+                    <span className="text-white font-medium text-right">
+                      {formatTimelineDate(activeSession.createdAt || (activeSessionMessages[0] ? getMessageDate(activeSessionMessages[0]) : null))}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-gray-400">
+                    <span>Last Activity:</span>
+                    <span className="text-amber-300 font-medium text-right">
+                      {formatTimelineDate(activeSessionMessages.length > 0 ? getMessageDate(activeSessionMessages[activeSessionMessages.length - 1]) : activeSession.lastTimestamp)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-gray-400">
+                    <span>Total Messages:</span>
+                    <span className="text-gray-300 font-semibold">
+                      {activeSessionMessages.length} {activeSessionMessages.length === 1 ? 'message' : 'messages'}
+                    </span>
+                  </div>
                 </div>
               </div>
 
