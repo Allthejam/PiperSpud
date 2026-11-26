@@ -3,6 +3,7 @@
 import React from 'react';
 import { Navbar } from '@/components/Navbar';
 import { HeroSection } from '@/components/HeroSection';
+import { ScottishWeddingAwardsCard } from '@/components/ScottishWeddingAwardsCard';
 import { PiperToTheStars } from '@/components/PiperToTheStars';
 import { TuneSampler } from '@/components/TuneSampler';
 import { TartanSelector } from '@/components/TartanSelector';
@@ -36,6 +37,9 @@ export default function HomePage() {
 
       {/* Hero Section */}
       <HeroSection />
+
+      {/* Scottish Wedding Awards 2027 Finalist Spotlight Card */}
+      <ScottishWeddingAwardsCard />
 
       {/* Piper to the Stars Credibility Bar */}
       <PiperToTheStars />
